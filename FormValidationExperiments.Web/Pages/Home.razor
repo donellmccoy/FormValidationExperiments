@@ -553,27 +553,27 @@ else
                                     <RadzenFieldset Text="Sources of Information">
                                         <RadzenStack Gap="0.75rem">
                                             <RadzenLabel Text="Select all sources of information reviewed for this determination:" />
-                                            <RadzenStack Gap="0.5rem">
+                                            <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                 <RadzenCheckBox @bind-Value="commanderFormModel.MemberStatementReviewed" Name="chkMemberStatement" />
                                                 <RadzenLabel Text="Member's Written Statement" Component="chkMemberStatement" />
                                             </RadzenStack>
-                                            <RadzenStack Gap="0.5rem">
+                                            <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                 <RadzenCheckBox @bind-Value="commanderFormModel.MedicalRecordsReviewed" Name="chkMedicalRecords" />
                                                 <RadzenLabel Text="Medical Records / Provider Assessment" Component="chkMedicalRecords" />
                                             </RadzenStack>
-                                            <RadzenStack Gap="0.5rem">
+                                            <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                 <RadzenCheckBox @bind-Value="commanderFormModel.WitnessStatementsReviewed" Name="chkWitness" />
                                                 <RadzenLabel Text="Witness Statements" Component="chkWitness" />
                                             </RadzenStack>
-                                            <RadzenStack Gap="0.5rem">
+                                            <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                 <RadzenCheckBox @bind-Value="commanderFormModel.PoliceReportsReviewed" Name="chkPolice" />
                                                 <RadzenLabel Text="Police / Security Forces Reports" Component="chkPolice" />
                                             </RadzenStack>
-                                            <RadzenStack Gap="0.5rem">
+                                            <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                 <RadzenCheckBox @bind-Value="commanderFormModel.CommanderReportReviewed" Name="chkCdrReport" />
                                                 <RadzenLabel Text="Commander's Report of Investigation" Component="chkCdrReport" />
                                             </RadzenStack>
-                                            <RadzenStack Gap="0.5rem">
+                                            <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                 <RadzenCheckBox @bind-Value="commanderFormModel.OtherSourcesReviewed" Name="chkOther" />
                                                 <RadzenLabel Text="Other" Component="chkOther" />
                                             </RadzenStack>
