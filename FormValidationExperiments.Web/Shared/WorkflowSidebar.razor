@@ -1,0 +1,50 @@
+<aside class="workflow-sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-header-row">
+            <span class="sidebar-title">Line of Duty Status</span>
+            <span class="sidebar-step-count">Step @(CurrentStepIndex + 1) of @Steps.Count</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" style="width: @(GetProgressPercent())%"></div>
+        </div>
+    </div>
+
+    <div class="steps-list">
+        @foreach (var step in Steps)
+        {
+            <div class="step-item @GetStepCssClass(step)" title="@step.Description"
+                 @onclick="() => OnStepClicked.InvokeAsync(step)">
+                <div class="step-indicator-col">
+                    <div class="step-circle">
+                        <span class="material-symbols-outlined">@(step.Status == WorkflowStepStatus.Completed ? "check" : step.Icon)</span>
+                    </div>
+                    @if (step.Number < Steps.Count)
+                    {
+                        <div class="step-connector"></div>
+                    }
+                </div>
+                <div class="step-info">
+                    <div class="step-name-row">
+                        <span class="step-name">@step.Name</span>
+                        @if (step.Status == WorkflowStepStatus.InProgress)
+                        {
+                            <span class="material-symbols-outlined step-action-icon active">edit</span>
+                        }
+                        else if (step.Status == WorkflowStepStatus.Completed)
+                        {
+                            <span class="material-symbols-outlined step-action-icon">info</span>
+                        }
+                    </div>
+                    @if (step.Status == WorkflowStepStatus.Completed)
+                    {
+                        <span class="step-date">@step.StatusText &mdash; @step.CompletionDate</span>
+                    }
+                    else if (step.Status == WorkflowStepStatus.InProgress)
+                    {
+                        <span class="step-status in-progress">In Progress</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</aside>

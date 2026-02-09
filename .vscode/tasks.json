@@ -1,0 +1,59 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "kill",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'All dotnet processes stopped'"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "silent",
+        "close": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile",
+      "dependsOn": "kill"
+    },
+    {
+      "label": "launch",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj",
+        "--launch-profile",
+        "https"
+      ],
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Building\\.\\.\\.",
+          "endsPattern": "^\\s*Now listening on:.*"
+        }
+      },
+      "dependsOn": "build"
+    }
+  ]
+}
