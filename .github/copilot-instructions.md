@@ -18,7 +18,6 @@ This is a **Blazor WebAssembly** application targeting **.NET 10** that implemen
 FormValidationExperiments.Web/
 ├── Pages/                  # Razor pages with code-behind (.razor.cs) and scoped styles (.razor.css)
 │   ├── Home.razor/.cs/.css       # Multi-step wizard workflow (primary page)
-│   ├── Workflow.razor/.cs/.css   # Full LOD case form with tabbed sections
 │   └── NotFound.razor            # 404 fallback page
 ├── ViewModels/             # Form models per workflow step (namespace: FormValidationExperiments.Web.ViewModels)
 │   ├── CaseInfoModel.cs            # Read-only case header/summary data
@@ -62,7 +61,7 @@ FormValidationExperiments.Web/
 |-----------|----------|
 | `FormValidationExperiments.Web.Models` | Domain model classes (`Models/` folder) |
 | `FormValidationExperiments.Web.Enums` | Domain enums (`Enums/` folder) |
-| `FormValidationExperiments.Web.Pages` | Page components (`Home`, `Workflow`) |
+| `FormValidationExperiments.Web.Pages` | Page components (`Home`) |
 | `FormValidationExperiments.Web.ViewModels` | Form/view models per workflow step |
 | `FormValidationExperiments.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
 | `FormValidationExperiments.Web.Layout` | Layout components |
@@ -85,8 +84,7 @@ FormValidationExperiments.Web/
 - Radzen services are registered via `builder.Services.AddRadzenComponents()` in `Program.cs`.
 - Global Radzen imports (`@using Radzen`, `@using Radzen.Blazor`) are in `_Imports.razor`.
 - The `Home` page implements a **multi-step wizard** pattern — the `WorkflowSidebar` drives step navigation, and `selectedTabIndex` / `currentStepIndex` control which form sections are visible.
-- The `Workflow` page implements a **tabbed form** pattern — multiple `EditForm` blocks bound to different sub-models of `LODCase`, with tab indices (`step1TabIndex` through `step5TabIndex`) for sub-tab navigation.
-- Both pages share the same `FormatEnum<T>()` helper for display-friendly enum names.
+- The `Home` page uses a `FormatEnum<T>()` helper for display-friendly enum names.
 
 ## Domain Context
 

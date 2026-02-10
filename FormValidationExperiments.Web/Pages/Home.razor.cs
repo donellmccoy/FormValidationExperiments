@@ -9,13 +9,19 @@ namespace FormValidationExperiments.Web.Pages;
 public partial class Home : ComponentBase
 {
     private bool isLoading = true;
+
     private int selectedTabIndex;
+
     private int currentStepIndex = 0;
 
     private MemberInfoFormModel memberFormModel = new();
+
     private MedicalAssessmentFormModel formModel = new();
+
     private CommanderReviewFormModel commanderFormModel = new();
+
     private LegalSJAReviewFormModel legalFormModel = new();
+
     private CaseInfoModel caseInfo = new();
 
     // ──── Conditional Visibility ────
@@ -23,15 +29,21 @@ public partial class Home : ComponentBase
 
     // ──── Lookup Data ────
     private IEnumerable<MilitaryRank> militaryRanks = Enum.GetValues<MilitaryRank>();
+
     private bool ShowToxicologyResults => formModel.ToxicologyTestDone == true;
+
     private bool ShowPsychEvalDetails => formModel.PsychiatricEvalCompleted == true;
+
     private bool ShowOtherTestDetails => formModel.OtherTestsDone == true;
+
     private bool ShowArcSection => true; // Set true for demo; in production, derive from member's ServiceComponent (AFR/ANG)
     private bool ShowArcSubFields => formModel.IsAtDeployedLocation == false;
+
     private bool ShowServiceAggravated => formModel.IsEptsNsa == true;
 
     // ──── Commander Review Conditional Visibility ────
     private bool ShowMisconductExplanation => commanderFormModel.ResultOfMisconduct == true;
+
     private bool ShowOtherSourceDescription => commanderFormModel.OtherSourcesReviewed == true;
 
     // ──── Legal SJA Review Conditional Visibility ────
@@ -45,6 +57,7 @@ public partial class Home : ComponentBase
     private List<WorkflowStep> workflowSteps = [];
 
     private WorkflowStep CurrentStep => workflowSteps[currentStepIndex];
+    
     private WorkflowStep NextStep => currentStepIndex + 1 < workflowSteps.Count ? workflowSteps[currentStepIndex + 1] : null;
 
     protected override async Task OnInitializedAsync()
@@ -72,14 +85,14 @@ public partial class Home : ComponentBase
 
         workflowSteps =
         [
-            new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.InProgress,  StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
-            new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,  StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
-            new() { Number = 3,  Name = "LOD Initiation",       Icon = "description",           Status = WorkflowStepStatus.Pending,  StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
-            new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.Pending, Description = "Medical provider review and clinical impact assessment." },
-            new() { Number = 5,  Name = "Commander Review",     Icon = "edit_document",          Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
+            new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
+            new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,    StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
+            new() { Number = 3,  Name = "Line Of Initiation",   Icon = "description",           Status = WorkflowStepStatus.Pending,    StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
+            new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Medical provider review and clinical impact assessment." },
+            new() { Number = 5,  Name = "Commander Review",     Icon = "edit_document",         Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
             new() { Number = 6,  Name = "Legal SJA Review",     Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Legal office review if deemed necessary." },
             new() { Number = 7,  Name = "Wing CC Review",       Icon = "stars",                 Status = WorkflowStepStatus.Pending,    Description = "Wing-level review if escalated." },
-            new() { Number = 8,  Name = "Board Review",          Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Formal adjudication by the LOD Board." }
+            new() { Number = 8,  Name = "Board Review",         Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Formal adjudication by the LOD Board." }
         ];
     }
 
