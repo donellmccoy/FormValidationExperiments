@@ -3,7 +3,7 @@ namespace FormValidationExperiments.Web.Models;
 /// <summary>
 /// Class representing an authority involved in the LOD process.
 /// </summary>
-public class LODAuthority
+public class LineOfDutyAuthority
 {
     public string Role { get; set; } // e.g., Immediate Commander, Appointing Authority, etc.
     public string Name { get; set; }

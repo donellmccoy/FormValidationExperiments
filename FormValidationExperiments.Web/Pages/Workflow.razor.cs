@@ -13,22 +13,22 @@ public partial class Workflow
     private int step4TabIndex;
     private int step5TabIndex;
 
-    private LODCase lodCase = new()
+    private LineOfDutyCase lodCase = new()
     {
         MEDCON = new MEDCONDetails(),
         INCAP = new INCAPDetails(),
         TimelineSteps = new List<TimelineStep>(),
-        Authorities = new List<LODAuthority>(),
-        Documents = new List<LODDocument>(),
-        Appeals = new List<LODAppeal>(),
+        Authorities = new List<LineOfDutyAuthority>(),
+        Documents = new List<LineOfDutyDocument>(),
+        Appeals = new List<LineOfDutyAppeal>(),
         WitnessStatements = new List<string>(),
         AuditComments = new List<string>()
     };
 
     // Form entry models for add-item tabs
-    private LODDocument currentDocument = new();
+    private LineOfDutyDocument currentDocument = new();
     private CommentModel currentComment = new();
-    private LODAppeal currentAppeal = new();
+    private LineOfDutyAppeal currentAppeal = new();
     private TimelineStep currentTimelineStep = new();
 
     // Dropdown data sources
@@ -68,7 +68,7 @@ public partial class Workflow
             .ToList();
     }
 
-    private void OnSubmit(LODCase model)
+    private void OnSubmit(LineOfDutyCase model)
     {
         // Handle main form submission
     }
@@ -78,16 +78,16 @@ public partial class Workflow
         selectedStepIndex = index;
     }
 
-    private void OnDocumentSubmit(LODDocument model)
+    private void OnDocumentSubmit(LineOfDutyDocument model)
     {
-        lodCase.Documents.Add(new LODDocument
+        lodCase.Documents.Add(new LineOfDutyDocument
         {
             DocumentType = model.DocumentType,
             FileName = model.FileName,
             UploadDate = model.UploadDate,
             Description = model.Description
         });
-        currentDocument = new LODDocument();
+        currentDocument = new LineOfDutyDocument();
     }
 
     private void OnCommentSubmit(CommentModel model)
@@ -99,9 +99,9 @@ public partial class Workflow
         }
     }
 
-    private void OnAppealSubmit(LODAppeal model)
+    private void OnAppealSubmit(LineOfDutyAppeal model)
     {
-        lodCase.Appeals.Add(new LODAppeal
+        lodCase.Appeals.Add(new LineOfDutyAppeal
         {
             AppealDate = model.AppealDate,
             Appellant = model.Appellant,
@@ -109,7 +109,7 @@ public partial class Workflow
             AppealOutcome = model.AppealOutcome,
             ResolutionDate = model.ResolutionDate
         });
-        currentAppeal = new LODAppeal();
+        currentAppeal = new LineOfDutyAppeal();
     }
 
     private void OnTimelineStepSubmit(TimelineStep model)
@@ -137,14 +137,14 @@ public partial class Workflow
 
     private void OnReset()
     {
-        lodCase = new LODCase
+        lodCase = new LineOfDutyCase
         {
             MEDCON = new MEDCONDetails(),
             INCAP = new INCAPDetails(),
             TimelineSteps = new List<TimelineStep>(),
-            Authorities = new List<LODAuthority>(),
-            Documents = new List<LODDocument>(),
-            Appeals = new List<LODAppeal>(),
+            Authorities = new List<LineOfDutyAuthority>(),
+            Documents = new List<LineOfDutyDocument>(),
+            Appeals = new List<LineOfDutyAppeal>(),
             WitnessStatements = new List<string>(),
             AuditComments = new List<string>()
         };

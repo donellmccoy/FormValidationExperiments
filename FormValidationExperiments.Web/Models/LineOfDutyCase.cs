@@ -5,7 +5,7 @@ namespace FormValidationExperiments.Web.Models;
 /// <summary>
 /// Main class representing an LOD case, supporting both informal and formal processes.
 /// </summary>
-public class LODCase
+public class LineOfDutyCase
 {
     // Basic Case Information
     public string CaseId { get; set; }
@@ -27,7 +27,7 @@ public class LODCase
     public bool IsInterimLOD { get; set; }
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
     public List<TimelineStep> TimelineSteps { get; set; } = new List<TimelineStep>();
-    public List<LODAuthority> Authorities { get; set; } = new List<LODAuthority>();
+    public List<LineOfDutyAuthority> Authorities { get; set; } = new List<LineOfDutyAuthority>();
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }
@@ -43,12 +43,12 @@ public class LODCase
     public string SARCCoordination { get; set; } // Sexual Assault Response Coordinator
 
     // Documents and Evidence
-    public List<LODDocument> Documents { get; set; } = new List<LODDocument>();
+    public List<LineOfDutyDocument> Documents { get; set; } = new List<LineOfDutyDocument>();
     public List<string> WitnessStatements { get; set; } = new List<string>();
     public string ToxicologyReport { get; set; }
 
     // Appeals
-    public List<LODAppeal> Appeals { get; set; } = new List<LODAppeal>();
+    public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
 
     // Related Benefits
     public MEDCONDetails MEDCON { get; set; } = new MEDCONDetails();

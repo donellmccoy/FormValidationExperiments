@@ -31,7 +31,7 @@ else
                                 @* ───── Medical Tab ───── *@
                                 <RadzenTabsItem Text="Medical" Icon="local_hospital">
                                     <div class="tab-content">
-                                        <RadzenTemplateForm TItem="LODCase" Data="@lodCase" Submit="@OnSubmit">
+                                        <RadzenTemplateForm TItem="LineOfDutyCase" Data="@lodCase" Submit="@OnSubmit">
                                             <RadzenFieldset Text="Case Information">
                                                 <RadzenStack Gap="1rem">
                                                     <RadzenRow Gap="1rem">
@@ -184,7 +184,7 @@ else
                                 @* ───── Documents Tab ───── *@
                                 <RadzenTabsItem Text="Documents" Icon="description">
                                     <div class="tab-content">
-                                        <RadzenTemplateForm TItem="LODDocument" Data="@currentDocument" Submit="@OnDocumentSubmit">
+                                        <RadzenTemplateForm TItem="LineOfDutyDocument" Data="@currentDocument" Submit="@OnDocumentSubmit">
                                             <RadzenFieldset Text="Add Document">
                                                 <RadzenStack Gap="1rem">
                                                     <RadzenRow Gap="1rem">
@@ -221,7 +221,7 @@ else
                                         @if (lodCase.Documents.Any())
                                         {
                                             <RadzenFieldset Text="Existing Documents" class="rz-mt-4">
-                                                <RadzenDataList Data="@lodCase.Documents" TItem="LODDocument">
+                                                <RadzenDataList Data="@lodCase.Documents" TItem="LineOfDutyDocument">
                                                     <Template Context="doc">
                                                         <RadzenCard Variant="Variant.Outlined" class="rz-mb-2">
                                                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
@@ -351,7 +351,7 @@ else
                                 @* ───── Appeals Tab ───── *@
                                 <RadzenTabsItem Text="Appeals" Icon="gavel">
                                     <div class="tab-content">
-                                        <RadzenTemplateForm TItem="LODAppeal" Data="@currentAppeal" Submit="@OnAppealSubmit">
+                                        <RadzenTemplateForm TItem="LineOfDutyAppeal" Data="@currentAppeal" Submit="@OnAppealSubmit">
                                             <RadzenFieldset Text="Add Appeal">
                                                 <RadzenStack Gap="1rem">
                                                     <RadzenRow Gap="1rem">
@@ -393,7 +393,7 @@ else
                                         @if (lodCase.Appeals.Any())
                                         {
                                             <RadzenFieldset Text="Existing Appeals" class="rz-mt-4">
-                                                <RadzenDataList Data="@lodCase.Appeals" TItem="LODAppeal">
+                                                <RadzenDataList Data="@lodCase.Appeals" TItem="LineOfDutyAppeal">
                                                     <Template Context="appeal">
                                                         <RadzenCard Variant="Variant.Outlined" class="rz-mb-2">
                                                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
@@ -461,7 +461,7 @@ else
                                 @* ───── Findings Tab ───── *@
                                 <RadzenTabsItem Text="Findings" Icon="fact_check">
                                     <div class="tab-content">
-                                        <RadzenTemplateForm TItem="LODCase" Data="@lodCase" Submit="@OnSubmit">
+                                        <RadzenTemplateForm TItem="LineOfDutyCase" Data="@lodCase" Submit="@OnSubmit">
                                             <RadzenFieldset Text="LOD Findings & Determinations">
                                                 <RadzenStack Gap="1rem">
                                                     <RadzenRow Gap="1rem">

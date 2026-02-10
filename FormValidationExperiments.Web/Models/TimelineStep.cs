@@ -10,5 +10,5 @@ public class TimelineStep
     public DateTime? StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
     public bool IsOptional { get; set; }
-    public LODAuthority ResponsibleAuthority { get; set; }
+    public LineOfDutyAuthority ResponsibleAuthority { get; set; }
 }
