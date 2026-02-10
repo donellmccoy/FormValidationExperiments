@@ -22,6 +22,38 @@ public class LineOfDutyCase
     public string IncidentDescription { get; set; }
     public DutyStatus IncidentDutyStatus { get; set; }
 
+    // Medical Assessment Fields
+    public bool? IsMilitaryFacility { get; set; }
+    public string TreatmentFacilityName { get; set; } = string.Empty;
+    public DateTime? TreatmentDateTime { get; set; }
+    public string ClinicalDiagnosis { get; set; } = string.Empty;
+    public string MedicalFindings { get; set; } = string.Empty;
+    public bool? WasUnderInfluence { get; set; }
+    public SubstanceType? SubstanceType { get; set; }
+    public bool? WasMentallyResponsible { get; set; }
+    public bool? PsychiatricEvalCompleted { get; set; }
+    public DateTime? PsychiatricEvalDate { get; set; }
+    public string PsychiatricEvalResults { get; set; } = string.Empty;
+    public string OtherRelevantConditions { get; set; } = string.Empty;
+    public bool? OtherTestsDone { get; set; }
+    public DateTime? OtherTestDate { get; set; }
+    public string OtherTestResults { get; set; } = string.Empty;
+    public bool? IsServiceAggravated { get; set; }
+    public bool? IsPotentiallyUnfitting { get; set; }
+    public bool? IsAtDeployedLocation { get; set; }
+    public bool? RequiresArcBoard { get; set; }
+    public string MedicalRecommendation { get; set; } = string.Empty;
+
+    // Commander Review — Sources of Information
+    public bool MemberStatementReviewed { get; set; }
+    public bool MedicalRecordsReviewed { get; set; }
+    public bool WitnessStatementsReviewed { get; set; }
+    public bool PoliceReportsReviewed { get; set; }
+    public bool CommanderReportReviewed { get; set; }
+    public bool OtherSourcesReviewed { get; set; }
+    public string OtherSourcesDescription { get; set; } = string.Empty;
+    public string MisconductExplanation { get; set; } = string.Empty;
+
     // Process Details
     public DateTime InitiationDate { get; set; }
     public DateTime? CompletionDate { get; set; }

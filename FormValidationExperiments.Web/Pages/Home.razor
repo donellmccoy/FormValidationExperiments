@@ -19,6 +19,11 @@
 }
 else
 {
+    <RadzenBreadCrumb Style="margin-bottom: 0.75rem;">
+        <RadzenBreadCrumbItem Path="/" Text="Cases" />
+        <RadzenBreadCrumbItem Text="@caseInfo.CaseNumber" />
+    </RadzenBreadCrumb>
+
     <RadzenStack Orientation="Orientation.Horizontal" >
         @* ═══════════ Workflow Sidebar ═══════════ *@
         <WorkflowSidebar Steps="@workflowSteps" CurrentStepIndex="@currentStepIndex" OnStepClicked="@OnStepSelected" />

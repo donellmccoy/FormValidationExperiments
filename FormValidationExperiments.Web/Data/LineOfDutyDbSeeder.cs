@@ -89,7 +89,7 @@ public static class LineOfDutyDbSeeder
             CaseId = "LOD-2025-00142",
             ProcessType = LineOfDutyProcessType.Informal,
             Component = ServiceComponent.AirForceReserve,
-            MemberName = "TSgt Marcus A. Johnson",
+            MemberName = "Marcus A. Johnson",
             MemberRank = "E-6",
             ServiceNumber = "123-45-6789",
             Unit = "944th Fighter Wing, Luke AFB, AZ",
@@ -204,7 +204,7 @@ public static class LineOfDutyDbSeeder
             CaseId = "LOD-2025-00287",
             ProcessType = LineOfDutyProcessType.Formal,
             Component = ServiceComponent.AirNationalGuard,
-            MemberName = "SrA Kyle T. Brennan",
+            MemberName = "Kyle T. Brennan",
             MemberRank = "E-4",
             ServiceNumber = "987-65-4321",
             Unit = "187th Attack Wing, Dannelly Field, AL",
@@ -295,7 +295,7 @@ public static class LineOfDutyDbSeeder
                 new LineOfDutyAppeal
                 {
                     AppealDate = new DateTime(2025, 6, 25),
-                    Appellant = "SrA Kyle T. Brennan",
+                    Appellant = "Kyle T. Brennan",
                     NewEvidence = new List<string>
                     {
                         "Member statement contesting BAC level accuracy",

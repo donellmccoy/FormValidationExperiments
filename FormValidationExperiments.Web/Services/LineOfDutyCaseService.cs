@@ -28,7 +28,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
             .Include(c => c.TimelineSteps)
             .Include(c => c.MEDCON)
             .Include(c => c.INCAP)
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -44,7 +43,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
                 .ThenInclude(t => t.ResponsibleAuthority)
             .Include(c => c.MEDCON)
             .Include(c => c.INCAP)
-            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 
@@ -60,7 +58,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
                 .ThenInclude(t => t.ResponsibleAuthority)
             .Include(c => c.MEDCON)
             .Include(c => c.INCAP)
-            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.CaseId == caseId);
     }
 
@@ -99,7 +96,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.Documents
             .Where(d => d.LineOfDutyCaseId == caseId)
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -131,7 +127,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
         return await context.Appeals
             .Include(a => a.AppellateAuthority)
             .Where(a => a.LineOfDutyCaseId == caseId)
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -150,7 +145,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.Authorities
             .Where(a => a.LineOfDutyCaseId == caseId)
-            .AsNoTracking()
             .ToListAsync();
     }
 
@@ -170,7 +164,6 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
         return await context.TimelineSteps
             .Include(t => t.ResponsibleAuthority)
             .Where(t => t.LineOfDutyCaseId == caseId)
-            .AsNoTracking()
             .ToListAsync();
     }
 
