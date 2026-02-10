@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Enums;
 
 /// <summary>
 /// Enum representing the incident type.

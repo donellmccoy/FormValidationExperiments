@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Models;
 
 /// <summary>
 /// Class representing a timeline step in the LOD process.

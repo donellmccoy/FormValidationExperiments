@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Enums;
 
 /// <summary>
 /// Enum representing the type of substance involved per AF Form 348, Item 13a.

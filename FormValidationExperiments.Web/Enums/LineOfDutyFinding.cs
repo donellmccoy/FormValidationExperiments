@@ -1,9 +1,9 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Enums;
 
 /// <summary>
 /// Enum representing the possible LOD findings.
 /// </summary>
-public enum LODFinding
+public enum LineOfDutyFinding
 {
     InLineOfDuty,                   // ILOD
     NotInLineOfDutyDueToMisconduct, // NILOD - Due to own misconduct

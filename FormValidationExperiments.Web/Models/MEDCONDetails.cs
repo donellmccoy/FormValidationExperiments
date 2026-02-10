@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Models;
 
 /// <summary>
 /// Class representing MEDCON (Medical Continuation) details.

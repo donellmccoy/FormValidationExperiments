@@ -1,4 +1,4 @@
-using AirForceLODSystem;
+using FormValidationExperiments.Web.Enums;
 
 namespace FormValidationExperiments.Web.Pages.ViewModels;
 

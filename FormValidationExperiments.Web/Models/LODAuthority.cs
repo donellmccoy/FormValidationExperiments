@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Models;
 
 /// <summary>
 /// Class representing an authority involved in the LOD process.

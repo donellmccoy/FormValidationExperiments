@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Enums;
 
 /// <summary>
 /// Enlisted and officer ranks/grades for USAF / USSF.

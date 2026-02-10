@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using AirForceLODSystem;
+using FormValidationExperiments.Web.Enums;
 using Microsoft.AspNetCore.Components;
 using FormValidationExperiments.Web.Pages.ViewModels;
 using FormValidationExperiments.Web.Shared;

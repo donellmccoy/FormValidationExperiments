@@ -27,17 +27,24 @@ FormValidationExperiments.Web/
 │       ├── CommanderReviewFormModel.cs  # Items 16–23: commander endorsement
 │       ├── LegalSJAReviewFormModel.cs  # Items 24–25: legal sufficiency review
 │       └── DocumentItem.cs            # Supporting document metadata
-├── Models/                 # Domain model classes (namespace: AirForceLODSystem)
+├── Models/                 # Domain model classes (namespace: FormValidationExperiments.Web.Models)
 │   ├── LODCase.cs                # Root aggregate — full LOD case record
 │   ├── LODDocument.cs            # Uploaded/attached documents
 │   ├── LODAppeal.cs              # Appeal records
 │   ├── LODAuthority.cs           # Reviewing authority entries
 │   ├── MEDCONDetails.cs          # Medical Continuation benefit tracking
 │   ├── INCAPDetails.cs           # Incapacitation Pay benefit tracking
-│   ├── TimelineStep.cs           # Workflow timeline entries
-│   └── Enums: CommanderRecommendation, DutyStatus, IncidentType,
-│         LODFinding, LODProcessType, MemberStatus, MilitaryRank,
-│         ServiceComponent, SubstanceType
+│   └── TimelineStep.cs           # Workflow timeline entries
+├── Enums/                  # Domain enums (namespace: FormValidationExperiments.Web.Enums)
+│   ├── CommanderRecommendation.cs  # Item 21: commander's LOD recommendation
+│   ├── DutyStatus.cs              # Duty status at time of incident
+│   ├── IncidentType.cs            # Injury, Illness, Disease, Death, etc.
+│   ├── LineOfDutyFinding.cs       # ILOD, NILOD, EPTS findings
+│   ├── LineOfDutyProcessType.cs   # Informal vs. Formal process
+│   ├── MemberStatus.cs            # Item 8: AFR, ANG member status
+│   ├── MilitaryRank.cs            # Enlisted, Officer, Cadet ranks
+│   ├── ServiceComponent.cs        # RegAF, USSF, AFR, ANG
+│   └── SubstanceType.cs           # Item 13a: Alcohol, Drugs, Both
 ├── Shared/                 # Reusable components
 │   └── WorkflowSidebar.razor/.cs/.css  # Vertical step-progress sidebar
 ├── Layout/                 # App layout
@@ -53,7 +60,8 @@ FormValidationExperiments.Web/
 
 | Namespace | Contents |
 |-----------|----------|
-| `AirForceLODSystem` | Domain models and enums (`Models/` folder) |
+| `FormValidationExperiments.Web.Models` | Domain model classes (`Models/` folder) |
+| `FormValidationExperiments.Web.Enums` | Domain enums (`Enums/` folder) |
 | `FormValidationExperiments.Web.Pages` | Page components (`Home`, `Workflow`) |
 | `FormValidationExperiments.Web.Pages.ViewModels` | Form/view models per workflow step |
 | `FormValidationExperiments.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
@@ -62,7 +70,8 @@ FormValidationExperiments.Web/
 ## Coding Conventions
 
 - Use **partial classes** with code-behind files (`.razor.cs`) to separate logic from markup.
-- View models live in `Pages/ViewModels/` under `FormValidationExperiments.Web.Pages.ViewModels`; domain models live under `AirForceLODSystem`.
+- View models live in `Pages/ViewModels/` under `FormValidationExperiments.Web.Pages.ViewModels`; domain models live under `FormValidationExperiments.Web.Models`; enums live under `FormValidationExperiments.Web.Enums`.
+- Namespaces follow the folder structure (e.g., `FormValidationExperiments.Web.Models`, `FormValidationExperiments.Web.Enums`).
 - Format enum display names by inserting spaces before uppercase letters using `Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1")`.
 - Use component-scoped CSS (`.razor.css`) rather than global styles where possible.
 - Follow the existing pattern of one form model per workflow step (e.g., `MemberInfoFormModel`, `MedicalAssessmentFormModel`, `CommanderReviewFormModel`, `LegalSJAReviewFormModel`).

@@ -1,4 +1,5 @@
-using AirForceLODSystem;
+using FormValidationExperiments.Web.Enums;
+using FormValidationExperiments.Web.Models;
 
 namespace FormValidationExperiments.Web.Pages;
 
@@ -31,11 +32,11 @@ public partial class Workflow
     private TimelineStep currentTimelineStep = new();
 
     // Dropdown data sources
-    private List<DropdownItem<LODProcessType>> processTypes;
+    private List<DropdownItem<LineOfDutyProcessType>> processTypes;
     private List<DropdownItem<ServiceComponent>> serviceComponents;
     private List<DropdownItem<IncidentType>> incidentTypes;
     private List<DropdownItem<DutyStatus>> dutyStatuses;
-    private List<DropdownItem<LODFinding>> lodFindings;
+    private List<DropdownItem<LineOfDutyFinding>> lodFindings;
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,8 +47,8 @@ public partial class Workflow
 
     private void InitDropdowns()
     {
-        processTypes = Enum.GetValues<LODProcessType>()
-            .Select(v => new DropdownItem<LODProcessType> { Value = v, Text = FormatEnum(v) })
+        processTypes = Enum.GetValues<LineOfDutyProcessType>()
+            .Select(v => new DropdownItem<LineOfDutyProcessType> { Value = v, Text = FormatEnum(v) })
             .ToList();
 
         serviceComponents = Enum.GetValues<ServiceComponent>()
@@ -62,8 +63,8 @@ public partial class Workflow
             .Select(v => new DropdownItem<DutyStatus> { Value = v, Text = FormatEnum(v) })
             .ToList();
 
-        lodFindings = Enum.GetValues<LODFinding>()
-            .Select(v => new DropdownItem<LODFinding> { Value = v, Text = FormatEnum(v) })
+        lodFindings = Enum.GetValues<LineOfDutyFinding>()
+            .Select(v => new DropdownItem<LineOfDutyFinding> { Value = v, Text = FormatEnum(v) })
             .ToList();
     }
 

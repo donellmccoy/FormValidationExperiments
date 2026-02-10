@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Enums;
 
 /// <summary>
 /// AF Form 348 Part I, Item 8 — Member status categories.

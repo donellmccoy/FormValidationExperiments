@@ -1,4 +1,6 @@
-namespace AirForceLODSystem;
+using FormValidationExperiments.Web.Enums;
+
+namespace FormValidationExperiments.Web.Models;
 
 /// <summary>
 /// Main class representing an LOD case, supporting both informal and formal processes.
@@ -7,7 +9,7 @@ public class LODCase
 {
     // Basic Case Information
     public string CaseId { get; set; }
-    public LODProcessType ProcessType { get; set; } // Informal or Formal
+    public LineOfDutyProcessType ProcessType { get; set; } // Informal or Formal
     public ServiceComponent Component { get; set; } // RegAF, AFR, etc.
     public string MemberName { get; set; }
     public string MemberRank { get; set; }
@@ -28,7 +30,7 @@ public class LODCase
     public List<LODAuthority> Authorities { get; set; } = new List<LODAuthority>();
 
     // Findings and Determinations
-    public LODFinding FinalFinding { get; set; }
+    public LineOfDutyFinding FinalFinding { get; set; }
     public string ProximateCause { get; set; } // For NILOD
     public bool IsPriorServiceCondition { get; set; }
     public string PSCDocumentation { get; set; }

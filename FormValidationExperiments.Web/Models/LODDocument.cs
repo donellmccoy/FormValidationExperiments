@@ -1,4 +1,4 @@
-namespace AirForceLODSystem;
+namespace FormValidationExperiments.Web.Models;
 
 /// <summary>
 /// Class representing a document or form associated with the LOD case.
