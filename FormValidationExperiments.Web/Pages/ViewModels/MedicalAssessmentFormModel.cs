@@ -57,6 +57,8 @@ public class MedicalAssessmentFormModel
     public string MedicalRecommendation { get; set; } = string.Empty;
 
     // ── Provider Signature Block ──
-    public string ProviderNameAndRank { get; set; } = string.Empty;
+    public string ProviderName { get; set; } = string.Empty;
+    public MilitaryRank? ProviderRank { get; set; }
     public DateTime? ProviderSignatureDate { get; set; }
+    public string ProviderOrganization { get; set; } = string.Empty;
 }

@@ -5,9 +5,9 @@ namespace AirForceLODSystem;
 /// </summary>
 public enum MemberStatus
 {
-    RegAF,
+    //RegAF,
     AFR,
     ANG,
-    USAFA,
-    AFROTC
+    //USAFA,
+    //AFROTC
 }

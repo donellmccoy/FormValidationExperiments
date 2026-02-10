@@ -10,7 +10,7 @@ public partial class Home : ComponentBase
 {
     private bool isLoading = true;
     private int selectedTabIndex;
-    private int currentStepIndex = 3;
+    private int currentStepIndex = 0;
 
     private MemberInfoFormModel memberFormModel = new();
     private MedicalAssessmentFormModel formModel = new();
@@ -27,7 +27,7 @@ public partial class Home : ComponentBase
     private bool ShowPsychEvalDetails => formModel.PsychiatricEvalCompleted == true;
     private bool ShowOtherTestDetails => formModel.OtherTestsDone == true;
     private bool ShowArcSection => true; // Set true for demo; in production, derive from member's ServiceComponent (AFR/ANG)
-    private bool ShowArcSubFields => formModel.IsAtDeployedLocation != true;
+    private bool ShowArcSubFields => formModel.IsAtDeployedLocation == false;
     private bool ShowServiceAggravated => formModel.IsEptsNsa == true;
 
     // ──── Commander Review Conditional Visibility ────
