@@ -19,60 +19,74 @@
 }
 else
 {
-    <div class="assessment-layout">
+    <RadzenStack Orientation="Orientation.Horizontal" >
         @* ═══════════ Workflow Sidebar ═══════════ *@
         <WorkflowSidebar Steps="@workflowSteps" CurrentStepIndex="@currentStepIndex" OnStepClicked="@OnStepSelected" />
 
         @* ═══════════ Main Content ═══════════ *@
-        <main class="assessment-main">
+        <div class="assessment-main">
             @* ─── Case Info Card ─── *@
-            <div class="case-card">
-                <div class="case-card-body">
-                    <div class="case-avatar-wrapper">
-                        <div class="case-avatar">
-                            <span class="material-symbols-outlined avatar-icon">person</span>
-                        </div>
-                        <span class="avatar-badge">
-                            <span class="material-symbols-outlined">military_tech</span>
-                        </span>
-                    </div>
-                    <div class="case-details">
-                        <div class="case-title-row">
-                            <h1 class="case-title">LOD Case #@caseInfo.CaseNumber: @caseInfo.Rank @caseInfo.MemberName</h1>
-                            <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Info" />
-                        </div>
-                        <div class="case-meta">
-                            <span class="meta-item">
-                                <span class="material-symbols-outlined">groups</span> Unit: @caseInfo.Unit
-                            </span>
-                            <span class="meta-item">
-                                <span class="material-symbols-outlined">calendar_month</span> Date of Injury: @caseInfo.DateOfInjury
-                            </span>
-                            <span class="meta-item">
-                                <span class="material-symbols-outlined">location_on</span> Duty Status: @caseInfo.DutyStatus
+            <RadzenPanel AllowCollapse="false" 
+                         Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; flex-shrink: 0;">
+                <ChildContent>
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1.5rem" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+                        <div class="case-avatar-wrapper">
+                            <div class="case-avatar">
+                                <span class="material-symbols-outlined avatar-icon">person</span>
+                            </div>
+                            <span class="avatar-badge">
+                                <span class="material-symbols-outlined">military_tech</span>
                             </span>
                         </div>
-                    </div>
-                    <div class="case-actions">
-                        <RadzenButton Variant="Variant.Text" Icon="print" ButtonStyle="ButtonStyle.Base" Size="ButtonSize.Small" title="Print Case" />
-                        <RadzenButton Variant="Variant.Text" Icon="history" ButtonStyle="ButtonStyle.Base" Size="ButtonSize.Small" title="History" />
-                    </div>
-                </div>
-            </div>
+                        <RadzenStack Gap="0.5rem" Style="flex: 1; min-width: 0;">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                                <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+                                    LOD Case #@caseInfo.CaseNumber: @caseInfo.Rank @caseInfo.MemberName
+                                </RadzenText>
+                                <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Info" Style="background-color: #00308F;" />
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem" Wrap="FlexWrap.Wrap" Style="font-size: 0.8rem; color: #8F8F8F;">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">groups</span>
+                                    <span>Unit: @caseInfo.Unit</span>
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+                                    <span>Date of Injury: @caseInfo.DateOfInjury</span>
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">location_on</span>
+                                    <span>Duty Status: @caseInfo.DutyStatus</span>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenStack>
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenButton Variant="Variant.Text" Icon="print" ButtonStyle="ButtonStyle.Base" Size="ButtonSize.Small" title="Print Case" />
+                            <RadzenButton Variant="Variant.Text" Icon="history" ButtonStyle="ButtonStyle.Base" Size="ButtonSize.Small" title="History" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </ChildContent>
+            </RadzenPanel>
 
             @* ─── Assessment Panel ─── *@
-            <div class="assessment-panel">
-                <div class="panel-header">
-                    <div class="panel-header-left">
-                        <div class="panel-icon-box">
-                            <span class="material-symbols-outlined">@CurrentStep.Icon</span>
-                        </div>
-                        <h2 class="panel-title">@CurrentStep.Name</h2>
-                    </div>
-                    <RadzenButton Variant="Variant.Text" Text="View Instructions" Icon="help" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" />
-                </div>
-
-                <RadzenTabs @bind-SelectedIndex="selectedTabIndex" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
+            <RadzenPanel AllowCollapse="false" 
+                         Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <HeaderTemplate>
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
+                                 Style="padding: 1rem 1.5rem;">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                            <div class="panel-icon-box">
+                                <span class="material-symbols-outlined">@CurrentStep.Icon</span>
+                            </div>
+                            <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+                                @CurrentStep.Name
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenStack>
+                </HeaderTemplate>
+                <ChildContent>
+                    <RadzenTabs @bind-SelectedIndex="selectedTabIndex" Style="height: 850px;
+                    RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                     <Tabs>
                         @* ─── Member Tab ─── *@
                         <RadzenTabsItem Text="Member">
@@ -172,9 +186,9 @@ else
                                             <span>Next Step: <strong>Medical Assessment</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save Draft" Icon="save" ButtonStyle="ButtonStyle.Base"
+                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Submit Member Info" Icon="send" ButtonStyle="ButtonStyle.Primary" />
+                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Assessment" Style="background-color: #00308F; color: white;" />
                                         </RadzenStack>
                                     </div>
 
@@ -184,32 +198,8 @@ else
 
                         @* ─── Medical Tab ─── *@
                         <RadzenTabsItem Text="Medical">
-                            <div class="tab-body">
+                            <div class="rz-overflow-auto" style="height: 100%;">
                                 <RadzenTemplateForm TItem="MedicalAssessmentFormModel" Data="@formModel" Submit="@OnFormSubmit">
-
-                                    @* ═══ Fieldset A: Incident Summary (read-only from case info) ═══ *@
-                                    <RadzenFieldset Text="Incident Summary (From Member)" class="incident-summary-fieldset">
-                                        <div class="incident-summary">
-                                            <RadzenRow Gap="1.5rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <div class="summary-field">
-                                                        <RadzenText TextStyle="TextStyle.Caption" class="summary-label">Circumstances</RadzenText>
-                                                        <RadzenText TextStyle="TextStyle.Body2" class="summary-value">
-                                                            @caseInfo.IncidentCircumstances
-                                                        </RadzenText>
-                                                    </div>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <div class="summary-field">
-                                                        <RadzenText TextStyle="TextStyle.Caption" class="summary-label">Reported Injury</RadzenText>
-                                                        <RadzenText TextStyle="TextStyle.Body2" class="summary-value">
-                                                            @caseInfo.ReportedInjury
-                                                        </RadzenText>
-                                                    </div>
-                                                </RadzenColumn>
-                                            </RadzenRow>
-                                        </div>
-                                    </RadzenFieldset>
 
                                     @* ═══ Fieldset B: Item 9 — Type of Investigation ═══ *@
                                     <RadzenFieldset Text="Type of Investigation" class="rz-mt-4">
@@ -525,9 +515,9 @@ else
                                             <span>Next Step: <strong>Commander Review</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save Draft" Icon="save" ButtonStyle="ButtonStyle.Base"
+                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Submit Assessment" Icon="send" ButtonStyle="ButtonStyle.Primary" />
+                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Commander Review" Style="background-color: #00308F; color: white;" />
                                         </RadzenStack>
                                     </div>
 
@@ -715,9 +705,9 @@ else
                                             <span>Next Step: <strong>Legal SJA Review</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save Draft" Icon="save" ButtonStyle="ButtonStyle.Base"
+                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Submit Commander Review" Icon="send" ButtonStyle="ButtonStyle.Primary" />
+                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Legal SJA Review" Style="background-color: #00308F; color: white;" />
                                         </RadzenStack>
                                     </div>
 
@@ -819,9 +809,9 @@ else
                                             <span>Next Step: <strong>Wing CC Review</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save Draft" Icon="save" ButtonStyle="ButtonStyle.Base"
+                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Submit Legal Review" Icon="send" ButtonStyle="ButtonStyle.Primary" />
+                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Wing CC Review" Style="background-color: #00308F; color: white;" />
                                         </RadzenStack>
                                     </div>
 
@@ -835,6 +825,18 @@ else
                                 <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
                                     Wing-level review and approval for this LOD case.
                                 </RadzenText>
+
+                                <div class="form-actions rz-mt-4">
+                                    <div class="next-step-hint">
+                                        <span class="material-symbols-outlined">arrow_forward</span>
+                                        <span>Next Step: <strong>Board Review</strong></span>
+                                    </div>
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                        <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
+                                                      Click="@OnSaveDraft" />
+                                        <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Board Review" Style="background-color: #00308F; color: white;" />
+                                    </RadzenStack>
+                                </div>
                             </div>
                         </RadzenTabsItem>
 
@@ -844,15 +846,15 @@ else
                                 <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
                                     Board proceedings and findings for this LOD case.
                                 </RadzenText>
-                            </div>
-                        </RadzenTabsItem>
 
-                        @* ─── Determination Tab ─── *@
-                        <RadzenTabsItem Text="Determination">
-                            <div class="tab-body">
-                                <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
-                                    Final LOD determination and findings.
-                                </RadzenText>
+                                <div class="form-actions rz-mt-4">
+                                    <div></div>
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                        <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
+                                                      Click="@OnSaveDraft" />
+                                        <RadzenButton ButtonType="ButtonType.Submit" Text="Complete Review" Style="background-color: #00308F; color: white;" />
+                                    </RadzenStack>
+                                </div>
                             </div>
                         </RadzenTabsItem>
 
@@ -884,7 +886,8 @@ else
                         </RadzenTabsItem>
                     </Tabs>
                 </RadzenTabs>
-            </div>
-        </main>
-    </div>
+                </ChildContent>
+            </RadzenPanel>
+        </div>
+    </RadzenStack>
 }

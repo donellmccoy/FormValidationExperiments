@@ -72,17 +72,14 @@ public partial class Home : ComponentBase
 
         workflowSteps =
         [
-            new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.Completed,  StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
-            new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Completed,  StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
-            new() { Number = 3,  Name = "LOD Initiation",       Icon = "description",           Status = WorkflowStepStatus.Completed,  StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
-            new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.InProgress, Description = "Medical provider review and clinical impact assessment." },
+            new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.InProgress,  StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
+            new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,  StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
+            new() { Number = 3,  Name = "LOD Initiation",       Icon = "description",           Status = WorkflowStepStatus.Pending,  StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
+            new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.Pending, Description = "Medical provider review and clinical impact assessment." },
             new() { Number = 5,  Name = "Commander Review",     Icon = "edit_document",          Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
             new() { Number = 6,  Name = "Legal SJA Review",     Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Legal office review if deemed necessary." },
             new() { Number = 7,  Name = "Wing CC Review",       Icon = "stars",                 Status = WorkflowStepStatus.Pending,    Description = "Wing-level review if escalated." },
-            new() { Number = 8,  Name = "Board Review",          Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Formal adjudication by the LOD Board." },
-            new() { Number = 9,  Name = "Determination",        Icon = "balance",               Status = WorkflowStepStatus.Pending,    Description = "Final determination of LOD status." },
-            new() { Number = 10, Name = "Appeal",                Icon = "history_edu",            Status = WorkflowStepStatus.Pending,    Description = "Process for appealing the determination if applicable." },
-            new() { Number = 11, Name = "End",                   Icon = "flag",                  Status = WorkflowStepStatus.Pending,    Description = "Case closure and final archiving." }
+            new() { Number = 8,  Name = "Board Review",          Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Formal adjudication by the LOD Board." }
         ];
     }
 

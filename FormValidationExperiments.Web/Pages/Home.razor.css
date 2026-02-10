@@ -12,7 +12,8 @@
 /* ═══════════════════ Main Content ═══════════════════ */
 
 .assessment-main {
-    width: 1300px;
+    width: 954px;
+    height: 1100px;
     flex-shrink: 0;
     overflow: hidden;
     padding: 0 1rem 0;
@@ -222,7 +223,10 @@
 }
 
 .tab-body {
-    padding: 1.5rem;
+    padding-right: 5px;
+    height: auto;
+    overflow-y: auto;
+    
 }
 
 /* ═══════════════════ Incident Summary ═══════════════════ */
