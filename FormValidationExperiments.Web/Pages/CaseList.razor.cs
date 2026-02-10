@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using FormValidationExperiments.Web.Models;
+using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Web.Services;
 using Microsoft.AspNetCore.Components;
 

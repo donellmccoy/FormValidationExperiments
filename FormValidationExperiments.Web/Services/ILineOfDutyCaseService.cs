@@ -1,35 +1,25 @@
-using FormValidationExperiments.Web.Models;
+using FormValidationExperiments.Shared.Models;
+using FormValidationExperiments.Shared.ViewModels;
 
 namespace FormValidationExperiments.Web.Services;
 
 /// <summary>
-/// Service interface for Line of Duty database operations.
+/// Client-side service interface for Line of Duty API operations.
 /// </summary>
 public interface ILineOfDutyCaseService
 {
-    // Case operations
+    /// <summary>
+    /// Returns all LOD cases (lightweight, no navigation properties).
+    /// </summary>
     Task<List<LineOfDutyCase>> GetAllCasesAsync();
-    Task<LineOfDutyCase> GetCaseByIdAsync(int id);
-    Task<LineOfDutyCase> GetCaseByCaseIdAsync(string caseId);
-    Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase);
-    Task<LineOfDutyCase> UpdateCaseAsync(LineOfDutyCase lodCase);
-    Task<bool> DeleteCaseAsync(int id);
 
-    // Document operations
-    Task<List<LineOfDutyDocument>> GetDocumentsByCaseIdAsync(int caseId);
-    Task<LineOfDutyDocument> AddDocumentAsync(LineOfDutyDocument document);
-    Task<bool> DeleteDocumentAsync(int documentId);
+    /// <summary>
+    /// Returns all mapped view models for a specific case.
+    /// </summary>
+    Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId);
 
-    // Appeal operations
-    Task<List<LineOfDutyAppeal>> GetAppealsByCaseIdAsync(int caseId);
-    Task<LineOfDutyAppeal> AddAppealAsync(LineOfDutyAppeal appeal);
-
-    // Authority operations
-    Task<List<LineOfDutyAuthority>> GetAuthoritiesByCaseIdAsync(int caseId);
-    Task<LineOfDutyAuthority> AddAuthorityAsync(LineOfDutyAuthority authority);
-
-    // Timeline operations
-    Task<List<TimelineStep>> GetTimelineStepsByCaseIdAsync(int caseId);
-    Task<TimelineStep> AddTimelineStepAsync(TimelineStep step);
-    Task<TimelineStep> UpdateTimelineStepAsync(TimelineStep step);
+    /// <summary>
+    /// Saves all view model changes for a case. Returns the refreshed CaseInfoModel.
+    /// </summary>
+    Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto);
 }

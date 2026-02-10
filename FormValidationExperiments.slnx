@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FormValidationExperiments.Api/FormValidationExperiments.Api.csproj" />
+  <Project Path="FormValidationExperiments.Shared/FormValidationExperiments.Shared.csproj" />
+  <Project Path="FormValidationExperiments.Web/FormValidationExperiments.Web.csproj" />
+</Solution>

@@ -1,10 +1,8 @@
 using System.Text.RegularExpressions;
-using FormValidationExperiments.Web.Enums;
-using FormValidationExperiments.Web.Models;
+using FormValidationExperiments.Shared.Enums;
 using Microsoft.AspNetCore.Components;
-using FormValidationExperiments.Web.Mapping;
 using FormValidationExperiments.Web.Services;
-using FormValidationExperiments.Web.ViewModels;
+using FormValidationExperiments.Shared.ViewModels;
 using FormValidationExperiments.Web.Shared;
 using Radzen;
 
@@ -23,11 +21,6 @@ public partial class Home : ComponentBase
 
     private bool isLoading = true;
     private bool isSaving;
-
-    /// <summary>
-    /// The loaded domain entity — kept in memory so view model changes can be applied back and saved.
-    /// </summary>
-    private LineOfDutyCase loadedCase;
 
     private int selectedTabIndex;
 
@@ -87,21 +80,21 @@ public partial class Home : ComponentBase
 
     private async Task LoadCaseAsync()
     {
-        loadedCase = await CaseService.GetCaseByCaseIdAsync(CaseId);
+        var dto = await CaseService.GetCaseViewModelsAsync(CaseId);
 
-        if (loadedCase is null)
+        if (dto is null)
         {
             // Fallback: leave models at defaults
             InitializeWorkflowSteps();
             return;
         }
 
-        // Map domain model → view models
-        caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(loadedCase);
-        memberFormModel = LineOfDutyCaseMapper.ToMemberInfoFormModel(loadedCase);
-        formModel = LineOfDutyCaseMapper.ToMedicalAssessmentFormModel(loadedCase);
-        commanderFormModel = LineOfDutyCaseMapper.ToCommanderReviewFormModel(loadedCase);
-        legalFormModel = LineOfDutyCaseMapper.ToLegalSJAReviewFormModel(loadedCase);
+        // Populate view models from API response
+        caseInfo = dto.CaseInfo;
+        memberFormModel = dto.MemberInfo;
+        formModel = dto.MedicalAssessment;
+        commanderFormModel = dto.CommanderReview;
+        legalFormModel = dto.LegalSJAReview;
 
         InitializeWorkflowSteps();
     }
@@ -183,24 +176,27 @@ public partial class Home : ComponentBase
 
     private async Task SaveCurrentTabAsync(string source)
     {
-        if (loadedCase is null || isSaving)
+        if (isSaving)
             return;
 
         isSaving = true;
 
         try
         {
-            // Apply all view model changes back to the domain entity
-            LineOfDutyCaseMapper.ApplyMemberInfo(memberFormModel, loadedCase);
-            LineOfDutyCaseMapper.ApplyMedicalAssessment(formModel, loadedCase);
-            LineOfDutyCaseMapper.ApplyCommanderReview(commanderFormModel, loadedCase);
-            LineOfDutyCaseMapper.ApplyLegalSJAReview(legalFormModel, loadedCase);
+            // Build the DTO with current view model state
+            var dto = new CaseViewModelsDto
+            {
+                CaseInfo = caseInfo,
+                MemberInfo = memberFormModel,
+                MedicalAssessment = formModel,
+                CommanderReview = commanderFormModel,
+                LegalSJAReview = legalFormModel
+            };
 
-            // Persist
-            await CaseService.UpdateCaseAsync(loadedCase);
-
-            // Refresh the case info header card
-            caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(loadedCase);
+            // Save via API — returns refreshed case info header
+            var updatedInfo = await CaseService.SaveCaseAsync(CaseId, dto);
+            if (updatedInfo is not null)
+                caseInfo = updatedInfo;
 
             NotificationService.Notify(new NotificationMessage
             {
