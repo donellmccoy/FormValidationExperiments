@@ -5,7 +5,7 @@ namespace FormValidationExperiments.Web.Services;
 /// <summary>
 /// Service interface for Line of Duty database operations.
 /// </summary>
-public interface ILODDatabaseService
+public interface ILineOfDutyCaseService
 {
     // Case operations
     Task<List<LineOfDutyCase>> GetAllCasesAsync();

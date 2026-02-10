@@ -7,9 +7,9 @@ namespace FormValidationExperiments.Web.Data;
 /// Entity Framework Core database context for the Line of Duty application.
 /// Configured to use an in-memory database provider.
 /// </summary>
-public class LODDbContext : DbContext
+public class LineOfDutyDbContext : DbContext
 {
-    public LODDbContext(DbContextOptions<LODDbContext> options) : base(options)
+    public LineOfDutyDbContext(DbContextOptions<LineOfDutyDbContext> options) : base(options)
     {
     }
 

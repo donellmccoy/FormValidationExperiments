@@ -7,9 +7,9 @@ namespace FormValidationExperiments.Web.Data;
 /// <summary>
 /// Seeds the in-memory database with realistic sample LOD case data.
 /// </summary>
-public static class LODDbSeeder
+public static class LineOfDutyDbSeeder
 {
-    public static async Task SeedAsync(IDbContextFactory<LODDbContext> contextFactory)
+    public static async Task SeedAsync(IDbContextFactory<LineOfDutyDbContext> contextFactory)
     {
         await using var context = await contextFactory.CreateDbContextAsync();
 

@@ -30,18 +30,10 @@ else
                          Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; flex-shrink: 0;">
                 <ChildContent>
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="1.5rem" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
-                        <div class="case-avatar-wrapper">
-                            <div class="case-avatar">
-                                <span class="material-symbols-outlined avatar-icon">person</span>
-                            </div>
-                            <span class="avatar-badge">
-                                <span class="material-symbols-outlined">military_tech</span>
-                            </span>
-                        </div>
                         <RadzenStack Gap="0.5rem" Style="flex: 1; min-width: 0;">
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
                                 <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
-                                    LOD Case #@caseInfo.CaseNumber: @caseInfo.Rank @caseInfo.MemberName
+                                    Case #@caseInfo.CaseNumber: @caseInfo.Rank @caseInfo.MemberName
                                 </RadzenText>
                                 <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Info" Style="background-color: #00308F;" />
                             </RadzenStack>

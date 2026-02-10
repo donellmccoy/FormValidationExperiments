@@ -71,7 +71,7 @@ public partial class Home : ComponentBase
     {
         caseInfo = new CaseInfoModel
         {
-            CaseNumber = "23-884",
+            CaseNumber = "Case-2023-10-12-001",
             MemberName = "John Doe",
             Rank = "SrA",
             Unit = "452 AMW (AFRC)",

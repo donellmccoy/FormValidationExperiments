@@ -15,16 +15,16 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddRadzenComponents();
 
 // Entity Framework Core — In-Memory database
-builder.Services.AddDbContextFactory<LODDbContext>(options =>
+builder.Services.AddDbContextFactory<LineOfDutyDbContext>(options =>
     options.UseInMemoryDatabase("LODDatabase"));
 
 // Database service
-builder.Services.AddScoped<ILODDatabaseService, LODDatabaseService>();
+builder.Services.AddScoped<ILineOfDutyCaseService, LineOfDutyCaseService>();
 
 var host = builder.Build();
 
 // Seed sample data
-var contextFactory = host.Services.GetRequiredService<IDbContextFactory<LODDbContext>>();
-await LODDbSeeder.SeedAsync(contextFactory);
+var contextFactory = host.Services.GetRequiredService<IDbContextFactory<LineOfDutyDbContext>>();
+await LineOfDutyDbSeeder.SeedAsync(contextFactory);
 
 await host.RunAsync();

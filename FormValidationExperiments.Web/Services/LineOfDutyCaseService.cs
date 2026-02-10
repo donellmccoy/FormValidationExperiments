@@ -7,11 +7,11 @@ namespace FormValidationExperiments.Web.Services;
 /// <summary>
 /// Service for performing Line of Duty database operations against the in-memory EF Core database.
 /// </summary>
-public class LODDatabaseService : ILODDatabaseService
+public class LineOfDutyCaseService : ILineOfDutyCaseService
 {
-    private readonly IDbContextFactory<LODDbContext> _contextFactory;
+    private readonly IDbContextFactory<LineOfDutyDbContext> _contextFactory;
 
-    public LODDatabaseService(IDbContextFactory<LODDbContext> contextFactory)
+    public LineOfDutyCaseService(IDbContextFactory<LineOfDutyDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
     }
