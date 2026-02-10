@@ -5,6 +5,7 @@ namespace FormValidationExperiments.Web.Models;
 /// </summary>
 public class MEDCONDetails
 {
+    public int Id { get; set; }
     public bool IsEligible { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }

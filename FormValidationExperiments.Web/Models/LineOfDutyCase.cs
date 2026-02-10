@@ -7,6 +7,8 @@ namespace FormValidationExperiments.Web.Models;
 /// </summary>
 public class LineOfDutyCase
 {
+    public int Id { get; set; }
+
     // Basic Case Information
     public string CaseId { get; set; }
     public LineOfDutyProcessType ProcessType { get; set; } // Informal or Formal
@@ -51,7 +53,9 @@ public class LineOfDutyCase
     public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
 
     // Related Benefits
+    public int MEDCONId { get; set; }
     public MEDCONDetails MEDCON { get; set; } = new MEDCONDetails();
+    public int INCAPId { get; set; }
     public INCAPDetails INCAP { get; set; } = new INCAPDetails();
     public bool MemberChoseMEDCON { get; set; } // If eligible for both
 

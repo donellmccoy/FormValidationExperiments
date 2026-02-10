@@ -5,6 +5,7 @@ namespace FormValidationExperiments.Web.Models;
 /// </summary>
 public class INCAPDetails
 {
+    public int Id { get; set; }
     public bool IsEligible { get; set; }
     public decimal CivilianIncomeLoss { get; set; }
     public DateTime? StartDate { get; set; }
