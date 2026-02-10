@@ -25,6 +25,6 @@ var host = builder.Build();
 
 // Seed sample data
 var contextFactory = host.Services.GetRequiredService<IDbContextFactory<LineOfDutyDbContext>>();
-await LineOfDutyDbSeeder.SeedAsync(contextFactory);
+await EctDbSeeder.SeedAsync(contextFactory);
 
 await host.RunAsync();

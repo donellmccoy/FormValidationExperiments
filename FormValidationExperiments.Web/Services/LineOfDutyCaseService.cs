@@ -21,44 +21,41 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
     public async Task<List<LineOfDutyCase>> GetAllCasesAsync()
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Cases
-            .Include(c => c.Documents)
-            .Include(c => c.Appeals)
-            .Include(c => c.Authorities)
-            .Include(c => c.TimelineSteps)
-            .Include(c => c.MEDCON)
-            .Include(c => c.INCAP)
-            .ToListAsync();
+        return await context.Cases.ToListAsync();
     }
 
     public async Task<LineOfDutyCase> GetCaseByIdAsync(int id)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Cases
-            .Include(c => c.Documents)
-            .Include(c => c.Appeals)
-                .ThenInclude(a => a.AppellateAuthority)
-            .Include(c => c.Authorities)
-            .Include(c => c.TimelineSteps)
-                .ThenInclude(t => t.ResponsibleAuthority)
-            .Include(c => c.MEDCON)
-            .Include(c => c.INCAP)
-            .FirstOrDefaultAsync(c => c.Id == id);
+        var lodCase = await context.Cases.FirstOrDefaultAsync(c => c.Id == id);
+        if (lodCase is not null)
+            await LoadNavigationPropertiesAsync(context, lodCase);
+        return lodCase;
     }
 
     public async Task<LineOfDutyCase> GetCaseByCaseIdAsync(string caseId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Cases
-            .Include(c => c.Documents)
-            .Include(c => c.Appeals)
-                .ThenInclude(a => a.AppellateAuthority)
-            .Include(c => c.Authorities)
-            .Include(c => c.TimelineSteps)
-                .ThenInclude(t => t.ResponsibleAuthority)
-            .Include(c => c.MEDCON)
-            .Include(c => c.INCAP)
-            .FirstOrDefaultAsync(c => c.CaseId == caseId);
+        var lodCase = await context.Cases.FirstOrDefaultAsync(c => c.CaseId == caseId);
+        if (lodCase is not null)
+            await LoadNavigationPropertiesAsync(context, lodCase);
+        return lodCase;
+    }
+
+    private static async Task LoadNavigationPropertiesAsync(LineOfDutyDbContext context, LineOfDutyCase lodCase)
+    {
+        await context.Entry(lodCase).Collection(c => c.Documents).LoadAsync();
+        await context.Entry(lodCase).Collection(c => c.Authorities).LoadAsync();
+        await context.Entry(lodCase).Collection(c => c.TimelineSteps).LoadAsync();
+        await context.Entry(lodCase).Collection(c => c.Appeals).LoadAsync();
+        await context.Entry(lodCase).Reference(c => c.MEDCON).LoadAsync();
+        await context.Entry(lodCase).Reference(c => c.INCAP).LoadAsync();
+
+        // Load nested navigations
+        foreach (var appeal in lodCase.Appeals ?? [])
+            await context.Entry(appeal).Reference(a => a.AppellateAuthority).LoadAsync();
+        foreach (var step in lodCase.TimelineSteps ?? [])
+            await context.Entry(step).Reference(t => t.ResponsibleAuthority).LoadAsync();
     }
 
     public async Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase)

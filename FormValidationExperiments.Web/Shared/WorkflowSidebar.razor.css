@@ -1,9 +1,10 @@
 /* ═══════════════════ Workflow Sidebar ═══════════════════ */
 
 .workflow-sidebar {
-    width: 350px;
+    width: 325px;
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 8px;
     display: flex;
     flex-direction: column;

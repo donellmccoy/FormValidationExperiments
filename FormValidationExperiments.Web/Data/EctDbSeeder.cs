@@ -7,9 +7,9 @@ namespace FormValidationExperiments.Web.Data;
 /// <summary>
 /// Seeds the in-memory database with realistic sample LOD case data.
 /// </summary>
-public static class LineOfDutyDbSeeder
+public static class EctDbSeeder
 {
-    public static async Task SeedAsync(IDbContextFactory<LineOfDutyDbContext> contextFactory)
+    public static async Task SeedAsync(IDbContextFactory<EctDbContext> contextFactory)
     {
         await using var context = await contextFactory.CreateDbContextAsync();
 
@@ -89,7 +89,7 @@ public static class LineOfDutyDbSeeder
 
         var case1 = new LineOfDutyCase
         {
-            CaseId = "LOD-2025-00142",
+            CaseId = "20250316-001",
             ProcessType = LineOfDutyProcessType.Informal,
             Component = ServiceComponent.AirForceReserve,
             MemberName = "Marcus A. Johnson",
@@ -161,7 +161,7 @@ public static class LineOfDutyDbSeeder
                 new LineOfDutyDocument
                 {
                     DocumentType = "AF Form 348",
-                    FileName = "AF348_Johnson_LOD2025-00142.pdf",
+                    FileName = "AF348_Johnson_20250316-001.pdf",
                     UploadDate = new DateTime(2025, 3, 20),
                     Description = "Line of Duty Determination form"
                 },
@@ -265,7 +265,7 @@ public static class LineOfDutyDbSeeder
 
         var case2 = new LineOfDutyCase
         {
-            CaseId = "LOD-2025-00287",
+            CaseId = "20250512-001",
             ProcessType = LineOfDutyProcessType.Formal,
             Component = ServiceComponent.AirNationalGuard,
             MemberName = "Kyle T. Brennan",
@@ -342,7 +342,7 @@ public static class LineOfDutyDbSeeder
                 new LineOfDutyDocument
                 {
                     DocumentType = "AF Form 348",
-                    FileName = "AF348_Brennan_LOD2025-00287.pdf",
+                    FileName = "AF348_Brennan_20250512-001.pdf",
                     UploadDate = new DateTime(2025, 5, 15),
                     Description = "Line of Duty Determination form — Formal process"
                 },
