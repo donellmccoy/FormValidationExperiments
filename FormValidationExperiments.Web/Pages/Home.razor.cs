@@ -1,10 +1,12 @@
 using System.Text.RegularExpressions;
 using FormValidationExperiments.Web.Enums;
+using FormValidationExperiments.Web.Models;
 using Microsoft.AspNetCore.Components;
 using FormValidationExperiments.Web.Mapping;
 using FormValidationExperiments.Web.Services;
 using FormValidationExperiments.Web.ViewModels;
 using FormValidationExperiments.Web.Shared;
+using Radzen;
 
 namespace FormValidationExperiments.Web.Pages;
 
@@ -13,10 +15,19 @@ public partial class Home : ComponentBase
     [Inject]
     private ILineOfDutyCaseService CaseService { get; set; }
 
+    [Inject]
+    private NotificationService NotificationService { get; set; }
+
     [Parameter]
     public string CaseId { get; set; }
 
     private bool isLoading = true;
+    private bool isSaving;
+
+    /// <summary>
+    /// The loaded domain entity — kept in memory so view model changes can be applied back and saved.
+    /// </summary>
+    private LineOfDutyCase loadedCase;
 
     private int selectedTabIndex;
 
@@ -76,9 +87,9 @@ public partial class Home : ComponentBase
 
     private async Task LoadCaseAsync()
     {
-        var lodCase = await CaseService.GetCaseByCaseIdAsync(CaseId);
+        loadedCase = await CaseService.GetCaseByCaseIdAsync(CaseId);
 
-        if (lodCase is null)
+        if (loadedCase is null)
         {
             // Fallback: leave models at defaults
             InitializeWorkflowSteps();
@@ -86,11 +97,11 @@ public partial class Home : ComponentBase
         }
 
         // Map domain model → view models
-        caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(lodCase);
-        memberFormModel = LineOfDutyCaseMapper.ToMemberInfoFormModel(lodCase);
-        formModel = LineOfDutyCaseMapper.ToMedicalAssessmentFormModel(lodCase);
-        commanderFormModel = LineOfDutyCaseMapper.ToCommanderReviewFormModel(lodCase);
-        legalFormModel = LineOfDutyCaseMapper.ToLegalSJAReviewFormModel(lodCase);
+        caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(loadedCase);
+        memberFormModel = LineOfDutyCaseMapper.ToMemberInfoFormModel(loadedCase);
+        formModel = LineOfDutyCaseMapper.ToMedicalAssessmentFormModel(loadedCase);
+        commanderFormModel = LineOfDutyCaseMapper.ToCommanderReviewFormModel(loadedCase);
+        legalFormModel = LineOfDutyCaseMapper.ToLegalSJAReviewFormModel(loadedCase);
 
         InitializeWorkflowSteps();
     }
@@ -110,24 +121,24 @@ public partial class Home : ComponentBase
         ];
     }
 
-    private void OnFormSubmit(MedicalAssessmentFormModel model)
+    private async void OnFormSubmit(MedicalAssessmentFormModel model)
     {
-        // Handle medical assessment form submission
+        await SaveCurrentTabAsync("Medical Assessment");
     }
 
-    private void OnMemberFormSubmit(MemberInfoFormModel model)
+    private async void OnMemberFormSubmit(MemberInfoFormModel model)
     {
-        // Handle member info form submission
+        await SaveCurrentTabAsync("Member Information");
     }
 
-    private void OnCommanderFormSubmit(CommanderReviewFormModel model)
+    private async void OnCommanderFormSubmit(CommanderReviewFormModel model)
     {
-        // Handle commander review form submission
+        await SaveCurrentTabAsync("Commander Review");
     }
 
-    private void OnLegalFormSubmit(LegalSJAReviewFormModel model)
+    private async void OnLegalFormSubmit(LegalSJAReviewFormModel model)
     {
-        // Handle legal SJA review form submission
+        await SaveCurrentTabAsync("Legal SJA Review");
     }
 
     private void OnStepSelected(WorkflowStep step)
@@ -165,8 +176,54 @@ public partial class Home : ComponentBase
         selectedTabIndex = 0;
     }
 
-    private void OnSaveDraft()
+    private async void OnSaveDraft()
     {
-        // Handle save draft
+        await SaveCurrentTabAsync("Draft");
+    }
+
+    private async Task SaveCurrentTabAsync(string source)
+    {
+        if (loadedCase is null || isSaving)
+            return;
+
+        isSaving = true;
+
+        try
+        {
+            // Apply all view model changes back to the domain entity
+            LineOfDutyCaseMapper.ApplyMemberInfo(memberFormModel, loadedCase);
+            LineOfDutyCaseMapper.ApplyMedicalAssessment(formModel, loadedCase);
+            LineOfDutyCaseMapper.ApplyCommanderReview(commanderFormModel, loadedCase);
+            LineOfDutyCaseMapper.ApplyLegalSJAReview(legalFormModel, loadedCase);
+
+            // Persist
+            await CaseService.UpdateCaseAsync(loadedCase);
+
+            // Refresh the case info header card
+            caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(loadedCase);
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Saved",
+                Detail = $"{source} data saved successfully.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Save Failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
     }
 }
