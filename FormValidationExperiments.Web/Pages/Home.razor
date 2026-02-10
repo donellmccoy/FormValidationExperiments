@@ -97,20 +97,20 @@ else
                                     <RadzenFieldset Text="Request Information">
                                         <RadzenStack Gap="1rem">
                                             <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="5">
-                                                    <RadzenFormField Text="Requesting Commander" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.RequestingCommander"
-                                                                       Placeholder="e.g., Col Jane A. Smith" />
+                                                <RadzenColumn Size="12" SizeMD="6">
+                                                    <RadzenFormField Text="Requesting Commander" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.RequestingCommander"/>
                                                     </RadzenFormField>
                                                 </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="5">
-                                                    <RadzenFormField Text="Medical Provider" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.MedicalProvider"
-                                                                       Placeholder="e.g., Maj John B. Doe, MC" />
+                                                <RadzenColumn Size="12" SizeMD="6">
+                                                    <RadzenFormField Text="Medical Provider" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.MedicalProvider" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="2">
-                                                    <RadzenFormField Text="Report Date" Variant="Variant.Outlined" Style="width: 100%;">
+                                            </RadzenRow>
+                                            <RadzenRow Gap="1rem">
+                                                <RadzenColumn Size="12" SizeMD="6">
+                                                    <RadzenFormField Text="Report Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDatePicker @bind-Value="memberFormModel.ReportDate" Style="width: 100%;"
                                                                           DateFormat="MM/dd/yyyy" />
                                                     </RadzenFormField>
@@ -123,40 +123,41 @@ else
                                     <RadzenFieldset Text="Member Identification" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
                                             <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="4">
-                                                    <RadzenFormField Text="Last Name" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.LastName" Placeholder="Last Name" />
+                                                <RadzenColumn Size="12" SizeMD="5">
+                                                    <RadzenFormField Text="Last Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.LastName" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="4">
-                                                    <RadzenFormField Text="First Name" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.FirstName" Placeholder="First Name" />
+                                                <RadzenColumn Size="12" SizeMD="5">
+                                                    <RadzenFormField Text="First Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.FirstName" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="1">
-                                                    <RadzenFormField Text="MI" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.MiddleInitial" MaxLength="1" Placeholder="M" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="3">
-                                                    <RadzenFormField Text="SSN (last 4)" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.SSN" MaxLength="4"
-                                                                       Placeholder="6789" />
+                                                <RadzenColumn Size="12" SizeMD="2">
+                                                    <RadzenFormField Text="MI" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.MiddleInitial" MaxLength="1" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="3">
-                                                    <RadzenFormField Text="Rank / Grade" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenColumn Size="12" SizeMD="5">
+                                                    <RadzenFormField Text="SSN (last 4)" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.SSN" MaxLength="4" />
+                                                    </RadzenFormField>
+                                                </RadzenColumn>
+                                            </RadzenRow>
+
+                                            <RadzenRow Gap="1rem">
+                                                <RadzenColumn Size="12" SizeMD="5">
+                                                    <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDropDown @bind-Value="memberFormModel.Rank" TValue="MilitaryRank?"
                                                                         Data="@militaryRanks" Style="width: 100%;"
                                                                         Placeholder="Select Rank" AllowClear="true" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="9">
-                                                    <RadzenFormField Text="Organization / Unit" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.OrganizationUnit"
-                                                                       Placeholder="e.g., 452 AMW, March ARB, CA" />
+                                                <RadzenColumn Size="12" SizeMD="7">
+                                                    <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="memberFormModel.OrganizationUnit" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -232,8 +233,8 @@ else
                                                     </RadzenRadioButtonList>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Facility Name" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="formModel.TreatmentFacilityName" Placeholder="e.g., David Grant USAF Medical Center" />
+                                                    <RadzenFormField Text="Facility Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="formModel.TreatmentFacilityName" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -244,7 +245,7 @@ else
                                     <RadzenFieldset Text="Date/Time First Treated" class="rz-mt-4">
                                         <RadzenRow Gap="1rem">
                                             <RadzenColumn Size="12" SizeMD="6">
-                                                <RadzenFormField Text="Date and Time of First Treatment" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenFormField Text="Date and Time of First Treatment" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                     <RadzenDatePicker @bind-Value="formModel.TreatmentDateTime" ShowTime="true"
                                                                       DateFormat="MM/dd/yyyy HH:mm" Style="width: 100%;" />
                                                 </RadzenFormField>
@@ -255,13 +256,11 @@ else
                                     @* ═══ Fieldset E: Item 12 — Clinical Diagnosis ═══ *@
                                     <RadzenFieldset Text="Clinical Diagnosis" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
-                                            <RadzenFormField Text="Clinical Diagnosis" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextBox @bind-Value="formModel.ClinicalDiagnosis"
-                                                               Placeholder="e.g., Right ankle sprain (Grade 2), ICD-10 S93.4" />
+                                            <RadzenFormField Text="Clinical Diagnosis" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextBox @bind-Value="formModel.ClinicalDiagnosis" />
                                             </RadzenFormField>
-                                            <RadzenFormField Text="Medical Findings" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea @bind-Value="formModel.MedicalFindings" Rows="4" Style="width: 100%;"
-                                                                Placeholder="Detail the objective medical findings, imaging results, and physical exam notes..." />
+                                            <RadzenFormField Text="Medical Findings" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextArea @bind-Value="formModel.MedicalFindings" Rows="4" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -287,7 +286,7 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="12" SizeMD="6">
-                                                            <RadzenFormField Text="Substance Type" Variant="Variant.Outlined" Style="width: 100%;">
+                                                            <RadzenFormField Text="Substance Type" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                                 <RadzenRadioButtonList @bind-Value="formModel.SubstanceType" TValue="SubstanceType?"
                                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                                     <Items>
@@ -318,9 +317,8 @@ else
                                             @if (ShowToxicologyResults)
                                             {
                                                 <div class="conditional-section">
-                                                    <RadzenFormField Text="Toxicology Test Results" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextArea @bind-Value="formModel.ToxicologyTestResults" Rows="3" Style="width: 100%;"
-                                                                        Placeholder="Detail the toxicology results..." />
+                                                    <RadzenFormField Text="Toxicology Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextArea @bind-Value="formModel.ToxicologyTestResults" Rows="3" Style="width: 100%;"/>
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -354,14 +352,13 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="12" SizeMD="4">
-                                                            <RadzenFormField Text="Evaluation Date" Variant="Variant.Outlined" Style="width: 100%;">
+                                                            <RadzenFormField Text="Evaluation Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                                 <RadzenDatePicker @bind-Value="formModel.PsychiatricEvalDate" Style="width: 100%;" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                         <RadzenColumn Size="12" SizeMD="8">
-                                                            <RadzenFormField Text="Evaluation Results" Variant="Variant.Outlined" Style="width: 100%;">
-                                                                <RadzenTextArea @bind-Value="formModel.PsychiatricEvalResults" Rows="3" Style="width: 100%;"
-                                                                                Placeholder="Summarize psychiatric evaluation findings..." />
+                                                            <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                                <RadzenTextArea @bind-Value="formModel.PsychiatricEvalResults" Rows="3" Style="width: 100%;" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                     </RadzenRow>
@@ -370,9 +367,8 @@ else
 
                                             @* ── Item 14b: Other relevant conditions ── *@
                                             <div class="detail-section">
-                                                <RadzenFormField Text="Other Relevant Medical Conditions" Variant="Variant.Outlined" Style="width: 100%;">
-                                                    <RadzenTextArea @bind-Value="formModel.OtherRelevantConditions" Rows="3" Style="width: 100%;"
-                                                                    Placeholder="Document any pre-existing or concurrent conditions relevant to this determination..." />
+                                                <RadzenFormField Text="Other Relevant Medical Conditions" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenTextArea @bind-Value="formModel.OtherRelevantConditions" Rows="3" Style="width: 100%;" />
                                                 </RadzenFormField>
                                             </div>
 
@@ -393,14 +389,13 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="12" SizeMD="4">
-                                                            <RadzenFormField Text="Test Date" Variant="Variant.Outlined" Style="width: 100%;">
+                                                            <RadzenFormField Text="Test Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                                 <RadzenDatePicker @bind-Value="formModel.OtherTestDate" Style="width: 100%;" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                         <RadzenColumn Size="12" SizeMD="8">
-                                                            <RadzenFormField Text="Test Results" Variant="Variant.Outlined" Style="width: 100%;">
-                                                                <RadzenTextArea @bind-Value="formModel.OtherTestResults" Rows="3" Style="width: 100%;"
-                                                                                Placeholder="Detail other test results..." />
+                                                            <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                                <RadzenTextArea @bind-Value="formModel.OtherTestResults" Rows="3" Style="width: 100%;" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                     </RadzenRow>
@@ -488,19 +483,18 @@ else
                                     @* ═══ Fieldset I: Medical Recommendation & Provider Signature ═══ *@
                                     <RadzenFieldset Text="Medical Recommendation & Provider Signature" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
-                                            <RadzenFormField Text="Medical Recommendation" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea @bind-Value="formModel.MedicalRecommendation" Rows="5" Style="width: 100%;"
-                                                                Placeholder="Provide final medical recommendation regarding LOD status..." />
+                                            <RadzenFormField Text="Medical Recommendation" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextArea @bind-Value="formModel.MedicalRecommendation" Rows="5" Style="width: 100%;" />
                                             </RadzenFormField>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Provider Name and Rank" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Provider Name and Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenTextBox @bind-Value="formModel.ProviderNameAndRank"
-                                                                       Placeholder="e.g., Maj Jane Smith, MC, USAF" />
+                                                                       Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Signature Date" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDatePicker @bind-Value="formModel.ProviderSignatureDate" Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
@@ -571,9 +565,8 @@ else
                                             @if (ShowOtherSourceDescription)
                                             {
                                                 <div class="conditional-section">
-                                                    <RadzenFormField Text="Describe Other Sources" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="commanderFormModel.OtherSourcesDescription"
-                                                                       Placeholder="Describe the other source(s) of information reviewed..." />
+                                                    <RadzenFormField Text="Describe Other Sources" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox @bind-Value="commanderFormModel.OtherSourcesDescription" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -599,9 +592,8 @@ else
                                     @* ═══ Fieldset C: Item 18 — Narrative of Circumstances ═══ *@
                                     <RadzenFieldset Text="Narrative of Circumstances" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
-                                            <RadzenFormField Text="Brief Narrative" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea @bind-Value="commanderFormModel.NarrativeOfCircumstances" Rows="6" Style="width: 100%;"
-                                                                Placeholder="Provide a brief narrative of the circumstances surrounding the injury, illness, disease, or death. Include date, time, location, and how the incident occurred..." />
+                                            <RadzenFormField Text="Brief Narrative" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextArea @bind-Value="commanderFormModel.NarrativeOfCircumstances" Rows="6" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -623,9 +615,8 @@ else
                                             @if (ShowMisconductExplanation)
                                             {
                                                 <div class="conditional-section">
-                                                    <RadzenFormField Text="Misconduct Explanation" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextArea @bind-Value="commanderFormModel.MisconductExplanation" Rows="4" Style="width: 100%;"
-                                                                        Placeholder="Explain the basis for the misconduct determination, including specific facts and evidence..." />
+                                                    <RadzenFormField Text="Misconduct Explanation" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextArea @bind-Value="commanderFormModel.MisconductExplanation" Rows="4" Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -635,9 +626,8 @@ else
                                     @* ═══ Fieldset E: Item 20 — Proximate Cause ═══ *@
                                     <RadzenFieldset Text="Proximate Cause" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
-                                            <RadzenFormField Text="Proximate Cause of Injury / Disease / Death" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea @bind-Value="commanderFormModel.ProximateCause" Rows="4" Style="width: 100%;"
-                                                                Placeholder="Identify the proximate cause — the primary or direct cause of the injury, illness, disease, or death..." />
+                                            <RadzenFormField Text="Proximate Cause of Injury / Disease / Death" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextArea @bind-Value="commanderFormModel.ProximateCause" Rows="4" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -656,9 +646,8 @@ else
                                                 </Items>
                                             </RadzenRadioButtonList>
 
-                                            <RadzenFormField Text="Recommendation Remarks" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea @bind-Value="commanderFormModel.RecommendationRemarks" Rows="3" Style="width: 100%;"
-                                                                Placeholder="Provide any additional remarks supporting the recommendation..." />
+                                            <RadzenFormField Text="Recommendation Remarks" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextArea @bind-Value="commanderFormModel.RecommendationRemarks" Rows="3" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -668,20 +657,20 @@ else
                                         <RadzenStack Gap="1rem">
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="5">
-                                                    <RadzenFormField Text="Commander Name" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Commander Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenTextBox @bind-Value="commanderFormModel.CommanderName"
-                                                                       Placeholder="e.g., Col Jane A. Smith" />
+                                                                       Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="3">
-                                                    <RadzenFormField Text="Rank / Grade" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDropDown @bind-Value="commanderFormModel.CommanderRank" TValue="MilitaryRank?"
                                                                         Data="@militaryRanks" Style="width: 100%;"
-                                                                        Placeholder="Select Rank" AllowClear="true" />
+                                                                        AllowClear="true" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="4">
-                                                    <RadzenFormField Text="Signature Date" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDatePicker @bind-Value="commanderFormModel.CommanderSignatureDate" Style="width: 100%;"
                                                                           DateFormat="MM/dd/yyyy" />
                                                     </RadzenFormField>
@@ -689,9 +678,9 @@ else
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12">
-                                                    <RadzenFormField Text="Organization / Unit" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenTextBox @bind-Value="commanderFormModel.CommanderOrganization"
-                                                                       Placeholder="e.g., 452d Air Mobility Wing, March ARB, CA" />
+                                                                       Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -748,9 +737,8 @@ else
                                             @if (ShowNonConcurrenceReason)
                                             {
                                                 <div class="conditional-section">
-                                                    <RadzenFormField Text="Basis for Non-Concurrence" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextArea @bind-Value="legalFormModel.NonConcurrenceReason" Rows="4" Style="width: 100%;"
-                                                                        Placeholder="Provide the legal basis for non-concurrence with the commander's recommendation..." />
+                                                    <RadzenFormField Text="Basis for Non-Concurrence" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextArea @bind-Value="legalFormModel.NonConcurrenceReason" Rows="4" Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -760,9 +748,8 @@ else
                                     @* ═══ Fieldset B: Item 25 — Legal Remarks ═══ *@
                                     <RadzenFieldset Text="Legal Remarks" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
-                                            <RadzenFormField Text="SJA Remarks / Legal Opinion" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea @bind-Value="legalFormModel.LegalRemarks" Rows="5" Style="width: 100%;"
-                                                                Placeholder="Provide legal opinion, analysis, and any remarks regarding the LOD determination..." />
+                                            <RadzenFormField Text="SJA Remarks / Legal Opinion" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                <RadzenTextArea @bind-Value="legalFormModel.LegalRemarks" Rows="5" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -772,20 +759,20 @@ else
                                         <RadzenStack Gap="1rem">
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="5">
-                                                    <RadzenFormField Text="SJA Name" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="SJA Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenTextBox @bind-Value="legalFormModel.SJAName"
-                                                                       Placeholder="e.g., Lt Col Michael R. Johnson" />
+                                                                       Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="3">
-                                                    <RadzenFormField Text="Rank / Grade" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDropDown @bind-Value="legalFormModel.SJARank" TValue="MilitaryRank?"
                                                                         Data="@militaryRanks" Style="width: 100%;"
-                                                                        Placeholder="Select Rank" AllowClear="true" />
+                                                                        AllowClear="true" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="4">
-                                                    <RadzenFormField Text="Signature Date" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDatePicker @bind-Value="legalFormModel.SJASignatureDate" Style="width: 100%;"
                                                                           DateFormat="MM/dd/yyyy" />
                                                     </RadzenFormField>
@@ -793,9 +780,9 @@ else
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12">
-                                                    <RadzenFormField Text="Organization / Unit" Variant="Variant.Outlined" Style="width: 100%;">
+                                                    <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenTextBox @bind-Value="legalFormModel.SJAOrganization"
-                                                                       Placeholder="e.g., 452 AMW/JA, March ARB, CA" />
+                                                                       Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
