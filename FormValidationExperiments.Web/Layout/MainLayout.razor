@@ -4,12 +4,12 @@
     <RadzenHeader>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
             <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
-            <RadzenLabel Text="FormValidationExperiments" />
+            <RadzenLabel Text="Electronic Case Tracking System" />
         </RadzenStack>
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@sidebarExpanded">
         <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
+            <RadzenPanelMenuItem Text="Cases" Icon="folder_open" Path="/" />
         </RadzenPanelMenu>
     </RadzenSidebar>
     <RadzenBody>
@@ -18,7 +18,7 @@
         </div>
     </RadzenBody>
     <RadzenFooter>
-        <RadzenLabel Text="© 2026 - FormValidationExperiments" />
+        <RadzenLabel Text="© 2026 - Electronic Case Tracking System" />
     </RadzenFooter>
 </RadzenLayout>
 

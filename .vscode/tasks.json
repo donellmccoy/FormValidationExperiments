@@ -33,16 +33,18 @@
     {
       "label": "launch",
       "type": "shell",
-      "command": "dotnet",
+      "command": "powershell",
       "args": [
-        "run",
-        "--project",
-        "${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj",
-        "--launch-profile",
-        "https"
+        "-Command",
+        "Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'All dotnet processes stopped'; dotnet watch run --project '${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj' --launch-profile https"
       ],
       "group": "none",
       "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "close": true
+      },
       "problemMatcher": {
         "pattern": {
           "regexp": "^$"
@@ -52,8 +54,7 @@
           "beginsPattern": "^.*Building\\.\\.\\.",
           "endsPattern": "^\\s*Now listening on:.*"
         }
-      },
-      "dependsOn": "build"
+      }
     }
   ]
 }

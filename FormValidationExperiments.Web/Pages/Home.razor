@@ -1,4 +1,4 @@
-@page "/"
+@page "/case/{CaseId}"
 
 <PageTitle>Home - LOD Case Management</PageTitle>
 
@@ -27,16 +27,22 @@ else
         <div class="assessment-main">
             @* ─── Case Info Card ─── *@
             <RadzenPanel AllowCollapse="false" 
-                         Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; flex-shrink: 0;">
+                         Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; flex-shrink: 0; padding: 1.5rem;">
                 <ChildContent>
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="1.5rem" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
                         <RadzenStack Gap="0.5rem" Style="flex: 1; min-width: 0;">
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
-                                <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
-                                    Case #@caseInfo.CaseNumber: @caseInfo.Rank @caseInfo.MemberName
+                                <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+                                    @caseInfo.CaseNumber
                                 </RadzenText>
                                 <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Info" Style="background-color: #00308F;" />
                             </RadzenStack>
+                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600; color: rgba(255, 255, 255, 0.70); margin: 0;">
+                                Member: @caseInfo.Rank @caseInfo.MemberName
+                            </RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600; color: rgba(255, 255, 255, 0.70); margin: 0;">
+                                Rank: @caseInfo.Rank
+                            </RadzenText>
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem" Wrap="FlexWrap.Wrap" Style="font-size: 0.8rem; color: #8F8F8F;">
                                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
                                     <span class="material-symbols-outlined" style="font-size: 18px;">groups</span>
@@ -65,7 +71,7 @@ else
                          Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; flex: 1; min-height: 0;">
                 <HeaderTemplate>
                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
-                                 Style="padding: 1rem 1.5rem;">
+                                 Style="padding: 1rem 1.5rem 1rem 0.5rem;">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
                             <div class="panel-icon-box">
                                 <span class="material-symbols-outlined">@CurrentStep.Icon</span>
@@ -102,9 +108,9 @@ else
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Report Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="memberFormModel.ReportDate" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy" />
+                                                    <RadzenFormField Text="Report Date / Time" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenDatePicker @bind-Value="memberFormModel.ReportDate" ShowTime="true" Style="width: 100%;"
+                                                                          DateFormat="MM/dd/yyyy HH:mm" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>

@@ -1,6 +1,8 @@
 using System.Text.RegularExpressions;
 using FormValidationExperiments.Web.Enums;
 using Microsoft.AspNetCore.Components;
+using FormValidationExperiments.Web.Mapping;
+using FormValidationExperiments.Web.Services;
 using FormValidationExperiments.Web.ViewModels;
 using FormValidationExperiments.Web.Shared;
 
@@ -8,6 +10,12 @@ namespace FormValidationExperiments.Web.Pages;
 
 public partial class Home : ComponentBase
 {
+    [Inject]
+    private ILineOfDutyCaseService CaseService { get; set; }
+
+    [Parameter]
+    public string CaseId { get; set; }
+
     private bool isLoading = true;
 
     private int selectedTabIndex;
@@ -62,27 +70,33 @@ public partial class Home : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        InitializeData();
-        await Task.Delay(600);
+        await LoadCaseAsync();
         isLoading = false;
     }
 
-    private void InitializeData()
+    private async Task LoadCaseAsync()
     {
-        caseInfo = new CaseInfoModel
-        {
-            CaseNumber = "Case-2023-10-12-001",
-            MemberName = "John Doe",
-            Rank = "SrA",
-            Unit = "452 AMW (AFRC)",
-            DateOfInjury = "2023-10-12",
-            SSN = "***-**-6789",
-            DutyStatus = "Active Duty for Training",
-            Status = "In Progress",
-            IncidentCircumstances = "Member was performing scheduled maintenance on C-17 engine. Slipped on oil spill while descending maintenance stand.",
-            ReportedInjury = "Right ankle pain and swelling."
-        };
+        var lodCase = await CaseService.GetCaseByCaseIdAsync(CaseId);
 
+        if (lodCase is null)
+        {
+            // Fallback: leave models at defaults
+            InitializeWorkflowSteps();
+            return;
+        }
+
+        // Map domain model → view models
+        caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(lodCase);
+        memberFormModel = LineOfDutyCaseMapper.ToMemberInfoFormModel(lodCase);
+        formModel = LineOfDutyCaseMapper.ToMedicalAssessmentFormModel(lodCase);
+        commanderFormModel = LineOfDutyCaseMapper.ToCommanderReviewFormModel(lodCase);
+        legalFormModel = LineOfDutyCaseMapper.ToLegalSJAReviewFormModel(lodCase);
+
+        InitializeWorkflowSteps();
+    }
+
+    private void InitializeWorkflowSteps()
+    {
         workflowSteps =
         [
             new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
