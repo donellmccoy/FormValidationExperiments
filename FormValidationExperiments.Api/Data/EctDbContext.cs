@@ -55,32 +55,32 @@ public class EctDbContext : DbContext
             entity.HasMany(e => e.Documents)
                   .WithOne()
                   .HasForeignKey(d => d.LineOfDutyCaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasMany(e => e.Appeals)
                   .WithOne()
                   .HasForeignKey(a => a.LineOfDutyCaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasMany(e => e.Authorities)
                   .WithOne()
                   .HasForeignKey(a => a.LineOfDutyCaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasMany(e => e.TimelineSteps)
                   .WithOne()
                   .HasForeignKey(t => t.LineOfDutyCaseId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasOne(e => e.MEDCON)
                   .WithOne()
                   .HasForeignKey<LineOfDutyCase>(e => e.MEDCONId)
-                  .OnDelete(DeleteBehavior.SetNull);
+                  .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasOne(e => e.INCAP)
                   .WithOne()
                   .HasForeignKey<LineOfDutyCase>(e => e.INCAPId)
-                  .OnDelete(DeleteBehavior.SetNull);
+                  .OnDelete(DeleteBehavior.NoAction);
         });
 
         // LineOfDutyAppeal — navigational relationship to appellate authority

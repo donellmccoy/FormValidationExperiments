@@ -123,14 +123,12 @@ namespace FormValidationExperiments.Api.Migrations
                         name: "FK_Cases_INCAPDetails_INCAPId",
                         column: x => x.INCAPId,
                         principalTable: "INCAPDetails",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Cases_MEDCONDetails_MEDCONId",
                         column: x => x.MEDCONId,
                         principalTable: "MEDCONDetails",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -155,8 +153,7 @@ namespace FormValidationExperiments.Api.Migrations
                         name: "FK_Authorities_Cases_LineOfDutyCaseId",
                         column: x => x.LineOfDutyCaseId,
                         principalTable: "Cases",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -178,8 +175,7 @@ namespace FormValidationExperiments.Api.Migrations
                         name: "FK_Documents_Cases_LineOfDutyCaseId",
                         column: x => x.LineOfDutyCaseId,
                         principalTable: "Cases",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -209,8 +205,7 @@ namespace FormValidationExperiments.Api.Migrations
                         name: "FK_Appeals_Cases_LineOfDutyCaseId",
                         column: x => x.LineOfDutyCaseId,
                         principalTable: "Cases",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -239,8 +234,7 @@ namespace FormValidationExperiments.Api.Migrations
                         name: "FK_TimelineSteps_Cases_LineOfDutyCaseId",
                         column: x => x.LineOfDutyCaseId,
                         principalTable: "Cases",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(

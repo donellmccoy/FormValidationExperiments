@@ -488,7 +488,7 @@ namespace FormValidationExperiments.Api.Migrations
                     b.HasOne("FormValidationExperiments.Shared.Models.LineOfDutyCase", null)
                         .WithMany("Appeals")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AppellateAuthority");
@@ -499,7 +499,7 @@ namespace FormValidationExperiments.Api.Migrations
                     b.HasOne("FormValidationExperiments.Shared.Models.LineOfDutyCase", null)
                         .WithMany("Authorities")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("FormValidationExperiments.Shared.Models.LineOfDutyCase", b =>
@@ -507,13 +507,13 @@ namespace FormValidationExperiments.Api.Migrations
                     b.HasOne("FormValidationExperiments.Shared.Models.INCAPDetails", "INCAP")
                         .WithOne()
                         .HasForeignKey("FormValidationExperiments.Shared.Models.LineOfDutyCase", "INCAPId")
-                        .OnDelete(DeleteBehavior.SetNull)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("FormValidationExperiments.Shared.Models.MEDCONDetails", "MEDCON")
                         .WithOne()
                         .HasForeignKey("FormValidationExperiments.Shared.Models.LineOfDutyCase", "MEDCONId")
-                        .OnDelete(DeleteBehavior.SetNull)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("INCAP");
@@ -526,7 +526,7 @@ namespace FormValidationExperiments.Api.Migrations
                     b.HasOne("FormValidationExperiments.Shared.Models.LineOfDutyCase", null)
                         .WithMany("Documents")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 
@@ -535,7 +535,7 @@ namespace FormValidationExperiments.Api.Migrations
                     b.HasOne("FormValidationExperiments.Shared.Models.LineOfDutyCase", null)
                         .WithMany("TimelineSteps")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("FormValidationExperiments.Shared.Models.LineOfDutyAuthority", "ResponsibleAuthority")
