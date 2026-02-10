@@ -15,27 +15,19 @@ else
         LOD Cases
     </RadzenText>
 
-    @if (cases is null || cases.Count == 0)
-    {
-        <RadzenAlert AlertStyle="AlertStyle.Info" Shade="Shade.Dark" AllowClose="false">
-            No cases found.
-        </RadzenAlert>
-    }
-    else
-    {
-        <RadzenDataGrid TItem="LineOfDutyCase" 
-                        Data="@cases" 
-                        Count="@count"
-                        LoadData="@LoadData"
-                        IsLoading="@isLoading"
-                        AllowSorting="true" 
-                        AllowFiltering="true"
-                        FilterMode="FilterMode.Simple" 
-                        PageSize="10" 
-                        AllowPaging="true"
-                        GridLines="DataGridGridLines.Both"
-                        Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
-            <Columns>
+    <RadzenDataGrid TItem="LineOfDutyCase" 
+                    Data="@cases" 
+                    Count="@count"
+                    LoadData="@LoadData"
+                    IsLoading="@isLoading"
+                    AllowSorting="true" 
+                    AllowFiltering="true"
+                    FilterMode="FilterMode.Simple" 
+                    PageSize="10" 
+                    AllowPaging="true"
+                    GridLines="DataGridGridLines.Both"
+                    Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+        <Columns>
                 <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
                     <Template Context="lodCase">
                         <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
@@ -64,5 +56,4 @@ else
                 </RadzenDataGridColumn>
             </Columns>
         </RadzenDataGrid>
-    }
 }

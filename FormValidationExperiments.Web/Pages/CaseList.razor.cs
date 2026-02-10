@@ -13,29 +13,40 @@ public partial class CaseList : ComponentBase
 
     private List<LineOfDutyCase> cases = new();
     private int count;
-    private bool isLoading = true;
+    private bool isLoading = false;  // Start as false so the grid renders and LoadData fires
 
     protected override async Task OnInitializedAsync()
     {
-        // Initial load happens via LoadData event
-        isLoading = false;
+        // LoadData will be called automatically by RadzenDataGrid after first render
     }
 
     private async Task LoadData(LoadDataArgs args)
     {
         isLoading = true;
 
-        var skip = args.Skip ?? 0;
-        var take = args.Top ?? 10;
-        var filter = args.Filter;
-        var orderBy = args.OrderBy;
+        try
+        {
+            var skip = args.Skip ?? 0;
+            var take = args.Top ?? 10;
+            var filter = string.IsNullOrEmpty(args.Filter) ? null : args.Filter;
+            var orderBy = string.IsNullOrEmpty(args.OrderBy) ? null : args.OrderBy;
 
-        var result = await CaseService.GetCasesPagedAsync(skip, take, filter, orderBy);
-        
-        cases = result.Items;
-        count = result.TotalCount;
-
-        isLoading = false;
+            var result = await CaseService.GetCasesPagedAsync(skip, take, filter, orderBy);
+            
+            cases = result.Items;
+            count = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            // Handle error - in a real app, log this
+            Console.WriteLine($"Error loading cases: {ex.Message}");
+            cases = new List<LineOfDutyCase>();
+            count = 0;
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private static string FormatEnum<T>(T value) where T : Enum
