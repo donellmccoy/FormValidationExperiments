@@ -1,4 +1,4 @@
-namespace FormValidationExperiments.Web.Pages.ViewModels;
+namespace FormValidationExperiments.Web.ViewModels;
 
 public class DocumentItem
 {

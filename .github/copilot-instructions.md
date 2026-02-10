@@ -19,14 +19,14 @@ FormValidationExperiments.Web/
 ├── Pages/                  # Razor pages with code-behind (.razor.cs) and scoped styles (.razor.css)
 │   ├── Home.razor/.cs/.css       # Multi-step wizard workflow (primary page)
 │   ├── Workflow.razor/.cs/.css   # Full LOD case form with tabbed sections
-│   ├── NotFound.razor            # 404 fallback page
-│   └── ViewModels/               # Form models per workflow step
-│       ├── CaseInfoModel.cs            # Read-only case header/summary data
-│       ├── MemberInfoFormModel.cs      # Items 1–8: member identification
-│       ├── MedicalAssessmentFormModel.cs # Items 9–15: medical/clinical data
-│       ├── CommanderReviewFormModel.cs  # Items 16–23: commander endorsement
-│       ├── LegalSJAReviewFormModel.cs  # Items 24–25: legal sufficiency review
-│       └── DocumentItem.cs            # Supporting document metadata
+│   └── NotFound.razor            # 404 fallback page
+├── ViewModels/             # Form models per workflow step (namespace: FormValidationExperiments.Web.ViewModels)
+│   ├── CaseInfoModel.cs            # Read-only case header/summary data
+│   ├── MemberInfoFormModel.cs      # Items 1–8: member identification
+│   ├── MedicalAssessmentFormModel.cs # Items 9–15: medical/clinical data
+│   ├── CommanderReviewFormModel.cs  # Items 16–23: commander endorsement
+│   ├── LegalSJAReviewFormModel.cs  # Items 24–25: legal sufficiency review
+│   └── DocumentItem.cs            # Supporting document metadata
 ├── Models/                 # Domain model classes (namespace: FormValidationExperiments.Web.Models)
 │   ├── LODCase.cs                # Root aggregate — full LOD case record
 │   ├── LODDocument.cs            # Uploaded/attached documents
@@ -63,14 +63,14 @@ FormValidationExperiments.Web/
 | `FormValidationExperiments.Web.Models` | Domain model classes (`Models/` folder) |
 | `FormValidationExperiments.Web.Enums` | Domain enums (`Enums/` folder) |
 | `FormValidationExperiments.Web.Pages` | Page components (`Home`, `Workflow`) |
-| `FormValidationExperiments.Web.Pages.ViewModels` | Form/view models per workflow step |
+| `FormValidationExperiments.Web.ViewModels` | Form/view models per workflow step |
 | `FormValidationExperiments.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
 | `FormValidationExperiments.Web.Layout` | Layout components |
 
 ## Coding Conventions
 
 - Use **partial classes** with code-behind files (`.razor.cs`) to separate logic from markup.
-- View models live in `Pages/ViewModels/` under `FormValidationExperiments.Web.Pages.ViewModels`; domain models live under `FormValidationExperiments.Web.Models`; enums live under `FormValidationExperiments.Web.Enums`.
+- View models live in `ViewModels/` under `FormValidationExperiments.Web.ViewModels`; domain models live under `FormValidationExperiments.Web.Models`; enums live under `FormValidationExperiments.Web.Enums`.
 - Namespaces follow the folder structure (e.g., `FormValidationExperiments.Web.Models`, `FormValidationExperiments.Web.Enums`).
 - Format enum display names by inserting spaces before uppercase letters using `Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1")`.
 - Use component-scoped CSS (`.razor.css`) rather than global styles where possible.

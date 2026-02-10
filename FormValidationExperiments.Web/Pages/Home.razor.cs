@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using FormValidationExperiments.Web.Enums;
 using Microsoft.AspNetCore.Components;
-using FormValidationExperiments.Web.Pages.ViewModels;
+using FormValidationExperiments.Web.ViewModels;
 using FormValidationExperiments.Web.Shared;
 
 namespace FormValidationExperiments.Web.Pages;
