@@ -22,6 +22,22 @@ public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
                ?? new List<LineOfDutyCase>();
     }
 
+    public async Task<PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null)
+    {
+        var queryParams = new List<string> { $"skip={skip}", $"take={take}" };
+        
+        if (!string.IsNullOrEmpty(filter))
+            queryParams.Add($"filter={Uri.EscapeDataString(filter)}");
+        
+        if (!string.IsNullOrEmpty(orderBy))
+            queryParams.Add($"orderBy={Uri.EscapeDataString(orderBy)}");
+
+        var url = $"api/cases/paged?{string.Join("&", queryParams)}";
+        
+        return await _http.GetFromJsonAsync<PagedResult<LineOfDutyCase>>(url)
+               ?? new PagedResult<LineOfDutyCase>();
+    }
+
     public async Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId)
     {
         return await _http.GetFromJsonAsync<CaseViewModelsDto>($"api/cases/{caseId}/viewmodels");

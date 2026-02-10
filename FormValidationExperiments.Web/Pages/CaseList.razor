@@ -23,8 +23,16 @@ else
     }
     else
     {
-        <RadzenDataGrid TItem="LineOfDutyCase" Data="@cases" AllowSorting="true" AllowFiltering="true"
-                        FilterMode="FilterMode.Simple" PageSize="10" AllowPaging="true"
+        <RadzenDataGrid TItem="LineOfDutyCase" 
+                        Data="@cases" 
+                        Count="@count"
+                        LoadData="@LoadData"
+                        IsLoading="@isLoading"
+                        AllowSorting="true" 
+                        AllowFiltering="true"
+                        FilterMode="FilterMode.Simple" 
+                        PageSize="10" 
+                        AllowPaging="true"
                         GridLines="DataGridGridLines.Both"
                         Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
             <Columns>

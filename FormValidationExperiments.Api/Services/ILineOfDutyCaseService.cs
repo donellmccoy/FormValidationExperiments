@@ -1,4 +1,5 @@
 using FormValidationExperiments.Shared.Models;
+using FormValidationExperiments.Shared.ViewModels;
 
 namespace FormValidationExperiments.Api.Services;
 
@@ -9,6 +10,7 @@ public interface ILineOfDutyCaseService
 {
     // Case operations
     Task<List<LineOfDutyCase>> GetAllCasesAsync();
+    Task<FormValidationExperiments.Shared.ViewModels.PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null);
     Task<LineOfDutyCase> GetCaseByIdAsync(int id);
     Task<LineOfDutyCase> GetCaseByCaseIdAsync(string caseId);
     Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase);

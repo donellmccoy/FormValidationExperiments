@@ -14,6 +14,11 @@ public interface ILineOfDutyCaseService
     Task<List<LineOfDutyCase>> GetAllCasesAsync();
 
     /// <summary>
+    /// Returns a paged result of LOD cases with optional filtering and sorting.
+    /// </summary>
+    Task<PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null);
+
+    /// <summary>
     /// Returns all mapped view models for a specific case.
     /// </summary>
     Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId);

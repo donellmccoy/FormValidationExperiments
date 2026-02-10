@@ -28,6 +28,24 @@ public class CasesController : ControllerBase
     }
 
     /// <summary>
+    /// Returns a paged result of LOD cases with optional filtering and sorting.
+    /// </summary>
+    /// <param name="skip">Number of records to skip.</param>
+    /// <param name="take">Number of records to take.</param>
+    /// <param name="filter">Optional filter expression (Dynamic LINQ).</param>
+    /// <param name="orderBy">Optional orderBy expression (Dynamic LINQ).</param>
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResult<LineOfDutyCase>>> GetPaged(
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 10,
+        [FromQuery] string? filter = null,
+        [FromQuery] string? orderBy = null)
+    {
+        var result = await _caseService.GetCasesPagedAsync(skip, take, filter, orderBy);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Returns a single LOD case with all navigation properties loaded.
     /// </summary>
     [HttpGet("{caseId}")]

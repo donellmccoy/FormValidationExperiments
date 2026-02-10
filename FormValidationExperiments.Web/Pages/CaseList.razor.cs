@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Web.Services;
 using Microsoft.AspNetCore.Components;
+using Radzen;
 
 namespace FormValidationExperiments.Web.Pages;
 
@@ -10,12 +11,30 @@ public partial class CaseList : ComponentBase
     [Inject]
     private ILineOfDutyCaseService CaseService { get; set; }
 
-    private List<LineOfDutyCase> cases;
+    private List<LineOfDutyCase> cases = new();
+    private int count;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        cases = await CaseService.GetAllCasesAsync();
+        // Initial load happens via LoadData event
+        isLoading = false;
+    }
+
+    private async Task LoadData(LoadDataArgs args)
+    {
+        isLoading = true;
+
+        var skip = args.Skip ?? 0;
+        var take = args.Top ?? 10;
+        var filter = args.Filter;
+        var orderBy = args.OrderBy;
+
+        var result = await CaseService.GetCasesPagedAsync(skip, take, filter, orderBy);
+        
+        cases = result.Items;
+        count = result.TotalCount;
+
         isLoading = false;
     }
 

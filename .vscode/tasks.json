@@ -22,7 +22,7 @@
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj",
+        "${workspaceFolder}/FormValidationExperiments.slnx",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary"
       ],
@@ -31,19 +31,52 @@
       "dependsOn": "kill"
     },
     {
-      "label": "launch",
+      "label": "launch-api",
       "type": "shell",
-      "command": "powershell",
+      "command": "dotnet",
       "args": [
-        "-Command",
-        "Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'All dotnet processes stopped'; dotnet watch run --project '${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj' --launch-profile https"
+        "watch",
+        "run",
+        "--project",
+        "${workspaceFolder}/FormValidationExperiments.Api/FormValidationExperiments.Api.csproj",
+        "--launch-profile",
+        "https"
       ],
-      "group": "none",
       "isBackground": true,
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "close": true
+        "group": "launch"
+      },
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Building\\.\\.\\.",
+          "endsPattern": "^\\s*Now listening on:.*"
+        }
+      },
+      "dependsOn": "build"
+    },
+    {
+      "label": "launch-web",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "watch",
+        "run",
+        "--project",
+        "${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj",
+        "--launch-profile",
+        "https"
+      ],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "launch"
       },
       "problemMatcher": {
         "pattern": {
@@ -55,6 +88,16 @@
           "endsPattern": "^\\s*Now listening on:.*"
         }
       }
+    },
+    {
+      "label": "launch",
+      "type": "shell",
+      "command": "echo",
+      "args": ["Both projects started"],
+      "dependsOn": ["launch-api", "launch-web"],
+      "dependsOrder": "sequence",
+      "group": "none",
+      "problemMatcher": []
     }
   ]
 }

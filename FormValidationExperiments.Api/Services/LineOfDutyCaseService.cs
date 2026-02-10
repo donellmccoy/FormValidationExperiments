@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using FormValidationExperiments.Api.Data;
 using FormValidationExperiments.Shared.Models;
+using FormValidationExperiments.Shared.ViewModels;
+using System.Linq.Dynamic.Core;
 
 namespace FormValidationExperiments.Api.Services;
 
@@ -22,6 +24,39 @@ public class LineOfDutyCaseService : ILineOfDutyCaseService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.Cases.ToListAsync();
+    }
+
+    public async Task<FormValidationExperiments.Shared.ViewModels.PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        IQueryable<LineOfDutyCase> query = context.Cases;
+
+        // Apply filtering if provided
+        if (!string.IsNullOrEmpty(filter))
+        {
+            query = query.Where(filter);
+        }
+
+        // Apply sorting if provided
+        if (!string.IsNullOrEmpty(orderBy))
+        {
+            query = query.OrderBy(orderBy);
+        }
+        else
+        {
+            // Default sort by CaseId descending
+            query = query.OrderByDescending(c => c.CaseId);
+        }
+
+        var totalCount = await query.CountAsync();
+        var items = await query.Skip(skip).Take(take).ToListAsync();
+
+        return new FormValidationExperiments.Shared.ViewModels.PagedResult<LineOfDutyCase>
+        {
+            Items = items,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<LineOfDutyCase> GetCaseByIdAsync(int id)
