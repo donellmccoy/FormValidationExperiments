@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug API",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/FormValidationExperiments.Api/bin/Debug/net10.0/FormValidationExperiments.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/FormValidationExperiments.Api",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:7173;http://localhost:5038"
+            },
+            "preLaunchTask": "build"
+        },
+        {
+            "name": "Debug Blazor WASM",
+            "type": "blazorwasm",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/FormValidationExperiments.Web",
+            "preLaunchTask": "launch-api"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug API + Web",
+            "configurations": ["Debug API", "Debug Blazor WASM"],
+            "stopAll": true
+        }
+    ]
+}

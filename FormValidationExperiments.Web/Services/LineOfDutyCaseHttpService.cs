@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Shared.ViewModels;
 
@@ -10,15 +11,17 @@ namespace FormValidationExperiments.Web.Services;
 public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
 {
     private readonly HttpClient _http;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public LineOfDutyCaseHttpService(HttpClient http)
+    public LineOfDutyCaseHttpService(HttpClient http, JsonSerializerOptions jsonOptions)
     {
         _http = http;
+        _jsonOptions = jsonOptions;
     }
 
     public async Task<List<LineOfDutyCase>> GetAllCasesAsync()
     {
-        return await _http.GetFromJsonAsync<List<LineOfDutyCase>>("api/cases")
+        return await _http.GetFromJsonAsync<List<LineOfDutyCase>>("api/cases", _jsonOptions)
                ?? new List<LineOfDutyCase>();
     }
 
@@ -34,19 +37,19 @@ public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
 
         var url = $"api/cases/paged?{string.Join("&", queryParams)}";
         
-        return await _http.GetFromJsonAsync<PagedResult<LineOfDutyCase>>(url)
+        return await _http.GetFromJsonAsync<PagedResult<LineOfDutyCase>>(url, _jsonOptions)
                ?? new PagedResult<LineOfDutyCase>();
     }
 
     public async Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId)
     {
-        return await _http.GetFromJsonAsync<CaseViewModelsDto>($"api/cases/{caseId}/viewmodels");
+        return await _http.GetFromJsonAsync<CaseViewModelsDto>($"api/cases/{caseId}/viewmodels", _jsonOptions);
     }
 
     public async Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto)
     {
-        var response = await _http.PutAsJsonAsync($"api/cases/{caseId}", dto);
+        var response = await _http.PutAsJsonAsync($"api/cases/{caseId}", dto, _jsonOptions);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseInfoModel>();
+        return await response.Content.ReadFromJsonAsync<CaseInfoModel>(_jsonOptions);
     }
 }

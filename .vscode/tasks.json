@@ -7,7 +7,7 @@
       "command": "powershell",
       "args": [
         "-Command",
-        "Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'All dotnet processes stopped'"
+        "Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Host 'All dotnet processes stopped'"
       ],
       "group": "none",
       "presentation": {
