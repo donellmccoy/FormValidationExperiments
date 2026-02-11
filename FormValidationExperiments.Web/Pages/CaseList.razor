@@ -3,7 +3,7 @@
 <PageTitle>Cases - Electronic Case Tracking System</PageTitle>
 
 <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin-bottom: 1rem;">
-    LOD Cases
+    Line Of Duty Cases
 </RadzenText>
 
 @if (!initialLoadComplete)
@@ -59,24 +59,17 @@ else
                 </Template>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
-            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" />
-            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
-            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type" Width="100px">
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center"/>
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit"  />
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">
                 <Template Context="lodCase">
                     @FormatEnum(lodCase.IncidentType)
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" Width="130px" FormatString="{0:yyyy-MM-dd}" />
-            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" Width="110px">
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" />
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process">
                 <Template Context="lodCase">
                     @FormatEnum(lodCase.ProcessType)
-                </Template>
-            </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="FinalFinding" Title="Finding" Width="160px">
-                <Template Context="lodCase">
-                    <RadzenBadge Text="@FormatEnum(lodCase.FinalFinding)"
-                                 BadgeStyle="@(lodCase.FinalFinding == LineOfDutyFinding.InLineOfDuty ? BadgeStyle.Success : BadgeStyle.Danger)"
-                                 IsPill="true" />
                 </Template>
             </RadzenDataGridColumn>
         </Columns>
