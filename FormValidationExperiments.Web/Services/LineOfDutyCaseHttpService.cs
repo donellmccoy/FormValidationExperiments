@@ -19,12 +19,6 @@ public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
         _jsonOptions = jsonOptions;
     }
 
-    public async Task<List<LineOfDutyCase>> GetAllCasesAsync()
-    {
-        return await _http.GetFromJsonAsync<List<LineOfDutyCase>>("api/cases", _jsonOptions)
-               ?? new List<LineOfDutyCase>();
-    }
-
     public async Task<PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null)
     {
         var queryParams = new List<string> { $"skip={skip}", $"take={take}" };
@@ -36,14 +30,18 @@ public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
             queryParams.Add($"orderBy={Uri.EscapeDataString(orderBy)}");
 
         var url = $"api/cases/paged?{string.Join("&", queryParams)}";
-        
-        return await _http.GetFromJsonAsync<PagedResult<LineOfDutyCase>>(url, _jsonOptions)
+
+        var response = await _http.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<PagedResult<LineOfDutyCase>>(_jsonOptions)
                ?? new PagedResult<LineOfDutyCase>();
     }
 
     public async Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId)
     {
-        return await _http.GetFromJsonAsync<CaseViewModelsDto>($"api/cases/{caseId}/viewmodels", _jsonOptions);
+        var response = await _http.GetAsync($"api/cases/{caseId}/viewmodels");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<CaseViewModelsDto>(_jsonOptions);
     }
 
     public async Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto)

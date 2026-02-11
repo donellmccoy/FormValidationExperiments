@@ -4,34 +4,53 @@ using FormValidationExperiments.Shared.ViewModels;
 namespace FormValidationExperiments.Api.Services;
 
 /// <summary>
-/// Service interface for Line of Duty database operations.
+/// Service interface for Line of Duty case operations.
 /// </summary>
 public interface ILineOfDutyCaseService
 {
-    // Case operations
-    Task<List<LineOfDutyCase>> GetAllCasesAsync();
-    Task<FormValidationExperiments.Shared.ViewModels.PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null);
-    Task<LineOfDutyCase> GetCaseByIdAsync(int id);
-    Task<LineOfDutyCase> GetCaseByCaseIdAsync(string caseId);
-    Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase);
-    Task<LineOfDutyCase> UpdateCaseAsync(LineOfDutyCase lodCase);
-    Task<bool> DeleteCaseAsync(int id);
+    Task<PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null, CancellationToken ct = default);
+    Task<LineOfDutyCase?> GetCaseByIdAsync(int id, CancellationToken ct = default);
+    Task<LineOfDutyCase?> GetCaseByCaseIdAsync(string caseId, CancellationToken ct = default);
+    Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default);
+    Task<LineOfDutyCase> UpdateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default);
+    Task<LineOfDutyCase?> UpdateCaseAsync(string caseId, Action<LineOfDutyCase> applyChanges, CancellationToken ct = default);
+    Task<bool> DeleteCaseAsync(int id, CancellationToken ct = default);
+}
 
-    // Document operations
-    Task<List<LineOfDutyDocument>> GetDocumentsByCaseIdAsync(int caseId);
-    Task<LineOfDutyDocument> AddDocumentAsync(LineOfDutyDocument document);
-    Task<bool> DeleteDocumentAsync(int documentId);
+/// <summary>
+/// Service interface for Line of Duty document operations.
+/// </summary>
+public interface ILineOfDutyDocumentService
+{
+    Task<List<LineOfDutyDocument>> GetDocumentsByCaseIdAsync(int caseId, CancellationToken ct = default);
+    Task<LineOfDutyDocument> AddDocumentAsync(LineOfDutyDocument document, CancellationToken ct = default);
+    Task<bool> DeleteDocumentAsync(int documentId, CancellationToken ct = default);
+}
 
-    // Appeal operations
-    Task<List<LineOfDutyAppeal>> GetAppealsByCaseIdAsync(int caseId);
-    Task<LineOfDutyAppeal> AddAppealAsync(LineOfDutyAppeal appeal);
+/// <summary>
+/// Service interface for Line of Duty appeal operations.
+/// </summary>
+public interface ILineOfDutyAppealService
+{
+    Task<List<LineOfDutyAppeal>> GetAppealsByCaseIdAsync(int caseId, CancellationToken ct = default);
+    Task<LineOfDutyAppeal> AddAppealAsync(LineOfDutyAppeal appeal, CancellationToken ct = default);
+}
 
-    // Authority operations
-    Task<List<LineOfDutyAuthority>> GetAuthoritiesByCaseIdAsync(int caseId);
-    Task<LineOfDutyAuthority> AddAuthorityAsync(LineOfDutyAuthority authority);
+/// <summary>
+/// Service interface for Line of Duty authority operations.
+/// </summary>
+public interface ILineOfDutyAuthorityService
+{
+    Task<List<LineOfDutyAuthority>> GetAuthoritiesByCaseIdAsync(int caseId, CancellationToken ct = default);
+    Task<LineOfDutyAuthority> AddAuthorityAsync(LineOfDutyAuthority authority, CancellationToken ct = default);
+}
 
-    // Timeline operations
-    Task<List<TimelineStep>> GetTimelineStepsByCaseIdAsync(int caseId);
-    Task<TimelineStep> AddTimelineStepAsync(TimelineStep step);
-    Task<TimelineStep> UpdateTimelineStepAsync(TimelineStep step);
+/// <summary>
+/// Service interface for Line of Duty timeline operations.
+/// </summary>
+public interface ILineOfDutyTimelineService
+{
+    Task<List<TimelineStep>> GetTimelineStepsByCaseIdAsync(int caseId, CancellationToken ct = default);
+    Task<TimelineStep> AddTimelineStepAsync(TimelineStep step, CancellationToken ct = default);
+    Task<TimelineStep> UpdateTimelineStepAsync(TimelineStep step, CancellationToken ct = default);
 }

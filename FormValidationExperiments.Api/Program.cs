@@ -9,7 +9,12 @@ builder.Services.AddDbContextFactory<EctDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("EctDatabase")));
 
 // Application services
-builder.Services.AddScoped<ILineOfDutyCaseService, LineOfDutyCaseService>();
+builder.Services.AddScoped<LineOfDutyCaseService>();
+builder.Services.AddScoped<ILineOfDutyCaseService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
+builder.Services.AddScoped<ILineOfDutyDocumentService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
+builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
+builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
+builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 
 // Controllers
 builder.Services.AddControllers()

@@ -2,58 +2,83 @@
 
 <PageTitle>Cases - Electronic Case Tracking System</PageTitle>
 
-@if (isLoading)
+<RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin-bottom: 1rem;">
+    LOD Cases
+</RadzenText>
+
+@if (!initialLoadComplete)
 {
-    <RadzenStack Gap="1rem">
-        <RadzenSkeleton Style="width: 240px; height: 32px;" Animation="SkeletonAnimation.Wave" />
-        <RadzenSkeleton Style="width: 100%; height: 200px;" Animation="SkeletonAnimation.Wave" />
-    </RadzenStack>
+    <RadzenCard Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 0;">
+        <RadzenStack Gap="0">
+            @* Header row *@
+            <RadzenRow Style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.12);">
+                <RadzenColumn Size="2"><RadzenSkeleton Width="80%" /></RadzenColumn>
+                <RadzenColumn Size="2"><RadzenSkeleton Width="70%" /></RadzenColumn>
+                <RadzenColumn Size="1"><RadzenSkeleton Width="60%" /></RadzenColumn>
+                <RadzenColumn Size="2"><RadzenSkeleton Width="50%" /></RadzenColumn>
+                <RadzenColumn Size="1"><RadzenSkeleton Width="60%" /></RadzenColumn>
+                <RadzenColumn Size="1"><RadzenSkeleton Width="80%" /></RadzenColumn>
+                <RadzenColumn Size="1"><RadzenSkeleton Width="70%" /></RadzenColumn>
+                <RadzenColumn Size="2"><RadzenSkeleton Width="60%" /></RadzenColumn>
+            </RadzenRow>
+            @* Skeleton rows *@
+            @for (var i = 0; i < 10; i++)
+            {
+                <RadzenRow Style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
+                    <RadzenColumn Size="2"><RadzenSkeleton Width="90%" /></RadzenColumn>
+                    <RadzenColumn Size="2"><RadzenSkeleton Width="75%" /></RadzenColumn>
+                    <RadzenColumn Size="1"><RadzenSkeleton Width="50%" /></RadzenColumn>
+                    <RadzenColumn Size="2"><RadzenSkeleton Width="65%" /></RadzenColumn>
+                    <RadzenColumn Size="1"><RadzenSkeleton Width="55%" /></RadzenColumn>
+                    <RadzenColumn Size="1"><RadzenSkeleton Width="70%" /></RadzenColumn>
+                    <RadzenColumn Size="1"><RadzenSkeleton Width="60%" /></RadzenColumn>
+                    <RadzenColumn Size="2"><RadzenSkeleton Width="50%" /></RadzenColumn>
+                </RadzenRow>
+            }
+        </RadzenStack>
+    </RadzenCard>
 }
 else
 {
-    <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin-bottom: 1rem;">
-        LOD Cases
-    </RadzenText>
-
-    <RadzenDataGrid TItem="LineOfDutyCase" 
-                    Data="@cases" 
+    <RadzenDataGrid @ref="grid" TItem="LineOfDutyCase"
+                    Data="@cases"
                     Count="@count"
                     LoadData="@LoadData"
                     IsLoading="@isLoading"
-                    AllowSorting="true" 
+                    AllowSorting="true"
                     AllowFiltering="true"
-                    FilterMode="FilterMode.Simple" 
-                    PageSize="10" 
+                    FilterMode="FilterMode.Simple"
+                    PageSize="10"
                     AllowPaging="true"
                     GridLines="DataGridGridLines.Both"
                     Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
         <Columns>
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
-                    <Template Context="lodCase">
-                        <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" />
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type" Width="100px">
-                    <Template Context="lodCase">
-                        @FormatEnum(lodCase.IncidentType)
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" Width="130px" FormatString="{0:yyyy-MM-dd}" />
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" Width="110px">
-                    <Template Context="lodCase">
-                        @FormatEnum(lodCase.ProcessType)
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="LineOfDutyCase" Property="FinalFinding" Title="Finding" Width="160px">
-                    <Template Context="lodCase">
-                        <RadzenBadge Text="@FormatEnum(lodCase.FinalFinding)"
-                                     BadgeStyle="@(lodCase.FinalFinding == LineOfDutyFinding.InLineOfDuty ? BadgeStyle.Success : BadgeStyle.Danger)"
-                                     IsPill="true" />
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
+                <Template Context="lodCase">
+                    <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" />
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type" Width="100px">
+                <Template Context="lodCase">
+                    @FormatEnum(lodCase.IncidentType)
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" Width="130px" FormatString="{0:yyyy-MM-dd}" />
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" Width="110px">
+                <Template Context="lodCase">
+                    @FormatEnum(lodCase.ProcessType)
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="FinalFinding" Title="Finding" Width="160px">
+                <Template Context="lodCase">
+                    <RadzenBadge Text="@FormatEnum(lodCase.FinalFinding)"
+                                 BadgeStyle="@(lodCase.FinalFinding == LineOfDutyFinding.InLineOfDuty ? BadgeStyle.Success : BadgeStyle.Danger)"
+                                 IsPill="true" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
 }

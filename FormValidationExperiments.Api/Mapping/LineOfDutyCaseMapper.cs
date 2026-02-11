@@ -9,8 +9,13 @@ namespace FormValidationExperiments.Api.Mapping;
 /// Static mapper for converting between <see cref="LineOfDutyCase"/> domain model
 /// and the per-step view models used by the LOD workflow forms.
 /// </summary>
-public static class LineOfDutyCaseMapper
+public static partial class LineOfDutyCaseMapper
 {
+    [GeneratedRegex(@"(\B[A-Z])")]
+    private static partial Regex UpperCaseBoundaryPattern();
+
+    [GeneratedRegex(@"^(AB|Amn|A1C|SrA|SSgt|TSgt|MSgt|SMSgt|CMSgt|CMSAF|2d Lt|1st Lt|Capt|Maj|Lt Col|Col|Brig Gen|Maj Gen|Lt Gen|Gen)\s+", RegexOptions.IgnoreCase)]
+    private static partial Regex RankPrefixPattern();
     // ──────────────────────────── Domain → View Models ────────────────────────────
 
     /// <summary>
@@ -380,7 +385,7 @@ public static class LineOfDutyCaseMapper
         //   "Doe, John A."           → last, first middle
 
         // Strip common rank prefixes
-        var name = Regex.Replace(fullName, @"^(AB|Amn|A1C|SrA|SSgt|TSgt|MSgt|SMSgt|CMSgt|CMSAF|2d Lt|1st Lt|Capt|Maj|Lt Col|Col|Brig Gen|Maj Gen|Lt Gen|Gen)\s+", "", RegexOptions.IgnoreCase).Trim();
+        var name = RankPrefixPattern().Replace(fullName, "").Trim();
 
         if (name.Contains(','))
         {
@@ -482,6 +487,6 @@ public static class LineOfDutyCaseMapper
 
     private static string FormatEnum<T>(T value) where T : Enum
     {
-        return Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1");
+        return UpperCaseBoundaryPattern().Replace(value.ToString(), " $1");
     }
 }

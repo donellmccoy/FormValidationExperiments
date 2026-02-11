@@ -18,40 +18,34 @@ public class CasesController : ControllerBase
     }
 
     /// <summary>
-    /// Returns all LOD cases (lightweight — no navigation properties).
-    /// </summary>
-    [HttpGet]
-    public async Task<ActionResult<List<LineOfDutyCase>>> GetAll()
-    {
-        var cases = await _caseService.GetAllCasesAsync();
-        return Ok(cases);
-    }
-
-    /// <summary>
     /// Returns a paged result of LOD cases with optional filtering and sorting.
     /// </summary>
-    /// <param name="skip">Number of records to skip.</param>
-    /// <param name="take">Number of records to take.</param>
-    /// <param name="filter">Optional filter expression (Dynamic LINQ).</param>
-    /// <param name="orderBy">Optional orderBy expression (Dynamic LINQ).</param>
     [HttpGet("paged")]
     public async Task<ActionResult<PagedResult<LineOfDutyCase>>> GetPaged(
         [FromQuery] int skip = 0,
         [FromQuery] int take = 10,
         [FromQuery] string? filter = null,
-        [FromQuery] string? orderBy = null)
+        [FromQuery] string? orderBy = null,
+        CancellationToken ct = default)
     {
-        var result = await _caseService.GetCasesPagedAsync(skip, take, filter, orderBy);
-        return Ok(result);
+        try
+        {
+            var result = await _caseService.GetCasesPagedAsync(skip, take, filter, orderBy, ct);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>
     /// Returns a single LOD case with all navigation properties loaded.
     /// </summary>
     [HttpGet("{caseId}")]
-    public async Task<ActionResult<LineOfDutyCase>> GetByCaseId(string caseId)
+    public async Task<ActionResult<LineOfDutyCase>> GetByCaseId(string caseId, CancellationToken ct = default)
     {
-        var lodCase = await _caseService.GetCaseByCaseIdAsync(caseId);
+        var lodCase = await _caseService.GetCaseByCaseIdAsync(caseId, ct);
         if (lodCase is null)
             return NotFound();
 
@@ -62,9 +56,9 @@ public class CasesController : ControllerBase
     /// Returns mapped view models for a specific case.
     /// </summary>
     [HttpGet("{caseId}/viewmodels")]
-    public async Task<ActionResult<CaseViewModelsDto>> GetViewModels(string caseId)
+    public async Task<ActionResult<CaseViewModelsDto>> GetViewModels(string caseId, CancellationToken ct = default)
     {
-        var lodCase = await _caseService.GetCaseByCaseIdAsync(caseId);
+        var lodCase = await _caseService.GetCaseByCaseIdAsync(caseId, ct);
         if (lodCase is null)
             return NotFound();
 
@@ -85,21 +79,19 @@ public class CasesController : ControllerBase
     /// Applies reverse mapping and persists to the database.
     /// </summary>
     [HttpPut("{caseId}")]
-    public async Task<ActionResult> SaveCase(string caseId, [FromBody] CaseViewModelsDto dto)
+    public async Task<ActionResult> SaveCase(string caseId, [FromBody] CaseViewModelsDto dto, CancellationToken ct = default)
     {
-        var lodCase = await _caseService.GetCaseByCaseIdAsync(caseId);
+        var lodCase = await _caseService.UpdateCaseAsync(caseId, entity =>
+        {
+            LineOfDutyCaseMapper.ApplyMemberInfo(dto.MemberInfo, entity);
+            LineOfDutyCaseMapper.ApplyMedicalAssessment(dto.MedicalAssessment, entity);
+            LineOfDutyCaseMapper.ApplyCommanderReview(dto.CommanderReview, entity);
+            LineOfDutyCaseMapper.ApplyLegalSJAReview(dto.LegalSJAReview, entity);
+        }, ct);
+
         if (lodCase is null)
             return NotFound();
 
-        // Reverse-map view models → domain entity
-        LineOfDutyCaseMapper.ApplyMemberInfo(dto.MemberInfo, lodCase);
-        LineOfDutyCaseMapper.ApplyMedicalAssessment(dto.MedicalAssessment, lodCase);
-        LineOfDutyCaseMapper.ApplyCommanderReview(dto.CommanderReview, lodCase);
-        LineOfDutyCaseMapper.ApplyLegalSJAReview(dto.LegalSJAReview, lodCase);
-
-        await _caseService.UpdateCaseAsync(lodCase);
-
-        // Return refreshed case info header
         var updatedInfo = LineOfDutyCaseMapper.ToCaseInfoModel(lodCase);
         return Ok(updatedInfo);
     }

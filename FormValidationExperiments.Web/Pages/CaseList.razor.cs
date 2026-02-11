@@ -3,6 +3,7 @@ using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Web.Services;
 using Microsoft.AspNetCore.Components;
 using Radzen;
+using Radzen.Blazor;
 
 namespace FormValidationExperiments.Web.Pages;
 
@@ -11,25 +12,37 @@ public partial class CaseList : ComponentBase
     [Inject]
     private ILineOfDutyCaseService CaseService { get; set; }
 
-    private List<LineOfDutyCase> cases = new();
+    private RadzenDataGrid<LineOfDutyCase> grid;
+
+    private List<LineOfDutyCase> cases = [];
+
     private int count;
-    private bool isLoading = false;  // Start as false so the grid renders and LoadData fires
+
+    private bool isLoading;
+
+    private bool initialLoadComplete;
 
     protected override async Task OnInitializedAsync()
     {
-        // LoadData will be called automatically by RadzenDataGrid after first render
-    }
+        isLoading = true;
 
-    protected override Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+        try
         {
-            // No need to call LoadData here, as RadzenDataGrid will call it automatically
-            // when it renders for the first time. Just ensure the grid is rendered by setting isLoading to false.
-            isLoading = false;
+            var result = await CaseService.GetCasesPagedAsync(0, 10, null, null);
+            cases = result.Items;
+            count = result.TotalCount;
         }
-
-        return base.OnAfterRenderAsync(firstRender);
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading cases: {ex.Message}");
+            cases = [];
+            count = 0;
+        }
+        finally
+        {
+            isLoading = false;
+            initialLoadComplete = true;
+        }
     }
 
     private async Task LoadData(LoadDataArgs args)
@@ -52,12 +65,13 @@ public partial class CaseList : ComponentBase
         {
             // Handle error - in a real app, log this
             Console.WriteLine($"Error loading cases: {ex.Message}");
-            cases = new List<LineOfDutyCase>();
+            cases = [];
             count = 0;
         }
         finally
         {
             isLoading = false;
+            initialLoadComplete = true;
         }
     }
 

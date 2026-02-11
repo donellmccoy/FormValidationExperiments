@@ -222,6 +222,10 @@
     overflow-y: auto;
 }
 
+::deep .assessment-tabs .rz-tabview-panel {
+    padding-top: 0;
+}
+
 .tab-body {
     padding-right: 5px;
     height: auto;

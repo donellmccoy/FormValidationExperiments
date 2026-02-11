@@ -9,11 +9,6 @@ namespace FormValidationExperiments.Web.Services;
 public interface ILineOfDutyCaseService
 {
     /// <summary>
-    /// Returns all LOD cases (lightweight, no navigation properties).
-    /// </summary>
-    Task<List<LineOfDutyCase>> GetAllCasesAsync();
-
-    /// <summary>
     /// Returns a paged result of LOD cases with optional filtering and sorting.
     /// </summary>
     Task<PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null);
