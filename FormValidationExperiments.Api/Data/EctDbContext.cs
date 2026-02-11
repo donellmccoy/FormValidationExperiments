@@ -29,8 +29,8 @@ public class EctDbContext : DbContext
 
         // JSON value converter for List<string> properties
         var stringListConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<List<string>, string>(
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>());
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions)default!),
+            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)default!) ?? new List<string>());
 
         var stringListComparer = new ValueComparer<List<string>>(
             (c1, c2) => (c1 ?? new()).SequenceEqual(c2 ?? new()),

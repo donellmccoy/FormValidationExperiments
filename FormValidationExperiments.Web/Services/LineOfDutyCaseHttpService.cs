@@ -3,6 +3,8 @@ using System.Text.Json;
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Shared.ViewModels;
 
+#nullable enable
+
 namespace FormValidationExperiments.Web.Services;
 
 /// <summary>
@@ -41,13 +43,15 @@ public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
     {
         var response = await _http.GetAsync($"api/cases/{caseId}/viewmodels");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseViewModelsDto>(_jsonOptions);
+        return await response.Content.ReadFromJsonAsync<CaseViewModelsDto>(_jsonOptions)
+               ?? throw new InvalidOperationException("Failed to deserialize CaseViewModelsDto");
     }
 
     public async Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto)
     {
         var response = await _http.PutAsJsonAsync($"api/cases/{caseId}", dto, _jsonOptions);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseInfoModel>(_jsonOptions);
+        return await response.Content.ReadFromJsonAsync<CaseInfoModel>(_jsonOptions)
+               ?? throw new InvalidOperationException("Failed to deserialize CaseInfoModel");
     }
 }

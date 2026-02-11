@@ -1,6 +1,8 @@
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Shared.ViewModels;
 
+#nullable enable
+
 namespace FormValidationExperiments.Web.Services;
 
 /// <summary>

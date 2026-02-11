@@ -339,7 +339,7 @@ public static partial class LineOfDutyCaseMapper
         };
     }
 
-    private static LineOfDutyAuthority FindAuthority(LineOfDutyCase source, string role)
+    private static LineOfDutyAuthority? FindAuthority(LineOfDutyCase source, string role)
     {
         return source.Authorities?.FirstOrDefault(a =>
             a.Role != null && a.Role.Equals(role, StringComparison.OrdinalIgnoreCase));
@@ -418,7 +418,7 @@ public static partial class LineOfDutyCaseMapper
         }
     }
 
-    private static MilitaryRank? ParseMilitaryRank(string rankString)
+    private static MilitaryRank? ParseMilitaryRank(string? rankString)
     {
         if (string.IsNullOrWhiteSpace(rankString))
             return null;
