@@ -352,7 +352,7 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
                                                         <RadzenFormField Text="Evaluation Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 50%;">
-                                                            <RadzenDatePicker @bind-Value="formModel.PsychiatricEvalDate" Style="width: 100%;" />
+                                                            <RadzenDatePicker @bind-Value="formModel.PsychiatricEvalDate" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy HH:mm" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                             <RadzenTextArea @bind-Value="formModel.PsychiatricEvalResults" Rows="3" Style="width: 100%;" />
@@ -385,7 +385,7 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
                                                         <RadzenFormField Text="Test Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 50%;">
-                                                            <RadzenDatePicker @bind-Value="formModel.OtherTestDate" Style="width: 100%;" />
+                                                            <RadzenDatePicker @bind-Value="formModel.OtherTestDate" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy HH:mm" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                             <RadzenTextArea @bind-Value="formModel.OtherTestResults" Rows="3" Style="width: 100%;" />
@@ -491,8 +491,8 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="formModel.ProviderSignatureDate" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy" />
+                                                        <RadzenDatePicker @bind-Value="formModel.ProviderSignatureDate" ShowTime="true" Style="width: 100%;"
+                                                                          DateFormat="MM/dd/yyyy HH:mm" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -667,8 +667,8 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="commanderFormModel.CommanderSignatureDate" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy" />
+                                                        <RadzenDatePicker @bind-Value="commanderFormModel.CommanderSignatureDate" ShowTime="true" Style="width: 100%;"
+                                                                          DateFormat="MM/dd/yyyy HH:mm" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -769,8 +769,8 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="legalFormModel.SJASignatureDate" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy" />
+                                                        <RadzenDatePicker @bind-Value="legalFormModel.SJASignatureDate" ShowTime="true" Style="width: 100%;"
+                                                                          DateFormat="MM/dd/yyyy HH:mm" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
