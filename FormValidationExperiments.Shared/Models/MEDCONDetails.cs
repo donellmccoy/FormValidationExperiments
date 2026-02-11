@@ -11,7 +11,7 @@ public class MEDCONDetails
     public DateTime? EndDate { get; set; }
     public int ExtensionDays { get; set; } // Extensions beyond 90 days require final LOD
     public bool UsesInterimLOD { get; set; }
-    public string TreatmentPlan { get; set; }
+    public string TreatmentPlan { get; set; } = string.Empty;
     public bool OutOfLocalAreaLeaveApproved { get; set; }
-    public string PhysicianMemo { get; set; } // For out-of-area leave
+    public string PhysicianMemo { get; set; } = string.Empty; // For out-of-area leave
 }

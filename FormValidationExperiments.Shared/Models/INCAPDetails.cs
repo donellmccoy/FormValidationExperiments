@@ -10,5 +10,5 @@ public class INCAPDetails
     public decimal CivilianIncomeLoss { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public string Documentation { get; set; } // Proof of income loss
+    public string Documentation { get; set; } = string.Empty; // Proof of income loss
 }

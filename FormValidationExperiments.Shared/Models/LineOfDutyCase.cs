@@ -10,16 +10,16 @@ public class LineOfDutyCase
     public int Id { get; set; }
 
     // Basic Case Information
-    public string CaseId { get; set; }
+    public string CaseId { get; set; } = string.Empty;
     public LineOfDutyProcessType ProcessType { get; set; } // Informal or Formal
     public ServiceComponent Component { get; set; } // RegAF, AFR, etc.
-    public string MemberName { get; set; }
-    public string MemberRank { get; set; }
-    public string ServiceNumber { get; set; } // SSN or DoD ID
-    public string Unit { get; set; }
+    public string MemberName { get; set; } = string.Empty;
+    public string MemberRank { get; set; } = string.Empty;
+    public string ServiceNumber { get; set; } = string.Empty; // SSN or DoD ID
+    public string Unit { get; set; } = string.Empty;
     public IncidentType IncidentType { get; set; }
     public DateTime IncidentDate { get; set; }
-    public string IncidentDescription { get; set; }
+    public string IncidentDescription { get; set; } = string.Empty;
     public DutyStatus IncidentDutyStatus { get; set; }
 
     // Medical Assessment Fields
@@ -65,21 +65,21 @@ public class LineOfDutyCase
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }
-    public string ProximateCause { get; set; } // For NILOD
+    public string ProximateCause { get; set; } = string.Empty; // For NILOD
     public bool IsPriorServiceCondition { get; set; }
-    public string PSCDocumentation { get; set; }
+    public string PSCDocumentation { get; set; } = string.Empty;
     public bool EightYearRuleApplies { get; set; }
     public int YearsOfService { get; set; }
 
     // Special Handling
     public bool IsSexualAssaultCase { get; set; }
     public bool RestrictedReporting { get; set; }
-    public string SARCCoordination { get; set; } // Sexual Assault Response Coordinator
+    public string SARCCoordination { get; set; } = string.Empty; // Sexual Assault Response Coordinator
 
     // Documents and Evidence
     public List<LineOfDutyDocument> Documents { get; set; } = new List<LineOfDutyDocument>();
     public List<string> WitnessStatements { get; set; } = new List<string>();
-    public string ToxicologyReport { get; set; }
+    public string ToxicologyReport { get; set; } = string.Empty;
 
     // Appeals
     public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
@@ -94,5 +94,5 @@ public class LineOfDutyCase
     // Audit and Notes
     public bool IsAudited { get; set; }
     public List<string> AuditComments { get; set; } = new List<string>();
-    public string PointOfContact { get; set; } // e.g., AF/A1PP email
+    public string PointOfContact { get; set; } = string.Empty; // e.g., AF/A1PP email
 }
