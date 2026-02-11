@@ -20,6 +20,18 @@ public partial class CaseList : ComponentBase
         // LoadData will be called automatically by RadzenDataGrid after first render
     }
 
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // No need to call LoadData here, as RadzenDataGrid will call it automatically
+            // when it renders for the first time. Just ensure the grid is rendered by setting isLoading to false.
+            isLoading = false;
+        }
+
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
     private async Task LoadData(LoadDataArgs args)
     {
         isLoading = true;
