@@ -87,7 +87,8 @@
           "beginsPattern": "^.*Building\\.\\.\\.",
           "endsPattern": "^\\s*Now listening on:.*"
         }
-      }
+      },
+      "dependsOn": "kill"
     },
     {
       "label": "launch",

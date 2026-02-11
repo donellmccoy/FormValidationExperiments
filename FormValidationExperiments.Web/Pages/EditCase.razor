@@ -1,6 +1,6 @@
 @page "/case/{CaseId}"
 
-<PageTitle>Home - LOD Case Management</PageTitle>
+<PageTitle>Edit Case - LOD Case Management</PageTitle>
 
 @if (isLoading)
 {
@@ -141,8 +141,8 @@ else
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="5">
-                                                    <RadzenFormField Text="SSN (last 4)" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox @bind-Value="memberFormModel.SSN" MaxLength="4" />
+                                                    <RadzenFormField Text="SSN" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenMask @bind-Value="memberFormModel.SSN" Mask="000-00-0000" CharacterPattern="[0-9]" Placeholder="___-__-____" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>

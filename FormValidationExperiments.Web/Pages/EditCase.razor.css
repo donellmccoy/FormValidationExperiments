@@ -13,7 +13,7 @@
 
 .assessment-main {
     width: 954px;
-    height: 1100px;
+    height: 1025px;
     flex-shrink: 0;
     overflow: hidden;
     padding: 0 1rem 0;
@@ -220,10 +220,12 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    padding-bottom: 2rem;
 }
 
 ::deep .assessment-tabs .rz-tabview-panel {
     padding-top: 0;
+    padding-bottom: 2rem;
 }
 
 .tab-body {

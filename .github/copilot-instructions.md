@@ -17,7 +17,7 @@ This is a **Blazor WebAssembly** application targeting **.NET 10** that implemen
 ```
 FormValidationExperiments.Web/
 ├── Pages/                  # Razor pages with code-behind (.razor.cs) and scoped styles (.razor.css)
-│   ├── Home.razor/.cs/.css       # Multi-step wizard workflow (primary page)
+│   ├── EditCase.razor/.cs/.css   # Multi-step wizard workflow (primary page)
 │   └── NotFound.razor            # 404 fallback page
 ├── ViewModels/             # Form models per workflow step (namespace: FormValidationExperiments.Web.ViewModels)
 │   ├── CaseInfoModel.cs            # Read-only case header/summary data
@@ -61,7 +61,7 @@ FormValidationExperiments.Web/
 |-----------|----------|
 | `FormValidationExperiments.Web.Models` | Domain model classes (`Models/` folder) |
 | `FormValidationExperiments.Web.Enums` | Domain enums (`Enums/` folder) |
-| `FormValidationExperiments.Web.Pages` | Page components (`Home`) |
+| `FormValidationExperiments.Web.Pages` | Page components (`EditCase`) |
 | `FormValidationExperiments.Web.ViewModels` | Form/view models per workflow step |
 | `FormValidationExperiments.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
 | `FormValidationExperiments.Web.Layout` | Layout components |
@@ -83,8 +83,8 @@ FormValidationExperiments.Web/
 - Use Radzen components (`RadzenTextBox`, `RadzenDropDown`, `RadzenButton`, `RadzenTabs`, etc.) for all form controls and UI elements.
 - Radzen services are registered via `builder.Services.AddRadzenComponents()` in `Program.cs`.
 - Global Radzen imports (`@using Radzen`, `@using Radzen.Blazor`) are in `_Imports.razor`.
-- The `Home` page implements a **multi-step wizard** pattern — the `WorkflowSidebar` drives step navigation, and `selectedTabIndex` / `currentStepIndex` control which form sections are visible.
-- The `Home` page uses a `FormatEnum<T>()` helper for display-friendly enum names.
+- The `EditCase` page implements a **multi-step wizard** pattern — the `WorkflowSidebar` drives step navigation, and `selectedTabIndex` / `currentStepIndex` control which form sections are visible.
+- The `EditCase` page uses a `FormatEnum<T>()` helper for display-friendly enum names.
 
 ## Domain Context
 
@@ -100,11 +100,12 @@ This application models the U.S. Air Force's Line of Duty determination process 
 
 ## Guidelines
 
-- When adding new workflow steps or forms, follow the existing multi-step wizard pattern in `Home.razor` / `Home.razor.cs`.
-- When adding new tabbed form sections, follow the existing tabbed pattern in `Workflow.razor` / `Workflow.razor.cs`.
+- When adding new workflow steps or forms, follow the existing multi-step wizard pattern in `EditCase.razor` / `EditCase.razor.cs`.
+- When adding new tabbed form sections, follow the existing tabbed pattern in `EditCase.razor` / `EditCase.razor.cs`.
 - Keep form validation logic and conditional visibility in code-behind files.
 - Use `EditForm` with model binding for form handling; each workflow step should have its own `EditForm` with a dedicated submit handler.
 - Prefer strongly-typed enums for status values and dropdown options; populate dropdowns from `Enum.GetValues<T>()`.
 - When generating test data, use realistic military/LOD terminology consistent with AF Form 348 item numbering.
 - The `WorkflowStep` and `WorkflowStepStatus` types are defined in `Shared/WorkflowSidebar.razor.cs` — import via `@using FormValidationExperiments.Web.Shared` (already in `_Imports.razor`).
 - Use the `CaseInfoModel` for read-only case summary/header displays; use the specific form models for editable form sections.
+- **Always use the Simple Browser** when launching the app — use `open_simple_browser` tool with URL `https://localhost:7240` for the Web app.

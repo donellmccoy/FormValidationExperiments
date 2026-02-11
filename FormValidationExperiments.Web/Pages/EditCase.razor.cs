@@ -8,7 +8,7 @@ using Radzen;
 
 namespace FormValidationExperiments.Web.Pages;
 
-public partial class Home : ComponentBase
+public partial class EditCase : ComponentBase
 {
     [Inject]
     private ILineOfDutyCaseService CaseService { get; set; }
@@ -20,6 +20,7 @@ public partial class Home : ComponentBase
     public string CaseId { get; set; }
 
     private bool isLoading = true;
+
     private bool isSaving;
 
     private int selectedTabIndex;
@@ -63,7 +64,7 @@ public partial class Home : ComponentBase
 
     private static string FormatEnum<T>(T value) where T : Enum
     {
-        return Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1");
+        return MyRegex().Replace(value.ToString(), " $1");
     }
 
     private List<WorkflowStep> workflowSteps = [];
@@ -105,7 +106,7 @@ public partial class Home : ComponentBase
         [
             new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
             new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,    StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
-            new() { Number = 3,  Name = "Line Of Initiation",   Icon = "description",           Status = WorkflowStepStatus.Pending,    StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
+            new() { Number = 3,  Name = "Line Of Duty Initiation",   Icon = "description",      Status = WorkflowStepStatus.Pending,    StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
             new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Medical provider review and clinical impact assessment." },
             new() { Number = 5,  Name = "Commander Review",     Icon = "edit_document",         Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
             new() { Number = 6,  Name = "Legal SJA Review",     Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Legal office review if deemed necessary." },
@@ -222,4 +223,7 @@ public partial class Home : ComponentBase
             StateHasChanged();
         }
     }
+
+    [GeneratedRegex("(\\B[A-Z])")]
+    private static partial Regex MyRegex();
 }
