@@ -119,8 +119,14 @@ public class EctDbContext : DbContext
                   .OnDelete(DeleteBehavior.NoAction);
         });
 
-        // Simple entities
-        modelBuilder.Entity<LineOfDutyDocument>().HasKey(e => e.Id);
+        // LineOfDutyDocument configuration
+        modelBuilder.Entity<LineOfDutyDocument>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).HasColumnType("varbinary(max)");
+            entity.Property(e => e.ContentType).HasMaxLength(256);
+            entity.Property(e => e.FileName).HasMaxLength(512);
+        });
         modelBuilder.Entity<MEDCONDetails>().HasKey(e => e.Id);
         modelBuilder.Entity<INCAPDetails>(entity =>
         {

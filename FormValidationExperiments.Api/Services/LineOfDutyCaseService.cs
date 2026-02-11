@@ -188,20 +188,87 @@ public partial class LineOfDutyCaseService :
 
     // ──────────────────────────── Document Operations ────────────────────────────
 
+    private const long MaxDocumentSize = 10 * 1024 * 1024; // 10 MB
+
     public async Task<List<LineOfDutyDocument>> GetDocumentsByCaseIdAsync(int caseId, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         return await context.Documents
             .AsNoTracking()
             .Where(d => d.LineOfDutyCaseId == caseId)
+            .Select(d => new LineOfDutyDocument
+            {
+                Id = d.Id,
+                LineOfDutyCaseId = d.LineOfDutyCaseId,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                ContentType = d.ContentType,
+                FileSize = d.FileSize,
+                UploadDate = d.UploadDate,
+                Description = d.Description
+                // Content intentionally excluded
+            })
             .ToListAsync(ct);
     }
 
-    public async Task<LineOfDutyDocument> AddDocumentAsync(LineOfDutyDocument document, CancellationToken ct = default)
+    public async Task<LineOfDutyDocument?> GetDocumentByIdAsync(int documentId, CancellationToken ct = default)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await context.Documents
+            .AsNoTracking()
+            .Where(d => d.Id == documentId)
+            .Select(d => new LineOfDutyDocument
+            {
+                Id = d.Id,
+                LineOfDutyCaseId = d.LineOfDutyCaseId,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                ContentType = d.ContentType,
+                FileSize = d.FileSize,
+                UploadDate = d.UploadDate,
+                Description = d.Description
+            })
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<byte[]?> GetDocumentContentAsync(int documentId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await context.Documents
+            .AsNoTracking()
+            .Where(d => d.Id == documentId)
+            .Select(d => d.Content)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<LineOfDutyDocument> UploadDocumentAsync(
+        int caseId, string fileName, string contentType, string documentType,
+        string description, Stream content, CancellationToken ct = default)
+    {
+        using var ms = new MemoryStream();
+        await content.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
+
+        if (bytes.Length > MaxDocumentSize)
+            throw new ArgumentException($"File size exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
+
+        var document = new LineOfDutyDocument
+        {
+            LineOfDutyCaseId = caseId,
+            FileName = fileName,
+            ContentType = contentType,
+            DocumentType = documentType,
+            Description = description,
+            Content = bytes,
+            FileSize = bytes.Length,
+            UploadDate = DateTime.UtcNow
+        };
+
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         context.Documents.Add(document);
         await context.SaveChangesAsync(ct);
+
+        document.Content = null!; // Don't return content in response
         return document;
     }
 
