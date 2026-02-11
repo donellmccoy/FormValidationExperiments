@@ -7,7 +7,7 @@ namespace FormValidationExperiments.Shared.ViewModels;
 /// Captures clinical data, substance and toxicology information, psychiatric evaluation,
 /// EPTS/NSA determination, ARC-specific fields, and the medical provider's signature.
 /// </summary>
-public class MedicalAssessmentFormModel
+public class MedicalAssessmentFormModel : TrackableModel
 {
     // ── Item 9: Type of Investigation ──
 

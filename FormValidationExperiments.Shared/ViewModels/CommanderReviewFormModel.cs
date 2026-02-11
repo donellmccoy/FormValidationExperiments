@@ -7,7 +7,7 @@ namespace FormValidationExperiments.Shared.ViewModels;
 /// Captures the commander's endorsement, sources of information reviewed,
 /// misconduct assessment, proximate cause analysis, and recommendation.
 /// </summary>
-public class CommanderReviewFormModel
+public class CommanderReviewFormModel : TrackableModel
 {
     // ── Item 16: Sources of Information ──
 

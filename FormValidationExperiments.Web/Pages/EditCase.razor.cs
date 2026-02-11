@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using FormValidationExperiments.Shared.Enums;
 using Microsoft.AspNetCore.Components;
@@ -15,6 +16,12 @@ public partial class EditCase : ComponentBase
 
     [Inject]
     private NotificationService NotificationService { get; set; }
+
+    [Inject]
+    private DialogService DialogService { get; set; }
+
+    [Inject]
+    private JsonSerializerOptions JsonOptions { get; set; }
 
     [Parameter]
     public string CaseId { get; set; }
@@ -36,6 +43,9 @@ public partial class EditCase : ComponentBase
     private LegalSJAReviewFormModel legalFormModel = new();
 
     private CaseInfoModel caseInfo = new();
+
+    // ──── Dirty Tracking ────
+    private bool HasAnyChanges => memberFormModel.IsDirty || formModel.IsDirty || commanderFormModel.IsDirty || legalFormModel.IsDirty;
 
     // ──── Conditional Visibility ────
     private bool ShowSubstanceType => formModel.WasUnderInfluence == true;
@@ -98,6 +108,15 @@ public partial class EditCase : ComponentBase
         legalFormModel = dto.LegalSJAReview;
 
         InitializeWorkflowSteps();
+        TakeSnapshots();
+    }
+
+    private void TakeSnapshots()
+    {
+        memberFormModel.TakeSnapshot(JsonOptions);
+        formModel.TakeSnapshot(JsonOptions);
+        commanderFormModel.TakeSnapshot(JsonOptions);
+        legalFormModel.TakeSnapshot(JsonOptions);
     }
 
     private void InitializeWorkflowSteps()
@@ -172,6 +191,14 @@ public partial class EditCase : ComponentBase
 
     private async void OnSaveDraft()
     {
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to save?",
+            "Confirm Save",
+            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+            return;
+
         await SaveCurrentTabAsync("Draft");
     }
 
@@ -199,6 +226,8 @@ public partial class EditCase : ComponentBase
             if (updatedInfo is not null)
                 caseInfo = updatedInfo;
 
+            TakeSnapshots();
+
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,
@@ -222,6 +251,48 @@ public partial class EditCase : ComponentBase
             isSaving = false;
             StateHasChanged();
         }
+    }
+
+    private async void OnRevertChanges()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Revert all unsaved changes? This cannot be undone.",
+            "Confirm Revert",
+            new ConfirmOptions { OkButtonText = "Revert", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+            return;
+
+        memberFormModel.Revert();
+        formModel.Revert();
+        commanderFormModel.Revert();
+        legalFormModel.Revert();
+
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Info,
+            Summary = "Reverted",
+            Detail = "All unsaved changes have been reverted.",
+            Duration = 3000
+        });
+
+        StateHasChanged();
+    }
+
+    private void OnSsnChanged(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            memberFormModel.SSN = string.Empty;
+            return;
+        }
+
+        // Strip everything except digits, limit to 4
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        if (digits.Length > 4)
+            digits = digits[..4];
+
+        memberFormModel.SSN = digits;
     }
 
     [GeneratedRegex("(\\B[A-Z])")]

@@ -7,7 +7,7 @@ namespace FormValidationExperiments.Shared.ViewModels;
 /// Captures the requesting commander, medical provider, member identification,
 /// and member status at the time of the incident.
 /// </summary>
-public class MemberInfoFormModel
+public class MemberInfoFormModel : TrackableModel
 {
     // ── Item 1: Requesting Commander ──
 

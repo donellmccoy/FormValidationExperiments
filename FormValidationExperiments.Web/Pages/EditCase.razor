@@ -141,8 +141,8 @@ else
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="5">
-                                                    <RadzenFormField Text="SSN" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenMask @bind-Value="memberFormModel.SSN" Mask="000-00-0000" CharacterPattern="[0-9]" Placeholder="___-__-____" />
+                                                    <RadzenFormField Text="SSN (Last 4)" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
+                                                        <RadzenTextBox Value="@memberFormModel.SSN" Change="@OnSsnChanged" MaxLength="4" Placeholder="____" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -187,6 +187,8 @@ else
                                             <span>Next Step: <strong>Medical Assessment</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
+                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!memberFormModel.IsDirty)" />
                                             <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
                                             <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Assessment" Style="background-color: #00308F; color: white;" />
@@ -521,6 +523,8 @@ else
                                             <span>Next Step: <strong>Commander Review</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
+                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!formModel.IsDirty)" />
                                             <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
                                             <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Commander Review" Style="background-color: #00308F; color: white;" />
@@ -697,6 +701,8 @@ else
                                             <span>Next Step: <strong>Legal SJA Review</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
+                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!commanderFormModel.IsDirty)" />
                                             <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
                                             <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Legal SJA Review" Style="background-color: #00308F; color: white;" />
@@ -799,6 +805,8 @@ else
                                             <span>Next Step: <strong>Wing CC Review</strong></span>
                                         </div>
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
+                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!legalFormModel.IsDirty)" />
                                             <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                           Click="@OnSaveDraft" />
                                             <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Wing CC Review" Style="background-color: #00308F; color: white;" />
@@ -822,6 +830,8 @@ else
                                         <span>Next Step: <strong>Board Review</strong></span>
                                     </div>
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                        <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
+                                                      Icon="undo" Click="@OnRevertChanges" Disabled="@(!HasAnyChanges)" />
                                         <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                       Click="@OnSaveDraft" />
                                         <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Board Review" Style="background-color: #00308F; color: white;" />
@@ -840,6 +850,8 @@ else
                                 <div class="form-actions rz-mt-4">
                                     <div></div>
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                        <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
+                                                      Icon="undo" Click="@OnRevertChanges" Disabled="@(!HasAnyChanges)" />
                                         <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
                                                       Click="@OnSaveDraft" />
                                         <RadzenButton ButtonType="ButtonType.Submit" Text="Complete Review" Style="background-color: #00308F; color: white;" />

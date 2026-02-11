@@ -86,3 +86,11 @@ h1:focus {
 code {
     color: #c02d76;
 }
+
+/* Force notification to bottom-right */
+.rz-notification-container {
+    top: auto !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    left: auto !important;
+}

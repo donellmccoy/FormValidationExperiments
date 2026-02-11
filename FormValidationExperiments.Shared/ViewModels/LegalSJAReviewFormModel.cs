@@ -7,7 +7,7 @@ namespace FormValidationExperiments.Shared.ViewModels;
 /// (AF Form 348, Items 24–25). Captures legal sufficiency determination,
 /// concurrence with the commander's recommendation, and SJA signature.
 /// </summary>
-public class LegalSJAReviewFormModel
+public class LegalSJAReviewFormModel : TrackableModel
 {
     // ── Item 24: Legal Sufficiency Review ──
 
