@@ -30,15 +30,68 @@ public partial class LineOfDutyCaseService :
         "FinalFinding", "InitiationDate", "CompletionDate", "IsInterimLOD"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    [GeneratedRegex(@"^[\w\s\.\,\=\!\<\>\&\|\(\)""%\-]+$")]
+    [GeneratedRegex(@"^[\w\s\.\,\=\!\<\>\&\|\(\)""%\-\/\?\:]+$")]
     private static partial Regex SafeExpressionPattern();
 
     [GeneratedRegex(@"\b([A-Za-z_]\w*)\b")]
     private static partial Regex IdentifierPattern();
 
+    [GeneratedRegex(@"""[^""]*""")]
+    private static partial Regex QuotedStringPattern();
+
     public LineOfDutyCaseService(IDbContextFactory<EctDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
+    }
+
+    // ──────────────────────────── Filter Transformation ────────────────────────────
+
+    /// <summary>
+    /// Transforms a Radzen DataGrid filter expression into a form that
+    /// System.Linq.Dynamic.Core can parse.
+    /// <para>
+    /// Radzen v9 generates lambda-style filters such as:
+    /// <c>x => (((x == null) ?  : x.CaseId) ?? "").Contains("512")</c>
+    /// </para>
+    /// <para>
+    /// Dynamic LINQ's <c>.Where(string)</c> expects just the expression body with
+    /// properties referenced directly (e.g. <c>(CaseId ?? "").Contains("512")</c>).
+    /// </para>
+    /// </summary>
+    private static string TransformRadzenFilter(string filter)
+    {
+        // 1. Detect and strip the lambda parameter declaration: "x => body" → "body"
+        var lambdaMatch = Regex.Match(filter, @"^\s*(\w+)\s*=>\s*");
+        if (!lambdaMatch.Success)
+            return filter; // Not a lambda expression — return as-is
+
+        var paramName = lambdaMatch.Groups[1].Value;
+        var body = filter[lambdaMatch.Length..];
+
+        // 2. Remove null-safe entity-check ternary:
+        //    "(param == null) ? <optional-default> : <expr>" → "<expr>"
+        //    Handles empty true-branch, quoted strings, or "null" as the default value.
+        body = Regex.Replace(body,
+            $@"\(\s*{Regex.Escape(paramName)}\s*==\s*null\s*\)\s*\?\s*(?:""[^""]*""|null)?\s*:\s*",
+            string.Empty);
+
+        // 3. Replace remaining parameter-dot references: "param.Property" → "Property"
+        body = Regex.Replace(body, $@"\b{Regex.Escape(paramName)}\.", string.Empty);
+
+        // 4. Strip fully-qualified enum casts:
+        //    "(Namespace.SubNs.EnumType)0" → "0"
+        //    Radzen generates these for enum column filters.
+        body = Regex.Replace(body, @"\(\s*(?:[\w]+\.)+[\w]+\s*\)\s*(?=\d)", string.Empty);
+
+        // 5. Simplify Radzen DateTime expressions:
+        //    "DateTime.SpecifyKind(DateTime.Parse("2025-05-10", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind), DateTimeKind.Unspecified)"
+        //    → "DateTime.Parse(\"2025-05-10\")"
+        //    Dynamic LINQ doesn't support CultureInfo, DateTimeStyles, or DateTimeKind types.
+        body = Regex.Replace(body,
+            @"DateTime\.SpecifyKind\s*\(\s*DateTime\.Parse\s*\(\s*""([^""]+)""\s*,\s*CultureInfo\.\w+\s*,\s*DateTimeStyles\.\w+\s*\)\s*,\s*DateTimeKind\.\w+\s*\)",
+            @"DateTime.Parse(""$1"")");
+
+        return body;
     }
 
     // ──────────────────────────── Validation ────────────────────────────
@@ -52,8 +105,11 @@ public partial class LineOfDutyCaseService :
         if (!SafeExpressionPattern().IsMatch(expression))
             throw new ArgumentException("Filter/orderBy expression contains invalid characters.");
 
-        // Extract identifiers (words that aren't keywords or literals)
-        var identifiers = IdentifierPattern().Matches(expression)
+        // Strip quoted string literals so their contents aren't treated as identifiers
+        var stripped = QuotedStringPattern().Replace(expression, string.Empty);
+
+        // Extract identifiers (words that aren't keywords, literals, or method names)
+        var identifiers = IdentifierPattern().Matches(stripped)
             .Select(m => m.Value)
             .Where(v => !IsKeywordOrLiteral(v))
             .ToList();
@@ -69,8 +125,22 @@ public partial class LineOfDutyCaseService :
     {
         return value is "and" or "or" or "not" or "null" or "true" or "false"
             or "asc" or "ascending" or "desc" or "descending"
-            or "it" or "np" or "new" or "iif" or "as" or "is"
+            or "it" or "np" or "new" or "iif" or "as" or "is" or "x"
             or "DateTime" or "String" or "Int32" or "Int64" or "Boolean"
+            or "Double" or "Decimal" or "Single" or "Byte" or "Guid" or "TimeSpan"
+            // Type conversion methods used by Radzen DataGrid for non-string columns
+            or "Convert" or "ToInt32" or "ToInt64" or "ToDouble" or "ToDecimal"
+            or "ToByte" or "ToSingle" or "ToBoolean" or "ToDateTime" or "Parse"
+            // Dynamic LINQ methods used by Radzen DataGrid filtering
+            or "Contains" or "StartsWith" or "EndsWith"
+            or "ToLower" or "ToUpper" or "ToString" or "Trim"
+            or "Length" or "Substring" or "IndexOf" or "Replace" or "Equals"
+            or "Year" or "Month" or "Day" or "Hour" or "Minute" or "Second"
+            // DateTime helpers used by Radzen DataGrid date filters
+            or "SpecifyKind" or "DateTimeKind" or "Unspecified" or "Utc" or "Local"
+            or "CultureInfo" or "InvariantCulture" or "DateTimeStyles" or "RoundtripKind"
+            // Nullable helpers
+            or "Value" or "HasValue"
             || int.TryParse(value, out _);
     }
 
@@ -100,12 +170,14 @@ public partial class LineOfDutyCaseService :
 
         if (!string.IsNullOrEmpty(filter))
         {
+            filter = TransformRadzenFilter(filter);
             ValidateDynamicExpression(filter);
             query = query.Where(filter);
         }
 
         if (!string.IsNullOrEmpty(orderBy))
         {
+            orderBy = TransformRadzenFilter(orderBy);
             ValidateDynamicExpression(orderBy);
             query = query.OrderBy(orderBy);
         }

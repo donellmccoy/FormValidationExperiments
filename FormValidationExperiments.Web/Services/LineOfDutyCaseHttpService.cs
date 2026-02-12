@@ -31,10 +31,17 @@ public class LineOfDutyCaseHttpService : ILineOfDutyCaseService
         if (!string.IsNullOrEmpty(orderBy))
             queryParams.Add($"orderBy={Uri.EscapeDataString(orderBy)}");
 
-        var url = $"api/cases/paged?{string.Join("&", queryParams)}";
+        var url = $"api/cases?{string.Join("&", queryParams)}";
 
         var response = await _http.GetAsync(url);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"API error ({response.StatusCode}): {errorBody}");
+            Console.WriteLine($"  Filter: {filter}");
+            Console.WriteLine($"  OrderBy: {orderBy}");
+            response.EnsureSuccessStatusCode();
+        }
         return await response.Content.ReadFromJsonAsync<PagedResult<LineOfDutyCase>>(_jsonOptions)
                ?? new PagedResult<LineOfDutyCase>();
     }

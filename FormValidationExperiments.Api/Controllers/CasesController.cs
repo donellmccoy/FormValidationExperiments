@@ -11,16 +11,18 @@ namespace FormValidationExperiments.Api.Controllers;
 public class CasesController : ControllerBase
 {
     private readonly ILineOfDutyCaseService _caseService;
+    private readonly ILogger<CasesController> _logger;
 
-    public CasesController(ILineOfDutyCaseService caseService)
+    public CasesController(ILineOfDutyCaseService caseService, ILogger<CasesController> logger)
     {
         _caseService = caseService;
+        _logger = logger;
     }
 
     /// <summary>
     /// Returns a paged result of LOD cases with optional filtering and sorting.
     /// </summary>
-    [HttpGet("paged")]
+    [HttpGet]
     public async Task<ActionResult<PagedResult<LineOfDutyCase>>> GetPaged(
         [FromQuery] int skip = 0,
         [FromQuery] int take = 10,
@@ -35,7 +37,13 @@ public class CasesController : ControllerBase
         }
         catch (ArgumentException ex)
         {
+            _logger.LogWarning(ex, "Invalid filter/orderBy expression. Filter: {Filter}, OrderBy: {OrderBy}", filter, orderBy);
             return BadRequest(ex.Message);
+        }
+        catch (System.Linq.Dynamic.Core.Exceptions.ParseException ex)
+        {
+            _logger.LogWarning(ex, "Dynamic LINQ parse error. Filter: {Filter}, OrderBy: {OrderBy}", filter, orderBy);
+            return BadRequest($"Invalid filter expression: {ex.Message}");
         }
     }
 
