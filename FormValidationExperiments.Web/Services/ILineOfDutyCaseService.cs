@@ -1,5 +1,6 @@
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Shared.ViewModels;
+using Radzen;
 
 #nullable enable
 
@@ -11,9 +12,11 @@ namespace FormValidationExperiments.Web.Services;
 public interface ILineOfDutyCaseService
 {
     /// <summary>
-    /// Returns a paged result of LOD cases with optional filtering and sorting.
+    /// Queries LOD cases via OData with filtering, paging, sorting, and count.
     /// </summary>
-    Task<PagedResult<LineOfDutyCase>> GetCasesPagedAsync(int skip, int take, string? filter = null, string? orderBy = null);
+    Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
+        string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, bool? count = null);
 
     /// <summary>
     /// Returns all mapped view models for a specific case.

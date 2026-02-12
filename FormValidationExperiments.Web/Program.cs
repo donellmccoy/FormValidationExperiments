@@ -24,8 +24,8 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddRadzenComponents();
 
-// LOD case service — calls the API via HttpClient
-builder.Services.AddScoped<ILineOfDutyCaseService, LineOfDutyCaseHttpService>();
+// LOD case service — calls the API via OData + REST
+builder.Services.AddScoped<ILineOfDutyCaseService, LineOfDutyCaseODataService>();
 
 var host = builder.Build();
 await host.RunAsync();

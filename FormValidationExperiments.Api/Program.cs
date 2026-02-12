@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OData.ModelBuilder;
 using FormValidationExperiments.Api.Data;
 using FormValidationExperiments.Api.Services;
+using FormValidationExperiments.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +19,21 @@ builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService
 builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 
-// Controllers
+// OData Entity Data Model
+var odataBuilder = new ODataConventionModelBuilder();
+odataBuilder.EntitySet<LineOfDutyCase>("Cases");
+
+// Controllers + OData
 builder.Services.AddControllers()
+    .AddOData(options =>
+    {
+        options.AddRouteComponents("odata", odataBuilder.GetEdmModel())
+               .Select()
+               .Filter()
+               .OrderBy()
+               .SetMaxTop(100)
+               .Count();
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());

@@ -11,11 +11,16 @@ public partial class CaseList : ComponentBase
     [Inject]
     private ILineOfDutyCaseService CaseService { get; set; }
 
-    private List<LineOfDutyCase> cases = [];
+    private ODataEnumerable<LineOfDutyCase> cases;
 
     private int count;
 
     private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData(new LoadDataArgs { Skip = 0, Top = 10 });
+    }
 
     private async Task LoadData(LoadDataArgs args)
     {
@@ -23,19 +28,20 @@ public partial class CaseList : ComponentBase
 
         try
         {
-            var result = await CaseService.GetCasesPagedAsync(
-                args.Skip ?? 0,
-                args.Top ?? 10,
-                args.Filter,
-                args.OrderBy);
+            var result = await CaseService.GetCasesAsync(
+                filter: args.Filter,
+                top: args.Top,
+                skip: args.Skip,
+                orderby: args.OrderBy,
+                count: true);
 
-            cases = result.Items;
-            count = result.TotalCount;
+            cases = result.Value.AsODataEnumerable();
+            count = result.Count;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading cases: {ex.Message}");
-            cases = [];
+            cases = null;
             count = 0;
         }
         finally
