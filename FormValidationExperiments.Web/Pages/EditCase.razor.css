@@ -2,7 +2,7 @@
 
 .assessment-layout {
     display: flex;
-    margin: -1rem;
+    margin: 0px;
     height: calc(100vh - 6rem);
     overflow-x: auto;
     overflow-y: hidden;
@@ -16,7 +16,7 @@
     height: 1025px;
     flex-shrink: 0;
     overflow: hidden;
-    padding: 0 1rem 0;
+    padding: 0px;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
