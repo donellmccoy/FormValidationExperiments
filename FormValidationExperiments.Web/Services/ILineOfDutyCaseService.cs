@@ -16,15 +16,16 @@ public interface ILineOfDutyCaseService
     /// </summary>
     Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
-        string? orderby = null, bool? count = null);
+        string? orderby = null, bool? count = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns all mapped view models for a specific case.
     /// </summary>
-    Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId);
+    Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Saves all view model changes for a case. Returns the refreshed CaseInfoModel.
     /// </summary>
-    Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto);
+    Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto, CancellationToken cancellationToken = default);
 }

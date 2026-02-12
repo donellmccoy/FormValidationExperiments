@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using FormValidationExperiments.Shared.Enums;
 using Microsoft.AspNetCore.Components;
 using FormValidationExperiments.Web.Services;
@@ -9,8 +8,18 @@ using Radzen;
 
 namespace FormValidationExperiments.Web.Pages;
 
-public partial class EditCase : ComponentBase
+public partial class EditCase : ComponentBase, IDisposable
 {
+    // ──── Tab Name Constants ────
+    private static class TabNames
+    {
+        public const string MemberInformation = "Member Information";
+        public const string MedicalAssessment = "Medical Assessment";
+        public const string CommanderReview = "Commander Review";
+        public const string LegalSJAReview = "Legal SJA Review";
+        public const string Draft = "Draft";
+    }
+
     [Inject]
     private ILineOfDutyCaseService CaseService { get; set; }
 
@@ -26,13 +35,15 @@ public partial class EditCase : ComponentBase
     [Parameter]
     public string CaseId { get; set; }
 
+    private readonly CancellationTokenSource _cts = new();
+
     private bool isLoading = true;
 
     private bool isSaving;
 
     private int selectedTabIndex;
 
-    private int currentStepIndex = 0;
+    private int currentStepIndex;
 
     private MemberInfoFormModel memberFormModel = new();
 
@@ -44,8 +55,11 @@ public partial class EditCase : ComponentBase
 
     private CaseInfoModel caseInfo = new();
 
+    // ──── Form Model Collection ────
+    private IReadOnlyList<TrackableModel> AllFormModels => [memberFormModel, formModel, commanderFormModel, legalFormModel];
+
     // ──── Dirty Tracking ────
-    private bool HasAnyChanges => memberFormModel.IsDirty || formModel.IsDirty || commanderFormModel.IsDirty || legalFormModel.IsDirty;
+    private bool HasAnyChanges => AllFormModels.Any(m => m.IsDirty);
 
     // ──── Conditional Visibility ────
     private bool ShowSubstanceType => formModel.WasUnderInfluence == true;
@@ -72,15 +86,10 @@ public partial class EditCase : ComponentBase
     // ──── Legal SJA Review Conditional Visibility ────
     private bool ShowNonConcurrenceReason => legalFormModel.ConcurWithRecommendation == false;
 
-    private static string FormatEnum<T>(T value) where T : Enum
-    {
-        return MyRegex().Replace(value.ToString(), " $1");
-    }
-
     private List<WorkflowStep> workflowSteps = [];
 
-    private WorkflowStep CurrentStep => workflowSteps[currentStepIndex];
-    
+    private WorkflowStep CurrentStep => workflowSteps.Count > 0 ? workflowSteps[currentStepIndex] : null;
+
     private WorkflowStep NextStep => currentStepIndex + 1 < workflowSteps.Count ? workflowSteps[currentStepIndex + 1] : null;
 
     protected override async Task OnInitializedAsync()
@@ -91,32 +100,47 @@ public partial class EditCase : ComponentBase
 
     private async Task LoadCaseAsync()
     {
-        var dto = await CaseService.GetCaseViewModelsAsync(CaseId);
-
-        if (dto is null)
+        try
         {
-            // Fallback: leave models at defaults
+            var dto = await CaseService.GetCaseViewModelsAsync(CaseId, _cts.Token);
+
+            if (dto is null)
+            {
+                InitializeWorkflowSteps();
+                return;
+            }
+
+            caseInfo = dto.CaseInfo;
+            memberFormModel = dto.MemberInfo;
+            formModel = dto.MedicalAssessment;
+            commanderFormModel = dto.CommanderReview;
+            legalFormModel = dto.LegalSJAReview;
+
             InitializeWorkflowSteps();
-            return;
+            TakeSnapshots();
         }
+        catch (OperationCanceledException)
+        {
+            // Component disposed during load — silently ignore
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load Failed",
+                Detail = $"Failed to load case: {ex.Message}",
+                Duration = 5000
+            });
 
-        // Populate view models from API response
-        caseInfo = dto.CaseInfo;
-        memberFormModel = dto.MemberInfo;
-        formModel = dto.MedicalAssessment;
-        commanderFormModel = dto.CommanderReview;
-        legalFormModel = dto.LegalSJAReview;
-
-        InitializeWorkflowSteps();
-        TakeSnapshots();
+            InitializeWorkflowSteps();
+        }
     }
 
     private void TakeSnapshots()
     {
-        memberFormModel.TakeSnapshot(JsonOptions);
-        formModel.TakeSnapshot(JsonOptions);
-        commanderFormModel.TakeSnapshot(JsonOptions);
-        legalFormModel.TakeSnapshot(JsonOptions);
+        foreach (var model in AllFormModels)
+            model.TakeSnapshot(JsonOptions);
     }
 
     private void InitializeWorkflowSteps()
@@ -134,31 +158,30 @@ public partial class EditCase : ComponentBase
         ];
     }
 
-    private async void OnFormSubmit(MedicalAssessmentFormModel model)
+    private async Task OnFormSubmit(MedicalAssessmentFormModel model)
     {
-        await SaveCurrentTabAsync("Medical Assessment");
+        await SaveCurrentTabAsync(TabNames.MedicalAssessment);
     }
 
-    private async void OnMemberFormSubmit(MemberInfoFormModel model)
+    private async Task OnMemberFormSubmit(MemberInfoFormModel model)
     {
-        await SaveCurrentTabAsync("Member Information");
+        await SaveCurrentTabAsync(TabNames.MemberInformation);
     }
 
-    private async void OnCommanderFormSubmit(CommanderReviewFormModel model)
+    private async Task OnCommanderFormSubmit(CommanderReviewFormModel model)
     {
-        await SaveCurrentTabAsync("Commander Review");
+        await SaveCurrentTabAsync(TabNames.CommanderReview);
     }
 
-    private async void OnLegalFormSubmit(LegalSJAReviewFormModel model)
+    private async Task OnLegalFormSubmit(LegalSJAReviewFormModel model)
     {
-        await SaveCurrentTabAsync("Legal SJA Review");
+        await SaveCurrentTabAsync(TabNames.LegalSJAReview);
     }
 
     private void OnStepSelected(WorkflowStep step)
     {
         currentStepIndex = step.Number - 1;
 
-        // Update all step statuses based on the clicked step
         foreach (var s in workflowSteps)
         {
             if (s.Number < step.Number)
@@ -189,7 +212,7 @@ public partial class EditCase : ComponentBase
         selectedTabIndex = 0;
     }
 
-    private async void OnSaveDraft()
+    private async Task OnSaveDraft()
     {
         var confirmed = await DialogService.Confirm(
             "Are you sure you want to save?",
@@ -199,7 +222,7 @@ public partial class EditCase : ComponentBase
         if (confirmed != true)
             return;
 
-        await SaveCurrentTabAsync("Draft");
+        await SaveCurrentTabAsync(TabNames.Draft);
     }
 
     private async Task SaveCurrentTabAsync(string source)
@@ -211,7 +234,6 @@ public partial class EditCase : ComponentBase
 
         try
         {
-            // Build the DTO with current view model state
             var dto = new CaseViewModelsDto
             {
                 CaseInfo = caseInfo,
@@ -221,8 +243,7 @@ public partial class EditCase : ComponentBase
                 LegalSJAReview = legalFormModel
             };
 
-            // Save via API — returns refreshed case info header
-            var updatedInfo = await CaseService.SaveCaseAsync(CaseId, dto);
+            var updatedInfo = await CaseService.SaveCaseAsync(CaseId, dto, _cts.Token);
             if (updatedInfo is not null)
                 caseInfo = updatedInfo;
 
@@ -235,6 +256,10 @@ public partial class EditCase : ComponentBase
                 Detail = $"{source} data saved successfully.",
                 Duration = 3000
             });
+        }
+        catch (OperationCanceledException)
+        {
+            // Component disposed during save — silently ignore
         }
         catch (Exception ex)
         {
@@ -253,7 +278,7 @@ public partial class EditCase : ComponentBase
         }
     }
 
-    private async void OnRevertChanges()
+    private async Task OnRevertChanges()
     {
         var confirmed = await DialogService.Confirm(
             "Revert all unsaved changes? This cannot be undone.",
@@ -263,10 +288,8 @@ public partial class EditCase : ComponentBase
         if (confirmed != true)
             return;
 
-        memberFormModel.Revert();
-        formModel.Revert();
-        commanderFormModel.Revert();
-        legalFormModel.Revert();
+        foreach (var model in AllFormModels)
+            model.Revert();
 
         NotificationService.Notify(new NotificationMessage
         {
@@ -279,22 +302,27 @@ public partial class EditCase : ComponentBase
         StateHasChanged();
     }
 
-    private void OnSsnChanged(string value)
+    private void OnSsnChanged(ChangeEventArgs args)
     {
+        var value = args.Value?.ToString();
+
         if (string.IsNullOrEmpty(value))
         {
             memberFormModel.SSN = string.Empty;
             return;
         }
 
-        // Strip everything except digits, limit to 4
         var digits = new string(value.Where(char.IsDigit).ToArray());
         if (digits.Length > 4)
             digits = digits[..4];
 
         memberFormModel.SSN = digits;
+        StateHasChanged();
     }
 
-    [GeneratedRegex("(\\B[A-Z])")]
-    private static partial Regex MyRegex();
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
 }

@@ -76,10 +76,10 @@ else
                                  Style="padding: 1rem 1.5rem 1rem 0.5rem;">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
                             <div class="panel-icon-box">
-                                <span class="material-symbols-outlined">@CurrentStep.Icon</span>
+                                <span class="material-symbols-outlined">@CurrentStep?.Icon</span>
                             </div>
                             <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
-                                @CurrentStep.Name
+                                @CurrentStep?.Name
                             </RadzenText>
                         </RadzenStack>
                     </RadzenStack>
@@ -99,12 +99,12 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Requesting Commander" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.RequestingCommander" Change="@((string val) => memberFormModel.RequestingCommander = val)"/>
+                                                        <RadzenTextBox Value="@memberFormModel.RequestingCommander" @oninput="@(args => memberFormModel.RequestingCommander = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Medical Provider" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.MedicalProvider" Change="@((string val) => memberFormModel.MedicalProvider = val)" />
+                                                        <RadzenTextBox Value="@memberFormModel.MedicalProvider" @oninput="@(args => memberFormModel.MedicalProvider = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -125,24 +125,24 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="5">
                                                     <RadzenFormField Text="Last Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.LastName" Change="@((string val) => memberFormModel.LastName = val)" />
+                                                        <RadzenTextBox Value="@memberFormModel.LastName" @oninput="@(args => memberFormModel.LastName = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="5">
                                                     <RadzenFormField Text="First Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.FirstName" Change="@((string val) => memberFormModel.FirstName = val)" />
+                                                        <RadzenTextBox Value="@memberFormModel.FirstName" @oninput="@(args => memberFormModel.FirstName = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="2">
                                                     <RadzenFormField Text="MI" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.MiddleInitial" Change="@((string val) => memberFormModel.MiddleInitial = val)" MaxLength="1" />
+                                                        <RadzenTextBox Value="@memberFormModel.MiddleInitial" @oninput="@(args => memberFormModel.MiddleInitial = args.Value?.ToString())" MaxLength="1" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="5">
                                                     <RadzenFormField Text="SSN (Last 4)" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.SSN" Change="@OnSsnChanged" MaxLength="4" Placeholder="____" />
+                                                        <RadzenTextBox Value="@memberFormModel.SSN" @oninput="OnSsnChanged" MaxLength="4" Placeholder="____" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -157,7 +157,7 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="7">
                                                     <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@memberFormModel.OrganizationUnit" Change="@((string val) => memberFormModel.OrganizationUnit = val)" />
+                                                        <RadzenTextBox Value="@memberFormModel.OrganizationUnit" @oninput="@(args => memberFormModel.OrganizationUnit = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -213,7 +213,7 @@ else
                                                 <Items>
                                                     @foreach (var item in Enum.GetValues<IncidentType>())
                                                     {
-                                                        <RadzenRadioButtonListItem Text="@FormatEnum(item)" Value="@((IncidentType?)item)" />
+                                                        <RadzenRadioButtonListItem Text="@item.ToDisplayString()" Value="@((IncidentType?)item)" />
                                                     }
                                                 </Items>
                                             </RadzenRadioButtonList>
@@ -238,7 +238,7 @@ else
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Facility Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@formModel.TreatmentFacilityName" Change="@((string val) => formModel.TreatmentFacilityName = val)" />
+                                                        <RadzenTextBox Value="@formModel.TreatmentFacilityName" @oninput="@(args => formModel.TreatmentFacilityName = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -261,10 +261,10 @@ else
                                     <RadzenFieldset Text="Clinical Diagnosis" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
                                             <RadzenFormField Text="Clinical Diagnosis" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextBox Value="@formModel.ClinicalDiagnosis" Change="@((string val) => formModel.ClinicalDiagnosis = val)" />
+                                                <RadzenTextBox Value="@formModel.ClinicalDiagnosis" @oninput="@(args => formModel.ClinicalDiagnosis = args.Value?.ToString())" />
                                             </RadzenFormField>
                                             <RadzenFormField Text="Medical Findings" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea Value="@formModel.MedicalFindings" Change="@((string val) => formModel.MedicalFindings = val)" Rows="4" Style="width: 100%;" />
+                                                <RadzenTextArea Value="@formModel.MedicalFindings" @oninput="@(args => formModel.MedicalFindings = args.Value?.ToString())" Rows="4" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -295,7 +295,7 @@ else
                                                                     <Items>
                                                                         @foreach (var item in Enum.GetValues<SubstanceType>())
                                                                         {
-                                                                            <RadzenRadioButtonListItem Text="@FormatEnum(item)" Value="@((SubstanceType?)item)" />
+                                                                            <RadzenRadioButtonListItem Text="@item.ToDisplayString()" Value="@((SubstanceType?)item)" />
                                                                         }
                                                                     </Items>
                                                                 </RadzenRadioButtonList>
@@ -320,7 +320,7 @@ else
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Toxicology Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextArea Value="@formModel.ToxicologyTestResults" Change="@((string val) => formModel.ToxicologyTestResults = val)" Rows="3" Style="width: 100%;"/>
+                                                        <RadzenTextArea Value="@formModel.ToxicologyTestResults" @oninput="@(args => formModel.ToxicologyTestResults = args.Value?.ToString())" Rows="3" Style="width: 100%;"/>
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -357,7 +357,7 @@ else
                                                             <RadzenDatePicker @bind-Value="formModel.PsychiatricEvalDate" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy HH:mm" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                            <RadzenTextArea Value="@formModel.PsychiatricEvalResults" Change="@((string val) => formModel.PsychiatricEvalResults = val)" Rows="3" Style="width: 100%;" />
+                                                            <RadzenTextArea Value="@formModel.PsychiatricEvalResults" @oninput="@(args => formModel.PsychiatricEvalResults = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
                                                         </RadzenFormField>
                                                     </RadzenStack>
                                                 </div>
@@ -366,7 +366,7 @@ else
                                             @* ── Item 14b: Other relevant conditions ── *@
                                             <div class="detail-section">
                                                 <RadzenFormField Text="Other Relevant Medical Conditions" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                    <RadzenTextArea Value="@formModel.OtherRelevantConditions" Change="@((string val) => formModel.OtherRelevantConditions = val)" Rows="3" Style="width: 100%;" />
+                                                    <RadzenTextArea Value="@formModel.OtherRelevantConditions" @oninput="@(args => formModel.OtherRelevantConditions = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
                                                 </RadzenFormField>
                                             </div>
 
@@ -390,7 +390,7 @@ else
                                                             <RadzenDatePicker @bind-Value="formModel.OtherTestDate" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy HH:mm" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                            <RadzenTextArea Value="@formModel.OtherTestResults" Change="@((string val) => formModel.OtherTestResults = val)" Rows="3" Style="width: 100%;" />
+                                                            <RadzenTextArea Value="@formModel.OtherTestResults" @oninput="@(args => formModel.OtherTestResults = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
                                                         </RadzenFormField>
                                                     </RadzenStack>
                                                 </div>
@@ -477,7 +477,7 @@ else
                                     @* ═══ Fieldset I: Medical Recommendation ═══ *@
                                     <RadzenFieldset Text="Medical Recommendation" class="rz-mt-4">
                                         <RadzenFormField Text="Medical Recommendation" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                            <RadzenTextArea Value="@formModel.MedicalRecommendation" Change="@((string val) => formModel.MedicalRecommendation = val)" Rows="5" Style="width: 100%;" />
+                                            <RadzenTextArea Value="@formModel.MedicalRecommendation" @oninput="@(args => formModel.MedicalRecommendation = args.Value?.ToString())" Rows="5" Style="width: 100%;" />
                                         </RadzenFormField>
                                     </RadzenFieldset>
 
@@ -487,9 +487,7 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Provider Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@formModel.ProviderName"
-                                                                       Change="@((string val) => formModel.ProviderName = val)"
-                                                                       Style="width: 100%;" />
+                                                        <RadzenTextBox Value="@formModel.ProviderName" @oninput="@(args => formModel.ProviderName = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
@@ -509,9 +507,7 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@formModel.ProviderOrganization"
-                                                                       Change="@((string val) => formModel.ProviderOrganization = val)"
-                                                                       Style="width: 100%;" />
+                                                        <RadzenTextBox Value="@formModel.ProviderOrganization" @oninput="@(args => formModel.ProviderOrganization = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -575,7 +571,7 @@ else
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Describe Other Sources" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@commanderFormModel.OtherSourcesDescription" Change="@((string val) => commanderFormModel.OtherSourcesDescription = val)" />
+                                                        <RadzenTextBox Value="@commanderFormModel.OtherSourcesDescription" @oninput="@(args => commanderFormModel.OtherSourcesDescription = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -591,7 +587,7 @@ else
                                                 <Items>
                                                     @foreach (var status in Enum.GetValues<DutyStatus>())
                                                     {
-                                                        <RadzenRadioButtonListItem Text="@FormatEnum(status)" Value="@((DutyStatus?)status)" />
+                                                        <RadzenRadioButtonListItem Text="@status.ToDisplayString()" Value="@((DutyStatus?)status)" />
                                                     }
                                                 </Items>
                                             </RadzenRadioButtonList>
@@ -602,7 +598,7 @@ else
                                     <RadzenFieldset Text="Narrative of Circumstances" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
                                             <RadzenFormField Text="Brief Narrative" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea Value="@commanderFormModel.NarrativeOfCircumstances" Change="@((string val) => commanderFormModel.NarrativeOfCircumstances = val)" Rows="6" Style="width: 100%;" />
+                                                <RadzenTextArea Value="@commanderFormModel.NarrativeOfCircumstances" @oninput="@(args => commanderFormModel.NarrativeOfCircumstances = args.Value?.ToString())" Rows="6" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -625,7 +621,7 @@ else
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Misconduct Explanation" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextArea Value="@commanderFormModel.MisconductExplanation" Change="@((string val) => commanderFormModel.MisconductExplanation = val)" Rows="4" Style="width: 100%;" />
+                                                        <RadzenTextArea Value="@commanderFormModel.MisconductExplanation" @oninput="@(args => commanderFormModel.MisconductExplanation = args.Value?.ToString())" Rows="4" Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -636,7 +632,7 @@ else
                                     <RadzenFieldset Text="Proximate Cause" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
                                             <RadzenFormField Text="Proximate Cause of Injury / Disease / Death" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea Value="@commanderFormModel.ProximateCause" Change="@((string val) => commanderFormModel.ProximateCause = val)" Rows="4" Style="width: 100%;" />
+                                                <RadzenTextArea Value="@commanderFormModel.ProximateCause" @oninput="@(args => commanderFormModel.ProximateCause = args.Value?.ToString())" Rows="4" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -656,7 +652,7 @@ else
                                             </RadzenRadioButtonList>
 
                                             <RadzenFormField Text="Recommendation Remarks" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea Value="@commanderFormModel.RecommendationRemarks" Change="@((string val) => commanderFormModel.RecommendationRemarks = val)" Rows="3" Style="width: 100%;" />
+                                                <RadzenTextArea Value="@commanderFormModel.RecommendationRemarks" @oninput="@(args => commanderFormModel.RecommendationRemarks = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -667,9 +663,7 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Commander Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@commanderFormModel.CommanderName"
-                                                                       Change="@((string val) => commanderFormModel.CommanderName = val)"
-                                                                       Style="width: 100%;" />
+                                                        <RadzenTextBox Value="@commanderFormModel.CommanderName" @oninput="@(args => commanderFormModel.CommanderName = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
@@ -689,9 +683,7 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@commanderFormModel.CommanderOrganization"
-                                                                       Change="@((string val) => commanderFormModel.CommanderOrganization = val)"
-                                                                       Style="width: 100%;" />
+                                                        <RadzenTextBox Value="@commanderFormModel.CommanderOrganization" @oninput="@(args => commanderFormModel.CommanderOrganization = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -751,7 +743,7 @@ else
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Basis for Non-Concurrence" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextArea Value="@legalFormModel.NonConcurrenceReason" Change="@((string val) => legalFormModel.NonConcurrenceReason = val)" Rows="4" Style="width: 100%;" />
+                                                        <RadzenTextArea Value="@legalFormModel.NonConcurrenceReason" @oninput="@(args => legalFormModel.NonConcurrenceReason = args.Value?.ToString())" Rows="4" Style="width: 100%;" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -762,7 +754,7 @@ else
                                     <RadzenFieldset Text="Legal Remarks" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
                                             <RadzenFormField Text="SJA Remarks / Legal Opinion" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                <RadzenTextArea Value="@legalFormModel.LegalRemarks" Change="@((string val) => legalFormModel.LegalRemarks = val)" Rows="5" Style="width: 100%;" />
+                                                <RadzenTextArea Value="@legalFormModel.LegalRemarks" @oninput="@(args => legalFormModel.LegalRemarks = args.Value?.ToString())" Rows="5" Style="width: 100%;" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -773,9 +765,7 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="SJA Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@legalFormModel.SJAName"
-                                                                       Change="@((string val) => legalFormModel.SJAName = val)"
-                                                                       Style="width: 100%;" />
+                                                        <RadzenTextBox Value="@legalFormModel.SJAName" @oninput="@(args => legalFormModel.SJAName = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
@@ -795,9 +785,7 @@ else
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@legalFormModel.SJAOrganization"
-                                                                       Change="@((string val) => legalFormModel.SJAOrganization = val)"
-                                                                       Style="width: 100%;" />
+                                                        <RadzenTextBox Value="@legalFormModel.SJAOrganization" @oninput="@(args => legalFormModel.SJAOrganization = args.Value?.ToString())" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>

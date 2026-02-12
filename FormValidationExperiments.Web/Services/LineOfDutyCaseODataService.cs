@@ -35,12 +35,13 @@ public class LineOfDutyCaseODataService : ILineOfDutyCaseService
         int? top = null,
         int? skip = null,
         string? orderby = null,
-        bool? count = null)
+        bool? count = null,
+        CancellationToken cancellationToken = default)
     {
         var uri = new Uri(_baseUri, "Cases");
         uri = uri.GetODataUri(filter: filter, top: top, skip: skip, orderby: orderby, count: count);
 
-        var response = await _http.GetAsync(uri);
+        var response = await _http.GetAsync(uri, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -77,19 +78,19 @@ public class LineOfDutyCaseODataService : ILineOfDutyCaseService
         public List<T> Value { get; set; } = [];
     }
 
-    public async Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId)
+    public async Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default)
     {
-        var response = await _http.GetAsync($"api/cases/{caseId}/viewmodels");
+        var response = await _http.GetAsync($"api/cases/{caseId}/viewmodels", cancellationToken);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseViewModelsDto>(_jsonOptions)
+        return await response.Content.ReadFromJsonAsync<CaseViewModelsDto>(_jsonOptions, cancellationToken)
                ?? throw new InvalidOperationException("Failed to deserialize CaseViewModelsDto");
     }
 
-    public async Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto)
+    public async Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto, CancellationToken cancellationToken = default)
     {
-        var response = await _http.PutAsJsonAsync($"api/cases/{caseId}", dto, _jsonOptions);
+        var response = await _http.PutAsJsonAsync($"api/cases/{caseId}", dto, _jsonOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseInfoModel>(_jsonOptions)
+        return await response.Content.ReadFromJsonAsync<CaseInfoModel>(_jsonOptions, cancellationToken)
                ?? throw new InvalidOperationException("Failed to deserialize CaseInfoModel");
     }
 }
