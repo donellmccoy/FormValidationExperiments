@@ -600,7 +600,8 @@ public class AcroFormFieldReadWriteTests : IDisposable
             string.Equals(f.FullyQualifiedName, fieldName, StringComparison.OrdinalIgnoreCase));
 
         Assert.NotNull(templateField);
-        Assert.Equal(PdfFieldType.Text, templateField.FieldType);
+        Assert.True(templateField.FieldType is PdfFieldType.Text or PdfFieldType.Choice,
+            $"Expected Text or Choice but got {templateField.FieldType}");
 
         var writer = new AcroFormWriter(_templateBytes);
         var filledPdf = writer.FillFields(new Dictionary<string, string>

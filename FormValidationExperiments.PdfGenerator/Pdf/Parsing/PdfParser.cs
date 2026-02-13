@@ -151,7 +151,15 @@ public sealed class PdfParser
             streamTokenizer.Position = first + objOffsets[i];
             var parsedObj = ParseValueFromTokenizer(streamTokenizer);
             result[objNumbers[i]] = parsedObj;
-            _objectCache[objNumbers[i]] = parsedObj;
+
+            // Only cache if the current xref entry still points to this object stream.
+            // Incremental updates may override objects with type-1 entries at new byte offsets;
+            // caching them here would shadow the newer version.
+            var xrefEntry = XRefTable.GetEntry(objNumbers[i]);
+            if (xrefEntry is not null && xrefEntry.IsInObjectStream && xrefEntry.ObjStreamNumber == objStreamNumber)
+            {
+                _objectCache[objNumbers[i]] = parsedObj;
+            }
         }
 
         return result;

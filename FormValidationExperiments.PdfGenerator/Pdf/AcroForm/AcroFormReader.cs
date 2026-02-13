@@ -225,7 +225,7 @@ public sealed class AcroFormReader
         var v = fieldDict.Get("V");
         return v switch
         {
-            PdfString s => s.Value,
+            PdfString s => DecodeStringValue(s),
             PdfName n => n.Value,
             _ => null
         };
