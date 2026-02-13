@@ -5,6 +5,7 @@ using FormValidationExperiments.Web.Services;
 using FormValidationExperiments.Shared.ViewModels;
 using FormValidationExperiments.Web.Shared;
 using Radzen;
+using Radzen.Blazor;
 
 namespace FormValidationExperiments.Web.Pages;
 
@@ -223,6 +224,133 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
 
         await SaveCurrentTabAsync(TabNames.Draft);
+    }
+
+    private async Task OnSplitButtonClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "revert")
+        {
+            await OnRevertChanges();
+        }
+        else
+        {
+            await OnSaveDraft();
+        }
+    }
+
+    private async Task OnMedicalForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "return")
+        {
+            // Return to Med Tech
+            NotificationService.Notify(NotificationSeverity.Info, "Returned to Med Tech", 
+                "Case has been returned to the Medical Technician for review.");
+        }
+        else if (item?.Value == "cancel")
+        {
+            // Cancel Investigation
+            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
+                "The LOD investigation has been cancelled.");
+        }
+        else
+        {
+            // Forward to Unit CC (default action)
+            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Unit CC", 
+                "Case has been forwarded to the Unit Commander.");
+            await Task.CompletedTask;
+        }
+    }
+
+    private async Task OnCommanderForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "return")
+        {
+            // Return to Board Medical
+            NotificationService.Notify(NotificationSeverity.Info, "Returned to Board Medical", 
+                "Case has been returned to the Board Medical for review.");
+        }
+        else if (item?.Value == "cancel")
+        {
+            // Cancel Investigation
+            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
+                "The LOD investigation has been cancelled.");
+        }
+        else
+        {
+            // Forward to Wing JA (default action)
+            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing JA", 
+                "Case has been forwarded to the Wing Judge Advocate.");
+            await Task.CompletedTask;
+        }
+    }
+
+    private async Task OnLegalForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "return")
+        {
+            // Return to Unit CC
+            NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC", 
+                "Case has been returned to the Unit Commander for review.");
+        }
+        else if (item?.Value == "cancel")
+        {
+            // Cancel Investigation
+            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
+                "The LOD investigation has been cancelled.");
+        }
+        else
+        {
+            // Forward to Wing CC (default action)
+            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing CC", 
+                "Case has been forwarded to the Wing Commander.");
+            await Task.CompletedTask;
+        }
+    }
+
+    private async Task OnWingForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "return")
+        {
+            // Return to Wing JA
+            NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA", 
+                "Case has been returned to the Wing Judge Advocate for review.");
+        }
+        else if (item?.Value == "cancel")
+        {
+            // Cancel Investigation
+            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
+                "The LOD investigation has been cancelled.");
+        }
+        else
+        {
+            // Forward to Board Review (default action)
+            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Board Review", 
+                "Case has been forwarded to the Board for review.");
+            await Task.CompletedTask;
+        }
+    }
+
+    private async Task OnBoardCompleteClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "return")
+        {
+            // Return to Wing CC
+            NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing CC", 
+                "Case has been returned to the Wing Commander for review.");
+        }
+        else if (item?.Value == "cancel")
+        {
+            // Cancel Investigation
+            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
+                "The LOD investigation has been cancelled.");
+        }
+        else
+        {
+            // Complete Review (default action)
+            NotificationService.Notify(NotificationSeverity.Success, "Review Completed", 
+                "The Board review has been completed.");
+            await Task.CompletedTask;
+        }
     }
 
     private async Task SaveCurrentTabAsync(string source)

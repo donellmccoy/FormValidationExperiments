@@ -38,7 +38,10 @@ else
                         <RadzenStack Gap="0.5rem" Style="flex: 1; min-width: 0;">
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
                                 <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
-                                    Case Number: @caseInfo.CaseNumber
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Style="display: inline-flex;">
+                                        <RadzenIcon Icon="assignment" Style="color: #5B9BD5; font-size: 24px;" />
+                                        <span>Case Number: @caseInfo.CaseNumber</span>
+                                    </RadzenStack>
                                 </RadzenText>
                                 <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Info" Style="background-color: #00308F;" />
                             </RadzenStack>
@@ -85,7 +88,7 @@ else
                     </RadzenStack>
                 </HeaderTemplate>
                 <ChildContent>
-                    <RadzenTabs @bind-SelectedIndex="selectedTabIndex" Style="height: 850px;"
+                    <RadzenTabs @bind-SelectedIndex="selectedTabIndex" Style="height: calc(100vh - 18rem);"
                     RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                     <Tabs>
                         @* ─── Member Tab ─── *@
@@ -182,16 +185,22 @@ else
 
                                     @* ═══ Form Actions ═══ *@
                                     <div class="form-actions rz-mt-4">
-                                        <div class="next-step-hint">
-                                            <span class="material-symbols-outlined">arrow_forward</span>
-                                            <span>Next Step: <strong>Medical Assessment</strong></span>
-                                        </div>
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
-                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!memberFormModel.IsDirty)" />
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
-                                                          Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Assessment" Style="background-color: #00308F; color: white;" />
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                            <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                               Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                               Disabled="@(!memberFormModel.IsDirty)">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
+                                        </RadzenStack>
+                                        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.12); margin: 0.75rem 0; width: 100%;" />
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <div class="next-step-hint">
+                                                <span class="material-symbols-outlined">arrow_forward</span>
+                                                <span>Next Step: <strong>Medical Assessment</strong></span>
+                                            </div>
+                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Officier" Style="background-color: #00308F; color: white;" />
                                         </RadzenStack>
                                     </div>
 
@@ -481,53 +490,32 @@ else
                                         </RadzenFormField>
                                     </RadzenFieldset>
 
-                                    @* ═══ Fieldset J: Provider Signature Block ═══ *@
-                                    <RadzenFieldset Text="Provider Signature Block" class="rz-mt-4">
-                                        <RadzenStack Gap="1rem">
-                                            <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Provider Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@formModel.ProviderName" @oninput="@(args => formModel.ProviderName = args.Value?.ToString())" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="formModel.ProviderSignatureDate" ShowTime="true" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy HH:mm" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                            </RadzenRow>
-                                            <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDropDown @bind-Value="formModel.ProviderRank" TValue="MilitaryRank?"
-                                                                        Data="@militaryRanks" Style="width: 100%;"
-                                                                        AllowClear="true" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@formModel.ProviderOrganization" @oninput="@(args => formModel.ProviderOrganization = args.Value?.ToString())" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                            </RadzenRow>
-                                        </RadzenStack>
-                                    </RadzenFieldset>
-
                                     @* ═══ Form Actions ═══ *@
-                                    <div class="form-actions rz-mt-4">
-                                        <div class="next-step-hint">
-                                            <span class="material-symbols-outlined">arrow_forward</span>
-                                            <span>Next Step: <strong>Commander Review</strong></span>
-                                        </div>
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
-                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!formModel.IsDirty)" />
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
-                                                          Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Commander Review" Style="background-color: #00308F; color: white;" />
+                                    <div class="form-actions rz-mt-2">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                            <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                               Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                               Disabled="@(!formModel.IsDirty)">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
                                         </RadzenStack>
                                     </div>
+
+                                    @* ═══ Fieldset J: Routing ═══ *@
+                                    <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                            <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
+                                                               Style="background-color: #00308F; color: white;">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
+                                                    <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                        </RadzenStack>
+                                    </RadzenFieldset>
 
                                 </RadzenTemplateForm>
                             </div>
@@ -691,19 +679,31 @@ else
                                     </RadzenFieldset>
 
                                     @* ═══ Form Actions ═══ *@
-                                    <div class="form-actions rz-mt-4">
-                                        <div class="next-step-hint">
-                                            <span class="material-symbols-outlined">arrow_forward</span>
-                                            <span>Next Step: <strong>Legal SJA Review</strong></span>
-                                        </div>
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
-                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!commanderFormModel.IsDirty)" />
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
-                                                          Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Legal SJA Review" Style="background-color: #00308F; color: white;" />
+                                    <div class="form-actions rz-mt-2">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                            <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                               Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                               Disabled="@(!commanderFormModel.IsDirty)">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
                                         </RadzenStack>
                                     </div>
+
+                                    @* ═══ Routing ═══ *@
+                                    <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                            <RadzenSplitButton Click="@OnCommanderForwardClick" Text="Forward to Wing JA" Icon="send"
+                                                               Style="background-color: #00308F; color: white;">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Return to Board Medical" Icon="replay" Value="return" />
+                                                    <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                        </RadzenStack>
+                                    </RadzenFieldset>
 
                                 </RadzenTemplateForm>
                             </div>
@@ -793,19 +793,31 @@ else
                                     </RadzenFieldset>
 
                                     @* ═══ Form Actions ═══ *@
-                                    <div class="form-actions rz-mt-4">
-                                        <div class="next-step-hint">
-                                            <span class="material-symbols-outlined">arrow_forward</span>
-                                            <span>Next Step: <strong>Wing CC Review</strong></span>
-                                        </div>
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                            <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
-                                                          Icon="undo" Click="@OnRevertChanges" Disabled="@(!legalFormModel.IsDirty)" />
-                                            <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
-                                                          Click="@OnSaveDraft" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Wing CC Review" Style="background-color: #00308F; color: white;" />
+                                    <div class="form-actions rz-mt-2">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                            <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                               Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                               Disabled="@(!legalFormModel.IsDirty)">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
                                         </RadzenStack>
                                     </div>
+
+                                    @* ═══ Routing ═══ *@
+                                    <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                            <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Wing CC" Icon="send"
+                                                               Style="background-color: #00308F; color: white;">
+                                                <ChildContent>
+                                                    <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return" />
+                                                    <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                </ChildContent>
+                                            </RadzenSplitButton>
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                        </RadzenStack>
+                                    </RadzenFieldset>
 
                                 </RadzenTemplateForm>
                             </div>
@@ -818,19 +830,32 @@ else
                                     Wing-level review and approval for this LOD case.
                                 </RadzenText>
 
-                                <div class="form-actions rz-mt-4">
-                                    <div class="next-step-hint">
-                                        <span class="material-symbols-outlined">arrow_forward</span>
-                                        <span>Next Step: <strong>Board Review</strong></span>
-                                    </div>
-                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                        <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
-                                                      Icon="undo" Click="@OnRevertChanges" Disabled="@(!HasAnyChanges)" />
-                                        <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
-                                                      Click="@OnSaveDraft" />
-                                        <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Board Review" Style="background-color: #00308F; color: white;" />
+                                @* ═══ Form Actions ═══ *@
+                                <div class="form-actions rz-mt-2">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                        <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                           Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                           Disabled="@(!HasAnyChanges)">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                            </ChildContent>
+                                        </RadzenSplitButton>
                                     </RadzenStack>
                                 </div>
+
+                                @* ═══ Routing ═══ *@
+                                <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                        <RadzenSplitButton Click="@OnWingForwardClick" Text="Forward to Board Review" Icon="send"
+                                                           Style="background-color: #00308F; color: white;">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return" />
+                                                <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                            </ChildContent>
+                                        </RadzenSplitButton>
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                    </RadzenStack>
+                                </RadzenFieldset>
                             </div>
                         </RadzenTabsItem>
 
@@ -841,16 +866,32 @@ else
                                     Board proceedings and findings for this LOD case.
                                 </RadzenText>
 
-                                <div class="form-actions rz-mt-4">
-                                    <div></div>
-                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                        <RadzenButton Variant="Variant.Text" Text="Revert" ButtonStyle="ButtonStyle.Warning"
-                                                      Icon="undo" Click="@OnRevertChanges" Disabled="@(!HasAnyChanges)" />
-                                        <RadzenButton Variant="Variant.Outlined" Text="Save" ButtonStyle="ButtonStyle.Base"
-                                                      Click="@OnSaveDraft" />
-                                        <RadzenButton ButtonType="ButtonType.Submit" Text="Complete Review" Style="background-color: #00308F; color: white;" />
+                                @* ═══ Form Actions ═══ *@
+                                <div class="form-actions rz-mt-2">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                        <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                           Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                           Disabled="@(!HasAnyChanges)">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                            </ChildContent>
+                                        </RadzenSplitButton>
                                     </RadzenStack>
                                 </div>
+
+                                @* ═══ Routing ═══ *@
+                                <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                        <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                                           Style="background-color: #00308F; color: white;">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return" />
+                                                <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                            </ChildContent>
+                                        </RadzenSplitButton>
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                    </RadzenStack>
+                                </RadzenFieldset>
                             </div>
                         </RadzenTabsItem>
 
