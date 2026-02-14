@@ -221,12 +221,14 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-bottom: 1rem;
+    padding-bottom: 0;
+    margin-bottom: 0px;
 }
 
 ::deep .assessment-tabs .rz-tabview-panel {
     padding-top: 0;
     padding-bottom: 3rem;
+    margin-bottom: 10px;
 }
 
 .tab-body {
@@ -324,6 +326,35 @@
 ::deep .radio-list-styled .rz-radio-btn-label:hover {
     border-color: rgba(88, 166, 255, 0.4);
     background: rgba(88, 166, 255, 0.06);
+}
+
+/* ═══════════════════ Recommendation Cards ═══════════════════ */
+
+.recommendation-card {
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--rz-border-color);
+    border-radius: var(--rz-border-radius);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.recommendation-card:hover {
+    border-color: var(--rz-primary);
+}
+
+.recommendation-card-selected {
+    border-color: var(--rz-primary);
+}
+
+::deep .recommendation-title {
+    font-weight: 600 !important;
+    margin: 0 !important;
+    color: var(--rz-text-color) !important;
+}
+
+::deep .recommendation-subtitle {
+    margin: 0 !important;
+    color: var(--rz-text-secondary-color) !important;
 }
 
 /* ═══════════════════ EPTS Fieldset ═══════════════════ */

@@ -43,7 +43,7 @@ else
                                         <span>Case Number: @caseInfo.CaseNumber</span>
                                     </RadzenStack>
                                 </RadzenText>
-                                <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Info" Style="background-color: #00308F;" />
+                                <RadzenBadge Text="@caseInfo.Status" BadgeStyle="BadgeStyle.Primary" />
                             </RadzenStack>
                             <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600; color: rgba(255, 255, 255, 0.70); margin: 0;">
                                 Member: @caseInfo.Rank @caseInfo.MemberName
@@ -114,8 +114,10 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="12" SizeMD="6">
                                                     <RadzenFormField Text="Report Date / Time" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="memberFormModel.ReportDate" ShowTime="true" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy HH:mm" />
+                                                        <RadzenDatePicker TValue="DateTime?" Value="@memberFormModel.ReportDate"
+                                                                          ValueChanged="@(args => { memberFormModel.ReportDate = args; StateHasChanged(); })"
+                                                                          AllowInput="false" ShowTime="true" Style="width: 100%;"
+                                                                          DateFormat="MM/dd/yyyy hh:mm tt" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -155,7 +157,7 @@ else
                                                     <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                         <RadzenDropDown @bind-Value="memberFormModel.Rank" TValue="MilitaryRank?"
                                                                         Data="@militaryRanks" Style="width: 100%;"
-                                                                        Placeholder="Select Rank" AllowClear="true" />
+                                                                        Placeholder="Select Rank" AllowClear="false" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="12" SizeMD="7">
@@ -194,15 +196,16 @@ else
                                                 </ChildContent>
                                             </RadzenSplitButton>
                                         </RadzenStack>
-                                        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.12); margin: 0.75rem 0; width: 100%;" />
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <div class="next-step-hint">
-                                                <span class="material-symbols-outlined">arrow_forward</span>
-                                                <span>Next Step: <strong>Medical Assessment</strong></span>
-                                            </div>
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Officier" Style="background-color: #00308F; color: white;" />
-                                        </RadzenStack>
                                     </div>
+
+                                    @* ═══ Routing ═══ *@
+                                    <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Officer" Icon="send"
+                                                          ButtonStyle="ButtonStyle.Primary" />
+                                        </RadzenStack>
+                                    </RadzenFieldset>
 
                                 </RadzenTemplateForm>
                             </div>
@@ -259,8 +262,10 @@ else
                                         <RadzenRow Gap="1rem">
                                             <RadzenColumn Size="12" SizeMD="6">
                                                 <RadzenFormField Text="Date and Time of First Treatment" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                    <RadzenDatePicker @bind-Value="formModel.TreatmentDateTime" ShowTime="true"
-                                                                      DateFormat="MM/dd/yyyy HH:mm" Style="width: 100%;" />
+                                                    <RadzenDatePicker TValue="DateTime?" Value="@formModel.TreatmentDateTime"
+                                                                      ValueChanged="@(args => { formModel.TreatmentDateTime = args; StateHasChanged(); })"
+                                                                      AllowInput="false" ShowTime="true"
+                                                                      DateFormat="MM/dd/yyyy hh:mm tt" Style="width: 100%;" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
                                         </RadzenRow>
@@ -363,7 +368,9 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
                                                         <RadzenFormField Text="Evaluation Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 50%;">
-                                                            <RadzenDatePicker @bind-Value="formModel.PsychiatricEvalDate" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy HH:mm" />
+                                                            <RadzenDatePicker TValue="DateTime?" Value="@formModel.PsychiatricEvalDate"
+                                                                              ValueChanged="@(args => { formModel.PsychiatricEvalDate = args; StateHasChanged(); })"
+                                                                              AllowInput="false" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                             <RadzenTextArea Value="@formModel.PsychiatricEvalResults" @oninput="@(args => formModel.PsychiatricEvalResults = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
@@ -396,7 +403,9 @@ else
                                                 <div class="conditional-section">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
                                                         <RadzenFormField Text="Test Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 50%;">
-                                                            <RadzenDatePicker @bind-Value="formModel.OtherTestDate" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy HH:mm" />
+                                                            <RadzenDatePicker TValue="DateTime?" Value="@formModel.OtherTestDate"
+                                                                              ValueChanged="@(args => { formModel.OtherTestDate = args; StateHasChanged(); })"
+                                                                              AllowInput="false" ShowTime="true" Style="width: 100%;" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                             <RadzenTextArea Value="@formModel.OtherTestResults" @oninput="@(args => formModel.OtherTestResults = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
@@ -505,15 +514,15 @@ else
 
                                     @* ═══ Fieldset J: Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                             <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
-                                                               Style="background-color: #00308F; color: white;">
+                                                               ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
                                                     <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
                                                     <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                 </ChildContent>
                                             </RadzenSplitButton>
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                         </RadzenStack>
                                     </RadzenFieldset>
 
@@ -628,53 +637,60 @@ else
                                     @* ═══ Fieldset F: Item 21 — Commander's Recommendation ═══ *@
                                     <RadzenFieldset Text="Commander's Recommendation" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
-                                            <RadzenLabel Text="Based on all available evidence, the commander recommends:" />
-                                            <RadzenRadioButtonList @bind-Value="commanderFormModel.Recommendation" TValue="CommanderRecommendation?"
-                                                                   Orientation="Orientation.Vertical" class="radio-list-styled">
-                                                <Items>
-                                                    <RadzenRadioButtonListItem Text="In Line of Duty (ILOD)" Value="@((CommanderRecommendation?)CommanderRecommendation.InLineOfDuty)" />
-                                                    <RadzenRadioButtonListItem Text="Not In Line of Duty — Due to Own Misconduct" Value="@((CommanderRecommendation?)CommanderRecommendation.NotInLineOfDutyDueToMisconduct)" />
-                                                    <RadzenRadioButtonListItem Text="Not In Line of Duty — Not Due to Own Misconduct" Value="@((CommanderRecommendation?)CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct)" />
-                                                    <RadzenRadioButtonListItem Text="Refer to Formal Investigation" Value="@((CommanderRecommendation?)CommanderRecommendation.ReferToFormalInvestigation)" />
-                                                </Items>
-                                            </RadzenRadioButtonList>
+                                            <RadzenLabel Text="Based on all available evidence, the commander recommends:" class="fieldset-label" />
+                                            <RadzenStack Gap="0.75rem">
+                                                <div class="recommendation-card @(commanderFormModel.Recommendation == CommanderRecommendation.InLineOfDuty ? "recommendation-card-selected" : "")"
+                                                     @onclick="() => commanderFormModel.Recommendation = CommanderRecommendation.InLineOfDuty">
+                                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                                        <RadzenIcon Icon="@(commanderFormModel.Recommendation == CommanderRecommendation.InLineOfDuty ? "radio_button_checked" : "radio_button_unchecked")"
+                                                                    Style="@($"color: var({(commanderFormModel.Recommendation == CommanderRecommendation.InLineOfDuty ? "--rz-primary" : "--rz-text-disabled-color")}); font-size: 1.5rem;")" />
+                                                        <RadzenStack Gap="0.125rem">
+                                                            <RadzenText TextStyle="TextStyle.Body1" class="recommendation-title">In Line of Duty (LOD)</RadzenText>
+                                                            <RadzenText TextStyle="TextStyle.Caption" class="recommendation-subtitle">Injury/Disease was incurred in line of duty.</RadzenText>
+                                                        </RadzenStack>
+                                                    </RadzenStack>
+                                                </div>
+
+                                                <div class="recommendation-card @(commanderFormModel.Recommendation == CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct ? "recommendation-card-selected" : "")"
+                                                     @onclick="() => commanderFormModel.Recommendation = CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct">
+                                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                                        <RadzenIcon Icon="@(commanderFormModel.Recommendation == CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct ? "radio_button_checked" : "radio_button_unchecked")"
+                                                                    Style="@($"color: var({(commanderFormModel.Recommendation == CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct ? "--rz-primary" : "--rz-text-disabled-color")}); font-size: 1.5rem;")" />
+                                                        <RadzenStack Gap="0.125rem">
+                                                            <RadzenText TextStyle="TextStyle.Body1" class="recommendation-title">Not in Line of Duty - Not Due to Misconduct</RadzenText>
+                                                            <RadzenText TextStyle="TextStyle.Caption" class="recommendation-subtitle">Occurred while not in a duty status.</RadzenText>
+                                                        </RadzenStack>
+                                                    </RadzenStack>
+                                                </div>
+
+                                                <div class="recommendation-card @(commanderFormModel.Recommendation == CommanderRecommendation.NotInLineOfDutyDueToMisconduct ? "recommendation-card-selected" : "")"
+                                                     @onclick="() => commanderFormModel.Recommendation = CommanderRecommendation.NotInLineOfDutyDueToMisconduct">
+                                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                                        <RadzenIcon Icon="@(commanderFormModel.Recommendation == CommanderRecommendation.NotInLineOfDutyDueToMisconduct ? "radio_button_checked" : "radio_button_unchecked")"
+                                                                    Style="@($"color: var({(commanderFormModel.Recommendation == CommanderRecommendation.NotInLineOfDutyDueToMisconduct ? "--rz-primary" : "--rz-text-disabled-color")}); font-size: 1.5rem;")" />
+                                                        <RadzenStack Gap="0.125rem">
+                                                            <RadzenText TextStyle="TextStyle.Body1" class="recommendation-title">Not in Line of Duty - Due to Misconduct</RadzenText>
+                                                            <RadzenText TextStyle="TextStyle.Caption" class="recommendation-subtitle">Due to gross negligence or misconduct.</RadzenText>
+                                                        </RadzenStack>
+                                                    </RadzenStack>
+                                                </div>
+
+                                                <div class="recommendation-card @(commanderFormModel.Recommendation == CommanderRecommendation.ReferToFormalInvestigation ? "recommendation-card-selected" : "")"
+                                                     @onclick="() => commanderFormModel.Recommendation = CommanderRecommendation.ReferToFormalInvestigation">
+                                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                                        <RadzenIcon Icon="@(commanderFormModel.Recommendation == CommanderRecommendation.ReferToFormalInvestigation ? "radio_button_checked" : "radio_button_unchecked")"
+                                                                    Style="@($"color: var({(commanderFormModel.Recommendation == CommanderRecommendation.ReferToFormalInvestigation ? "--rz-primary" : "--rz-text-disabled-color")}); font-size: 1.5rem;")" />
+                                                        <RadzenStack Gap="0.125rem">
+                                                            <RadzenText TextStyle="TextStyle.Body1" class="recommendation-title">Return for Correction</RadzenText>
+                                                            <RadzenText TextStyle="TextStyle.Caption" class="recommendation-subtitle">Send back to board for additional information.</RadzenText>
+                                                        </RadzenStack>
+                                                    </RadzenStack>
+                                                </div>
+                                            </RadzenStack>
 
                                             <RadzenFormField Text="Recommendation Remarks" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
                                                 <RadzenTextArea Value="@commanderFormModel.RecommendationRemarks" @oninput="@(args => commanderFormModel.RecommendationRemarks = args.Value?.ToString())" Rows="3" Style="width: 100%;" />
                                             </RadzenFormField>
-                                        </RadzenStack>
-                                    </RadzenFieldset>
-
-                                    @* ═══ Fieldset G: Items 22–23 — Commander Signature Block ═══ *@
-                                    <RadzenFieldset Text="Commander Signature Block" class="rz-mt-4">
-                                        <RadzenStack Gap="1rem">
-                                            <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Commander Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@commanderFormModel.CommanderName" @oninput="@(args => commanderFormModel.CommanderName = args.Value?.ToString())" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="commanderFormModel.CommanderSignatureDate" ShowTime="true" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy HH:mm" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                            </RadzenRow>
-                                            <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDropDown @bind-Value="commanderFormModel.CommanderRank" TValue="MilitaryRank?"
-                                                                        Data="@militaryRanks" Style="width: 100%;"
-                                                                        AllowClear="true" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@commanderFormModel.CommanderOrganization" @oninput="@(args => commanderFormModel.CommanderOrganization = args.Value?.ToString())" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                            </RadzenRow>
                                         </RadzenStack>
                                     </RadzenFieldset>
 
@@ -693,15 +709,15 @@ else
 
                                     @* ═══ Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                             <RadzenSplitButton Click="@OnCommanderForwardClick" Text="Forward to Wing JA" Icon="send"
-                                                               Style="background-color: #00308F; color: white;">
+                                                               ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
                                                     <RadzenSplitButtonItem Text="Return to Board Medical" Icon="replay" Value="return" />
                                                     <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                 </ChildContent>
                                             </RadzenSplitButton>
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                         </RadzenStack>
                                     </RadzenFieldset>
 
@@ -759,39 +775,6 @@ else
                                         </RadzenStack>
                                     </RadzenFieldset>
 
-                                    @* ═══ Fieldset C: SJA Signature Block ═══ *@
-                                    <RadzenFieldset Text="SJA Signature Block" class="rz-mt-4">
-                                        <RadzenStack Gap="1rem">
-                                            <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="SJA Name" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@legalFormModel.SJAName" @oninput="@(args => legalFormModel.SJAName = args.Value?.ToString())" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Signature Date" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDatePicker @bind-Value="legalFormModel.SJASignatureDate" ShowTime="true" Style="width: 100%;"
-                                                                          DateFormat="MM/dd/yyyy HH:mm" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                            </RadzenRow>
-                                            <RadzenRow Gap="1rem">
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Rank / Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenDropDown @bind-Value="legalFormModel.SJARank" TValue="MilitaryRank?"
-                                                                        Data="@militaryRanks" Style="width: 100%;"
-                                                                        AllowClear="true" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                                <RadzenColumn Size="12" SizeMD="6">
-                                                    <RadzenFormField Text="Organization / Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="width: 100%;">
-                                                        <RadzenTextBox Value="@legalFormModel.SJAOrganization" @oninput="@(args => legalFormModel.SJAOrganization = args.Value?.ToString())" />
-                                                    </RadzenFormField>
-                                                </RadzenColumn>
-                                            </RadzenRow>
-                                        </RadzenStack>
-                                    </RadzenFieldset>
-
                                     @* ═══ Form Actions ═══ *@
                                     <div class="form-actions rz-mt-2">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
@@ -807,15 +790,15 @@ else
 
                                     @* ═══ Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
-                                            <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Wing CC" Icon="send"
-                                                               Style="background-color: #00308F; color: white;">
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                            <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Appointing Authority" Icon="send"
+                                                               ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
                                                     <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return" />
                                                     <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                 </ChildContent>
                                             </RadzenSplitButton>
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                         </RadzenStack>
                                     </RadzenFieldset>
 
@@ -845,15 +828,15 @@ else
 
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                         <RadzenSplitButton Click="@OnWingForwardClick" Text="Forward to Board Review" Icon="send"
-                                                           Style="background-color: #00308F; color: white;">
+                                                           ButtonStyle="ButtonStyle.Primary">
                                             <ChildContent>
                                                 <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return" />
                                                 <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                             </ChildContent>
                                         </RadzenSplitButton>
-                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                     </RadzenStack>
                                 </RadzenFieldset>
                             </div>
@@ -881,15 +864,15 @@ else
 
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                         <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
-                                                           Style="background-color: #00308F; color: white;">
+                                                           ButtonStyle="ButtonStyle.Primary">
                                             <ChildContent>
                                                 <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return" />
                                                 <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                             </ChildContent>
                                         </RadzenSplitButton>
-                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
                                     </RadzenStack>
                                 </RadzenFieldset>
                             </div>

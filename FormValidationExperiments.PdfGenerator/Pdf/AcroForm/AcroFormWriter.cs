@@ -99,10 +99,16 @@ public sealed class AcroFormWriter
         WriteAscii(ms, $"{field.ObjectNumber} {generation} obj\n");
         WriteAscii(ms, "<<\n");
 
-        // Write all original entries except /V, /AS, /AP (we clear AP to force regeneration)
+        // Write all original entries except /V, /AS, and /AP for text fields only.
+        // For checkboxes/radios, keep /AP so the existing appearance streams are preserved —
+        // the /AS entry selects which appearance to display.
+        // For text fields, clear /AP to force regeneration via /NeedAppearances.
+        var isCheckboxOrRadio = field.FieldType is PdfFieldType.Checkbox or PdfFieldType.Radio;
         foreach (var (key, value) in originalDict.Entries)
         {
-            if (key is "V" or "AS" or "AP")
+            if (key is "V" or "AS")
+                continue;
+            if (key is "AP" && !isCheckboxOrRadio)
                 continue;
 
             WriteAscii(ms, $"/{key} ");
