@@ -23,12 +23,12 @@ public class CasesController : ODataController
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private readonly IDataService _caseService;
+    private readonly IDataService _dataService;
     private readonly IApiLogService _log;
 
-    public CasesController(IDataService caseService, IApiLogService log)
+    public CasesController(IDataService dataService, IApiLogService log)
     {
-        _caseService = caseService;
+        _dataService = dataService;
         _log = log;
     }
 
@@ -41,7 +41,7 @@ public class CasesController : ODataController
     public IActionResult Get()
     {
         _log.QueryingCases();
-        return Ok(_caseService.GetCasesQueryable());
+        return Ok(_dataService.GetCasesQueryable());
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class CasesController : ODataController
     public async Task<IActionResult> Get([FromRoute] int key)
     {
         _log.RetrievingCase(key);
-        var lodCase = await _caseService.GetCaseByKeyAsync(key);
+        var lodCase = await _dataService.GetCaseByKeyAsync(key);
 
         if (lodCase is null)
         {
@@ -75,7 +75,7 @@ public class CasesController : ODataController
             return BadRequest(ModelState);
         }
 
-        var created = await _caseService.CreateCaseAsync(lodCase);
+        var created = await _dataService.CreateCaseAsync(lodCase);
 
         _log.CaseCreated(created.Id);
         return Created(created);
@@ -109,7 +109,7 @@ public class CasesController : ODataController
         }
 
         _log.PatchingCase(key);
-        var updated = await _caseService.UpdateCaseAsync(key, update);
+        var updated = await _dataService.UpdateCaseAsync(key, update);
         if (updated is null)
         {
             _log.CaseNotFound(key);
@@ -127,7 +127,7 @@ public class CasesController : ODataController
     public async Task<IActionResult> Delete([FromRoute] int key)
     {
         _log.DeletingCase(key);
-        var deleted = await _caseService.DeleteCaseAsync(key);
+        var deleted = await _dataService.DeleteCaseAsync(key);
         if (!deleted)
         {
             _log.CaseNotFound(key);
