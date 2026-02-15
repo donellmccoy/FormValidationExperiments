@@ -1,5 +1,8 @@
 using System.Text.Json;
 using FormValidationExperiments.Shared.Enums;
+using FormValidationExperiments.Shared.Mapping;
+using FormValidationExperiments.Shared.Models;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using FormValidationExperiments.Web.Services;
@@ -38,6 +41,8 @@ public partial class EditCase : ComponentBase, IDisposable
     public string CaseId { get; set; }
 
     private readonly CancellationTokenSource _cts = new();
+
+    private LineOfDutyCase _lodCase;
 
     private bool isLoading = true;
 
@@ -110,13 +115,15 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            var dto = await CaseService.GetCaseViewModelsAsync(CaseId, _cts.Token);
+            _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
 
-            if (dto is null)
+            if (_lodCase is null)
             {
                 InitializeWorkflowSteps();
                 return;
             }
+
+            var dto = LineOfDutyCaseMapper.ToCaseViewModelsDto(_lodCase);
 
             caseInfo = dto.CaseInfo;
             memberFormModel = dto.MemberInfo;
@@ -719,9 +726,14 @@ public partial class EditCase : ComponentBase, IDisposable
                 LegalSJAReview = legalFormModel
             };
 
-            var updatedInfo = await CaseService.SaveCaseAsync(CaseId, dto, _cts.Token);
-            if (updatedInfo is not null)
-                caseInfo = updatedInfo;
+            // Apply view model changes to the entity
+            LineOfDutyCaseMapper.ApplyAll(dto, _lodCase);
+
+            // Save the entity
+            _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
+
+            // Refresh the read-only case info from the saved entity
+            caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(_lodCase);
 
             TakeSnapshots();
 

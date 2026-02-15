@@ -1,5 +1,4 @@
 using FormValidationExperiments.Shared.Models;
-using FormValidationExperiments.Shared.ViewModels;
 using Radzen;
 
 #nullable enable
@@ -20,12 +19,12 @@ public interface ILineOfDutyCaseService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Fetches a single LOD case by CaseId and maps it to view models.
+    /// Fetches a single LOD case by CaseId with all navigation properties.
     /// </summary>
-    Task<CaseViewModelsDto?> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default);
+    Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Saves all view model changes for a case. Returns the refreshed CaseInfoModel.
+    /// Saves (PUTs) a LOD case entity. Returns the saved entity.
     /// </summary>
-    Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto, CancellationToken cancellationToken = default);
+    Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default);
 }
