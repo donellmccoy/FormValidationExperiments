@@ -28,6 +28,12 @@ var odataBuilder = new ODataConventionModelBuilder();
 odataBuilder.EntitySet<LineOfDutyCase>("Cases");
 odataBuilder.EntitySet<Member>("Members");
 odataBuilder.EntitySet<Notification>("Notifications");
+odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
+odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
+odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
+odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
+odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
+odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 
 // Controllers + OData
 builder.Services.AddControllers()
