@@ -185,8 +185,6 @@
 /* ═══════════════════ Tab Content ═══════════════════ */
 
 ::deep .assessment-tabs {
-    --rz-primary: #58a6ff;
-    --rz-tabs-tab-selected-color: #58a6ff;
     flex: 1;
     display: flex;
     flex-direction: row;
@@ -204,12 +202,17 @@
 
 ::deep .assessment-tabs .rz-tabview-nav .rz-tabview-title {
     text-transform: none;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
     white-space: nowrap;
 }
 
 ::deep .assessment-tabs .rz-tabview-nav .rz-tabview-header {
     padding: 0.5rem 0.75rem;
+}
+
+::deep .assessment-tabs .rz-tabview-nav .rz-tabview-selected .rz-tabview-title {
+    font-weight: 700;
 }
 
 ::deep .assessment-tabs .rz-tabview-nav .rz-tabview-header .rzi {

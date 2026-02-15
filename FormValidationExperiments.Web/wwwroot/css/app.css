@@ -1,3 +1,56 @@
+/* ═══════════════════ Air Force Theme Overrides ═══════════════════ */
+:root {
+    /* Primary — Lightened Ultramarine Blue */
+    --rz-primary: #4A7FC4;
+    --rz-primary-light: #8FB5E6;
+    --rz-primary-lighter: rgba(74, 127, 196, 0.12);
+    --rz-primary-dark: #2A5F9E;
+    --rz-primary-darker: #1E4A7A;
+    --rz-on-primary: #ffffff;
+    --rz-on-primary-light: #ffffff;
+    --rz-on-primary-lighter: #4A7FC4;
+    --rz-on-primary-dark: #ffffff;
+    --rz-on-primary-darker: #ffffff;
+
+    /* Secondary — Muted Air Force Gold */
+    --rz-secondary: #D4A843;
+    --rz-secondary-light: #ECD48F;
+    --rz-secondary-lighter: rgba(212, 168, 67, 0.12);
+    --rz-secondary-dark: #B08C2E;
+    --rz-secondary-darker: #8A6E24;
+    --rz-on-secondary: #1a1a2e;
+    --rz-on-secondary-light: #1a1a2e;
+    --rz-on-secondary-lighter: #D4A843;
+    --rz-on-secondary-dark: #ffffff;
+    --rz-on-secondary-darker: #ffffff;
+
+    /* Info — Steel Blue */
+    --rz-info: #5B8DB8;
+    --rz-info-light: #85ABCB;
+    --rz-info-dark: #497193;
+    --rz-info-darker: #3D607D;
+    --rz-on-info: #ffffff;
+    --rz-on-info-light: #ffffff;
+    --rz-on-info-lighter: #5B8DB8;
+    --rz-on-info-dark: #ffffff;
+    --rz-on-info-darker: #ffffff;
+
+    /* Warning — Gold-tinted Amber */
+    --rz-warning: #E8B930;
+    --rz-warning-light: #EDC95D;
+    --rz-warning-dark: #BA9426;
+    --rz-warning-darker: #9E7E20;
+    --rz-on-warning: #1a1a2e;
+    --rz-on-warning-light: #1a1a2e;
+    --rz-on-warning-lighter: #E8B930;
+    --rz-on-warning-dark: #ffffff;
+    --rz-on-warning-darker: #ffffff;
+
+    /* Success & Danger — keep semantic defaults */
+    --rz-success: #4caf50;
+    --rz-danger: #f44336;
+}
+
 h1:focus {
     outline: none;
 }
@@ -67,7 +120,7 @@ h1:focus {
     }
 
         .loading-progress circle:last-child {
-            stroke: #1b6ec2;
+            stroke: #4A7FC4;
             stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
             transition: stroke-dasharray 0.05s ease-in-out;
         }
