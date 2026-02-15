@@ -3,7 +3,7 @@ using FormValidationExperiments.Shared.Enums;
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Shared.ViewModels;
 
-namespace FormValidationExperiments.Api.Mapping;
+namespace FormValidationExperiments.Shared.Mapping;
 
 /// <summary>
 /// Static mapper for converting between <see cref="LineOfDutyCase"/> domain model
@@ -157,6 +157,21 @@ public static partial class LineOfDutyCaseMapper
         };
     }
 
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to a complete <see cref="CaseViewModelsDto"/>.
+    /// </summary>
+    public static CaseViewModelsDto ToCaseViewModelsDto(LineOfDutyCase source)
+    {
+        return new CaseViewModelsDto
+        {
+            CaseInfo = ToCaseInfoModel(source),
+            MemberInfo = ToMemberInfoFormModel(source),
+            MedicalAssessment = ToMedicalAssessmentFormModel(source),
+            CommanderReview = ToCommanderReviewFormModel(source),
+            LegalSJAReview = ToLegalSJAReviewFormModel(source)
+        };
+    }
+
     // ──────────────────────────── View Models → Domain ────────────────────────────
 
     /// <summary>
@@ -275,6 +290,17 @@ public static partial class LineOfDutyCaseMapper
         if (model.ConcurWithRecommendation == false && !string.IsNullOrWhiteSpace(model.NonConcurrenceReason))
             remarks.Add($"Non-concurrence: {model.NonConcurrenceReason}");
         sja.Comments = remarks;
+    }
+
+    /// <summary>
+    /// Applies all view model changes from a <see cref="CaseViewModelsDto"/> to a <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyAll(CaseViewModelsDto dto, LineOfDutyCase target)
+    {
+        ApplyMemberInfo(dto.MemberInfo, target);
+        ApplyMedicalAssessment(dto.MedicalAssessment, target);
+        ApplyCommanderReview(dto.CommanderReview, target);
+        ApplyLegalSJAReview(dto.LegalSJAReview, target);
     }
 
     // ──────────────────────────── Helper Methods ────────────────────────────

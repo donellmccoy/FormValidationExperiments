@@ -165,6 +165,10 @@ public class LineOfDutyCase
     // Appeals
     public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
 
+    // Member
+    public int MemberId { get; set; }
+    public Member Member { get; set; }
+
     // Related Benefits
     public int MEDCONId { get; set; }
     public MEDCONDetails MEDCON { get; set; } = new MEDCONDetails();

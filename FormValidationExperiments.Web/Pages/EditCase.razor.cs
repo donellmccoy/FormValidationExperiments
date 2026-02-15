@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FormValidationExperiments.Shared.Enums;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using FormValidationExperiments.Web.Services;
 using FormValidationExperiments.Shared.ViewModels;
 using FormValidationExperiments.Web.Shared;
@@ -41,6 +42,11 @@ public partial class EditCase : ComponentBase, IDisposable
     private bool isLoading = true;
 
     private bool isSaving;
+
+    private bool isBusy;
+    private string busyMessage = string.Empty;
+
+    private string memberSearchText = string.Empty;
 
     private int selectedTabIndex;
 
@@ -91,8 +97,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private WorkflowStep CurrentStep => workflowSteps.Count > 0 ? workflowSteps[currentStepIndex] : null;
 
-    private WorkflowStep NextStep => currentStepIndex + 1 < workflowSteps.Count ? workflowSteps[currentStepIndex + 1] : null;
-
     protected override async Task OnInitializedAsync()
     {
         await LoadCaseAsync();
@@ -101,6 +105,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task LoadCaseAsync()
     {
+        busyMessage = "Loading case...";
+        isBusy = true;
+
         try
         {
             var dto = await CaseService.GetCaseViewModelsAsync(CaseId, _cts.Token);
@@ -136,6 +143,10 @@ public partial class EditCase : ComponentBase, IDisposable
 
             InitializeWorkflowSteps();
         }
+        finally
+        {
+            isBusy = false;
+        }
     }
 
     private void TakeSnapshots()
@@ -167,6 +178,61 @@ public partial class EditCase : ComponentBase, IDisposable
     private async Task OnMemberFormSubmit(MemberInfoFormModel model)
     {
         await SaveCurrentTabAsync(TabNames.MemberInformation);
+    }
+
+    private async Task OnMemberSearch()
+    {
+        if (string.IsNullOrWhiteSpace(memberSearchText))
+        {
+            NotificationService.Notify(NotificationSeverity.Info, "Search", "Please enter a name or last 4 SSN.");
+            return;
+        }
+
+        await SetBusyAsync("Searching for member...");
+
+        try
+        {
+            // TODO: Replace with actual API call to search for members
+            // For now, notify that search is not yet connected to a data source
+            NotificationService.Notify(NotificationSeverity.Warning, "Not Available",
+                "Member search is not yet connected to a data source.");
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await OnMemberSearch();
+        }
+    }
+
+    private async Task OnMemberForwardClick()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward this case to the Medical Officer?",
+            "Confirm Forward",
+            new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+        if (confirmed != true) return;
+
+        await SetBusyAsync("Forwarding to Medical Officer...");
+
+        try
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
+                "Case has been forwarded to the Medical Officer.");
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
+        }
     }
 
     private async Task OnCommanderFormSubmit(CommanderReviewFormModel model)
@@ -242,22 +308,72 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (item?.Value == "return")
         {
-            // Return to Med Tech
-            NotificationService.Notify(NotificationSeverity.Info, "Returned to Med Tech", 
-                "Case has been returned to the Medical Technician for review.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Technician?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Returning to Med Tech...");
+
+            try
+            {
+                // Return to Med Tech
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Med Tech",
+                    "Case has been returned to the Medical Technician for review.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else if (item?.Value == "cancel")
         {
-            // Cancel Investigation
-            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
-                "The LOD investigation has been cancelled.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                // Cancel Investigation
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else
         {
-            // Forward to Unit CC (default action)
-            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Unit CC", 
-                "Case has been forwarded to the Unit Commander.");
-            await Task.CompletedTask;
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward this case to the Unit Commander?",
+                "Confirm Forward",
+                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Forwarding to Unit CC...");
+
+            try
+            {
+                // Forward to Unit CC (default action)
+                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Unit CC",
+                    "Case has been forwarded to the Unit Commander.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -265,22 +381,72 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (item?.Value == "return")
         {
-            // Return to Board Medical
-            NotificationService.Notify(NotificationSeverity.Info, "Returned to Board Medical", 
-                "Case has been returned to the Board Medical for review.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to Board Medical?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Returning to Board Medical...");
+
+            try
+            {
+                // Return to Board Medical
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Board Medical",
+                    "Case has been returned to the Board Medical for review.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else if (item?.Value == "cancel")
         {
-            // Cancel Investigation
-            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
-                "The LOD investigation has been cancelled.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                // Cancel Investigation
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else
         {
-            // Forward to Wing JA (default action)
-            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing JA", 
-                "Case has been forwarded to the Wing Judge Advocate.");
-            await Task.CompletedTask;
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward this case to the Wing Judge Advocate?",
+                "Confirm Forward",
+                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Forwarding to Wing JA...");
+
+            try
+            {
+                // Forward to Wing JA (default action)
+                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing JA",
+                    "Case has been forwarded to the Wing Judge Advocate.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -288,22 +454,72 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (item?.Value == "return")
         {
-            // Return to Unit CC
-            NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC", 
-                "Case has been returned to the Unit Commander for review.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Unit Commander?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Returning to Unit CC...");
+
+            try
+            {
+                // Return to Unit CC
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else if (item?.Value == "cancel")
         {
-            // Cancel Investigation
-            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
-                "The LOD investigation has been cancelled.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                // Cancel Investigation
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else
         {
-            // Forward to Wing CC (default action)
-            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing CC", 
-                "Case has been forwarded to the Wing Commander.");
-            await Task.CompletedTask;
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward this case to the Wing Commander?",
+                "Confirm Forward",
+                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Forwarding to Wing CC...");
+
+            try
+            {
+                // Forward to Wing CC (default action)
+                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing CC",
+                    "Case has been forwarded to the Wing Commander.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -311,22 +527,72 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (item?.Value == "return")
         {
-            // Return to Wing JA
-            NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA", 
-                "Case has been returned to the Wing Judge Advocate for review.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Wing Judge Advocate?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Returning to Wing JA...");
+
+            try
+            {
+                // Return to Wing JA
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA",
+                    "Case has been returned to the Wing Judge Advocate for review.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else if (item?.Value == "cancel")
         {
-            // Cancel Investigation
-            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
-                "The LOD investigation has been cancelled.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                // Cancel Investigation
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else
         {
-            // Forward to Board Review (default action)
-            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Board Review", 
-                "Case has been forwarded to the Board for review.");
-            await Task.CompletedTask;
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward this case to the Board for review?",
+                "Confirm Forward",
+                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Forwarding to Board Review...");
+
+            try
+            {
+                // Forward to Board Review (default action)
+                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Board Review",
+                    "Case has been forwarded to the Board for review.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -334,22 +600,103 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (item?.Value == "return")
         {
-            // Return to Wing CC
-            NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing CC", 
-                "Case has been returned to the Wing Commander for review.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Wing Commander?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Returning to Wing CC...");
+
+            try
+            {
+                // Return to Wing CC
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing CC",
+                    "Case has been returned to the Wing Commander for review.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else if (item?.Value == "cancel")
         {
-            // Cancel Investigation
-            NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled", 
-                "The LOD investigation has been cancelled.");
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                // Cancel Investigation
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
         }
         else
         {
-            // Complete Review (default action)
-            NotificationService.Notify(NotificationSeverity.Success, "Review Completed", 
-                "The Board review has been completed.");
-            await Task.CompletedTask;
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to complete the Board review?",
+                "Confirm Complete",
+                new ConfirmOptions { OkButtonText = "Complete", CancelButtonText = "Cancel" });
+
+            if (confirmed != true) return;
+
+            await SetBusyAsync("Completing Board review...");
+
+            try
+            {
+                // Complete Review (default action)
+                NotificationService.Notify(NotificationSeverity.Success, "Review Completed",
+                    "The Board review has been completed.");
+            }
+            finally
+            {
+                isBusy = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task OnDigitallySign()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to digitally sign this section?",
+            "Confirm Digital Signature",
+            new ConfirmOptions { OkButtonText = "Sign", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+            return;
+
+        await SetBusyAsync("Applying digital signature...");
+
+        try
+        {
+            // TODO: persist digital signature to database
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Digitally Signed",
+                Detail = "Section has been digitally signed.",
+                Duration = 3000
+            });
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
         }
     }
 
@@ -359,6 +706,7 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
 
         isSaving = true;
+        await SetBusyAsync("Saving...");
 
         try
         {
@@ -402,8 +750,17 @@ public partial class EditCase : ComponentBase, IDisposable
         finally
         {
             isSaving = false;
+            isBusy = false;
             StateHasChanged();
         }
+    }
+
+    private async Task SetBusyAsync(string message = "Working...")
+    {
+        busyMessage = message;
+        isBusy = true;
+        StateHasChanged();
+        await Task.Delay(500);
     }
 
     private async Task OnRevertChanges()

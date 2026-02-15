@@ -2,6 +2,14 @@
 
 <PageTitle>Edit Case - LOD Case Management</PageTitle>
 
+@if (isBusy)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.7);">
+        <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" Style="width: 640px; height: 3px;" />
+        <RadzenText TextStyle="TextStyle.Body2" Style="margin-top: 8px; color: var(--rz-text-color);">@busyMessage</RadzenText>
+    </div>
+}
+
 @if (isLoading)
 {
     <div class="loading-container">
@@ -19,6 +27,7 @@
 }
 else
 {
+
     <RadzenBreadCrumb Style="margin-bottom: 0.75rem;">
         <RadzenBreadCrumbItem Path="/" Text="Cases" />
         <RadzenBreadCrumbItem Text="@caseInfo.CaseNumber" />
@@ -95,6 +104,17 @@ else
                         <RadzenTabsItem Text="Member">
                             <div class="rz-overflow-auto" style="height: 100%;">
                                 <RadzenTemplateForm TItem="MemberInfoFormModel" Data="@memberFormModel" Submit="@OnMemberFormSubmit">
+
+                                    @* ═══ Member Search ═══ *@
+                                    <RadzenCard class="rz-mb-4" Variant="Variant.Outlined">
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.End" Gap="0.75rem">
+                                            <RadzenFormField Text="Search Member (Name or Last 4 SSN)" AllowFloatingLabel="false" Variant="Variant.Outlined" Style="flex: 1;">
+                                                <RadzenTextBox @bind-Value="@memberSearchText" Placeholder="e.g. Johnson or 6789" @onkeydown="@OnMemberSearchKeyDown" />
+                                            </RadzenFormField>
+                                            <RadzenButton Text="Search" Icon="search" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined"
+                                                          Click="@OnMemberSearch" />
+                                        </RadzenStack>
+                                    </RadzenCard>
 
                                     @* ═══ Fieldset A: Items 1–3 — Request Information ═══ *@
                                     <RadzenFieldset Text="Request Information">
@@ -201,9 +221,9 @@ else
                                     @* ═══ Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
-                                            <RadzenButton ButtonType="ButtonType.Submit" Text="Forward to Medical Officer" Icon="send"
-                                                          ButtonStyle="ButtonStyle.Primary" />
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                            <RadzenButton Text="Forward to Medical Officer" Icon="send"
+                                                          ButtonStyle="ButtonStyle.Primary" Click="@OnMemberForwardClick" />
                                         </RadzenStack>
                                     </RadzenFieldset>
 
@@ -515,7 +535,7 @@ else
                                     @* ═══ Fieldset J: Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
                                             <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
                                                                ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
@@ -710,7 +730,7 @@ else
                                     @* ═══ Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
                                             <RadzenSplitButton Click="@OnCommanderForwardClick" Text="Forward to Wing JA" Icon="send"
                                                                ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
@@ -791,7 +811,7 @@ else
                                     @* ═══ Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
                                             <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Appointing Authority" Icon="send"
                                                                ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
@@ -829,7 +849,7 @@ else
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
                                         <RadzenSplitButton Click="@OnWingForwardClick" Text="Forward to Board Review" Icon="send"
                                                            ButtonStyle="ButtonStyle.Primary">
                                             <ChildContent>
@@ -865,7 +885,7 @@ else
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" />
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
                                         <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
                                                            ButtonStyle="ButtonStyle.Primary">
                                             <ChildContent>

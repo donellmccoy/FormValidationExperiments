@@ -16,12 +16,41 @@ public static class EctDbSeeder
         if (await context.Cases.AnyAsync())
             return;
 
-        var cases = GenerateCases(100);
+        var members = GenerateMembers(20);
+        context.Members.AddRange(members);
+        await context.SaveChangesAsync();
+
+        var cases = GenerateCases(100, members);
         context.Cases.AddRange(cases);
         await context.SaveChangesAsync();
     }
 
-    private static List<LineOfDutyCase> GenerateCases(int count)
+    private static List<Member> GenerateMembers(int count)
+    {
+        var rng = new Random(99);
+        var members = new List<Member>(count);
+
+        for (var i = 0; i < count; i++)
+        {
+            var (firstName, lastName) = Names[rng.Next(Names.Length)];
+            var component = PickRandom(rng, ServiceComponent.RegularAirForce, ServiceComponent.AirForceReserve, ServiceComponent.AirNationalGuard, ServiceComponent.UnitedStatesSpaceForce);
+
+            members.Add(new Member
+            {
+                FirstName = firstName,
+                MiddleInitial = MiddleInitials[rng.Next(MiddleInitials.Length)],
+                LastName = lastName,
+                Rank = Ranks[rng.Next(Ranks.Length)],
+                ServiceNumber = $"{rng.Next(100, 999)}-{rng.Next(10, 99)}-{rng.Next(1000, 9999)}",
+                Unit = Units[rng.Next(Units.Length)],
+                Component = component
+            });
+        }
+
+        return members;
+    }
+
+    private static List<LineOfDutyCase> GenerateCases(int count, List<Member> members)
     {
         var rng = new Random(42); // Fixed seed for reproducibility
         var cases = new List<LineOfDutyCase>(count);
@@ -47,6 +76,7 @@ public static class EctDbSeeder
             var lodCase = new LineOfDutyCase
             {
                 CaseId = $"{incidentDate:yyyyMMdd}-{(i + 1):D3}",
+                MemberId = members[i % members.Count].Id,
                 ProcessType = processType,
                 Component = component,
                 MemberName = memberName,

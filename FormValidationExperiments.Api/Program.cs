@@ -13,7 +13,6 @@ builder.Services.AddDbContextFactory<EctDbContext>(options =>
 
 // Application services
 builder.Services.AddScoped<LineOfDutyCaseService>();
-builder.Services.AddScoped<ILineOfDutyCaseService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyDocumentService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
@@ -22,6 +21,7 @@ builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredServi
 // OData Entity Data Model
 var odataBuilder = new ODataConventionModelBuilder();
 odataBuilder.EntitySet<LineOfDutyCase>("Cases");
+odataBuilder.EntitySet<Member>("Members");
 
 // Controllers + OData
 builder.Services.AddControllers()
@@ -30,6 +30,7 @@ builder.Services.AddControllers()
         options.AddRouteComponents("odata", odataBuilder.GetEdmModel())
                .Select()
                .Filter()
+               .Expand()
                .OrderBy()
                .SetMaxTop(100)
                .Count();
@@ -73,4 +74,4 @@ app.UseHttpsRedirection();
 app.UseCors("BlazorClient");
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

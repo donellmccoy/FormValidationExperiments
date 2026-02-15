@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FormValidationExperiments.Shared.Mapping;
 using FormValidationExperiments.Shared.Models;
 using FormValidationExperiments.Shared.ViewModels;
 using Radzen;
@@ -10,12 +11,9 @@ using Radzen;
 namespace FormValidationExperiments.Web.Services;
 
 /// <summary>
-/// OData-based service that queries LOD cases from the OData endpoint.
-/// Uses Radzen's <see cref="ODataExtensions.GetODataUri"/> helper to build query URIs,
-/// but deserializes responses with our configured JsonSerializerOptions (which include
-/// <see cref="JsonStringEnumConverter"/>) because Radzen's built-in ReadAsync
-/// doesn't support custom enum converters.
-/// Non-OData operations (view models, save) still use standard REST endpoints.
+/// OData-based service for all LOD case operations.
+/// Uses OData endpoints exclusively; view model mapping is performed client-side
+/// via <see cref="LineOfDutyCaseMapper"/>.
 /// </summary>
 public class LineOfDutyCaseODataService : ILineOfDutyCaseService
 {
@@ -78,19 +76,56 @@ public class LineOfDutyCaseODataService : ILineOfDutyCaseService
         public List<T> Value { get; set; } = [];
     }
 
-    public async Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default)
+    public async Task<CaseViewModelsDto?> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default)
     {
-        var response = await _http.GetAsync($"api/cases/{caseId}/viewmodels", cancellationToken);
+        // Fetch raw entity from OData, filtering by business key CaseId
+        var uri = new Uri(_baseUri, "Cases");
+        uri = uri.GetODataUri(
+            filter: $"CaseId eq '{caseId}'",
+            top: 1,
+            expand: "Documents,Authorities,TimelineSteps($expand=ResponsibleAuthority),Appeals($expand=AppellateAuthority),MEDCON,INCAP");
+
+        var response = await _http.GetAsync(uri, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseViewModelsDto>(_jsonOptions, cancellationToken)
-               ?? throw new InvalidOperationException("Failed to deserialize CaseViewModelsDto");
+
+        var odata = await response.Content
+            .ReadFromJsonAsync<ODataResponse<LineOfDutyCase>>(_jsonOptions, cancellationToken);
+
+        var lodCase = odata?.Value?.FirstOrDefault();
+        if (lodCase is null)
+            return null;
+
+        // Map to view models client-side
+        return LineOfDutyCaseMapper.ToCaseViewModelsDto(lodCase);
     }
 
     public async Task<CaseInfoModel> SaveCaseAsync(string caseId, CaseViewModelsDto dto, CancellationToken cancellationToken = default)
     {
-        var response = await _http.PutAsJsonAsync($"api/cases/{caseId}", dto, _jsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CaseInfoModel>(_jsonOptions, cancellationToken)
-               ?? throw new InvalidOperationException("Failed to deserialize CaseInfoModel");
+        // Fetch the current entity from OData
+        var uri = new Uri(_baseUri, "Cases");
+        uri = uri.GetODataUri(
+            filter: $"CaseId eq '{caseId}'",
+            top: 1,
+            expand: "Documents,Authorities,TimelineSteps($expand=ResponsibleAuthority),Appeals($expand=AppellateAuthority),MEDCON,INCAP");
+
+        var fetchResponse = await _http.GetAsync(uri, cancellationToken);
+        fetchResponse.EnsureSuccessStatusCode();
+
+        var odata = await fetchResponse.Content
+            .ReadFromJsonAsync<ODataResponse<LineOfDutyCase>>(_jsonOptions, cancellationToken);
+
+        var lodCase = odata?.Value?.FirstOrDefault()
+            ?? throw new InvalidOperationException($"Case '{caseId}' not found.");
+
+        // Apply view model changes to the entity client-side
+        LineOfDutyCaseMapper.ApplyAll(dto, lodCase);
+
+        // PUT the updated entity back via OData
+        var putUri = new Uri(_baseUri, $"Cases({lodCase.Id})");
+        var saveResponse = await _http.PutAsJsonAsync(putUri, lodCase, _jsonOptions, cancellationToken);
+        saveResponse.EnsureSuccessStatusCode();
+
+        // Return refreshed CaseInfoModel
+        return LineOfDutyCaseMapper.ToCaseInfoModel(lodCase);
     }
 }

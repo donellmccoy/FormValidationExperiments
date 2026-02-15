@@ -3,19 +3,6 @@ using FormValidationExperiments.Shared.Models;
 namespace FormValidationExperiments.Api.Services;
 
 /// <summary>
-/// Service interface for Line of Duty case operations.
-/// </summary>
-public interface ILineOfDutyCaseService
-{
-    Task<LineOfDutyCase?> GetCaseByIdAsync(int id, CancellationToken ct = default);
-    Task<LineOfDutyCase?> GetCaseByCaseIdAsync(string caseId, CancellationToken ct = default);
-    Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default);
-    Task<LineOfDutyCase> UpdateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default);
-    Task<LineOfDutyCase?> UpdateCaseAsync(string caseId, Action<LineOfDutyCase> applyChanges, CancellationToken ct = default);
-    Task<bool> DeleteCaseAsync(int id, CancellationToken ct = default);
-}
-
-/// <summary>
 /// Service interface for Line of Duty document operations.
 /// </summary>
 public interface ILineOfDutyDocumentService

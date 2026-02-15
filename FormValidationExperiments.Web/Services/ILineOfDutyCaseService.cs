@@ -20,9 +20,9 @@ public interface ILineOfDutyCaseService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns all mapped view models for a specific case.
+    /// Fetches a single LOD case by CaseId and maps it to view models.
     /// </summary>
-    Task<CaseViewModelsDto> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default);
+    Task<CaseViewModelsDto?> GetCaseViewModelsAsync(string caseId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Saves all view model changes for a case. Returns the refreshed CaseInfoModel.

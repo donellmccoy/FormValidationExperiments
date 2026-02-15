@@ -8,7 +8,6 @@ namespace FormValidationExperiments.Api.Services;
 /// Service for performing Line of Duty database operations.
 /// </summary>
 public class LineOfDutyCaseService :
-    ILineOfDutyCaseService,
     ILineOfDutyDocumentService,
     ILineOfDutyAppealService,
     ILineOfDutyAuthorityService,
@@ -19,82 +18,6 @@ public class LineOfDutyCaseService :
     public LineOfDutyCaseService(IDbContextFactory<EctDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
-    }
-
-    // ──────────────────────────── Case Operations ────────────────────────────
-
-    private static IQueryable<LineOfDutyCase> CaseWithIncludes(EctDbContext context)
-    {
-        return context.Cases
-            .AsSplitQuery()
-            .Include(c => c.Documents)
-            .Include(c => c.Authorities)
-            .Include(c => c.TimelineSteps).ThenInclude(t => t.ResponsibleAuthority)
-            .Include(c => c.Appeals).ThenInclude(a => a.AppellateAuthority)
-            .Include(c => c.MEDCON)
-            .Include(c => c.INCAP);
-    }
-
-    public async Task<LineOfDutyCase?> GetCaseByIdAsync(int id, CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        return await CaseWithIncludes(context).AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
-    }
-
-    public async Task<LineOfDutyCase?> GetCaseByCaseIdAsync(string caseId, CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        return await CaseWithIncludes(context).AsNoTracking().FirstOrDefaultAsync(c => c.CaseId == caseId, ct);
-    }
-
-    public async Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        context.Cases.Add(lodCase);
-        await context.SaveChangesAsync(ct);
-        return lodCase;
-    }
-
-    public async Task<LineOfDutyCase> UpdateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        var existing = await context.Cases.FindAsync([lodCase.Id], ct);
-        if (existing is null)
-            throw new InvalidOperationException($"Case with Id {lodCase.Id} not found.");
-
-        context.Entry(existing).CurrentValues.SetValues(lodCase);
-        await context.SaveChangesAsync(ct);
-        return existing;
-    }
-
-    public async Task<LineOfDutyCase?> UpdateCaseAsync(string caseId, Action<LineOfDutyCase> applyChanges, CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.CaseId == caseId, ct);
-        if (existing is null)
-            return null;
-
-        applyChanges(existing);
-        await context.SaveChangesAsync(ct);
-        return existing;
-    }
-
-    public async Task<bool> DeleteCaseAsync(int id, CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var lodCase = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == id, ct);
-        if (lodCase is null)
-            return false;
-
-        context.TimelineSteps.RemoveRange(lodCase.TimelineSteps);
-        context.Authorities.RemoveRange(lodCase.Authorities);
-        context.Documents.RemoveRange(lodCase.Documents);
-        context.Appeals.RemoveRange(lodCase.Appeals);
-        context.Cases.Remove(lodCase);
-        await context.SaveChangesAsync(ct);
-        return true;
     }
 
     // ──────────────────────────── Document Operations ────────────────────────────
