@@ -2,9 +2,14 @@
 
 <PageTitle>Cases - Electronic Case Tracking System</PageTitle>
 
-<RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin-bottom: 1rem;">
-    Line Of Duty Cases
-</RadzenText>
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
+              Style="margin-bottom: 1rem;">
+    <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+        Line Of Duty Cases
+    </RadzenText>
+    <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
+                  Click="@OnCreateCase" />
+</RadzenStack>
 
 <RadzenDataGrid TItem="LineOfDutyCase"
                 Data="@cases"

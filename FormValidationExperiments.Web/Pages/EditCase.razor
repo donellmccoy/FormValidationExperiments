@@ -2,7 +2,7 @@
 
 <PageTitle>Edit Case - LOD Case Management</PageTitle>
 
-@if (isBusy)
+@if (!isLoading && isBusy)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.7);">
         <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" Style="width: 640px; height: 3px;" />
@@ -919,9 +919,36 @@ else
                         @* ─── Notifications Tab ─── *@
                         <RadzenTabsItem Text="Notifications">
                             <div class="rz-overflow-auto" style="height: 100%;">
-                                <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
-                                    Notification records and delivery status.
-                                </RadzenText>
+                                <RadzenDataGrid TItem="FormValidationExperiments.Shared.Models.Notification"
+                                                Data="@_lodCase?.Notifications"
+                                                AllowSorting="true"
+                                                AllowPaging="true"
+                                                PageSize="10"
+                                                ShowPagingSummary="true"
+                                                PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
+                                                PageSizeOptions="@(new[] { 5, 10, 25 })"
+                                                PagerHorizontalAlign="HorizontalAlign.Center"
+                                                GridLines="DataGridGridLines.Both"
+                                                Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+                                    <Columns>
+                                        <RadzenDataGridColumn TItem="FormValidationExperiments.Shared.Models.Notification" Property="Title" Title="Title" Width="220px" />
+                                        <RadzenDataGridColumn TItem="FormValidationExperiments.Shared.Models.Notification" Property="NotificationType" Title="Type" Width="140px" />
+                                        <RadzenDataGridColumn TItem="FormValidationExperiments.Shared.Models.Notification" Property="Recipient" Title="Recipient" Width="200px" />
+                                        <RadzenDataGridColumn TItem="FormValidationExperiments.Shared.Models.Notification" Property="CreatedDate" Title="Date" FormatString="{0:yyyy-MM-dd}" Width="120px" />
+                                        <RadzenDataGridColumn TItem="FormValidationExperiments.Shared.Models.Notification" Property="IsRead" Title="Read" Width="80px" TextAlign="TextAlign.Center">
+                                            <Template Context="notification">
+                                                @if (notification.IsRead)
+                                                {
+                                                    <RadzenIcon Icon="check_circle" Style="color: var(--rz-success);" />
+                                                }
+                                                else
+                                                {
+                                                    <RadzenIcon Icon="radio_button_unchecked" Style="color: var(--rz-text-secondary-color);" />
+                                                }
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                    </Columns>
+                                </RadzenDataGrid>
                             </div>
                         </RadzenTabsItem>
 

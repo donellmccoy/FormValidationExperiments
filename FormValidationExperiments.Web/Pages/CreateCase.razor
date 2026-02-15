@@ -1,0 +1,173 @@
+@page "/case/create"
+
+<PageTitle>Create Case - LOD Case Management</PageTitle>
+
+@if (!isLoading && isBusy)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.7);">
+        <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" Style="width: 640px; height: 3px;" />
+        <RadzenText TextStyle="TextStyle.Body2" Style="margin-top: 8px; color: var(--rz-text-color);">@busyMessage</RadzenText>
+    </div>
+}
+
+@if (isLoading)
+{
+    <div class="loading-container">
+        <RadzenStack Gap="1.5rem">
+            <RadzenSkeleton Style="width: 240px; height: 32px;" Animation="SkeletonAnimation.Wave" />
+            <RadzenStack Gap="1rem" Style="flex: 1;">
+                <RadzenSkeleton Style="width: 100%; height: 120px;" Animation="SkeletonAnimation.Wave" />
+                <RadzenSkeleton Style="width: 100%; height: 280px;" Animation="SkeletonAnimation.Wave" />
+            </RadzenStack>
+        </RadzenStack>
+    </div>
+}
+else
+{
+    <RadzenBreadCrumb Style="margin-bottom: 0.75rem;">
+        <RadzenBreadCrumbItem Path="/" Text="Cases" />
+        <RadzenBreadCrumbItem Text="New Case" />
+    </RadzenBreadCrumb>
+
+    <RadzenPanel AllowCollapse="false"
+                 Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 1.5rem;">
+        <HeaderTemplate>
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center"
+                         Style="padding: 1rem 1.5rem 1rem 0.5rem;">
+                <div class="panel-icon-box">
+                    <span class="material-symbols-outlined">add_circle</span>
+                </div>
+                <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+                    Create New LOD Case
+                </RadzenText>
+            </RadzenStack>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenTemplateForm TItem="MemberInfoFormModel" Data="@memberFormModel" Submit="@OnSubmit">
+
+                @* ═══ Member Search ═══ *@
+                <RadzenCard class="rz-mb-4" Variant="Variant.Outlined">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.End">
+                        <RadzenStack Gap="0.25rem" Style="flex: 1;">
+                            <RadzenLabel Text="Search Member" />
+                            <RadzenTextBox @bind-Value="memberSearchText" Placeholder="Name or last 4 SSN..."
+                                           Style="width: 100%;" @onkeydown="OnMemberSearchKeyDown" />
+                        </RadzenStack>
+                        <RadzenButton Text="Search" Icon="search" ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@OnMemberSearch" />
+                    </RadzenStack>
+                </RadzenCard>
+
+                @* ═══ Case Information ═══ *@
+                <RadzenFieldset Text="Case Information">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Incident Type" />
+                                    <RadzenDropDown TValue="IncidentType" @bind-Value="incidentType"
+                                                    Data="@incidentTypes" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Process Type" />
+                                    <RadzenDropDown TValue="LineOfDutyProcessType" @bind-Value="processType"
+                                                    Data="@processTypes" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+
+                @* ═══ Member Identification (Items 1–8) ═══ *@
+                <RadzenFieldset Text="Member Identification" class="rz-mt-4">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 1 — Requesting Commander" />
+                                    <RadzenTextBox @bind-Value="memberFormModel.RequestingCommander" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 2 — Medical Provider" />
+                                    <RadzenTextBox @bind-Value="memberFormModel.MedicalProvider" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 3 — Report Date" />
+                                    <RadzenDatePicker @bind-Value="memberFormModel.ReportDate" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 4 — Last Name" />
+                                    <RadzenTextBox @bind-Value="memberFormModel.LastName" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="First Name" />
+                                    <RadzenTextBox @bind-Value="memberFormModel.FirstName" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Middle Initial" />
+                                    <RadzenTextBox @bind-Value="memberFormModel.MiddleInitial" MaxLength="1" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 5 — SSN (Last 4)" />
+                                    <RadzenTextBox Value="@memberFormModel.SSN" Change="@(args => OnSsnChanged(args))"
+                                                   MaxLength="4" Placeholder="Last 4" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 6 — Rank" />
+                                    <RadzenDropDown TValue="MilitaryRank?" @bind-Value="memberFormModel.Rank"
+                                                    Data="@militaryRanks" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 7 — Organization/Unit" />
+                                    <RadzenTextBox @bind-Value="memberFormModel.OrganizationUnit" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="4">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenLabel Text="Item 8 — Member Status" />
+                                    <RadzenDropDown TValue="MemberStatus?" @bind-Value="memberFormModel.MemberStatus"
+                                                    Data="@memberStatuses" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+
+                @* ═══ Form Actions ═══ *@
+                <div class="form-actions rz-mt-4">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Variant="Variant.Outlined"
+                                      Click="@OnCancel" />
+                        <RadzenButton Text="Create Case" Icon="add" ButtonType="ButtonType.Submit"
+                                      ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenStack>
+                </div>
+
+            </RadzenTemplateForm>
+        </ChildContent>
+    </RadzenPanel>
+}
