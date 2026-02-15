@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
-using ECTSystem.Api.Data;
+using ECTSystem.Persistence.Data;
+using ECTSystem.Api.Logging;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -15,10 +16,12 @@ namespace ECTSystem.Api.Controllers;
 public class MembersController : ODataController
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
+    private readonly IApiLogService _log;
 
-    public MembersController(IDbContextFactory<EctDbContext> contextFactory)
+    public MembersController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
     {
         _contextFactory = contextFactory;
+        _log = log;
     }
 
     /// <summary>
@@ -28,6 +31,7 @@ public class MembersController : ODataController
     [EnableQuery(MaxTop = 100, PageSize = 50)]
     public IActionResult Get()
     {
+        _log.QueryingMembers();
         var context = _contextFactory.CreateDbContext();
         return Ok(context.Members.AsNoTracking());
     }
@@ -39,13 +43,20 @@ public class MembersController : ODataController
     [EnableQuery]
     public async Task<IActionResult> Get([FromRoute] int key)
     {
+        _log.RetrievingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var member = await context.Members
             .Include(m => m.LineOfDutyCases)
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == key);
 
-        return member is null ? NotFound() : Ok(member);
+        if (member is null)
+        {
+            _log.MemberNotFound(key);
+            return NotFound();
+        }
+
+        return Ok(member);
     }
 
     /// <summary>
@@ -55,12 +66,16 @@ public class MembersController : ODataController
     public async Task<IActionResult> Post([FromBody] Member member)
     {
         if (!ModelState.IsValid)
+        {
+            _log.MemberInvalidModelState("Post");
             return BadRequest(ModelState);
+        }
 
         await using var context = await _contextFactory.CreateDbContextAsync();
         context.Members.Add(member);
         await context.SaveChangesAsync();
 
+        _log.MemberCreated(member.Id);
         return Created(member);
     }
 
@@ -71,17 +86,25 @@ public class MembersController : ODataController
     public async Task<IActionResult> Put([FromRoute] int key, [FromBody] Member update)
     {
         if (!ModelState.IsValid)
+        {
+            _log.MemberInvalidModelState("Put");
             return BadRequest(ModelState);
+        }
 
+        _log.UpdatingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var existing = await context.Members.FindAsync(key);
         if (existing is null)
+        {
+            _log.MemberNotFound(key);
             return NotFound();
+        }
 
         update.Id = key;
         context.Entry(existing).CurrentValues.SetValues(update);
         await context.SaveChangesAsync();
 
+        _log.MemberUpdated(key);
         return Updated(existing);
     }
 
@@ -92,16 +115,24 @@ public class MembersController : ODataController
     public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] Delta<Member> delta)
     {
         if (!ModelState.IsValid)
+        {
+            _log.MemberInvalidModelState("Patch");
             return BadRequest(ModelState);
+        }
 
+        _log.PatchingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var existing = await context.Members.FindAsync(key);
         if (existing is null)
+        {
+            _log.MemberNotFound(key);
             return NotFound();
+        }
 
         delta.Patch(existing);
         await context.SaveChangesAsync();
 
+        _log.MemberPatched(key);
         return Updated(existing);
     }
 
@@ -111,14 +142,19 @@ public class MembersController : ODataController
     /// </summary>
     public async Task<IActionResult> Delete([FromRoute] int key)
     {
+        _log.DeletingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var member = await context.Members.FindAsync(key);
         if (member is null)
+        {
+            _log.MemberNotFound(key);
             return NotFound();
+        }
 
         context.Members.Remove(member);
         await context.SaveChangesAsync();
 
+        _log.MemberDeleted(key);
         return NoContent();
     }
 }

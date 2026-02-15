@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.ModelBuilder;
-using ECTSystem.Api.Data;
+using ECTSystem.Persistence.Data;
+using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
 
@@ -10,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Entity Framework Core — SQL Server
 builder.Services.AddDbContextFactory<EctDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("EctDatabase")));
+
+// Logging
+builder.Services.AddSingleton<IApiLogService, ApiLogService>();
 
 // Application services
 builder.Services.AddScoped<LineOfDutyCaseService>();

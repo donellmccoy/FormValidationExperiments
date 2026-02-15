@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
-using ECTSystem.Api.Data;
+using ECTSystem.Persistence.Data;
+using ECTSystem.Api.Logging;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -14,15 +15,15 @@ namespace ECTSystem.Api.Controllers;
 /// query parameters which the OData middleware translates directly into EF Core LINQ queries.
 /// Named "CasesController" to match the OData entity set "Cases" (convention routing).
 /// </summary>
-public partial class CasesController : ODataController
+public class CasesController : ODataController
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
-    private readonly ILogger<CasesController> _logger;
+    private readonly IApiLogService _log;
 
-    public CasesController(IDbContextFactory<EctDbContext> contextFactory, ILogger<CasesController> logger)
+    public CasesController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
     {
         _contextFactory = contextFactory;
-        _logger = logger;
+        _log = log;
     }
 
     /// <summary>
@@ -33,7 +34,7 @@ public partial class CasesController : ODataController
     [EnableQuery(MaxTop = 100, PageSize = 50)]
     public IActionResult Get()
     {
-        Log.QueryingCases(_logger);
+        _log.QueryingCases();
         // Create a long-lived context — OData needs the query to remain open
         // until the response is serialized. The context will be disposed by the DI scope.
         var context = _contextFactory.CreateDbContext();
@@ -47,7 +48,7 @@ public partial class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> Get([FromRoute] int key)
     {
-        Log.RetrievingCase(_logger, key);
+        _log.RetrievingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var lodCase = await CaseWithIncludes(context)
             .AsNoTracking()
@@ -55,7 +56,7 @@ public partial class CasesController : ODataController
 
         if (lodCase is null)
         {
-            Log.CaseNotFound(_logger, key);
+            _log.CaseNotFound(key);
             return NotFound();
         }
 
@@ -70,7 +71,7 @@ public partial class CasesController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            Log.InvalidModelState(_logger, "Post");
+            _log.InvalidModelState("Post");
             return BadRequest(ModelState);
         }
 
@@ -78,7 +79,7 @@ public partial class CasesController : ODataController
         context.Cases.Add(lodCase);
         await context.SaveChangesAsync();
 
-        Log.CaseCreated(_logger, lodCase.Id);
+        _log.CaseCreated(lodCase.Id);
         return Created(lodCase);
     }
 
@@ -90,16 +91,16 @@ public partial class CasesController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            Log.InvalidModelState(_logger, "Put");
+            _log.InvalidModelState("Put");
             return BadRequest(ModelState);
         }
 
-        Log.UpdatingCase(_logger, key);
+        _log.UpdatingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
         if (existing is null)
         {
-            Log.CaseNotFound(_logger, key);
+            _log.CaseNotFound(key);
             return NotFound();
         }
 
@@ -122,7 +123,7 @@ public partial class CasesController : ODataController
 
         await context.SaveChangesAsync();
 
-        Log.CaseUpdated(_logger, key);
+        _log.CaseUpdated(key);
         return Updated(existing);
     }
 
@@ -134,23 +135,23 @@ public partial class CasesController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            Log.InvalidModelState(_logger, "Patch");
+            _log.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
-        Log.PatchingCase(_logger, key);
+        _log.PatchingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
         if (existing is null)
         {
-            Log.CaseNotFound(_logger, key);
+            _log.CaseNotFound(key);
             return NotFound();
         }
 
         delta.Patch(existing);
         await context.SaveChangesAsync();
 
-        Log.CasePatched(_logger, key);
+        _log.CasePatched(key);
         return Updated(existing);
     }
 
@@ -160,12 +161,12 @@ public partial class CasesController : ODataController
     /// </summary>
     public async Task<IActionResult> Delete([FromRoute] int key)
     {
-        Log.DeletingCase(_logger, key);
+        _log.DeletingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var lodCase = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
         if (lodCase is null)
         {
-            Log.CaseNotFound(_logger, key);
+            _log.CaseNotFound(key);
             return NotFound();
         }
 
@@ -177,7 +178,7 @@ public partial class CasesController : ODataController
         context.Cases.Remove(lodCase);
         await context.SaveChangesAsync();
 
-        Log.CaseDeleted(_logger, key);
+        _log.CaseDeleted(key);
         return NoContent();
     }
 

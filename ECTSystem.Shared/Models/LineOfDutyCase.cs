@@ -174,7 +174,7 @@ public class LineOfDutyCase
 
     // Related Benefits
     public int MEDCONId { get; set; }
-    public MEDCONDetails MEDCON { get; set; } = new MEDCONDetails();
+    public MEDCONDetail MEDCON { get; set; } = new MEDCONDetail();
     public int INCAPId { get; set; }
     public INCAPDetails INCAP { get; set; } = new INCAPDetails();
     public bool MemberChoseMEDCON { get; set; } // If eligible for both

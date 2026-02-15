@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ECTSystem.Api.Data;
+using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Services;

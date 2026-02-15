@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="ECTSystem.Api/ECTSystem.Api.csproj" />
+  <Project Path="ECTSystem.Persistence/ECTSystem.Persistence.csproj" />
   <Project Path="ECTSystem.Shared/ECTSystem.Shared.csproj" />
   <Project Path="ECTSystem.Web/ECTSystem.Web.csproj" />
   <Project Path="ECTSystem.PdfGenerator/ECTSystem.PdfGenerator.csproj" />
