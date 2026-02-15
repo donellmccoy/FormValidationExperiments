@@ -15,7 +15,11 @@ public partial class WorkflowSidebar : ComponentBase
 
     private int GetProgressPercent()
     {
-        if (Steps.Count <= 1) return 0;
+        if (Steps.Count <= 1)
+        {
+            return 0;
+        }
+
         return (int)((double)CurrentStepIndex / (Steps.Count - 1) * 100);
     }
 

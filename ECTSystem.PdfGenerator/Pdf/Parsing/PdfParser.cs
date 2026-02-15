@@ -24,13 +24,17 @@ public sealed class PdfParser
     public PdfObject ResolveObject(int objectNumber)
     {
         if (_objectCache.TryGetValue(objectNumber, out var cached))
+        {
             return cached;
+        }
 
         var entry = XRefTable.GetEntry(objectNumber)
             ?? throw new PdfParseException($"Object {objectNumber} not found in xref table", 0);
 
         if (!entry.InUse)
+        {
             return PdfNull.Instance;
+        }
 
         // Object is inside an object stream — decompress and parse the ObjStm
         if (entry.IsInObjectStream)
@@ -48,7 +52,9 @@ public sealed class PdfParser
         var objKeyword = _tokenizer.ReadToken();
 
         if (objKeyword != "obj")
+        {
             throw new PdfParseException($"Expected 'obj' keyword, got '{objKeyword}'", _tokenizer.Position);
+        }
 
         var value = ParseValue();
 
@@ -104,7 +110,9 @@ public sealed class PdfParser
             ?? throw new PdfParseException($"ObjStm {objStreamNumber} not found in xref table", 0);
 
         if (streamEntry.IsInObjectStream)
+        {
             throw new PdfParseException($"ObjStm {objStreamNumber} cannot itself be in an object stream", 0);
+        }
 
         // Parse the ObjStm indirect object to get its dictionary
         _tokenizer.Position = (int)streamEntry.ByteOffset;
@@ -112,7 +120,9 @@ public sealed class PdfParser
         _tokenizer.ReadToken(); // generation
         var objKeyword = _tokenizer.ReadToken();
         if (objKeyword != "obj")
+        {
             throw new PdfParseException($"Expected 'obj' for ObjStm, got '{objKeyword}'", _tokenizer.Position);
+        }
 
         var streamDict = ParseValue() as PdfDictionary
             ?? throw new PdfParseException("ObjStm dictionary expected", _tokenizer.Position);
@@ -122,7 +132,10 @@ public sealed class PdfParser
         var peek = System.Text.Encoding.ASCII.GetString(
             _data, _tokenizer.Position, Math.Min(6, _data.Length - _tokenizer.Position));
         if (!peek.StartsWith("stream"))
+        {
             throw new PdfParseException("Expected 'stream' in ObjStm", _tokenizer.Position);
+        }
+
         _tokenizer.Position += 6;
 
         var length = GetStreamLength(streamDict);
@@ -180,27 +193,53 @@ public sealed class PdfParser
 
         tokenizer.SkipWhitespaceAndComments();
         if (tokenizer.AtEnd)
+        {
             return PdfNull.Instance;
+        }
 
         var token = tokenizer.PeekToken();
 
         if (token == "<<")
+        {
             return ParseDictionaryFrom(tokenizer);
+        }
 
         if (token == "[")
+        {
             return ParseArrayFrom(tokenizer);
+        }
 
         tokenizer.ReadToken();
 
         if (token.StartsWith('/'))
+        {
             return new PdfName(token[1..]);
+        }
+
         if (token.StartsWith('('))
+        {
             return ParseLiteralStringValue(token);
+        }
+
         if (token.StartsWith('<'))
+        {
             return new PdfString(token[1..^1], isHex: true);
-        if (token == "true") return new PdfBoolean(true);
-        if (token == "false") return new PdfBoolean(false);
-        if (token == "null") return PdfNull.Instance;
+        }
+
+        if (token == "true")
+        {
+            return new PdfBoolean(true);
+        }
+
+        if (token == "false")
+        {
+            return new PdfBoolean(false);
+        }
+
+        if (token == "null")
+        {
+            return PdfNull.Instance;
+        }
 
         if (IsNumeric(token))
         {
@@ -239,7 +278,10 @@ public sealed class PdfParser
             if (tokenizer.PeekToken() == ">>") { tokenizer.ReadToken(); break; }
             var keyToken = tokenizer.ReadToken();
             if (!keyToken.StartsWith('/'))
+            {
                 throw new PdfParseException($"Expected name in dict, got '{keyToken}'", tokenizer.Position);
+            }
+
             dict.Entries[keyToken[1..]] = ParseValueFromTokenizer(tokenizer);
         }
         return dict;
@@ -264,7 +306,9 @@ public sealed class PdfParser
     {
         var startXRefPos = _tokenizer.FindLastOccurrence("startxref");
         if (startXRefPos < 0)
+        {
             throw new PdfParseException("Could not find 'startxref' marker", 0);
+        }
 
         _tokenizer.Position = startXRefPos + "startxref".Length;
         _tokenizer.SkipWhitespaceAndComments();
@@ -309,7 +353,9 @@ public sealed class PdfParser
         var objKeyword = _tokenizer.ReadToken();
 
         if (objKeyword != "obj")
+        {
             throw new PdfParseException($"Expected 'obj' for xref stream, got '{objKeyword}'", _tokenizer.Position);
+        }
 
         var objNum = int.Parse(objNumToken, CultureInfo.InvariantCulture);
 
@@ -319,18 +365,25 @@ public sealed class PdfParser
         // Verify it's an XRef stream
         var type = dict.GetName("Type");
         if (type?.Value != "XRef")
+        {
             throw new PdfParseException("Expected /Type /XRef in xref stream", _tokenizer.Position);
+        }
 
         // Use this as trailer if we haven't set one yet
         if (Trailer.Entries.Count == 0)
+        {
             Trailer = dict;
+        }
 
         // Read stream data
         _tokenizer.SkipWhitespaceAndComments();
         var streamCheck = System.Text.Encoding.ASCII.GetString(
             _data, _tokenizer.Position, Math.Min(6, _data.Length - _tokenizer.Position));
         if (!streamCheck.StartsWith("stream"))
+        {
             throw new PdfParseException("Expected 'stream' keyword", _tokenizer.Position);
+        }
+
         _tokenizer.Position += 6;
 
         var length = GetStreamLength(dict);
@@ -345,7 +398,9 @@ public sealed class PdfParser
         // Follow /Prev chain
         var prev = dict.GetNumber("Prev");
         if (prev is not null)
+        {
             ParseXRefAt((long)prev.Value);
+        }
     }
 
     private void ParseXRefStreamEntries(PdfDictionary dict, byte[] data)
@@ -355,7 +410,9 @@ public sealed class PdfParser
             ?? throw new PdfParseException("XRef stream missing /W array", 0);
         var w = wArray.Items.Select(i => ((PdfNumber)i).IntValue).ToArray();
         if (w.Length < 3)
+        {
             throw new PdfParseException("/W array must have 3 entries", 0);
+        }
 
         var w0 = w[0]; // type field width
         var w1 = w[1]; // field 2 width (offset or obj stream number)
@@ -391,7 +448,9 @@ public sealed class PdfParser
             for (var i = 0; i < count; i++)
             {
                 if (dataPos + entrySize > data.Length)
+                {
                     break;
+                }
 
                 var field1 = ReadXRefField(data, dataPos, w0, defaultValue: 1); // type (default 1)
                 dataPos += w0;
@@ -404,7 +463,9 @@ public sealed class PdfParser
 
                 // Only add if not already present (most recent xref takes precedence)
                 if (XRefTable.GetEntry(objNumber) is not null)
+                {
                     continue;
+                }
 
                 switch (field1)
                 {
@@ -447,11 +508,16 @@ public sealed class PdfParser
     private static long ReadXRefField(byte[] data, int offset, int width, long defaultValue)
     {
         if (width == 0)
+        {
             return defaultValue;
+        }
 
         long value = 0;
         for (var i = 0; i < width; i++)
+        {
             value = (value << 8) | data[offset + i];
+        }
+
         return value;
     }
 
@@ -461,10 +527,14 @@ public sealed class PdfParser
     {
         var filter = streamDict.GetName("Filter");
         if (filter is null)
+        {
             return rawData; // no compression
+        }
 
         if (filter.Value != "FlateDecode")
+        {
             throw new NotSupportedException($"Stream filter /{filter.Value} is not supported");
+        }
 
         // FlateDecode = zlib (2-byte header) + deflate
         // Skip the 2-byte zlib header
@@ -550,7 +620,9 @@ public sealed class PdfParser
             var token = _tokenizer.PeekToken();
 
             if (token == "trailer")
+            {
                 break;
+            }
 
             var startObj = int.Parse(_tokenizer.ReadToken(), CultureInfo.InvariantCulture);
             var count = int.Parse(_tokenizer.ReadToken(), CultureInfo.InvariantCulture);
@@ -583,11 +655,15 @@ public sealed class PdfParser
         var trailerDict = ParseDictionary();
 
         if (Trailer.Entries.Count == 0)
+        {
             Trailer = trailerDict;
+        }
 
         var prev = trailerDict.GetNumber("Prev");
         if (prev is not null)
+        {
             ParseXRefAt((long)prev.Value);
+        }
     }
 
     // ─── Value Parsing ───
@@ -597,30 +673,53 @@ public sealed class PdfParser
         _tokenizer.SkipWhitespaceAndComments();
 
         if (_tokenizer.AtEnd)
+        {
             throw new PdfParseException("Unexpected end of data", _tokenizer.Position);
+        }
 
         var token = _tokenizer.PeekToken();
 
         if (token == "<<")
+        {
             return ParseDictionary();
+        }
 
         if (token == "[")
+        {
             return ParseArray();
+        }
 
         _tokenizer.ReadToken();
 
         if (token.StartsWith('/'))
+        {
             return new PdfName(token[1..]);
+        }
 
         if (token.StartsWith('('))
+        {
             return ParseLiteralStringValue(token);
+        }
 
         if (token.StartsWith('<'))
+        {
             return new PdfString(token[1..^1], isHex: true);
+        }
 
-        if (token == "true") return new PdfBoolean(true);
-        if (token == "false") return new PdfBoolean(false);
-        if (token == "null") return PdfNull.Instance;
+        if (token == "true")
+        {
+            return new PdfBoolean(true);
+        }
+
+        if (token == "false")
+        {
+            return new PdfBoolean(false);
+        }
+
+        if (token == "null")
+        {
+            return PdfNull.Instance;
+        }
 
         if (IsNumeric(token))
         {
@@ -671,7 +770,9 @@ public sealed class PdfParser
 
             var keyToken = _tokenizer.ReadToken();
             if (!keyToken.StartsWith('/'))
+            {
                 throw new PdfParseException($"Expected name key in dictionary, got '{keyToken}'", _tokenizer.Position);
+            }
 
             var key = keyToken[1..];
             var value = ParseValue();
@@ -728,7 +829,10 @@ public sealed class PdfParser
                         {
                             var octal = new string(inner[i], 1);
                             for (var j = 1; j < 3 && i + j < inner.Length && inner[i + j] >= '0' && inner[i + j] <= '7'; j++)
+                            {
                                 octal += inner[i + j];
+                            }
+
                             sb.Append((char)Convert.ToInt32(octal, 8));
                             i += octal.Length - 1;
                         }
@@ -761,16 +865,32 @@ public sealed class PdfParser
 
     private static bool IsNumeric(string token)
     {
-        if (string.IsNullOrEmpty(token)) return false;
+        if (string.IsNullOrEmpty(token))
+        {
+            return false;
+        }
+
         var start = 0;
-        if (token[0] == '-' || token[0] == '+') start = 1;
-        if (start >= token.Length) return false;
+        if (token[0] == '-' || token[0] == '+')
+        {
+            start = 1;
+        }
+
+        if (start >= token.Length)
+        {
+            return false;
+        }
+
         var hasDot = false;
         for (var i = start; i < token.Length; i++)
         {
             if (token[i] == '.')
             {
-                if (hasDot) return false;
+                if (hasDot)
+                {
+                    return false;
+                }
+
                 hasDot = true;
             }
             else if (token[i] < '0' || token[i] > '9')

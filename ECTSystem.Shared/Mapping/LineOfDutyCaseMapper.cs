@@ -181,9 +181,21 @@ public static partial class LineOfDutyCaseMapper
     {
         // Reconstruct full name from parts
         var nameParts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(model.FirstName)) nameParts.Add(model.FirstName);
-        if (!string.IsNullOrWhiteSpace(model.MiddleInitial)) nameParts.Add(model.MiddleInitial + ".");
-        if (!string.IsNullOrWhiteSpace(model.LastName)) nameParts.Add(model.LastName);
+        if (!string.IsNullOrWhiteSpace(model.FirstName))
+        {
+            nameParts.Add(model.FirstName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.MiddleInitial))
+        {
+            nameParts.Add(model.MiddleInitial + ".");
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.LastName))
+        {
+            nameParts.Add(model.LastName);
+        }
+
         target.MemberName = string.Join(" ", nameParts);
 
         target.MemberRank = model.Rank.HasValue ? FormatRankToPayGrade(model.Rank.Value) : string.Empty;
@@ -191,7 +203,9 @@ public static partial class LineOfDutyCaseMapper
         target.InitiationDate = model.ReportDate ?? target.InitiationDate;
 
         if (model.MemberStatus.HasValue)
+        {
             target.Component = MapMemberStatusToComponent(model.MemberStatus.Value);
+        }
 
         // Update authority names
         var commander = FindOrCreateAuthority(target, "Immediate Commander");
@@ -230,9 +244,13 @@ public static partial class LineOfDutyCaseMapper
         target.MedicalRecommendation = model.MedicalRecommendation;
 
         if (model.ToxicologyTestDone == true)
+        {
             target.ToxicologyReport = model.ToxicologyTestResults;
+        }
         else
+        {
             target.ToxicologyReport = "Not applicable";
+        }
 
         // Update medical provider authority
         var medProvider = FindOrCreateAuthority(target, "Medical Provider");
@@ -260,7 +278,9 @@ public static partial class LineOfDutyCaseMapper
         target.ProximateCause = model.ProximateCause;
 
         if (model.Recommendation.HasValue)
+        {
             target.FinalFinding = MapRecommendationToFinding(model.Recommendation.Value);
+        }
 
         // Update commander authority
         var commander = FindOrCreateAuthority(target, "Immediate Commander");
@@ -269,7 +289,9 @@ public static partial class LineOfDutyCaseMapper
         commander.ActionDate = model.CommanderSignatureDate;
         commander.Title = model.CommanderOrganization;
         if (!string.IsNullOrWhiteSpace(model.RecommendationRemarks))
+        {
             commander.Comments = new List<string> { model.RecommendationRemarks };
+        }
     }
 
     /// <summary>
@@ -286,9 +308,15 @@ public static partial class LineOfDutyCaseMapper
 
         var remarks = new List<string>();
         if (!string.IsNullOrWhiteSpace(model.LegalRemarks))
+        {
             remarks.Add(model.LegalRemarks);
+        }
+
         if (model.ConcurWithRecommendation == false && !string.IsNullOrWhiteSpace(model.NonConcurrenceReason))
+        {
             remarks.Add($"Non-concurrence: {model.NonConcurrenceReason}");
+        }
+
         sja.Comments = remarks;
     }
 
@@ -374,14 +402,18 @@ public static partial class LineOfDutyCaseMapper
     private static string MaskSsn(string serviceNumber)
     {
         if (string.IsNullOrWhiteSpace(serviceNumber))
+        {
             return string.Empty;
+        }
 
         // If already in XXX-XX-XXXX format, mask the first 5 digits
         if (serviceNumber.Length >= 9)
         {
             var digits = serviceNumber.Replace("-", "");
             if (digits.Length >= 9)
+            {
                 return $"***-**-{digits[^4..]}";
+            }
         }
 
         return serviceNumber;
@@ -390,7 +422,9 @@ public static partial class LineOfDutyCaseMapper
     private static string ExtractLastFourSsn(string serviceNumber)
     {
         if (string.IsNullOrWhiteSpace(serviceNumber))
+        {
             return string.Empty;
+        }
 
         var digits = serviceNumber.Replace("-", "");
         return digits.Length >= 4 ? digits[^4..] : digits;
@@ -403,7 +437,9 @@ public static partial class LineOfDutyCaseMapper
         middleInitial = string.Empty;
 
         if (string.IsNullOrWhiteSpace(fullName))
+        {
             return;
+        }
 
         // Expected formats:
         //   "TSgt Marcus A. Johnson"  → rank prefix + first middle last
@@ -419,8 +455,15 @@ public static partial class LineOfDutyCaseMapper
             var parts = name.Split(',', 2);
             lastName = parts[0].Trim();
             var rest = parts.Length > 1 ? parts[1].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) : [];
-            if (rest.Length >= 1) firstName = rest[0];
-            if (rest.Length >= 2) middleInitial = rest[1].TrimEnd('.');
+            if (rest.Length >= 1)
+            {
+                firstName = rest[0];
+            }
+
+            if (rest.Length >= 2)
+            {
+                middleInitial = rest[1].TrimEnd('.');
+            }
         }
         else
         {
@@ -447,11 +490,15 @@ public static partial class LineOfDutyCaseMapper
     private static MilitaryRank? ParseMilitaryRank(string rankString)
     {
         if (string.IsNullOrWhiteSpace(rankString))
+        {
             return null;
+        }
 
         // Try exact match against enum names
         if (Enum.TryParse<MilitaryRank>(rankString, ignoreCase: true, out var rank))
+        {
             return rank;
+        }
 
         // Map common abbreviations / pay grades to enum values
         return rankString.Trim().ToUpperInvariant() switch
@@ -503,10 +550,14 @@ public static partial class LineOfDutyCaseMapper
     private static string DeriveStatus(LineOfDutyCase source)
     {
         if (source.CompletionDate.HasValue)
+        {
             return "Completed";
+        }
 
         if (source.IsInterimLOD)
+        {
             return "Interim LOD";
+        }
 
         return "In Progress";
     }

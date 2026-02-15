@@ -85,7 +85,9 @@ public class LineOfDutyCaseService :
         var bytes = ms.ToArray();
 
         if (bytes.Length > MaxDocumentSize)
+        {
             throw new ArgumentException($"File size exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
+        }
 
         var document = new LineOfDutyDocument
         {
@@ -112,7 +114,9 @@ public class LineOfDutyCaseService :
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var document = await context.Documents.FindAsync([documentId], ct);
         if (document is null)
+        {
             return false;
+        }
 
         context.Documents.Remove(document);
         await context.SaveChangesAsync(ct);
@@ -184,7 +188,9 @@ public class LineOfDutyCaseService :
 
         var existing = await context.TimelineSteps.FindAsync([step.Id], ct);
         if (existing is null)
+        {
             throw new InvalidOperationException($"TimelineStep with Id {step.Id} not found.");
+        }
 
         context.Entry(existing).CurrentValues.SetValues(step);
         await context.SaveChangesAsync(ct);
@@ -216,7 +222,9 @@ public class LineOfDutyCaseService :
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var notification = await context.Notifications.FindAsync([notificationId], ct);
         if (notification is null)
+        {
             return false;
+        }
 
         notification.IsRead = true;
         notification.ReadDate = DateTime.UtcNow;

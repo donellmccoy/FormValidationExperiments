@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Api.Logging;
 using ECTSystem.Shared.Models;
@@ -19,11 +21,16 @@ public class CasesController : ODataController
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
     private readonly IApiLogService _log;
+    private readonly JsonSerializerOptions _jsonOptions;
 
-    public CasesController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
+    public CasesController(
+        IDbContextFactory<EctDbContext> contextFactory,
+        IApiLogService log,
+        IOptions<JsonOptions> jsonOptions)
     {
         _contextFactory = contextFactory;
         _log = log;
+        _jsonOptions = jsonOptions.Value.JsonSerializerOptions;
     }
 
     /// <summary>
@@ -87,12 +94,27 @@ public class CasesController : ODataController
     /// Fully replaces an existing LOD case.
     /// OData route: PUT /odata/Cases({key})
     /// </summary>
-    public async Task<IActionResult> Put([FromRoute] int key, [FromBody] LineOfDutyCase update)
+    public async Task<IActionResult> Put([FromRoute] int key)
     {
-        if (!ModelState.IsValid)
+        // Bypass OData's input formatter which can't handle string enums,
+        // List<string> properties, and complex types not in the EDM.
+        // Deserialize manually using the same JsonSerializerOptions from AddJsonOptions.
+        LineOfDutyCase update;
+        try
+        {
+            update = await JsonSerializer.DeserializeAsync<LineOfDutyCase>(
+                Request.Body, _jsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            _log.ModelStatePropertyError("Put", "(body)", ex.Message);
+            return BadRequest(new { error = new { message = "Invalid request body.", details = ex.Message } });
+        }
+
+        if (update is null)
         {
             _log.InvalidModelState("Put");
-            return BadRequest(ModelState);
+            return BadRequest(new { error = new { message = "Request body is required." } });
         }
 
         _log.UpdatingCase(key);
@@ -116,10 +138,14 @@ public class CasesController : ODataController
 
         // 3. Update MEDCON / INCAP scalar properties
         if (existing.MEDCON is not null && update.MEDCON is not null)
+        {
             context.Entry(existing.MEDCON).CurrentValues.SetValues(update.MEDCON);
+        }
 
         if (existing.INCAP is not null && update.INCAP is not null)
+        {
             context.Entry(existing.INCAP).CurrentValues.SetValues(update.INCAP);
+        }
 
         await context.SaveChangesAsync();
 

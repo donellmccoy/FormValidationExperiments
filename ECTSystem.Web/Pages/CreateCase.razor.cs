@@ -129,7 +129,9 @@ public partial class CreateCase : ComponentBase
 
         var digits = new string(value.Where(char.IsDigit).ToArray());
         if (digits.Length > 4)
+        {
             digits = digits[..4];
+        }
 
         memberFormModel.SSN = digits;
         StateHasChanged();

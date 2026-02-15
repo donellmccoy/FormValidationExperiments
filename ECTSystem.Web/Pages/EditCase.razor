@@ -102,6 +102,10 @@ else
                     <Tabs>
                         @* ─── Member Tab ─── *@
                         <RadzenTabsItem Text="Member">
+                            <Template>
+                                <span style="display: flex; align-items: center; justify-content: space-between; width: 100%; text-transform: none;">Member @if (memberFormModel.IsDirty) { <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #B8860B; margin-left: 8px; flex-shrink: 0;"></span> }</span>
+                            </Template>
+                            <ChildContent>
                             <div class="rz-overflow-auto" style="height: 100%;">
                                 <RadzenTemplateForm TItem="MemberInfoFormModel" Data="@memberFormModel" Submit="@OnMemberFormSubmit">
 
@@ -229,10 +233,15 @@ else
 
                                 </RadzenTemplateForm>
                             </div>
+                            </ChildContent>
                         </RadzenTabsItem>
 
                         @* ─── Medical Tab ─── *@
                         <RadzenTabsItem Text="Medical">
+                            <Template>
+                                <span style="display: flex; align-items: center; justify-content: space-between; width: 100%; text-transform: none;">Medical @if (formModel.IsDirty) { <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #B8860B; margin-left: 8px; flex-shrink: 0;"></span> }</span>
+                            </Template>
+                            <ChildContent>
                             <div class="rz-overflow-auto" style="height: 100%;">
                                 <RadzenTemplateForm TItem="MedicalAssessmentFormModel" Data="@formModel" Submit="@OnFormSubmit">
 
@@ -548,10 +557,15 @@ else
 
                                 </RadzenTemplateForm>
                             </div>
+                            </ChildContent>
                         </RadzenTabsItem>
 
                         @* ─── Commander Review Tab ─── *@
                         <RadzenTabsItem Text="Unit CC Review">
+                            <Template>
+                                <span style="display: flex; align-items: center; justify-content: space-between; width: 100%; text-transform: none;">Unit CC Review @if (commanderFormModel.IsDirty) { <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #B8860B; margin-left: 8px; flex-shrink: 0;"></span> }</span>
+                            </Template>
+                            <ChildContent>
                             <div class="rz-overflow-auto" style="height: 100%;">
                                 <RadzenTemplateForm TItem="CommanderReviewFormModel" Data="@commanderFormModel" Submit="@OnCommanderFormSubmit">
 
@@ -743,10 +757,15 @@ else
 
                                 </RadzenTemplateForm>
                             </div>
+                            </ChildContent>
                         </RadzenTabsItem>
 
                         @* ─── Legal Tab ─── *@
                             <RadzenTabsItem Text="Wing CC Review">
+                            <Template>
+                                <span style="display: flex; align-items: center; justify-content: space-between; width: 100%; text-transform: none;">Wing CC Review @if (legalFormModel.IsDirty) { <span style="width: 8px; height: 8px; border-radius: 50%; background-color: #B8860B; margin-left: 8px; flex-shrink: 0;"></span> }</span>
+                            </Template>
+                            <ChildContent>
                             <div class="rz-overflow-auto" style="height: 100%;">
                                 <RadzenTemplateForm TItem="LegalSJAReviewFormModel" Data="@legalFormModel" Submit="@OnLegalFormSubmit">
 
@@ -824,6 +843,7 @@ else
 
                                 </RadzenTemplateForm>
                             </div>
+                            </ChildContent>
                         </RadzenTabsItem>
 
                         @* ─── Wing Tab ─── *@

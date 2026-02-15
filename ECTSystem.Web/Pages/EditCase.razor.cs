@@ -159,7 +159,9 @@ public partial class EditCase : ComponentBase, IDisposable
     private void TakeSnapshots()
     {
         foreach (var model in AllFormModels)
+        {
             model.TakeSnapshot(JsonOptions);
+        }
     }
 
     private void InitializeWorkflowSteps()
@@ -226,7 +228,10 @@ public partial class EditCase : ComponentBase, IDisposable
             "Confirm Forward",
             new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
 
-        if (confirmed != true) return;
+        if (confirmed != true)
+        {
+            return;
+        }
 
         await SetBusyAsync("Forwarding to Medical Officer...");
 
@@ -294,7 +299,9 @@ public partial class EditCase : ComponentBase, IDisposable
             new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
 
         if (confirmed != true)
+        {
             return;
+        }
 
         await SaveCurrentTabAsync(TabNames.Draft);
     }
@@ -304,11 +311,30 @@ public partial class EditCase : ComponentBase, IDisposable
         if (item?.Value == "revert")
         {
             await OnRevertChanges();
+            return;
         }
-        else
+
+        // Determine which tab to save based on the currently selected tab index
+        var source = selectedTabIndex switch
         {
-            await OnSaveDraft();
+            0 => TabNames.MemberInformation,
+            1 => TabNames.MedicalAssessment,
+            2 => TabNames.CommanderReview,
+            3 => TabNames.LegalSJAReview,
+            _ => TabNames.Draft
+        };
+
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to save?",
+            "Confirm Save",
+            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+        {
+            return;
         }
+
+        await SaveCurrentTabAsync(source);
     }
 
     private async Task OnMedicalForwardClick(RadzenSplitButtonItem item)
@@ -320,7 +346,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Return",
                 new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Returning to Med Tech...");
 
@@ -343,7 +372,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Cancellation",
                 new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Cancelling investigation...");
 
@@ -366,7 +398,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Forward",
                 new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Forwarding to Unit CC...");
 
@@ -393,7 +428,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Return",
                 new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Returning to Board Medical...");
 
@@ -416,7 +454,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Cancellation",
                 new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Cancelling investigation...");
 
@@ -439,7 +480,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Forward",
                 new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Forwarding to Wing JA...");
 
@@ -466,7 +510,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Return",
                 new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Returning to Unit CC...");
 
@@ -489,7 +536,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Cancellation",
                 new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Cancelling investigation...");
 
@@ -512,7 +562,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Forward",
                 new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Forwarding to Wing CC...");
 
@@ -539,7 +592,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Return",
                 new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Returning to Wing JA...");
 
@@ -562,7 +618,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Cancellation",
                 new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Cancelling investigation...");
 
@@ -585,7 +644,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Forward",
                 new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Forwarding to Board Review...");
 
@@ -612,7 +674,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Return",
                 new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Returning to Wing CC...");
 
@@ -635,7 +700,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Cancellation",
                 new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Cancelling investigation...");
 
@@ -658,7 +726,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Confirm Complete",
                 new ConfirmOptions { OkButtonText = "Complete", CancelButtonText = "Cancel" });
 
-            if (confirmed != true) return;
+            if (confirmed != true)
+            {
+                return;
+            }
 
             await SetBusyAsync("Completing Board review...");
 
@@ -684,7 +755,9 @@ public partial class EditCase : ComponentBase, IDisposable
             new ConfirmOptions { OkButtonText = "Sign", CancelButtonText = "Cancel" });
 
         if (confirmed != true)
+        {
             return;
+        }
 
         await SetBusyAsync("Applying digital signature...");
 
@@ -710,24 +783,44 @@ public partial class EditCase : ComponentBase, IDisposable
     private async Task SaveCurrentTabAsync(string source)
     {
         if (isSaving)
+        {
             return;
+        }
 
         isSaving = true;
         await SetBusyAsync("Saving...");
 
         try
         {
-            var dto = new CaseViewModelsDto
+            // Apply only the specific tab's view model to the entity
+            switch (source)
             {
-                CaseInfo = caseInfo,
-                MemberInfo = memberFormModel,
-                MedicalAssessment = formModel,
-                CommanderReview = commanderFormModel,
-                LegalSJAReview = legalFormModel
-            };
-
-            // Apply view model changes to the entity
-            LineOfDutyCaseMapper.ApplyAll(dto, _lodCase);
+                case TabNames.MemberInformation:
+                    LineOfDutyCaseMapper.ApplyMemberInfo(memberFormModel, _lodCase);
+                    break;
+                case TabNames.MedicalAssessment:
+                    LineOfDutyCaseMapper.ApplyMedicalAssessment(formModel, _lodCase);
+                    break;
+                case TabNames.CommanderReview:
+                    LineOfDutyCaseMapper.ApplyCommanderReview(commanderFormModel, _lodCase);
+                    break;
+                case TabNames.LegalSJAReview:
+                    LineOfDutyCaseMapper.ApplyLegalSJAReview(legalFormModel, _lodCase);
+                    break;
+                default:
+                    // Draft / save-all: apply everything
+                    LineOfDutyCaseMapper.ApplyAll(
+                        new CaseViewModelsDto
+                        {
+                            CaseInfo = caseInfo,
+                            MemberInfo = memberFormModel,
+                            MedicalAssessment = formModel,
+                            CommanderReview = commanderFormModel,
+                            LegalSJAReview = legalFormModel
+                        },
+                        _lodCase);
+                    break;
+            }
 
             // Save the entity
             _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
@@ -735,7 +828,25 @@ public partial class EditCase : ComponentBase, IDisposable
             // Refresh the read-only case info from the saved entity
             caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(_lodCase);
 
-            TakeSnapshots();
+            // Re-snapshot only the saved model so other tabs retain their dirty state
+            switch (source)
+            {
+                case TabNames.MemberInformation:
+                    memberFormModel.TakeSnapshot(JsonOptions);
+                    break;
+                case TabNames.MedicalAssessment:
+                    formModel.TakeSnapshot(JsonOptions);
+                    break;
+                case TabNames.CommanderReview:
+                    commanderFormModel.TakeSnapshot(JsonOptions);
+                    break;
+                case TabNames.LegalSJAReview:
+                    legalFormModel.TakeSnapshot(JsonOptions);
+                    break;
+                default:
+                    TakeSnapshots();
+                    break;
+            }
 
             NotificationService.Notify(new NotificationMessage
             {
@@ -783,10 +894,14 @@ public partial class EditCase : ComponentBase, IDisposable
             new ConfirmOptions { OkButtonText = "Revert", CancelButtonText = "Cancel" });
 
         if (confirmed != true)
+        {
             return;
+        }
 
         foreach (var model in AllFormModels)
+        {
             model.Revert();
+        }
 
         NotificationService.Notify(new NotificationMessage
         {
@@ -811,7 +926,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
         var digits = new string(value.Where(char.IsDigit).ToArray());
         if (digits.Length > 4)
+        {
             digits = digits[..4];
+        }
 
         memberFormModel.SSN = digits;
         StateHasChanged();

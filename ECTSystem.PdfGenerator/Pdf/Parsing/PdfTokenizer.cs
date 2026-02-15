@@ -39,7 +39,10 @@ public sealed class PdfTokenizer
             {
                 _position++;
                 while (_position < _data.Length && _data[_position] != '\n' && _data[_position] != '\r')
+                {
                     _position++;
+                }
+
                 continue;
             }
 
@@ -52,17 +55,23 @@ public sealed class PdfTokenizer
         SkipWhitespaceAndComments();
 
         if (_position >= _data.Length)
+        {
             throw new PdfParseException("Unexpected end of data", _position);
+        }
 
         var b = _data[_position];
 
         // Name: /SomeName
         if (b == '/')
+        {
             return ReadName();
+        }
 
         // Literal string: (text)
         if (b == '(')
+        {
             return ReadLiteralString();
+        }
 
         // Hex string or dictionary delimiter
         if (b == '<')
@@ -115,12 +124,19 @@ public sealed class PdfTokenizer
     {
         // Skip the line ending after "stream" keyword (CR, LF, or CRLF)
         if (_position < _data.Length && _data[_position] == '\r')
+        {
             _position++;
+        }
+
         if (_position < _data.Length && _data[_position] == '\n')
+        {
             _position++;
+        }
 
         if (_position + length > _data.Length)
+        {
             throw new PdfParseException("Stream data extends beyond file", _position);
+        }
 
         var result = new byte[length];
         Array.Copy(_data, _position, result, 0, length);
@@ -146,7 +162,10 @@ public sealed class PdfTokenizer
                     break;
                 }
             }
-            if (found) return i;
+            if (found)
+            {
+                return i;
+            }
         }
         return -1;
     }
@@ -159,7 +178,9 @@ public sealed class PdfTokenizer
         {
             var b = _data[_position];
             if (IsWhitespace(b) || IsDelimiter(b))
+            {
                 break;
+            }
 
             // Handle #XX hex escape in names
             if (b == '#' && _position + 2 < _data.Length)
@@ -203,7 +224,11 @@ public sealed class PdfTokenizer
                     for (var i = 0; i < 2 && _position < _data.Length; i++)
                     {
                         var c = _data[_position];
-                        if (c < '0' || c > '7') break;
+                        if (c < '0' || c > '7')
+                        {
+                            break;
+                        }
+
                         sb.Append((char)c);
                         _position++;
                     }
@@ -211,8 +236,15 @@ public sealed class PdfTokenizer
                 continue;
             }
 
-            if (b == '(') depth++;
-            if (b == ')') depth--;
+            if (b == '(')
+            {
+                depth++;
+            }
+
+            if (b == ')')
+            {
+                depth--;
+            }
 
             if (depth > 0)
             {
@@ -244,7 +276,10 @@ public sealed class PdfTokenizer
                 break;
             }
             if (!IsWhitespace(b))
+            {
                 sb.Append((char)b);
+            }
+
             _position++;
         }
 
@@ -259,7 +294,10 @@ public sealed class PdfTokenizer
         {
             var b = _data[_position];
             if (IsWhitespace(b) || IsDelimiter(b))
+            {
                 break;
+            }
+
             sb.Append((char)b);
             _position++;
         }

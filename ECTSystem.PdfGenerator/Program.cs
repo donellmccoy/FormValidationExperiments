@@ -83,7 +83,9 @@ static void FillWithSampleData(byte[] templateBytes, string outputPath)
     {
         var value = valueExtractor(sampleCase);
         if (value is not null)
+        {
             fieldValues[pdfFieldName] = value;
+        }
     }
 
     Console.WriteLine($"Mapped {fieldValues.Count} field values from sample case.");

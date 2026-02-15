@@ -18,6 +18,9 @@ public partial class ApiLogService(ILogger<ApiLogService> logger) : IApiLogServi
     [LoggerMessage(EventId = 103, Level = LogLevel.Warning, Message = "Invalid model state in {Action} action")]
     public partial void InvalidModelState(string action);
 
+    [LoggerMessage(EventId = 111, Level = LogLevel.Warning, Message = "ModelState error in {Action}: {Property} — {Error}")]
+    public partial void ModelStatePropertyError(string action, string property, string error);
+
     [LoggerMessage(EventId = 104, Level = LogLevel.Information, Message = "LOD case {CaseId} created")]
     public partial void CaseCreated(int caseId);
 

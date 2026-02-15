@@ -43,14 +43,18 @@ public abstract class TrackableModel
     public void Revert()
     {
         if (_snapshot is null || _jsonOptions is null)
+        {
             return;
+        }
 
         var clean = JsonSerializer.Deserialize(_snapshot, GetType(), _jsonOptions);
 
         foreach (var prop in GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (prop.CanRead && prop.CanWrite && prop.GetCustomAttribute<JsonIgnoreAttribute>() is null)
+            {
                 prop.SetValue(this, prop.GetValue(clean));
+            }
         }
     }
 }

@@ -41,7 +41,9 @@ public sealed class AcroFormWriter
         }
 
         if (updates.Count == 0)
+        {
             return _originalPdf; // nothing to update
+        }
 
         // Start building incremental update
         using var ms = new MemoryStream();
@@ -49,7 +51,9 @@ public sealed class AcroFormWriter
 
         // Ensure we start on a new line
         if (_originalPdf.Length > 0 && _originalPdf[^1] != '\n')
+        {
             WriteAscii(ms, "\n");
+        }
 
         // Track new object offsets for the xref table
         var newXRefEntries = new List<(int ObjectNumber, int Generation, long Offset)>();
@@ -107,9 +111,14 @@ public sealed class AcroFormWriter
         foreach (var (key, value) in originalDict.Entries)
         {
             if (key is "V" or "AS")
+            {
                 continue;
+            }
+
             if (key is "AP" && !isCheckboxOrRadio)
+            {
                 continue;
+            }
 
             WriteAscii(ms, $"/{key} ");
             WritePdfObject(ms, value);
@@ -165,7 +174,9 @@ public sealed class AcroFormWriter
         }
 
         if (!wroteNeedAppearances)
+        {
             WriteAscii(ms, "/NeedAppearances true\n");
+        }
 
         WriteAscii(ms, ">>\n");
         WriteAscii(ms, "endobj\n");
@@ -233,12 +244,16 @@ public sealed class AcroFormWriter
         WriteAscii(ms, $"/Prev {parser.StartXRefOffset}\n");
 
         if (rootRef is not null)
+        {
             WriteAscii(ms, $"/Root {rootRef.ObjectNumber} {rootRef.Generation} R\n");
+        }
 
         // Preserve /Info if present
         var infoRef = parser.Trailer.GetReference("Info");
         if (infoRef is not null)
+        {
             WriteAscii(ms, $"/Info {infoRef.ObjectNumber} {infoRef.Generation} R\n");
+        }
 
         // Preserve /ID if present (required by some viewers)
         var idObj = parser.Trailer.Get("ID");
@@ -263,9 +278,14 @@ public sealed class AcroFormWriter
 
             case PdfString str:
                 if (str.IsHex)
+                {
                     WriteAscii(ms, $"<{str.Value}>");
+                }
                 else
+                {
                     WriteAscii(ms, $"({EscapePdfString(str.Value)})");
+                }
+
                 break;
 
             case PdfNumber num:
@@ -288,7 +308,11 @@ public sealed class AcroFormWriter
                 WriteAscii(ms, "[");
                 for (var i = 0; i < arr.Items.Count; i++)
                 {
-                    if (i > 0) WriteAscii(ms, " ");
+                    if (i > 0)
+                    {
+                        WriteAscii(ms, " ");
+                    }
+
                     WritePdfObject(ms, arr.Items[i]);
                 }
                 WriteAscii(ms, "]");

@@ -54,11 +54,15 @@ public sealed class AcroFormReader
         {
             var fieldsRef = acroForm.Get("Fields");
             if (fieldsRef is PdfReference fr)
+            {
                 fieldsArray = _parser.Resolve(fr) as PdfArray;
+            }
         }
 
         if (fieldsArray is null)
+        {
             throw new PdfParseException("AcroForm missing /Fields array", 0);
+        }
 
         foreach (var fieldObj in fieldsArray.Items)
         {
@@ -80,10 +84,15 @@ public sealed class AcroFormReader
             generation = fieldRef.Generation;
 
             if (!_visited.Add(objectNumber))
+            {
                 return; // circular reference guard
+            }
 
             if (_parser.Resolve(fieldRef) is not PdfDictionary resolved)
+            {
                 return;
+            }
+
             fieldDict = resolved;
         }
         else if (fieldObj is PdfDictionary dict)
@@ -114,7 +123,9 @@ public sealed class AcroFormReader
         {
             var kidsObj = fieldDict.Get("Kids");
             if (kidsObj is PdfReference kidsRef)
+            {
                 kids = _parser.Resolve(kidsRef) as PdfArray;
+            }
         }
 
         if (kids is not null && kids.Items.Count > 0)
@@ -171,7 +182,10 @@ public sealed class AcroFormReader
     private PdfFieldType? DetermineFieldType(PdfDictionary fieldDict)
     {
         var ft = fieldDict.GetName("FT");
-        if (ft is null) return null;
+        if (ft is null)
+        {
+            return null;
+        }
 
         return ft.Value switch
         {
@@ -187,32 +201,45 @@ public sealed class AcroFormReader
         // Radio buttons have the /Ff flag with bit 16 set (NoToggleToOff)
         // or bit 15 set (Radio)
         var ff = fieldDict.GetNumber("Ff");
-        if (ff is null) return false;
+        if (ff is null)
+        {
+            return false;
+        }
+
         var flags = ff.IntValue;
         return (flags & (1 << 15)) != 0; // Radio flag
     }
 
     private string DetectOnValue(PdfDictionary fieldDict)
     {
-        if (fieldDict is null) return null;
+        if (fieldDict is null)
+        {
+            return null;
+        }
 
         // Look in /AP /N for appearance state names
         var ap = fieldDict.Get("AP");
         if (ap is PdfReference apRef)
+        {
             ap = _parser.Resolve(apRef);
+        }
 
         if (ap is PdfDictionary apDict)
         {
             var normal = apDict.Get("N");
             if (normal is PdfReference nRef)
+            {
                 normal = _parser.Resolve(nRef);
+            }
 
             if (normal is PdfDictionary normalDict)
             {
                 foreach (var key in normalDict.Entries.Keys)
                 {
                     if (key != "Off")
+                    {
                         return key;
+                    }
                 }
             }
         }
@@ -252,7 +279,9 @@ public sealed class AcroFormReader
 
             // Check for UTF-16BE BOM (FE FF)
             if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+            {
                 return System.Text.Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
+            }
 
             return System.Text.Encoding.BigEndianUnicode.GetString(bytes);
         }
@@ -262,7 +291,10 @@ public sealed class AcroFormReader
         {
             var bytes = new byte[str.Value.Length];
             for (var i = 0; i < str.Value.Length; i++)
+            {
                 bytes[i] = (byte)str.Value[i];
+            }
+
             return System.Text.Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
         }
 

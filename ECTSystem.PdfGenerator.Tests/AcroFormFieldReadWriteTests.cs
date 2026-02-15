@@ -393,7 +393,9 @@ public class AcroFormFieldReadWriteTests : IDisposable
         foreach (var fieldName in mappings.Keys)
         {
             if (!templateFieldNames.Contains(fieldName))
+            {
                 missingFields.Add(fieldName);
+            }
         }
 
         Assert.True(missingFields.Count == 0,
@@ -443,7 +445,9 @@ public class AcroFormFieldReadWriteTests : IDisposable
             {
                 // The value is stored as UTF-16BE hex, so check it was written (non-null)
                 if (filledField.CurrentValue is null)
+                {
                     failures.Add($"Field '{name}': expected a value but got null");
+                }
             }
         }
 
@@ -511,14 +515,18 @@ public class AcroFormFieldReadWriteTests : IDisposable
         // First check all, then uncheck all
         var checkValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var field in checkboxFields)
+        {
             checkValues[field.FullyQualifiedName] = "1";
+        }
 
         var writer = new AcroFormWriter(_templateBytes);
         var checkedPdf = writer.FillFields(checkValues);
 
         var uncheckValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var field in checkboxFields)
+        {
             uncheckValues[field.FullyQualifiedName] = "Off";
+        }
 
         var writer2 = new AcroFormWriter(checkedPdf);
         var uncheckedPdf = writer2.FillFields(uncheckValues);
@@ -563,7 +571,9 @@ public class AcroFormFieldReadWriteTests : IDisposable
         {
             var value = valueExtractor(sampleCase);
             if (value is not null)
+            {
                 fieldValues[pdfFieldName] = value;
+            }
         }
 
         Assert.NotEmpty(fieldValues);
@@ -592,7 +602,9 @@ public class AcroFormFieldReadWriteTests : IDisposable
         {
             var value = extractor(sampleCase);
             if (value is null)
+            {
                 nullFields.Add(name);
+            }
         }
 
         // Some fields may legitimately be null (e.g., psychiatric eval date when no eval)

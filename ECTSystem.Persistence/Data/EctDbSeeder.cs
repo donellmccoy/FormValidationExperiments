@@ -14,7 +14,9 @@ public static class EctDbSeeder
         await using var context = await contextFactory.CreateDbContextAsync();
 
         if (await context.Cases.AnyAsync())
+        {
             return;
+        }
 
         var members = GenerateMembers(20);
         context.Members.AddRange(members);
