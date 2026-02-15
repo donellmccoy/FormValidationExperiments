@@ -15,18 +15,18 @@ This is a **Blazor WebAssembly** application targeting **.NET 10** that implemen
 ## Project Structure
 
 ```
-FormValidationExperiments.Web/
+ECTSystem.Web/
 ├── Pages/                  # Razor pages with code-behind (.razor.cs) and scoped styles (.razor.css)
 │   ├── EditCase.razor/.cs/.css   # Multi-step wizard workflow (primary page)
 │   └── NotFound.razor            # 404 fallback page
-├── ViewModels/             # Form models per workflow step (namespace: FormValidationExperiments.Web.ViewModels)
+├── ViewModels/             # Form models per workflow step (namespace: ECTSystem.Web.ViewModels)
 │   ├── CaseInfoModel.cs            # Read-only case header/summary data
 │   ├── MemberInfoFormModel.cs      # Items 1–8: member identification
 │   ├── MedicalAssessmentFormModel.cs # Items 9–15: medical/clinical data
 │   ├── CommanderReviewFormModel.cs  # Items 16–23: commander endorsement
 │   ├── LegalSJAReviewFormModel.cs  # Items 24–25: legal sufficiency review
 │   └── DocumentItem.cs            # Supporting document metadata
-├── Models/                 # Domain model classes (namespace: FormValidationExperiments.Web.Models)
+├── Models/                 # Domain model classes (namespace: ECTSystem.Web.Models)
 │   ├── LODCase.cs                # Root aggregate — full LOD case record
 │   ├── LODDocument.cs            # Uploaded/attached documents
 │   ├── LODAppeal.cs              # Appeal records
@@ -34,7 +34,7 @@ FormValidationExperiments.Web/
 │   ├── MEDCONDetails.cs          # Medical Continuation benefit tracking
 │   ├── INCAPDetails.cs           # Incapacitation Pay benefit tracking
 │   └── TimelineStep.cs           # Workflow timeline entries
-├── Enums/                  # Domain enums (namespace: FormValidationExperiments.Web.Enums)
+├── Enums/                  # Domain enums (namespace: ECTSystem.Web.Enums)
 │   ├── CommanderRecommendation.cs  # Item 21: commander's LOD recommendation
 │   ├── DutyStatus.cs              # Duty status at time of incident
 │   ├── IncidentType.cs            # Injury, Illness, Disease, Death, etc.
@@ -59,18 +59,18 @@ FormValidationExperiments.Web/
 
 | Namespace | Contents |
 |-----------|----------|
-| `FormValidationExperiments.Web.Models` | Domain model classes (`Models/` folder) |
-| `FormValidationExperiments.Web.Enums` | Domain enums (`Enums/` folder) |
-| `FormValidationExperiments.Web.Pages` | Page components (`EditCase`) |
-| `FormValidationExperiments.Web.ViewModels` | Form/view models per workflow step |
-| `FormValidationExperiments.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
-| `FormValidationExperiments.Web.Layout` | Layout components |
+| `ECTSystem.Web.Models` | Domain model classes (`Models/` folder) |
+| `ECTSystem.Web.Enums` | Domain enums (`Enums/` folder) |
+| `ECTSystem.Web.Pages` | Page components (`EditCase`) |
+| `ECTSystem.Web.ViewModels` | Form/view models per workflow step |
+| `ECTSystem.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
+| `ECTSystem.Web.Layout` | Layout components |
 
 ## Coding Conventions
 
 - Use **partial classes** with code-behind files (`.razor.cs`) to separate logic from markup.
-- View models live in `ViewModels/` under `FormValidationExperiments.Web.ViewModels`; domain models live under `FormValidationExperiments.Web.Models`; enums live under `FormValidationExperiments.Web.Enums`.
-- Namespaces follow the folder structure (e.g., `FormValidationExperiments.Web.Models`, `FormValidationExperiments.Web.Enums`).
+- View models live in `ViewModels/` under `ECTSystem.Web.ViewModels`; domain models live under `ECTSystem.Web.Models`; enums live under `ECTSystem.Web.Enums`.
+- Namespaces follow the folder structure (e.g., `ECTSystem.Web.Models`, `ECTSystem.Web.Enums`).
 - Format enum display names by inserting spaces before uppercase letters using `Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1")`.
 - Use component-scoped CSS (`.razor.css`) rather than global styles where possible.
 - Follow the existing pattern of one form model per workflow step (e.g., `MemberInfoFormModel`, `MedicalAssessmentFormModel`, `CommanderReviewFormModel`, `LegalSJAReviewFormModel`).
@@ -106,6 +106,6 @@ This application models the U.S. Air Force's Line of Duty determination process 
 - Use `EditForm` with model binding for form handling; each workflow step should have its own `EditForm` with a dedicated submit handler.
 - Prefer strongly-typed enums for status values and dropdown options; populate dropdowns from `Enum.GetValues<T>()`.
 - When generating test data, use realistic military/LOD terminology consistent with AF Form 348 item numbering.
-- The `WorkflowStep` and `WorkflowStepStatus` types are defined in `Shared/WorkflowSidebar.razor.cs` — import via `@using FormValidationExperiments.Web.Shared` (already in `_Imports.razor`).
+- The `WorkflowStep` and `WorkflowStepStatus` types are defined in `Shared/WorkflowSidebar.razor.cs` — import via `@using ECTSystem.Web.Shared` (already in `_Imports.razor`).
 - Use the `CaseInfoModel` for read-only case summary/header displays; use the specific form models for editable form sections.
 - **Always use the Simple Browser** when launching the app — use `open_simple_browser` tool with URL `https://localhost:7240` for the Web app.

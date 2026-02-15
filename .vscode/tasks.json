@@ -22,7 +22,7 @@
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/FormValidationExperiments.slnx",
+        "${workspaceFolder}/ECTSystem.slnx",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary"
       ],
@@ -38,7 +38,7 @@
         "watch",
         "run",
         "--project",
-        "${workspaceFolder}/FormValidationExperiments.Api/FormValidationExperiments.Api.csproj",
+        "${workspaceFolder}/ECTSystem.Api/ECTSystem.Api.csproj",
         "--launch-profile",
         "https"
       ],
@@ -68,7 +68,7 @@
         "watch",
         "run",
         "--project",
-        "${workspaceFolder}/FormValidationExperiments.Web/FormValidationExperiments.Web.csproj",
+        "${workspaceFolder}/ECTSystem.Web/ECTSystem.Web.csproj",
         "--launch-profile",
         "https"
       ],
