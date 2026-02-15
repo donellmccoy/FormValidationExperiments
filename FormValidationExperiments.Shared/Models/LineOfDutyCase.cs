@@ -165,6 +165,9 @@ public class LineOfDutyCase
     // Appeals
     public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
 
+    // Notifications
+    public List<Notification> Notifications { get; set; } = new List<Notification>();
+
     // Member
     public int MemberId { get; set; }
     public Member Member { get; set; }

@@ -215,13 +215,45 @@ public static class EctDbSeeder
                         IsOptional = false
                     }
                 },
-                Appeals = new List<LineOfDutyAppeal>()
+                Appeals = new List<LineOfDutyAppeal>(),
+                Notifications = GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)
             };
 
             cases.Add(lodCase);
         }
 
         return cases;
+    }
+
+    private static List<Notification> GenerateNotifications(Random rng, string caseId, string memberName, string unit, DateTime initiationDate)
+    {
+        var unitEmail = $"{unit.Split(',')[0].ToLower().Replace(" ", "")}.a1@us.af.mil";
+        var sjaEmail = $"{unit.Split(',')[0].ToLower().Replace(" ", "")}.ja@us.af.mil";
+        var ccEmail = $"{unit.Split(',')[0].ToLower().Replace(" ", "")}.cc@us.af.mil";
+
+        var templates = new (string Title, string Message, string Recipient, string Type, int DayOffset)[]
+        {
+            ("Case Initiated", $"LOD case {caseId} has been initiated for {memberName}.", unitEmail, "CaseInitiated", 0),
+            ("Medical Records Requested", $"Medical records have been requested for LOD case {caseId}.", unitEmail, "RecordsRequest", 1),
+            ("Member Statement Required", $"{memberName} must provide a written statement for LOD case {caseId}.", unitEmail, "ActionRequired", 2),
+            ("Medical Assessment Submitted", $"Medical assessment for LOD case {caseId} has been submitted for review.", sjaEmail, "StatusUpdate", 7),
+            ("Commander Review Pending", $"LOD case {caseId} is awaiting commander review and endorsement.", ccEmail, "ActionRequired", 14),
+            ("SJA Legal Review Assigned", $"LOD case {caseId} has been assigned for legal sufficiency review.", sjaEmail, "Assignment", 18),
+            ("Legal Review Complete", $"Legal sufficiency review for LOD case {caseId} has been completed.", ccEmail, "StatusUpdate", 25),
+            ("Timeline Milestone Approaching", $"LOD case {caseId} is approaching the 60-day processing milestone.", unitEmail, "Reminder", 55),
+            ("Wing CC Review Pending", $"LOD case {caseId} is pending Wing Commander final review.", ccEmail, "ActionRequired", 60),
+            ("Case Determination Complete", $"Final determination for LOD case {caseId} has been rendered for {memberName}.", unitEmail, "CaseComplete", 75)
+        };
+
+        return templates.Select(t => new Notification
+        {
+            Title = t.Title,
+            Message = t.Message,
+            Recipient = t.Recipient,
+            NotificationType = t.Type,
+            IsRead = rng.Next(100) < 60,
+            CreatedDate = initiationDate.AddDays(t.DayOffset)
+        }).ToList();
     }
 
     private static T PickRandom<T>(Random rng, params T[] values) => values[rng.Next(values.Length)];

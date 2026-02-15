@@ -11,7 +11,8 @@ public class LineOfDutyCaseService :
     ILineOfDutyDocumentService,
     ILineOfDutyAppealService,
     ILineOfDutyAuthorityService,
-    ILineOfDutyTimelineService
+    ILineOfDutyTimelineService,
+    ILineOfDutyNotificationService
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
@@ -188,5 +189,38 @@ public class LineOfDutyCaseService :
         context.Entry(existing).CurrentValues.SetValues(step);
         await context.SaveChangesAsync(ct);
         return existing;
+    }
+
+    // ──────────────────────────── Notification Operations ────────────────────────────
+
+    public async Task<List<Notification>> GetNotificationsByCaseIdAsync(int caseId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await context.Notifications
+            .AsNoTracking()
+            .Where(n => n.LineOfDutyCaseId == caseId)
+            .OrderByDescending(n => n.CreatedDate)
+            .ToListAsync(ct);
+    }
+
+    public async Task<Notification> AddNotificationAsync(Notification notification, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        context.Notifications.Add(notification);
+        await context.SaveChangesAsync(ct);
+        return notification;
+    }
+
+    public async Task<bool> MarkAsReadAsync(int notificationId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var notification = await context.Notifications.FindAsync([notificationId], ct);
+        if (notification is null)
+            return false;
+
+        notification.IsRead = true;
+        notification.ReadDate = DateTime.UtcNow;
+        await context.SaveChangesAsync(ct);
+        return true;
     }
 }

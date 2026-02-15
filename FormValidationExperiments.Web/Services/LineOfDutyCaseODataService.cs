@@ -81,7 +81,7 @@ public class LineOfDutyCaseODataService : ILineOfDutyCaseService
         uri = uri.GetODataUri(
             filter: $"CaseId eq '{caseId}'",
             top: 1,
-            expand: "Documents,Authorities,TimelineSteps($expand=ResponsibleAuthority),Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP");
+            expand: "Documents,Authorities,TimelineSteps($expand=ResponsibleAuthority),Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications");
 
         var response = await _http.GetAsync(uri, cancellationToken);
         response.EnsureSuccessStatusCode();

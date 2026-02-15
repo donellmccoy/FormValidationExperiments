@@ -17,11 +17,13 @@ builder.Services.AddScoped<ILineOfDutyDocumentService>(sp => sp.GetRequiredServi
 builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
+builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 
 // OData Entity Data Model
 var odataBuilder = new ODataConventionModelBuilder();
 odataBuilder.EntitySet<LineOfDutyCase>("Cases");
 odataBuilder.EntitySet<Member>("Members");
+odataBuilder.EntitySet<Notification>("Notifications");
 
 // Controllers + OData
 builder.Services.AddControllers()

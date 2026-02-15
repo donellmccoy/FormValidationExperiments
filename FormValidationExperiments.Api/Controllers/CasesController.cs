@@ -173,6 +173,7 @@ public partial class CasesController : ODataController
         context.Authorities.RemoveRange(lodCase.Authorities);
         context.Documents.RemoveRange(lodCase.Documents);
         context.Appeals.RemoveRange(lodCase.Appeals);
+        context.Notifications.RemoveRange(lodCase.Notifications);
         context.Cases.Remove(lodCase);
         await context.SaveChangesAsync();
 
@@ -190,7 +191,8 @@ public partial class CasesController : ODataController
             .Include(c => c.Appeals).ThenInclude(a => a.AppellateAuthority)
             .Include(c => c.Member)
             .Include(c => c.MEDCON)
-            .Include(c => c.INCAP);
+            .Include(c => c.INCAP)
+            .Include(c => c.Notifications);
     }
 
     /// <summary>

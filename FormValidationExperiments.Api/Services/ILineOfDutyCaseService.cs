@@ -41,3 +41,13 @@ public interface ILineOfDutyTimelineService
     Task<TimelineStep> AddTimelineStepAsync(TimelineStep step, CancellationToken ct = default);
     Task<TimelineStep> UpdateTimelineStepAsync(TimelineStep step, CancellationToken ct = default);
 }
+
+/// <summary>
+/// Service interface for Line of Duty notification operations.
+/// </summary>
+public interface ILineOfDutyNotificationService
+{
+    Task<List<Notification>> GetNotificationsByCaseIdAsync(int caseId, CancellationToken ct = default);
+    Task<Notification> AddNotificationAsync(Notification notification, CancellationToken ct = default);
+    Task<bool> MarkAsReadAsync(int notificationId, CancellationToken ct = default);
+}

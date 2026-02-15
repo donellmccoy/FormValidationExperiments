@@ -21,6 +21,7 @@ public class EctDbContext : DbContext
     public DbSet<MEDCONDetails> MEDCONDetails { get; set; }
     public DbSet<INCAPDetails> INCAPDetails { get; set; }
     public DbSet<TimelineStep> TimelineSteps { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
