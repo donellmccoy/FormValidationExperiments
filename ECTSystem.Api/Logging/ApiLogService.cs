@@ -21,6 +21,9 @@ public partial class ApiLogService(ILogger<ApiLogService> logger) : IApiLogServi
     [LoggerMessage(EventId = 111, Level = LogLevel.Warning, Message = "ModelState error in {Action}: {Property} — {Error}")]
     public partial void ModelStatePropertyError(string action, string property, string error);
 
+    [LoggerMessage(EventId = 112, Level = LogLevel.Warning, Message = "Deserialization error in {Action}: {Property} — {ExceptionMessage}")]
+    public partial void ModelStateExceptionError(string action, string property, string exceptionMessage);
+
     [LoggerMessage(EventId = 104, Level = LogLevel.Information, Message = "LOD case {CaseId} created")]
     public partial void CaseCreated(int caseId);
 

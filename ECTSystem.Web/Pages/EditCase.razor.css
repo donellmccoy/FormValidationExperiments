@@ -3,7 +3,7 @@
 .assessment-layout {
     display: flex;
     margin: 0px;
-    height: calc(100vh - 6rem);
+    /*height: calc(100vh - 6rem);*/
     overflow-x: auto;
     overflow-y: hidden;
     animation: fadeIn 0.3s ease;
@@ -13,7 +13,7 @@
 
 .assessment-main {
     width: 954px;
-    height: calc(100vh - 6rem);
+    height: auto;
     flex-shrink: 0;
     overflow: hidden;
     padding: 0px;

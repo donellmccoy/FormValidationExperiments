@@ -13,5 +13,5 @@ public class Member
     public string Unit { get; set; } = string.Empty;
     public ServiceComponent Component { get; set; }
 
-    public List<LineOfDutyCase> LineOfDutyCases { get; set; } = [];
+    //public List<LineOfDutyCase> LineOfDutyCases { get; set; } = [];
 }

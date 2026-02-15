@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
@@ -15,10 +17,16 @@ namespace ECTSystem.Api.Controllers;
 /// </summary>
 public class CasesController : ODataController
 {
-    private readonly ILineOfDutyCaseService _caseService;
+    private static readonly JsonSerializerOptions PatchJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    private readonly IDataService _caseService;
     private readonly IApiLogService _log;
 
-    public CasesController(ILineOfDutyCaseService caseService, IApiLogService log)
+    public CasesController(IDataService caseService, IApiLogService log)
     {
         _caseService = caseService;
         _log = log;
@@ -76,19 +84,20 @@ public class CasesController : ODataController
     /// <summary>
     /// Partially updates an existing LOD case.
     /// OData route: PATCH /odata/Cases({key})
+    /// Uses standard System.Text.Json deserialization (bypassing the OData input
+    /// formatter) so that camelCase property names and DateTime values sent by the
+    /// Blazor WASM client round-trip correctly.
     /// </summary>
-    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] LineOfDutyCase update)
+    public async Task<IActionResult> Patch([FromRoute] int key)
     {
-        if (!ModelState.IsValid)
+        LineOfDutyCase update;
+        try
         {
-            foreach (var entry in ModelState)
-            {
-                foreach (var error in entry.Value.Errors)
-                {
-                    _log.ModelStatePropertyError("Patch", entry.Key, error.ErrorMessage);
-                }
-            }
-
+            update = await Request.ReadFromJsonAsync<LineOfDutyCase>(PatchJsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            _log.ModelStateExceptionError("Patch", string.Empty, ex.Message);
             _log.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }

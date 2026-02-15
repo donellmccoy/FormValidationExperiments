@@ -16,13 +16,13 @@ builder.Services.AddDbContextFactory<EctDbContext>(options =>
 builder.Services.AddSingleton<IApiLogService, ApiLogService>();
 
 // Application services
-builder.Services.AddScoped<LineOfDutyCaseService>();
-builder.Services.AddScoped<ILineOfDutyCaseService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
-builder.Services.AddScoped<ILineOfDutyDocumentService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
-builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
-builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
-builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
-builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
+builder.Services.AddScoped<DataService>();
+builder.Services.AddScoped<IDataService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<ILineOfDutyDocumentService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<DataService>());
 
 // OData Entity Data Model
 var odataBuilder = new ODataConventionModelBuilder();

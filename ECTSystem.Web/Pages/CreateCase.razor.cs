@@ -12,7 +12,7 @@ namespace ECTSystem.Web.Pages;
 public partial class CreateCase : ComponentBase
 {
     [Inject]
-    private ILineOfDutyCaseService CaseService { get; set; }
+    private IDataService CaseService { get; set; }
 
     [Inject]
     private NotificationService NotificationService { get; set; }

@@ -9,7 +9,7 @@ namespace ECTSystem.Web.Pages;
 public partial class CaseList : ComponentBase
 {
     [Inject]
-    private ILineOfDutyCaseService CaseService { get; set; }
+    private IDataService CaseService { get; set; }
 
     [Inject]
     private NavigationManager Navigation { get; set; }

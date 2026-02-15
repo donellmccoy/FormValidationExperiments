@@ -7,8 +7,8 @@ namespace ECTSystem.Api.Services;
 /// <summary>
 /// Service for performing Line of Duty database operations.
 /// </summary>
-public class LineOfDutyCaseService :
-    ILineOfDutyCaseService,
+public class DataService :
+    IDataService,
     ILineOfDutyDocumentService,
     ILineOfDutyAppealService,
     ILineOfDutyAuthorityService,
@@ -20,7 +20,7 @@ public class LineOfDutyCaseService :
     // Long-lived context for IQueryable-based OData queries (disposed by DI scope)
     private EctDbContext _queryContext;
 
-    public LineOfDutyCaseService(IDbContextFactory<EctDbContext> contextFactory)
+    public DataService(IDbContextFactory<EctDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
     }
@@ -207,7 +207,7 @@ public class LineOfDutyCaseService :
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<LineOfDutyDocument> UploadDocumentAsync(string description, Stream content, CancellationToken ct = default)
+    public async Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, string documentType, string description, Stream content, CancellationToken ct = default)
     {
         using var ms = new MemoryStream();
         await content.CopyToAsync(ms, ct);

@@ -54,9 +54,9 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
                .HasForeignKey<LineOfDutyCase>(e => e.INCAPId)
                .OnDelete(DeleteBehavior.NoAction);
 
-        builder.HasOne(e => e.Member)
-               .WithMany(m => m.LineOfDutyCases)
-               .HasForeignKey(e => e.MemberId)
-               .OnDelete(DeleteBehavior.NoAction);
+        //builder.HasOne(e => e.Member)
+        //       .WithMany(m => m.LineOfDutyCases)
+        //       .HasForeignKey(e => e.MemberId)
+        //       .OnDelete(DeleteBehavior.NoAction);
     }
 }

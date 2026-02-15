@@ -8,7 +8,7 @@ namespace ECTSystem.Web.Services;
 /// <summary>
 /// Client-side service interface for Line of Duty API operations.
 /// </summary>
-public interface ILineOfDutyCaseService
+public interface IDataService
 {
     /// <summary>
     /// Queries LOD cases via OData with filtering, paging, sorting, and count.

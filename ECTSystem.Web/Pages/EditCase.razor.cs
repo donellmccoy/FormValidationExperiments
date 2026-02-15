@@ -26,7 +26,7 @@ public partial class EditCase : ComponentBase, IDisposable
     }
 
     [Inject]
-    private ILineOfDutyCaseService CaseService { get; set; }
+    private IDataService CaseService { get; set; }
 
     [Inject]
     private NotificationService NotificationService { get; set; }

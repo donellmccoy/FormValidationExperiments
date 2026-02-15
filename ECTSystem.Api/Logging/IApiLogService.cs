@@ -8,6 +8,7 @@ public interface IApiLogService
     void CaseNotFound(int caseId);
     void InvalidModelState(string action);
     void ModelStatePropertyError(string action, string property, string error);
+    void ModelStateExceptionError(string action, string property, string exceptionMessage);
     void CaseCreated(int caseId);
     void UpdatingCase(int caseId);
     void CaseUpdated(int caseId);

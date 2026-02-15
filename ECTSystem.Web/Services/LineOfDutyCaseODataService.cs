@@ -13,7 +13,7 @@ namespace ECTSystem.Web.Services;
 /// Uses OData endpoints exclusively; view model mapping is performed client-side
 /// via <see cref="LineOfDutyCaseMapper"/>.
 /// </summary>
-public class LineOfDutyCaseODataService : ILineOfDutyCaseService
+public class LineOfDutyCaseODataService : IDataService
 {
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _jsonOptions;
