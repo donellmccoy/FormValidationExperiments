@@ -94,22 +94,22 @@ public class LineOfDutyCaseODataService : ILineOfDutyCaseService
 
     public async Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default)
     {
-        // PUT the entity via OData
-        var putUri = new Uri(_baseUri, $"Cases({lodCase.Id})");
+        // PATCH the entity via OData
+        var patchUri = new Uri(_baseUri, $"Cases({lodCase.Id})");
 
-        // Strip Member before PUT to avoid circular reference
+        // Strip Member before PATCH to avoid circular reference
         // (Member.LineOfDutyCases → LineOfDutyCase). The server
-        // doesn't update Member through the Case PUT endpoint.
+        // doesn't update Member through the Case PATCH endpoint.
         var savedMember = lodCase.Member;
         try
         {
             lodCase.Member = null;
-            var saveResponse = await _http.PutAsJsonAsync(putUri, lodCase, _jsonOptions, cancellationToken);
+            var saveResponse = await _http.PatchAsJsonAsync(patchUri, lodCase, _jsonOptions, cancellationToken);
 
             if (!saveResponse.IsSuccessStatusCode)
             {
                 var errorBody = await saveResponse.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine($"PUT error ({saveResponse.StatusCode}): {errorBody}");
+                Console.WriteLine($"PATCH error ({saveResponse.StatusCode}): {errorBody}");
                 saveResponse.EnsureSuccessStatusCode();
             }
         }

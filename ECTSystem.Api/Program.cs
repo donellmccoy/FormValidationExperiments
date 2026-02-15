@@ -17,6 +17,7 @@ builder.Services.AddSingleton<IApiLogService, ApiLogService>();
 
 // Application services
 builder.Services.AddScoped<LineOfDutyCaseService>();
+builder.Services.AddScoped<ILineOfDutyCaseService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyDocumentService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());
 builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<LineOfDutyCaseService>());

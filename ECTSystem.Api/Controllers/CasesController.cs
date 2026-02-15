@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using Microsoft.EntityFrameworkCore;
-using ECTSystem.Persistence.Data;
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -17,12 +15,12 @@ namespace ECTSystem.Api.Controllers;
 /// </summary>
 public class CasesController : ODataController
 {
-    private readonly IDbContextFactory<EctDbContext> _contextFactory;
+    private readonly ILineOfDutyCaseService _caseService;
     private readonly IApiLogService _log;
 
-    public CasesController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
+    public CasesController(ILineOfDutyCaseService caseService, IApiLogService log)
     {
-        _contextFactory = contextFactory;
+        _caseService = caseService;
         _log = log;
     }
 
@@ -35,10 +33,7 @@ public class CasesController : ODataController
     public IActionResult Get()
     {
         _log.QueryingCases();
-        // Create a long-lived context — OData needs the query to remain open
-        // until the response is serialized. The context will be disposed by the DI scope.
-        var context = _contextFactory.CreateDbContext();
-        return Ok(context.Cases.AsNoTracking());
+        return Ok(_caseService.GetCasesQueryable());
     }
 
     /// <summary>
@@ -49,10 +44,7 @@ public class CasesController : ODataController
     public async Task<IActionResult> Get([FromRoute] int key)
     {
         _log.RetrievingCase(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var lodCase = await CaseWithIncludes(context)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == key);
+        var lodCase = await _caseService.GetCaseByKeyAsync(key);
 
         if (lodCase is null)
         {
@@ -75,19 +67,17 @@ public class CasesController : ODataController
             return BadRequest(ModelState);
         }
 
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        context.Cases.Add(lodCase);
-        await context.SaveChangesAsync();
+        var created = await _caseService.CreateCaseAsync(lodCase);
 
-        _log.CaseCreated(lodCase.Id);
-        return Created(lodCase);
+        _log.CaseCreated(created.Id);
+        return Created(created);
     }
 
     /// <summary>
-    /// Fully replaces an existing LOD case.
-    /// OData route: PUT /odata/Cases({key})
+    /// Partially updates an existing LOD case.
+    /// OData route: PATCH /odata/Cases({key})
     /// </summary>
-    public async Task<IActionResult> Put([FromRoute] int key, [FromBody] LineOfDutyCase update)
+    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] LineOfDutyCase update)
     {
         if (!ModelState.IsValid)
         {
@@ -95,82 +85,30 @@ public class CasesController : ODataController
             {
                 foreach (var error in entry.Value.Errors)
                 {
-                    _log.ModelStatePropertyError("Put", entry.Key, error.ErrorMessage);
+                    _log.ModelStatePropertyError("Patch", entry.Key, error.ErrorMessage);
                 }
             }
 
-            _log.InvalidModelState("Put");
+            _log.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
         if (update is null)
-        {
-            _log.InvalidModelState("Put");
-            return BadRequest(ModelState);
-        }
-
-        _log.UpdatingCase(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
-        if (existing is null)
-        {
-            _log.CaseNotFound(key);
-            return NotFound();
-        }
-
-        // 1. Update scalar properties on the root entity
-        update.Id = key;
-        update.MemberId = existing.MemberId;   // preserve FK — not editable via form
-        update.MEDCONId = existing.MEDCONId;
-        update.INCAPId = existing.INCAPId;
-        context.Entry(existing).CurrentValues.SetValues(update);
-
-        // 2. Synchronize the Authorities collection (ApplyAll modifies authorities)
-        SyncAuthorities(context, existing, update.Authorities);
-
-        // 3. Update MEDCON / INCAP scalar properties
-        if (existing.MEDCON is not null && update.MEDCON is not null)
-        {
-            context.Entry(existing.MEDCON).CurrentValues.SetValues(update.MEDCON);
-        }
-
-        if (existing.INCAP is not null && update.INCAP is not null)
-        {
-            context.Entry(existing.INCAP).CurrentValues.SetValues(update.INCAP);
-        }
-
-        await context.SaveChangesAsync();
-
-        _log.CaseUpdated(key);
-        return Updated(existing);
-    }
-
-    /// <summary>
-    /// Partially updates an existing LOD case.
-    /// OData route: PATCH /odata/Cases({key})
-    /// </summary>
-    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] Delta<LineOfDutyCase> delta)
-    {
-        if (!ModelState.IsValid)
         {
             _log.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
         _log.PatchingCase(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
-        if (existing is null)
+        var updated = await _caseService.UpdateCaseAsync(key, update);
+        if (updated is null)
         {
             _log.CaseNotFound(key);
             return NotFound();
         }
 
-        delta.Patch(existing);
-        await context.SaveChangesAsync();
-
         _log.CasePatched(key);
-        return Updated(existing);
+        return Updated(updated);
     }
 
     /// <summary>
@@ -180,78 +118,14 @@ public class CasesController : ODataController
     public async Task<IActionResult> Delete([FromRoute] int key)
     {
         _log.DeletingCase(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var lodCase = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
-        if (lodCase is null)
+        var deleted = await _caseService.DeleteCaseAsync(key);
+        if (!deleted)
         {
             _log.CaseNotFound(key);
             return NotFound();
         }
 
-        context.TimelineSteps.RemoveRange(lodCase.TimelineSteps);
-        context.Authorities.RemoveRange(lodCase.Authorities);
-        context.Documents.RemoveRange(lodCase.Documents);
-        context.Appeals.RemoveRange(lodCase.Appeals);
-        context.Notifications.RemoveRange(lodCase.Notifications);
-        context.Cases.Remove(lodCase);
-        await context.SaveChangesAsync();
-
         _log.CaseDeleted(key);
         return NoContent();
-    }
-
-    private static IQueryable<LineOfDutyCase> CaseWithIncludes(EctDbContext context)
-    {
-        return context.Cases
-            .AsSplitQuery()
-            .Include(c => c.Documents)
-            .Include(c => c.Authorities)
-            .Include(c => c.TimelineSteps).ThenInclude(t => t.ResponsibleAuthority)
-            .Include(c => c.Appeals).ThenInclude(a => a.AppellateAuthority)
-            .Include(c => c.Member)
-            .Include(c => c.MEDCON)
-            .Include(c => c.INCAP)
-            .Include(c => c.Notifications);
-    }
-
-    /// <summary>
-    /// Synchronizes the Authorities navigation collection: updates existing,
-    /// adds new, and removes deleted items.
-    /// </summary>
-    private static void SyncAuthorities(
-        EctDbContext context,
-        LineOfDutyCase existing,
-        List<LineOfDutyAuthority> incoming)
-    {
-        incoming ??= [];
-
-        // Remove authorities no longer present
-        var incomingIds = incoming.Where(a => a.Id != 0).Select(a => a.Id).ToHashSet();
-        var toRemove = existing.Authorities.Where(a => !incomingIds.Contains(a.Id)).ToList();
-        foreach (var auth in toRemove)
-        {
-            existing.Authorities.Remove(auth);
-            context.Authorities.Remove(auth);
-        }
-
-        foreach (var updatedAuth in incoming)
-        {
-            var existingAuth = updatedAuth.Id != 0
-                ? existing.Authorities.FirstOrDefault(a => a.Id == updatedAuth.Id)
-                : null;
-
-            if (existingAuth is not null)
-            {
-                // Update scalar properties on the tracked authority
-                context.Entry(existingAuth).CurrentValues.SetValues(updatedAuth);
-            }
-            else
-            {
-                // New authority — ensure clean state and add
-                updatedAuth.Id = 0;
-                updatedAuth.LineOfDutyCaseId = existing.Id;
-                existing.Authorities.Add(updatedAuth);
-            }
-        }
     }
 }

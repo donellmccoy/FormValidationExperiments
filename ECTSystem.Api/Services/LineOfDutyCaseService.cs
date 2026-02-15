@@ -8,6 +8,7 @@ namespace ECTSystem.Api.Services;
 /// Service for performing Line of Duty database operations.
 /// </summary>
 public class LineOfDutyCaseService :
+    ILineOfDutyCaseService,
     ILineOfDutyDocumentService,
     ILineOfDutyAppealService,
     ILineOfDutyAuthorityService,
@@ -16,9 +17,139 @@ public class LineOfDutyCaseService :
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
+    // Long-lived context for IQueryable-based OData queries (disposed by DI scope)
+    private EctDbContext _queryContext;
+
     public LineOfDutyCaseService(IDbContextFactory<EctDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
+    }
+
+    // ──────────────────────────── Case CRUD Operations ────────────────────────────
+
+    public IQueryable<LineOfDutyCase> GetCasesQueryable()
+    {
+        // Create a long-lived context — OData needs the query to remain open
+        // until the response is serialized. The context will be disposed by the DI scope.
+        _queryContext = _contextFactory.CreateDbContext();
+        return _queryContext.Cases.AsNoTracking();
+    }
+
+    public async Task<LineOfDutyCase> GetCaseByKeyAsync(int key, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await CaseWithIncludes(context)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == key, ct);
+    }
+
+    public async Task<LineOfDutyCase> CreateCaseAsync(LineOfDutyCase lodCase, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        context.Cases.Add(lodCase);
+        await context.SaveChangesAsync(ct);
+        return lodCase;
+    }
+
+    public async Task<LineOfDutyCase> UpdateCaseAsync(int key, LineOfDutyCase update, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key, ct);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        // 1. Update scalar properties on the root entity
+        update.Id = key;
+        update.MemberId = existing.MemberId;   // preserve FK — not editable via form
+        update.MEDCONId = existing.MEDCONId;
+        update.INCAPId = existing.INCAPId;
+        context.Entry(existing).CurrentValues.SetValues(update);
+
+        // 2. Synchronize the Authorities collection
+        SyncAuthorities(context, existing, update.Authorities);
+
+        // 3. Update MEDCON / INCAP scalar properties
+        if (existing.MEDCON is not null && update.MEDCON is not null)
+        {
+            context.Entry(existing.MEDCON).CurrentValues.SetValues(update.MEDCON);
+        }
+
+        if (existing.INCAP is not null && update.INCAP is not null)
+        {
+            context.Entry(existing.INCAP).CurrentValues.SetValues(update.INCAP);
+        }
+
+        await context.SaveChangesAsync(ct);
+        return existing;
+    }
+
+    public async Task<bool> DeleteCaseAsync(int key, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var lodCase = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key, ct);
+        if (lodCase is null)
+        {
+            return false;
+        }
+
+        context.TimelineSteps.RemoveRange(lodCase.TimelineSteps);
+        context.Authorities.RemoveRange(lodCase.Authorities);
+        context.Documents.RemoveRange(lodCase.Documents);
+        context.Appeals.RemoveRange(lodCase.Appeals);
+        context.Notifications.RemoveRange(lodCase.Notifications);
+        context.Cases.Remove(lodCase);
+        await context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private static IQueryable<LineOfDutyCase> CaseWithIncludes(EctDbContext context)
+    {
+        return context.Cases
+            .AsSplitQuery()
+            .Include(c => c.Documents)
+            .Include(c => c.Authorities)
+            .Include(c => c.TimelineSteps).ThenInclude(t => t.ResponsibleAuthority)
+            .Include(c => c.Appeals).ThenInclude(a => a.AppellateAuthority)
+            .Include(c => c.Member)
+            .Include(c => c.MEDCON)
+            .Include(c => c.INCAP)
+            .Include(c => c.Notifications);
+    }
+
+    private static void SyncAuthorities(
+        EctDbContext context,
+        LineOfDutyCase existing,
+        List<LineOfDutyAuthority> incoming)
+    {
+        incoming ??= [];
+
+        var incomingIds = incoming.Where(a => a.Id != 0).Select(a => a.Id).ToHashSet();
+        var toRemove = existing.Authorities.Where(a => !incomingIds.Contains(a.Id)).ToList();
+        foreach (var auth in toRemove)
+        {
+            existing.Authorities.Remove(auth);
+            context.Authorities.Remove(auth);
+        }
+
+        foreach (var updatedAuth in incoming)
+        {
+            var existingAuth = updatedAuth.Id != 0
+                ? existing.Authorities.FirstOrDefault(a => a.Id == updatedAuth.Id)
+                : null;
+
+            if (existingAuth is not null)
+            {
+                context.Entry(existingAuth).CurrentValues.SetValues(updatedAuth);
+            }
+            else
+            {
+                updatedAuth.Id = 0;
+                updatedAuth.LineOfDutyCaseId = existing.Id;
+                existing.Authorities.Add(updatedAuth);
+            }
+        }
     }
 
     // ──────────────────────────── Document Operations ────────────────────────────
@@ -76,9 +207,7 @@ public class LineOfDutyCaseService :
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<LineOfDutyDocument> UploadDocumentAsync(
-        int caseId, string fileName, string contentType, string documentType,
-        string description, Stream content, CancellationToken ct = default)
+    public async Task<LineOfDutyDocument> UploadDocumentAsync(string description, Stream content, CancellationToken ct = default)
     {
         using var ms = new MemoryStream();
         await content.CopyToAsync(ms, ct);
