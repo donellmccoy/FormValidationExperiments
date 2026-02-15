@@ -26,6 +26,7 @@ public partial class CreateCase : ComponentBase
     private string busyMessage = string.Empty;
 
     private string memberSearchText = string.Empty;
+    private string dodId = string.Empty;
 
     private IncidentType incidentType;
     private LineOfDutyProcessType processType;
