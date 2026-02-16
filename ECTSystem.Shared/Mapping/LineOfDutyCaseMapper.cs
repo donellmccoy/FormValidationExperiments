@@ -97,11 +97,7 @@ public static partial class LineOfDutyCaseMapper
             IsPotentiallyUnfitting = source.IsPotentiallyUnfitting,
             IsAtDeployedLocation = source.IsAtDeployedLocation,
             RequiresArcBoard = source.RequiresArcBoard,
-            MedicalRecommendation = source.MedicalRecommendation ?? string.Empty,
-            ProviderName = medProvider?.Name ?? string.Empty,
-            ProviderRank = ParseMilitaryRank(medProvider?.Rank),
-            ProviderSignatureDate = medProvider?.ActionDate,
-            ProviderOrganization = medProvider?.Title ?? string.Empty
+            MedicalRecommendation = source.MedicalRecommendation ?? string.Empty
         };
     }
 
@@ -251,13 +247,6 @@ public static partial class LineOfDutyCaseMapper
         {
             target.ToxicologyReport = "Not applicable";
         }
-
-        // Update medical provider authority
-        var medProvider = FindOrCreateAuthority(target, "Medical Provider");
-        medProvider.Name = model.ProviderName;
-        medProvider.Rank = model.ProviderRank.HasValue ? model.ProviderRank.Value.ToString() : string.Empty;
-        medProvider.ActionDate = model.ProviderSignatureDate;
-        medProvider.Title = model.ProviderOrganization;
     }
 
     /// <summary>

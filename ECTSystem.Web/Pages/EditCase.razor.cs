@@ -51,8 +51,6 @@ public partial class EditCase : ComponentBase, IDisposable
     private bool isBusy;
     private string busyMessage = string.Empty;
 
-    private string memberSearchText = string.Empty;
-
     private int selectedTabIndex;
 
     private int currentStepIndex;
@@ -60,6 +58,8 @@ public partial class EditCase : ComponentBase, IDisposable
     private MemberInfoFormModel memberFormModel = new();
 
     private MedicalAssessmentFormModel formModel = new();
+
+    private RadzenTemplateForm<MedicalAssessmentFormModel> medicalForm;
 
     private CommanderReviewFormModel commanderFormModel = new();
 
@@ -189,38 +189,6 @@ public partial class EditCase : ComponentBase, IDisposable
         await SaveCurrentTabAsync(TabNames.MemberInformation);
     }
 
-    private async Task OnMemberSearch()
-    {
-        if (string.IsNullOrWhiteSpace(memberSearchText))
-        {
-            NotificationService.Notify(NotificationSeverity.Info, "Search", "Please enter a name or last 4 SSN.");
-            return;
-        }
-
-        await SetBusyAsync("Searching for member...");
-
-        try
-        {
-            // TODO: Replace with actual API call to search for members
-            // For now, notify that search is not yet connected to a data source
-            NotificationService.Notify(NotificationSeverity.Warning, "Not Available",
-                "Member search is not yet connected to a data source.");
-        }
-        finally
-        {
-            isBusy = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
-    {
-        if (args.Key == "Enter")
-        {
-            await OnMemberSearch();
-        }
-    }
-
     private async Task OnMemberForwardClick()
     {
         var confirmed = await DialogService.Confirm(
@@ -313,6 +281,10 @@ public partial class EditCase : ComponentBase, IDisposable
             await OnRevertChanges();
             return;
         }
+
+        // Validate the medical tab before saving
+        if (selectedTabIndex == 1 && medicalForm?.EditContext?.Validate() == false)
+            return;
 
         // Determine which tab to save based on the currently selected tab index
         var source = selectedTabIndex switch
@@ -932,6 +904,56 @@ public partial class EditCase : ComponentBase, IDisposable
 
         memberFormModel.SSN = digits;
         StateHasChanged();
+    }
+
+    // ──── Child-Clearing Handlers ────
+
+    private void OnIsMilitaryFacilityChanged()
+    {
+        if (formModel.IsMilitaryFacility != true)
+            formModel.TreatmentFacilityName = null;
+    }
+
+    private void OnWasUnderInfluenceChanged()
+    {
+        if (formModel.WasUnderInfluence != true)
+            formModel.SubstanceType = null;
+    }
+
+    private void OnToxicologyTestDoneChanged()
+    {
+        if (formModel.ToxicologyTestDone != true)
+            formModel.ToxicologyTestResults = null;
+    }
+
+    private void OnPsychiatricEvalCompletedChanged()
+    {
+        if (formModel.PsychiatricEvalCompleted != true)
+        {
+            formModel.PsychiatricEvalDate = null;
+            formModel.PsychiatricEvalResults = null;
+        }
+    }
+
+    private void OnOtherTestsDoneChanged()
+    {
+        if (formModel.OtherTestsDone != true)
+        {
+            formModel.OtherTestDate = null;
+            formModel.OtherTestResults = null;
+        }
+    }
+
+    private void OnIsEptsNsaChanged()
+    {
+        if (formModel.IsEptsNsa != true)
+            formModel.IsServiceAggravated = null;
+    }
+
+    private void OnIsAtDeployedLocationChanged()
+    {
+        if (formModel.IsAtDeployedLocation != false)
+            formModel.RequiresArcBoard = null;
     }
 
     public void Dispose()
