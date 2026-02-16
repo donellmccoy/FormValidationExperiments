@@ -43,7 +43,7 @@ public partial class CaseList : ComponentBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading cases: {ex.Message}");
+            Console.WriteLine($"Error loading cases: {ex}");
             cases = null;
             count = 0;
         }

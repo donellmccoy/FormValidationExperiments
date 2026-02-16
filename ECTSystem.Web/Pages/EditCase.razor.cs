@@ -18,6 +18,7 @@ public partial class EditCase : ComponentBase, IDisposable
     // ──── Tab Name Constants ────
     private static class TabNames
     {
+        public const string Start = "Start";
         public const string MemberInformation = "Member Information";
         public const string MedicalAssessment = "Medical Assessment";
         public const string CommanderReview = "Commander Review";
@@ -168,7 +169,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         workflowSteps =
         [
-            new() { Number = 1,  Name = "Start",                Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
+            new() { Number = 1,  Name = "Start Line Of Duty",    Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
             new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,    StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
             new() { Number = 3,  Name = "Line Of Duty Initiation",   Icon = "description",      Status = WorkflowStepStatus.Pending,    StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
             new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Medical provider review and clinical impact assessment." },
@@ -283,16 +284,17 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         // Validate the medical tab before saving
-        if (selectedTabIndex == 1 && medicalForm?.EditContext?.Validate() == false)
+        if (selectedTabIndex == 2 && medicalForm?.EditContext?.Validate() == false)
             return;
 
         // Determine which tab to save based on the currently selected tab index
         var source = selectedTabIndex switch
         {
-            0 => TabNames.MemberInformation,
-            1 => TabNames.MedicalAssessment,
-            2 => TabNames.CommanderReview,
-            3 => TabNames.LegalSJAReview,
+            0 => TabNames.Start,
+            1 => TabNames.MemberInformation,
+            2 => TabNames.MedicalAssessment,
+            3 => TabNames.CommanderReview,
+            4 => TabNames.LegalSJAReview,
             _ => TabNames.Draft
         };
 

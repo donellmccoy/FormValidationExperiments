@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using ECTSystem.Web;
 using ECTSystem.Web.Services;
+using PanoramicData.OData.Client;
+using PanoramicData.OData.Client.Converters;
 using Radzen;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -22,13 +24,38 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri("https://localhost:7173")
 });
 
-// OData client context — service root = API base + "odata/" route prefix
-builder.Services.AddScoped(_ => new EctODataContext(new Uri("https://localhost:7173/odata/")));
-
 builder.Services.AddRadzenComponents();
 
-// LOD case service — uses Microsoft.OData.Client via EctODataContext
-builder.Services.AddScoped<IDataService, LineOfDutyCaseODataService>();
+// PanoramicData OData client — uses its own HttpClient with the /odata/ base path.
+// PanoramicData constructs relative URIs from the entity set name (e.g. "Cases?$top=10")
+// and sends them through HttpClient, so BaseAddress MUST include the OData route prefix.
+builder.Services.AddScoped(sp =>
+{
+    var odataHttpClient = new HttpClient
+    {
+        BaseAddress = new Uri("https://localhost:7173/odata/")
+    };
+    return new ODataClient(new ODataClientOptions
+    {
+        BaseUrl = "https://localhost:7173/odata/",
+        HttpClient = odataHttpClient,
+        JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters =
+            {
+                new JsonStringEnumConverter(),
+                new ODataDateTimeConverter(),
+                new ODataNullableDateTimeConverter()
+            },
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        }
+    });
+});
+
+// LOD case service — uses PanoramicData.OData.Client (HttpClient-based, WASM-safe)
+builder.Services.AddScoped<IDataService, LineOfDutyCaseHttpService>();
 
 var host = builder.Build();
 await host.RunAsync();

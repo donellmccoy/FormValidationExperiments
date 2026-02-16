@@ -81,7 +81,7 @@ else
             </RadzenPanel>
 
             @* ─── Assessment Panel ─── *@
-            <RadzenPanel AllowCollapse="false" Style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+            <RadzenPanel AllowCollapse="false" Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; flex: 1; min-height: 0; overflow: hidden;">
                 <HeaderTemplate>
                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
                                  Style="padding: 1rem 1.5rem 1rem 0.5rem;">
@@ -98,6 +98,18 @@ else
                 <ChildContent>
                     <RadzenTabs @bind-SelectedIndex="selectedTabIndex" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                     <Tabs>
+                        @* ─── Start Tab ─── *@
+                        <RadzenTabsItem Text="Start">
+                            <Template>
+                                <span style="display: flex; align-items: center; justify-content: space-between; width: 100%; text-transform: none;">Start</span>
+                            </Template>
+                            <ChildContent>
+                                <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
+                                    Start Line of Duty determination workflow. Select a member and initiate the LOD process.
+                                </RadzenText>
+                            </ChildContent>
+                        </RadzenTabsItem>
+
                         @* ─── Member Tab ─── *@
                         <RadzenTabsItem Text="Member">
                             <Template>
