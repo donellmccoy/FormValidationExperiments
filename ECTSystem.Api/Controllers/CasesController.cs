@@ -1,11 +1,12 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Deltas;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -17,12 +18,6 @@ namespace ECTSystem.Api.Controllers;
 /// </summary>
 public class CasesController : ODataController
 {
-    private static readonly JsonSerializerOptions PatchJsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        ReferenceHandler = ReferenceHandler.IgnoreCycles,
-        Converters = { new JsonStringEnumConverter() }
-    };
-
     private readonly IDataService _dataService;
     private readonly IApiLogService _log;
 
@@ -82,34 +77,27 @@ public class CasesController : ODataController
     }
 
     /// <summary>
-    /// Partially updates an existing LOD case.
+    /// Partially updates an existing LOD case using OData Delta semantics.
+    /// Only the properties present in the request body are applied to the entity.
     /// OData route: PATCH /odata/Cases({key})
-    /// Uses standard System.Text.Json deserialization (bypassing the OData input
-    /// formatter) so that camelCase property names and DateTime values sent by the
-    /// Blazor WASM client round-trip correctly.
     /// </summary>
-    public async Task<IActionResult> Patch([FromRoute] int key)
+    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] Delta<LineOfDutyCasePatchDto> delta)
     {
-        LineOfDutyCase update;
-        try
+        if (delta is null)
         {
-            update = await Request.ReadFromJsonAsync<LineOfDutyCase>(PatchJsonOptions);
-        }
-        catch (JsonException ex)
-        {
-            _log.ModelStateExceptionError("Patch", string.Empty, ex.Message);
             _log.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
-        if (update is null)
-        {
-            _log.InvalidModelState("Patch");
-            return BadRequest(ModelState);
-        }
+        // Apply the delta to a new DTO instance so we can read the changed values.
+        var dto = new LineOfDutyCasePatchDto();
+        delta.Patch(dto);
+
+        // Delta tracks exactly which properties the client sent.
+        var changedProperties = delta.GetChangedPropertyNames();
 
         _log.PatchingCase(key);
-        var updated = await _dataService.UpdateCaseAsync(key, update);
+        var updated = await _dataService.PatchCaseScalarsAsync(key, dto, changedProperties);
         if (updated is null)
         {
             _log.CaseNotFound(key);
@@ -118,6 +106,29 @@ public class CasesController : ODataController
 
         _log.CasePatched(key);
         return Updated(updated);
+    }
+
+    /// <summary>
+    /// Replaces the entire Authorities collection for a case.
+    /// OData action route: POST /odata/Cases({key})/SyncAuthorities
+    /// </summary>
+    [HttpPost("odata/Cases({key})/SyncAuthorities")]
+    public async Task<IActionResult> SyncAuthorities(
+        [FromRoute] int key,
+        [FromBody] List<LineOfDutyAuthority> authorities)
+    {
+        authorities ??= [];
+
+        _log.UpdatingCase(key);
+        var result = await _dataService.SyncAuthoritiesAsync(key, authorities);
+        if (result is null)
+        {
+            _log.CaseNotFound(key);
+            return NotFound();
+        }
+
+        _log.CaseUpdated(key);
+        return Ok(result);
     }
 
     /// <summary>

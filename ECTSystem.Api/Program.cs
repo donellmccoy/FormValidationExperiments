@@ -6,6 +6,8 @@ using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
 
+using ECTSystem.Shared.ViewModels;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Entity Framework Core — SQL Server
@@ -35,6 +37,14 @@ odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
 odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
 odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
 odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
+
+// Register the scalar-only patch DTO so OData can build a Delta<T> for it.
+odataBuilder.ComplexType<LineOfDutyCasePatchDto>();
+
+// OData bound action: POST /odata/Cases({key})/SyncAuthorities
+odataBuilder.EntityType<LineOfDutyCase>()
+    .Action("SyncAuthorities")
+    .CollectionParameter<LineOfDutyAuthority>("authorities");
 
 // Controllers + OData
 builder.Services.AddControllers()
