@@ -6,7 +6,9 @@ using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
 
-using ECTSystem.Shared.ViewModels;
+// OData is the primary API surface — convention routing, Delta<T>.Patch(), and bound actions
+// are used throughout. The client excludes navigation/collection/FK properties from PATCH
+// bodies via a JsonTypeInfoResolver modifier, so no separate DTO is needed.
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,13 +40,7 @@ odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
 odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
 odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 
-// Register the scalar-only patch DTO so OData can build a Delta<T> for it.
-odataBuilder.ComplexType<LineOfDutyCasePatchDto>();
-
-// OData bound action: POST /odata/Cases({key})/SyncAuthorities
-odataBuilder.EntityType<LineOfDutyCase>()
-    .Action("SyncAuthorities")
-    .CollectionParameter<LineOfDutyAuthority>("authorities");
+// Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
 
 // Controllers + OData
 builder.Services.AddControllers()
@@ -57,6 +53,8 @@ builder.Services.AddControllers()
                .OrderBy()
                .SetMaxTop(100)
                .Count();
+
+
     })
     .AddJsonOptions(options =>
     {

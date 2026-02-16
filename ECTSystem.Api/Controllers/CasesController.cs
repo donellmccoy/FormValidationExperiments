@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
-using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -81,23 +79,21 @@ public class CasesController : ODataController
     /// Only the properties present in the request body are applied to the entity.
     /// OData route: PATCH /odata/Cases({key})
     /// </summary>
-    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] Delta<LineOfDutyCasePatchDto> delta)
+    /// <remarks>
+    /// Do NOT add [FromBody] — OData's own input formatter must handle Delta&lt;T&gt;
+    /// deserialization. [FromBody] would route through SystemTextJsonInputFormatter
+    /// which cannot construct a Delta instance.
+    /// </remarks>
+    public async Task<IActionResult> Patch([FromRoute] int key, Delta<LineOfDutyCase> delta)
     {
-        if (delta is null)
+        if (delta is null || !ModelState.IsValid)
         {
             _log.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
-        // Apply the delta to a new DTO instance so we can read the changed values.
-        var dto = new LineOfDutyCasePatchDto();
-        delta.Patch(dto);
-
-        // Delta tracks exactly which properties the client sent.
-        var changedProperties = delta.GetChangedPropertyNames();
-
         _log.PatchingCase(key);
-        var updated = await _dataService.PatchCaseScalarsAsync(key, dto, changedProperties);
+        var updated = await _dataService.PatchCaseAsync(key, delta);
         if (updated is null)
         {
             _log.CaseNotFound(key);
@@ -106,29 +102,6 @@ public class CasesController : ODataController
 
         _log.CasePatched(key);
         return Updated(updated);
-    }
-
-    /// <summary>
-    /// Replaces the entire Authorities collection for a case.
-    /// OData action route: POST /odata/Cases({key})/SyncAuthorities
-    /// </summary>
-    [HttpPost("odata/Cases({key})/SyncAuthorities")]
-    public async Task<IActionResult> SyncAuthorities(
-        [FromRoute] int key,
-        [FromBody] List<LineOfDutyAuthority> authorities)
-    {
-        authorities ??= [];
-
-        _log.UpdatingCase(key);
-        var result = await _dataService.SyncAuthoritiesAsync(key, authorities);
-        if (result is null)
-        {
-            _log.CaseNotFound(key);
-            return NotFound();
-        }
-
-        _log.CaseUpdated(key);
-        return Ok(result);
     }
 
     /// <summary>

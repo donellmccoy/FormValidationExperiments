@@ -1,5 +1,5 @@
+using Microsoft.AspNetCore.OData.Deltas;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Services;
 
@@ -14,15 +14,10 @@ public interface IDataService
     Task<LineOfDutyCase> UpdateCaseAsync(int key, LineOfDutyCase update, CancellationToken ct = default);
 
     /// <summary>
-    /// Applies a partial update using only the changed property names from an OData Delta.
+    /// Applies a partial update using OData Delta semantics — only the properties
+    /// present in the Delta are written to the entity via <see cref="Delta{T}.Patch"/>.
     /// </summary>
-    Task<LineOfDutyCase> PatchCaseScalarsAsync(int key, LineOfDutyCasePatchDto dto, IEnumerable<string> changedProperties, CancellationToken ct = default);
-
-    /// <summary>
-    /// Replaces the Authorities collection for a case with the incoming set
-    /// (add/update/remove semantics).
-    /// </summary>
-    Task<List<LineOfDutyAuthority>> SyncAuthoritiesAsync(int key, List<LineOfDutyAuthority> incoming, CancellationToken ct = default);
+    Task<LineOfDutyCase> PatchCaseAsync(int key, Delta<LineOfDutyCase> delta, CancellationToken ct = default);
 
     Task<bool> DeleteCaseAsync(int key, CancellationToken ct = default);
 }

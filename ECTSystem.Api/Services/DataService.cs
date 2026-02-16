@@ -1,7 +1,7 @@
+using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Services;
 
@@ -106,71 +106,24 @@ public class DataService :
     }
 
     /// <summary>
-    /// Applies a true partial update — only the properties listed in
-    /// <paramref name="changedProperties"/> are copied from the DTO to the entity.
+    /// Applies a partial update using OData Delta semantics — only the properties
+    /// present in the Delta are written to the entity via <see cref="Delta{T}.Patch"/>.
     /// </summary>
-    public async Task<LineOfDutyCase> PatchCaseScalarsAsync(
+    public async Task<LineOfDutyCase> PatchCaseAsync(
         int key,
-        LineOfDutyCasePatchDto dto,
-        IEnumerable<string> changedProperties,
+        Delta<LineOfDutyCase> delta,
         CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var existing = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key, ct);
+        var existing = await context.Cases.FindAsync([key], ct);
         if (existing is null)
         {
             return null;
         }
 
-        // Only overwrite the properties the client actually sent.
-        var entry = context.Entry(existing);
-        foreach (var propertyName in changedProperties)
-        {
-            // Skip FK / key properties — these are not editable via patch.
-            if (propertyName is nameof(LineOfDutyCase.Id)
-                             or nameof(LineOfDutyCase.MemberId)
-                             or nameof(LineOfDutyCase.MEDCONId)
-                             or nameof(LineOfDutyCase.INCAPId))
-            {
-                continue;
-            }
-
-            if (entry.Properties.Any(p => p.Metadata.Name == propertyName))
-            {
-                var dtoProp = typeof(LineOfDutyCasePatchDto).GetProperty(propertyName);
-                if (dtoProp is not null)
-                {
-                    entry.Property(propertyName).CurrentValue = dtoProp.GetValue(dto);
-                    entry.Property(propertyName).IsModified = true;
-                }
-            }
-        }
-
+        delta.Patch(existing);
         await context.SaveChangesAsync(ct);
         return existing;
-    }
-
-    /// <summary>
-    /// Replaces the Authorities collection for a case using add/update/remove semantics.
-    /// </summary>
-    public async Task<List<LineOfDutyAuthority>> SyncAuthoritiesAsync(
-        int key,
-        List<LineOfDutyAuthority> incoming,
-        CancellationToken ct = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var existing = await context.Cases
-            .Include(c => c.Authorities)
-            .FirstOrDefaultAsync(c => c.Id == key, ct);
-
-        if (existing is null)
-        {
-            return null;
-        }
-
-        SyncAuthorities(context, existing, incoming);
-        await context.SaveChangesAsync(ct);
-        return existing.Authorities.ToList();
     }
 
     private static IQueryable<LineOfDutyCase> CaseWithIncludes(EctDbContext context)

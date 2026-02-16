@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using ECTSystem.Shared.Models;
 using Radzen;
 
@@ -18,6 +19,65 @@ public class LineOfDutyCaseODataService : IDataService
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly Uri _baseUri;
+
+    /// <summary>
+    /// Properties to exclude from PATCH serialization.
+    /// Navigation/collection properties are managed via separate endpoints (e.g., SyncAuthorities).
+    /// Key/FK properties are identified by the URL key — Delta&lt;T&gt;.Patch() would overwrite
+    /// them if sent, so they are excluded here rather than filtering server-side.
+    /// </summary>
+    private static readonly HashSet<string> ExcludedPatchProperties = new(StringComparer.Ordinal)
+    {
+        // Key / foreign-key properties — identified by URL, not body
+        nameof(LineOfDutyCase.Id),
+        nameof(LineOfDutyCase.MemberId),
+        nameof(LineOfDutyCase.MEDCONId),
+        nameof(LineOfDutyCase.INCAPId),
+
+        // Navigation / collection properties — managed via separate endpoints
+        nameof(LineOfDutyCase.TimelineSteps),
+        nameof(LineOfDutyCase.Authorities),
+        nameof(LineOfDutyCase.Documents),
+        nameof(LineOfDutyCase.WitnessStatements),
+        nameof(LineOfDutyCase.Appeals),
+        nameof(LineOfDutyCase.Notifications),
+        nameof(LineOfDutyCase.Member),
+        nameof(LineOfDutyCase.MEDCON),
+        nameof(LineOfDutyCase.INCAP),
+        nameof(LineOfDutyCase.AuditComments),
+    };
+
+    /// <summary>
+    /// PascalCase JSON options used for OData PATCH requests.
+    /// OData's Delta&lt;T&gt; deserializer matches property names against the EDM
+    /// (which uses PascalCase), so the client must NOT send camelCase for PATCH bodies.
+    /// A type modifier excludes navigation/collection properties from serialization
+    /// so the PATCH body contains only scalar values — no separate DTO is needed.
+    /// </summary>
+    private static readonly JsonSerializerOptions PatchJsonOptions = new()
+    {
+        PropertyNamingPolicy = null, // PascalCase — matches EDM property names
+        Converters = { new JsonStringEnumConverter() },
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver
+        {
+            Modifiers =
+            {
+                static typeInfo =>
+                {
+                    if (typeInfo.Type != typeof(LineOfDutyCase))
+                        return;
+
+                    foreach (var prop in typeInfo.Properties)
+                    {
+                        if (ExcludedPatchProperties.Contains(prop.Name))
+                        {
+                            prop.ShouldSerialize = static (_, _) => false;
+                        }
+                    }
+                }
+            }
+        }
+    };
 
     public LineOfDutyCaseODataService(HttpClient http, JsonSerializerOptions jsonOptions)
     {
@@ -94,28 +154,17 @@ public class LineOfDutyCaseODataService : IDataService
 
     public async Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default)
     {
-        // PATCH the entity via OData
+        // Serialize the entity directly with PatchJsonOptions — the TypeInfoResolver
+        // modifier excludes navigation/collection properties so only scalars are sent.
+        // OData Delta<T> matches PascalCase property names against the EDM.
         var patchUri = new Uri(_baseUri, $"Cases({lodCase.Id})");
+        var saveResponse = await _http.PatchAsJsonAsync(patchUri, lodCase, PatchJsonOptions, cancellationToken);
 
-        // Strip Member before PATCH to avoid circular reference
-        // (Member.LineOfDutyCases → LineOfDutyCase). The server
-        // doesn't update Member through the Case PATCH endpoint.
-        var savedMember = lodCase.Member;
-        try
+        if (!saveResponse.IsSuccessStatusCode)
         {
-            lodCase.Member = null;
-            var saveResponse = await _http.PatchAsJsonAsync(patchUri, lodCase, _jsonOptions, cancellationToken);
-
-            if (!saveResponse.IsSuccessStatusCode)
-            {
-                var errorBody = await saveResponse.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine($"PATCH error ({saveResponse.StatusCode}): {errorBody}");
-                saveResponse.EnsureSuccessStatusCode();
-            }
-        }
-        finally
-        {
-            lodCase.Member = savedMember;
+            var errorBody = await saveResponse.Content.ReadAsStringAsync(cancellationToken);
+            Console.WriteLine($"PATCH error ({saveResponse.StatusCode}): {errorBody}");
+            saveResponse.EnsureSuccessStatusCode();
         }
 
         return lodCase;

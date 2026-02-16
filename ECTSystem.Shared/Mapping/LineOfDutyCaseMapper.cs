@@ -16,6 +16,7 @@ public static partial class LineOfDutyCaseMapper
 
     [GeneratedRegex(@"^(AB|Amn|A1C|SrA|SSgt|TSgt|MSgt|SMSgt|CMSgt|CMSAF|2d Lt|1st Lt|Capt|Maj|Lt Col|Col|Brig Gen|Maj Gen|Lt Gen|Gen)\s+", RegexOptions.IgnoreCase)]
     private static partial Regex RankPrefixPattern();
+
     // ──────────────────────────── Domain → View Models ────────────────────────────
 
     /// <summary>
