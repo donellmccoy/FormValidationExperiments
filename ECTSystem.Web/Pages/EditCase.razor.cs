@@ -36,10 +36,15 @@ public partial class EditCase : ComponentBase, IDisposable
     private DialogService DialogService { get; set; }
 
     [Inject]
+    private NavigationManager Navigation { get; set; }
+
+    [Inject]
     private JsonSerializerOptions JsonOptions { get; set; }
 
     [Parameter]
     public string CaseId { get; set; }
+
+    private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
     private readonly CancellationTokenSource _cts = new();
 
@@ -66,7 +71,15 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private LegalSJAReviewFormModel legalFormModel = new();
 
-    private CaseInfoModel caseInfo = new();
+    private CaseInfoModel caseInfo = new()
+    {
+        CaseNumber = "Pending",
+        MemberName = "Pending",
+        Rank = "—",
+        Unit = "—",
+        DateOfInjury = "—",
+        Status = "New"
+    };
 
     // ──── Form Model Collection ────
     private IReadOnlyList<TrackableModel> AllFormModels => [memberFormModel, formModel, commanderFormModel, legalFormModel];
@@ -112,7 +125,15 @@ public partial class EditCase : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCaseAsync();
+        if (IsNewCase)
+        {
+            InitializeWorkflowSteps();
+        }
+        else
+        {
+            await LoadCaseAsync();
+        }
+
         isLoading = false;
     }
 
@@ -1015,8 +1036,14 @@ public partial class EditCase : ComponentBase, IDisposable
         _debounceTimer.Start();
     }
 
-    private void OnMemberSelected(Member member)
+    private async Task OnMemberSelected(Member member)
     {
+        if (IsNewCase)
+        {
+            await CreateCaseForMemberAsync(member);
+            return;
+        }
+
         memberFormModel.FirstName = member.FirstName;
         memberFormModel.LastName = member.LastName;
         memberFormModel.MiddleInitial = member.MiddleInitial;
@@ -1025,6 +1052,42 @@ public partial class EditCase : ComponentBase, IDisposable
         // Switch to the Member tab
         selectedTabIndex = 1;
         StateHasChanged();
+    }
+
+    private async Task CreateCaseForMemberAsync(Member member)
+    {
+        await SetBusyAsync("Creating case...");
+
+        try
+        {
+            var newCase = new LineOfDutyCase
+            {
+                CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                MemberName = $"{member.LastName}, {member.FirstName}",
+                MemberRank = member.Rank,
+                ServiceNumber = member.ServiceNumber,
+                Unit = member.Unit,
+                MemberId = member.Id,
+                InitiationDate = DateTime.UtcNow,
+                IncidentDate = DateTime.UtcNow
+            };
+
+            var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Case Created",
+                $"Case {saved.CaseId} created for {member.Rank} {member.LastName}.");
+
+            Navigation.NavigateTo($"/case/{saved.CaseId}");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Create Failed", ex.Message);
+        }
+        finally
+        {
+            isBusy = false;
+            StateHasChanged();
+        }
     }
 
     public void Dispose()

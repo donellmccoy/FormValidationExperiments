@@ -60,6 +60,6 @@ public partial class CaseList : ComponentBase
 
     private void OnCreateCase()
     {
-        Navigation.NavigateTo("/case/create");
+        Navigation.NavigateTo("/case/new");
     }
 }

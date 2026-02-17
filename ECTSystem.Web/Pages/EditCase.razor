@@ -1,6 +1,7 @@
+@page "/case/new"
 @page "/case/{CaseId}"
 
-<PageTitle>Edit Case - LOD Case Management</PageTitle>
+<PageTitle>@(IsNewCase ? "New Case" : "Edit Case") - LOD Case Management</PageTitle>
 
 @if (!isLoading && isBusy)
 {
@@ -31,7 +32,7 @@ else
 
         <RadzenBreadCrumb class="rz-mb-3">
             <RadzenBreadCrumbItem Path="/" Text="Cases" />
-            <RadzenBreadCrumbItem Text="@caseInfo.CaseNumber" />
+            <RadzenBreadCrumbItem Text="@(IsNewCase ? "New Case" : caseInfo.CaseNumber)" />
         </RadzenBreadCrumb>
 
         <RadzenStack Orientation="Orientation.Horizontal" class="assessment-layout">
@@ -98,6 +99,8 @@ else
                     <ChildContent>
                         <RadzenTabs @bind-SelectedIndex="selectedTabIndex" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                             <Tabs>
+                                @if (IsNewCase)
+                                {
                                 @* ─── Start Tab ─── *@
                                 <RadzenTabsItem Text="Start">
                                     <Template>
@@ -106,7 +109,7 @@ else
                                     <ChildContent>
                                         <RadzenStack Gap="0.75rem">
                                             <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
-                                                Start Line of Duty determination workflow. Search for a member to initiate the LOD process.
+                                                <span>Search for a member to create a new Line of Duty determination case.</span>
                                             </RadzenText>
                                             <RadzenTextBox Placeholder="Search by name, rank, unit, or service number..."
                                                            @bind-Value="memberSearchText"
@@ -150,12 +153,13 @@ else
                                         </RadzenStack>
                                     </ChildContent>
                                 </RadzenTabsItem>
+                                }
 
                                 @* ─── Member Tab ─── *@
-                                <RadzenTabsItem Text="Member">
+                                <RadzenTabsItem Text="Member" Disabled="@IsNewCase">
                                     <Template>
                                         <span class="tab-label">
-                                            Member @if (memberFormModel.IsDirty) {
+                                            Member @if (!IsNewCase && memberFormModel.IsDirty) {
                                             <span class="dirty-indicator"></span>
                                         }
                                     </span>
@@ -279,10 +283,10 @@ else
                             </RadzenTabsItem>
 
                             @* ─── Medical Tab ─── *@
-                            <RadzenTabsItem Text="Medical">
+                            <RadzenTabsItem Text="Medical" Disabled="@IsNewCase">
                                 <Template>
                                     <span class="tab-label">
-                                        Medical @if (formModel.IsDirty) {
+                                        Medical @if (!IsNewCase && formModel.IsDirty) {
                                         <span class="dirty-indicator"></span>
                                     }
                                 </span>
@@ -603,10 +607,10 @@ else
                         </RadzenTabsItem>
 
                         @* ─── Commander Review Tab ─── *@
-                        <RadzenTabsItem Text="Unit CC Review">
+                        <RadzenTabsItem Text="Unit CC Review" Disabled="@IsNewCase">
                             <Template>
                                 <span class="tab-label">
-                                    Unit CC Review @if (commanderFormModel.IsDirty) {
+                                    Unit CC Review @if (!IsNewCase && commanderFormModel.IsDirty) {
                                     <span class="dirty-indicator"></span>
                                 }
                             </span>
@@ -805,10 +809,10 @@ else
                     </RadzenTabsItem>
 
                     @* ─── Legal Tab ─── *@
-                    <RadzenTabsItem Text="Wing CC Review">
+                    <RadzenTabsItem Text="Wing CC Review" Disabled="@IsNewCase">
                         <Template>
                             <span class="tab-label">
-                                Wing CC Review @if (legalFormModel.IsDirty) {
+                                Wing CC Review @if (!IsNewCase && legalFormModel.IsDirty) {
                                 <span class="dirty-indicator"></span>
                             }
                         </span>
@@ -893,7 +897,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Wing Tab ─── *@
-                <RadzenTabsItem Text="Appointing Authority">
+                <RadzenTabsItem Text="Appointing Authority" Disabled="@IsNewCase">
                     <Template>
                         <span class="tab-label">Appointing Authority</span>
                     </Template>
@@ -932,7 +936,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Board Tab ─── *@
-                <RadzenTabsItem Text="Board Review">
+                <RadzenTabsItem Text="Board Review" Disabled="@IsNewCase">
                     <Template>
                         <span class="tab-label">Board Review</span>
                     </Template>
@@ -973,7 +977,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Appeals Tab ─── *@
-                <RadzenTabsItem Text="Appeals">
+                <RadzenTabsItem Text="Appeals" Disabled="@IsNewCase">
                     <Template>
                         <span class="tab-label">Appeals</span>
                     </Template>
@@ -985,7 +989,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Case Dialogue Tab ─── *@
-                <RadzenTabsItem Text="Case Dialogue">
+                <RadzenTabsItem Text="Case Dialogue" Disabled="@IsNewCase">
                     <Template>
                         <span class="tab-label">Case Dialogue</span>
                     </Template>
@@ -997,7 +1001,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Notifications Tab ─── *@
-                <RadzenTabsItem Text="Notifications">
+                <RadzenTabsItem Text="Notifications" Disabled="@IsNewCase">
                     <Template>
                         <span class="tab-label">Notifications</span>
                     </Template>
@@ -1036,7 +1040,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Documents Tab ─── *@
-                <RadzenTabsItem Text="Documents">
+                <RadzenTabsItem Text="Documents" Disabled="@IsNewCase">
                     <Template>
                         <span class="tab-label">Documents</span>
                     </Template>
