@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Class representing INCAP (Incapacitation) Pay details.
 /// </summary>
-public class INCAPDetails
+public class INCAPDetails : AuditableEntity
 {
     public int Id { get; set; }
     public bool IsEligible { get; set; }

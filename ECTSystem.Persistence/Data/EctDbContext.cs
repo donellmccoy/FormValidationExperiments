@@ -23,6 +23,26 @@ public class EctDbContext : DbContext
     public DbSet<TimelineStep> TimelineSteps { get; set; }
     public DbSet<Notification> Notifications { get; set; }
 
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedDate = DateTime.UtcNow;
+                    entry.Entity.CreatedBy = "System"; // Replace with actual user context
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.ModifiedDate = DateTime.UtcNow;
+                    entry.Entity.ModifiedBy = "System"; // Replace with actual user context
+                    break;
+            }
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

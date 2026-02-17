@@ -1,6 +1,6 @@
 namespace ECTSystem.Shared.Models;
 
-public class Notification
+public class Notification : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }
@@ -9,6 +9,5 @@ public class Notification
     public string Recipient { get; set; } = string.Empty;
     public string NotificationType { get; set; } = string.Empty;
     public bool IsRead { get; set; }
-    public DateTime CreatedDate { get; set; }
     public DateTime? ReadDate { get; set; }
 }

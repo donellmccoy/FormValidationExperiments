@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Class representing an authority involved in the LOD process.
 /// </summary>
-public class LineOfDutyAuthority
+public class LineOfDutyAuthority : AuditableEntity
 {
     public int Id { get; set; }
     public int? LineOfDutyCaseId { get; set; }

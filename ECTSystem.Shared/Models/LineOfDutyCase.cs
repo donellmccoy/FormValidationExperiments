@@ -5,7 +5,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Main class representing an LOD case, supporting both informal and formal processes.
 /// </summary>
-public class LineOfDutyCase
+public class LineOfDutyCase : AuditableEntity
 {
     public int Id { get; set; }
 

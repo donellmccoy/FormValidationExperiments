@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Class representing a timeline step in the LOD process.
 /// </summary>
-public class TimelineStep
+public class TimelineStep : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }

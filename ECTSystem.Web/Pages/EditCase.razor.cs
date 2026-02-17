@@ -103,6 +103,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private WorkflowStep CurrentStep => workflowSteps.Count > 0 ? workflowSteps[currentStepIndex] : null;
 
+    // ──── Member Search ────
+    private string memberSearchText = string.Empty;
+    private List<Member> memberSearchResults = [];
+    private bool isMemberSearching;
+    private CancellationTokenSource _searchCts = new();
+    private System.Timers.Timer _debounceTimer;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadCaseAsync();
@@ -958,9 +965,75 @@ public partial class EditCase : ComponentBase, IDisposable
             formModel.RequiresArcBoard = null;
     }
 
+    private async Task OnMemberSearchInput(ChangeEventArgs args)
+    {
+        memberSearchText = args.Value?.ToString() ?? string.Empty;
+
+        _debounceTimer?.Stop();
+        _debounceTimer?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(memberSearchText))
+        {
+            memberSearchResults = [];
+            StateHasChanged();
+            return;
+        }
+
+        _debounceTimer = new System.Timers.Timer(300);
+        _debounceTimer.AutoReset = false;
+        _debounceTimer.Elapsed += async (_, _) =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await _searchCts.CancelAsync();
+                _searchCts.Dispose();
+                _searchCts = new CancellationTokenSource();
+
+                isMemberSearching = true;
+                StateHasChanged();
+
+                try
+                {
+                    memberSearchResults = await CaseService.SearchMembersAsync(memberSearchText, _searchCts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Search was superseded — ignore
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Search Failed", ex.Message);
+                    memberSearchResults = [];
+                }
+                finally
+                {
+                    isMemberSearching = false;
+                    StateHasChanged();
+                }
+            });
+        };
+        _debounceTimer.Start();
+    }
+
+    private void OnMemberSelected(Member member)
+    {
+        memberFormModel.FirstName = member.FirstName;
+        memberFormModel.LastName = member.LastName;
+        memberFormModel.MiddleInitial = member.MiddleInitial;
+        memberFormModel.OrganizationUnit = member.Unit;
+
+        // Switch to the Member tab
+        selectedTabIndex = 1;
+        StateHasChanged();
+    }
+
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
+        _debounceTimer?.Stop();
+        _debounceTimer?.Dispose();
+        _searchCts.Cancel();
+        _searchCts.Dispose();
     }
 }

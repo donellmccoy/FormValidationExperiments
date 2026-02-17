@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ECTSystem.Shared.Models;
@@ -18,6 +19,7 @@ namespace ECTSystem.Web.Services;
 public class LineOfDutyCaseHttpService : IDataService
 {
     private readonly ODataClient _client;
+    private readonly HttpClient _httpClient;
 
     /// <summary>
     /// Cached scalar property metadata for <see cref="LineOfDutyCase"/>.
@@ -39,9 +41,10 @@ public class LineOfDutyCaseHttpService : IDataService
             })
             .ToArray();
 
-    public LineOfDutyCaseHttpService(ODataClient client)
+    public LineOfDutyCaseHttpService(ODataClient client, HttpClient httpClient)
     {
         _client = client;
+        _httpClient = httpClient;
     }
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
@@ -116,6 +119,24 @@ public class LineOfDutyCaseHttpService : IDataService
         }
     }
 
+    public async Task<List<Member>> SearchMembersAsync(
+        string searchText,
+        CancellationToken cancellationToken = default)
+    {
+        var encoded = Uri.EscapeDataString(searchText);
+        var filter = $"contains(tolower(LastName),tolower('{encoded}'))" +
+                     $" or contains(tolower(FirstName),tolower('{encoded}'))" +
+                     $" or contains(tolower(Rank),tolower('{encoded}'))" +
+                     $" or contains(tolower(Unit),tolower('{encoded}'))" +
+                     $" or contains(tolower(ServiceNumber),tolower('{encoded}'))";
+
+        var url = $"odata/Members?$filter={filter}&$top=25&$orderby=LastName,FirstName";
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.Converters.Add(new JsonStringEnumConverter());
+        var response = await _httpClient.GetFromJsonAsync<ODataResponse<Member>>(url, options, cancellationToken);
+        return response?.Value ?? [];
+    }
+
     /// <summary>
     /// Builds a dictionary containing only scalar property values from the entity.
     /// This prevents navigation properties and collections from being serialized
@@ -129,5 +150,11 @@ public class LineOfDutyCaseHttpService : IDataService
             dict[prop.Name] = prop.GetValue(lodCase);
         }
         return dict;
+    }
+
+    private class ODataResponse<T>
+    {
+        [JsonPropertyName("value")]
+        public List<T> Value { get; set; } = [];
     }
 }

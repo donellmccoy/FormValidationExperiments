@@ -93,7 +93,7 @@
     font-size: 14px;
 }
 
-.case-details {
+::deep .case-details {
     flex: 1;
     min-width: 0;
 }
@@ -106,14 +106,14 @@
     margin-bottom: 0.5rem;
 }
 
-.case-title {
+::deep .case-title {
     font-size: 1.25rem;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.87);
     margin: 0;
 }
 
-.case-meta {
+::deep .case-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem 2rem;
@@ -121,7 +121,7 @@
     color: #8F8F8F;
 }
 
-.meta-item {
+::deep .meta-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -129,7 +129,7 @@
     color: #8F8F8F;
 }
 
-.meta-item .material-symbols-outlined {
+::deep .meta-item .material-symbols-outlined {
     font-size: 18px;
 }
 
@@ -174,7 +174,7 @@
     justify-content: center;
 }
 
-.panel-title {
+::deep .panel-title {
     font-size: 1.1rem;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.87);
@@ -184,10 +184,11 @@
 /* ═══════════════════ Tab Content ═══════════════════ */
 
 ::deep .assessment-tabs {
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    min-height: 0;
+    flex: 1 1 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
 }
 
 ::deep .assessment-tabs .rz-tabview-nav {
@@ -227,33 +228,35 @@
 }
 
 ::deep .assessment-panel .rz-panel-content-wrapper {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
 }
 
 ::deep .assessment-panel .rz-expander-content {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
 }
 
 ::deep .assessment-panel .rz-panel-content {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
 }
 
 ::deep .assessment-tabs .rz-tabview-panels {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 
 .tab-body {
@@ -508,6 +511,7 @@
     border: 1px solid var(--rz-border-color);
     border-radius: var(--rz-border-radius);
     padding: 2rem;
+    width: fit-content;
     animation: fadeIn 0.3s ease;
 }
 

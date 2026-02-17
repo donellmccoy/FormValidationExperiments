@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Class representing MEDCON (Medical Continuation) details.
 /// </summary>
-public class MEDCONDetail
+public class MEDCONDetail : AuditableEntity
 {
     public int Id { get; set; }
     public bool IsEligible { get; set; }

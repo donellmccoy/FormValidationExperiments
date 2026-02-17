@@ -2,7 +2,7 @@ using ECTSystem.Shared.Enums;
 
 namespace ECTSystem.Shared.Models;
 
-public class Member
+public class Member : AuditableEntity
 {
     public int Id { get; set; }
     public string FirstName { get; set; } = string.Empty;

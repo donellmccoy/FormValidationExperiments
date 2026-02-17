@@ -5,7 +5,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Class representing an appeal in the LOD process.
 /// </summary>
-public class LineOfDutyAppeal
+public class LineOfDutyAppeal : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }

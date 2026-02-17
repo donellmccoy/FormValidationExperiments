@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Class representing a document or form associated with the LOD case.
 /// </summary>
-public class LineOfDutyDocument
+public class LineOfDutyDocument : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }

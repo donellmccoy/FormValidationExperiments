@@ -27,4 +27,9 @@ public interface IDataService
     /// Saves (PUTs) a LOD case entity. Returns the saved entity.
     /// </summary>
     Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Searches members by name, rank, unit, or service number.
+    /// </summary>
+    Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default);
 }
