@@ -11,7 +11,6 @@
     --rz-on-primary-lighter: #4A7FC4;
     --rz-on-primary-dark: #ffffff;
     --rz-on-primary-darker: #ffffff;
-
     /* Secondary — Muted Air Force Gold */
     --rz-secondary: #D4A843;
     --rz-secondary-light: #ECD48F;
@@ -23,7 +22,6 @@
     --rz-on-secondary-lighter: #D4A843;
     --rz-on-secondary-dark: #ffffff;
     --rz-on-secondary-darker: #ffffff;
-
     /* Info — Steel Blue */
     --rz-info: #5B8DB8;
     --rz-info-light: #85ABCB;
@@ -34,7 +32,6 @@
     --rz-on-info-lighter: #5B8DB8;
     --rz-on-info-dark: #ffffff;
     --rz-on-info-darker: #ffffff;
-
     /* Warning — Gold-tinted Amber */
     --rz-warning: #E8B930;
     --rz-warning-light: #EDC95D;
@@ -45,7 +42,6 @@
     --rz-on-warning-lighter: #E8B930;
     --rz-on-warning-dark: #ffffff;
     --rz-on-warning-darker: #ffffff;
-
     /* Success & Danger — keep semantic defaults */
     --rz-success: #4caf50;
     --rz-danger: #f44336;

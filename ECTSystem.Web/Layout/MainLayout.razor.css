@@ -1,0 +1,6 @@
+/* Make the body a flex column so page content can stretch to fill available height */
+::deep .rz-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}

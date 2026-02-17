@@ -4,8 +4,8 @@
     width: 325px;
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    /*border: 1px solid var(--rz-border-color);*/
+    /*border-radius: var(--rz-border-radius);*/
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -28,7 +28,7 @@
     padding: 0.75rem 1.25rem;
     background: inherit;
     z-index: 5;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid var(--rz-border-color);
     margin-bottom: 16px;
     flex-shrink: 0;
 }
