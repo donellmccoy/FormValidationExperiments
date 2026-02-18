@@ -625,6 +625,19 @@ else
                                     Medical Officer review content will be added here.
                                 </RadzenText>
 
+                                @* ═══ Form Actions ═══ *@
+                                <div class="form-actions rz-mt-2">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                        <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                           Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                           Disabled="true">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                            </ChildContent>
+                                        </RadzenSplitButton>
+                                    </RadzenStack>
+                                </div>
+
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
@@ -855,6 +868,19 @@ else
                             <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                 Wing JA review content will be added here.
                             </RadzenText>
+
+                            @* ═══ Form Actions ═══ *@
+                            <div class="form-actions rz-mt-2">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                    <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Disabled="true">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </div>
 
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
