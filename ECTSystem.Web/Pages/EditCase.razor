@@ -1,5 +1,23 @@
 @page "/case/new"
 @page "/case/{CaseId}"
+@using Radzen.Blazor.Rendering
+
+<style type="text/css">
+    .member-search-popup {
+        display: none;
+        position: absolute;
+        overflow: hidden;
+        height: 360px;
+        width: 840px;
+        border: var(--rz-panel-border);
+        background-color: var(--rz-panel-background-color);
+        color: var(--rz-text-color);
+        font-family: var(--rz-text-font-family);
+        font-size: var(--rz-body-font-size);
+        box-shadow: var(--rz-panel-shadow);
+        border-radius: var(--rz-border-radius);
+    }
+</style>
 
 <PageTitle>@(IsNewCase ? "New Case" : "Edit Case") - LOD Case Management</PageTitle>
 
@@ -71,10 +89,6 @@ else
                                         <span class="material-symbols-outlined">groups</span>
                                         <span>Unit: @_caseInfo.Unit</span>
                                     </RadzenStack>
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-                                        <span class="material-symbols-outlined">calendar_month</span>
-                                        <span>Date of Injury: @_caseInfo.DateOfInjury</span>
-                                    </RadzenStack>
                                 </RadzenStack>
                             </RadzenStack>
                             <RadzenStack Gap="0.5rem">
@@ -113,61 +127,59 @@ else
                                     </span>
                                 </Template>
                                 <ChildContent>
-                                    @if (IsNewCase)
-                                    {
-                                        <RadzenFieldset Text="Member Search" class="rz-mb-4">
-                                            <RadzenStack Gap="0.75rem">
-                                                <RadzenText TextStyle="TextStyle.Body2" class="text-secondary">
-                                                    Search for a member to create a new Line of Duty determination case.
-                                                </RadzenText>
-                                                <RadzenTextBox Placeholder="Search by name, rank, unit, or service number..."
-                                                               @bind-Value="memberSearchText"
-                                                               @oninput="OnMemberSearchInput"
-                                                               Style="width: 100%;"
-                                                               aria-label="Search members" />
-                                                <RadzenDataGrid TItem="ECTSystem.Shared.Models.Member"
-                                                                Data="@memberSearchResults"
-                                                                IsLoading="@isMemberSearching"
-                                                                AllowSorting="true"
-                                                                AllowPaging="true"
-                                                                AllowFreezing="true"
-                                                                PageSize="10"
-                                                                ShowPagingSummary="true"
-                                                                PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
-                                                                PagerHorizontalAlign="HorizontalAlign.Center"
-                                                                GridLines="DataGridGridLines.Both"
-                                                                Density="Density.Compact"
-                                                                class="rz-border rz-border-radius">
-                                                    <EmptyTemplate>
-                                                        <RadzenText TextStyle="TextStyle.Body2" class="text-secondary rz-p-4">
-                                                            @(string.IsNullOrWhiteSpace(memberSearchText) ? "Type to search for a member." : "No members found.")
-                                                        </RadzenText>
-                                                    </EmptyTemplate>
-                                                    <Columns>
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Title="Action" Width="90px" TextAlign="TextAlign.Center" Sortable="false">
-                                                            <Template Context="member">
-                                                                <RadzenButton Text="Select" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Text" Size="ButtonSize.Small"
-                                                                              Click="@(() => OnMemberSelected(member))" />
-                                                            </Template>
-                                                        </RadzenDataGridColumn>
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="FirstName" Title="First Name" Width="140px" Frozen="true" />
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="LastName" Title="Last Name" Width="140px" Frozen="true" />
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Rank" Title="Rank" Width="100px" />
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="MiddleInitial" Title="MI" Width="60px" />
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="ServiceNumber" Title="Service #" Width="140px" />
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Unit" Title="Unit" Width="180px" />
-                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Component" Title="Component" Width="120px" />
-                                                    </Columns>
-                                                </RadzenDataGrid>
-                                            </RadzenStack>
-                                        </RadzenFieldset>
-                                    }
-
                                     <RadzenTemplateForm TItem="MemberInfoFormModel" Data="@_memberFormModel" Submit="@OnMemberFormSubmit">
 
                                         @* ═══ Fieldset A: Items 4–6 — Member Identification ═══ *@
                                         <RadzenFieldset Text="Member Identification">
                                             <RadzenStack Gap="1rem">
+                                                @if (IsNewCase)
+                                                {
+                                                    <RadzenRow>
+                                                        <RadzenColumn Size="12">
+                                                            <RadzenFormField Text="Member Search" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                                <RadzenTextBox @ref="_memberSearchTextBox" Value="@memberSearchText"
+                                                                               Placeholder="Search by name, rank, unit, or service number..."
+                                                                               @oninput="@OnMemberSearchInput"
+                                                                               @onclick="@(args => _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element))"
+                                                                               @onkeydown="@OnMemberSearchKeyDown"
+                                                                               aria-label="Search members" />
+                                                            </RadzenFormField>
+                                                            <Popup @ref="_memberSearchPopup" id="member-search-popup" AutoFocusFirstElement="false"
+                                                                   class="member-search-popup rz-shadow-3">
+                                                                <RadzenDataGrid @ref="_memberSearchGrid" id="member-search-grid"
+                                                                                TItem="ECTSystem.Shared.Models.Member"
+                                                                                Data="@memberSearchResults"
+                                                                                IsLoading="@isMemberSearching"
+                                                                                RowSelect="@OnMemberSelected"
+                                                                                AllowSorting="false"
+                                                                                AllowFiltering="false"
+                                                                                AllowPaging="false"
+                                                                                AllowColumnResize="false"
+                                                                                AllowColumnReorder="false"
+                                                                                GridLines="DataGridGridLines.Both"
+                                                                                Density="Density.Default"
+                                                                                Style="height:100%;">
+                                                                    <EmptyTemplate>
+                                                                        <RadzenText TextStyle="TextStyle.Body2" class="text-secondary rz-p-4">
+                                                                            @(string.IsNullOrWhiteSpace(memberSearchText) ? "Type to search for a member." : "No members found.")
+                                                                        </RadzenText>
+                                                                    </EmptyTemplate>
+                                                                    <Columns>
+                                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="ServiceNumber" Title="SSN" Width="140px" />
+                                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Title="Full Name" Width="240px">
+                                                                            <Template Context="member">
+                                                                                @($"{member.LastName}, {member.FirstName}{(string.IsNullOrWhiteSpace(member.MiddleInitial) ? "" : $" {member.MiddleInitial}.")}")
+                                                                            </Template>
+                                                                        </RadzenDataGridColumn>
+                                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="DateOfBirth" Title="Date of Birth" Width="140px" FormatString="{0:MM/dd/yyyy}" />
+                                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Rank" Title="Grade" Width="100px" />
+                                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Unit" Title="Unit" Width="200px" />
+                                                                    </Columns>
+                                                                </RadzenDataGrid>
+                                                            </Popup>
+                                                        </RadzenColumn>
+                                                    </RadzenRow>
+                                                }
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12" SizeMD="2">
                                                         <RadzenFormField Text="SSN" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
@@ -190,9 +202,7 @@ else
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12" SizeMD="5">
                                                         <RadzenFormField Text="Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenDropDown Value="_memberFormModel.Rank" TValue="MilitaryRank?"
-                                                                            Data="@militaryRanks" class="rz-w-100"
-                                                                            Placeholder="Select Rank" AllowClear="false" Disabled="true" />
+                                                            <RadzenTextBox Value="@MemberGrade" ReadOnly="true" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="12" SizeMD="7">
@@ -204,29 +214,56 @@ else
                                             </RadzenStack>
                                         </RadzenFieldset>
 
-                                        @* ═══ Fieldset B: Items 1–3 — Request Information ═══ *@
-                                        <RadzenFieldset Text="Request Information" class="rz-mt-4">
+                                        @* ═══ Fieldset: Notification & Reporting ═══ *@
+                                        <RadzenFieldset Text="Notification &amp; Reporting" class="rz-mt-4 arc-fieldset">
                                             <RadzenStack Gap="1rem">
                                                 <RadzenRow Gap="1rem">
-                                                    <RadzenColumn Size="12" SizeMD="6">
-                                                        <RadzenFormField Text="Requesting Commander" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_memberFormModel.RequestingCommander" @oninput="@(args => _memberFormModel.RequestingCommander = args.Value?.ToString())" />
-                                                        </RadzenFormField>
-                                                    </RadzenColumn>
-                                                    <RadzenColumn Size="12" SizeMD="6">
-                                                        <RadzenFormField Text="Medical Provider" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_memberFormModel.MedicalProvider" @oninput="@(args => _memberFormModel.MedicalProvider = args.Value?.ToString())" />
-                                                        </RadzenFormField>
+                                                    <RadzenColumn Size="12">
+                                                        <RadzenLabel Text="Did the member notify the Medical Unit timely IAW AFI 36-2910:" class="rz-fw-bold" />
+                                                        <RadzenRadioButtonList @bind-Value="_memberFormModel.NotifiedMedicalUnitTimely" TValue="bool?"
+                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
+                                                                <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
-                                                    <RadzenColumn Size="12" SizeMD="6">
-                                                        <RadzenFormField Text="Report Date / Time" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenDatePicker TValue="DateTime?" Value="@_memberFormModel.ReportDate"
-                                                                              ValueChanged="@(args => { _memberFormModel.ReportDate = args; StateHasChanged(); })"
-                                                                              AllowInput="false" ShowTime="true" class="rz-w-100"
-                                                                              DateFormat="MM/dd/yyyy hh:mm tt" />
-                                                        </RadzenFormField>
+                                                    <RadzenColumn Size="12">
+                                                        <RadzenLabel Text="Did the member submit medical documents or ROI (Release of Information) timely IAW AFI 36-2910:" class="rz-fw-bold" />
+                                                        <RadzenRadioButtonList @bind-Value="_memberFormModel.SubmittedMedicalDocumentsTimely" TValue="bool?"
+                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
+                                                                <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </RadzenColumn>
+                                                </RadzenRow>
+                                                <RadzenRow Gap="1rem">
+                                                    <RadzenColumn Size="12">
+                                                        <RadzenLabel Text="Does this case involve a sexual assault:" class="rz-fw-bold" />
+                                                        <RadzenRadioButtonList @bind-Value="_memberFormModel.InvolvesSexualAssault" TValue="bool?"
+                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
+                                                                <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
+                                                    </RadzenColumn>
+                                                </RadzenRow>
+                                                <RadzenRow Gap="1rem">
+                                                    <RadzenColumn Size="12">
+                                                        <RadzenLabel Text="Is this a restricted report:" class="rz-fw-bold" />
+                                                        <RadzenRadioButtonList @bind-Value="_memberFormModel.IsRestrictedReport" TValue="bool?"
+                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                            <Items>
+                                                                <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
+                                                                <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
+                                                                <RadzenRadioButtonListItem Text="N/A" Value="@((bool?)null)" />
+                                                            </Items>
+                                                        </RadzenRadioButtonList>
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                             </RadzenStack>
@@ -235,24 +272,11 @@ else
                                         @* ═══ Form Actions ═══ *@
                                         <div class="form-actions rz-mt-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
-                                                <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                                   Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
-                                                                   Disabled="@(!_memberFormModel.IsDirty)">
-                                                    <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
-                                                    </ChildContent>
-                                                </RadzenSplitButton>
+                                                <RadzenButton Click="@OnStartLod" Text="Start LOD" Icon="play_arrow"
+                                                              Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                              Disabled="@(!IsNewCase)" />
                                             </RadzenStack>
                                         </div>
-
-                                        @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
-                                                <RadzenButton Text="Forward to Medical Officer" Icon="send"
-                                                              ButtonStyle="ButtonStyle.Primary" Click="@OnMemberForwardClick" />
-                                            </RadzenStack>
-                                        </RadzenFieldset>
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
@@ -272,7 +296,7 @@ else
                                     <RadzenDataAnnotationValidator />
 
                                     @* ═══ Fieldset B: Item 9 — Type of Investigation ═══ *@
-                                    <RadzenFieldset Text="Type of Investigation">
+                                    <RadzenFieldset Text="Type of Investigation" class="arc-fieldset">
                                         <RadzenStack Gap="0.75rem">
                                             <RadzenLabel Text="Select the type of investigation:" />
                                             <RadzenRadioButtonList @bind-Value="_formModel.InvestigationType" TValue="IncidentType?"
@@ -313,7 +337,7 @@ else
                                     </RadzenFieldset>
 
                                     @* ═══ Fieldset D: Item 11 — Date/Time First Treated ═══ *@
-                                    <RadzenFieldset Text="Date/Time First Treated" class="rz-mt-4">
+                                    <RadzenFieldset Text="Date/Time First Treated" class="rz-mt-4 arc-fieldset">
                                         <RadzenRow Gap="1rem">
                                             <RadzenColumn Size="12" SizeMD="6">
                                                 <RadzenFormField Text="Date and Time of First Treatment" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
@@ -338,7 +362,7 @@ else
                                     </RadzenFieldset>
 
                                     @* ═══ Fieldset F: Items 13-14 — Medical Details ═══ *@
-                                    <RadzenFieldset Text="Medical Details" class="rz-mt-4">
+                                    <RadzenFieldset Text="Medical Details" class="rz-mt-4 arc-fieldset">
                                         <RadzenStack Gap="1.25rem">
 
                                             @* ── Item 13: Under the influence ── *@
@@ -595,7 +619,7 @@ else
                             <RadzenTemplateForm TItem="CommanderReviewFormModel" Data="@_commanderFormModel" Submit="@OnCommanderFormSubmit">
 
                                 @* ═══ Fieldset A: Item 16 — Sources of Information ═══ *@
-                                <RadzenFieldset Text="Sources of Information">
+                                <RadzenFieldset Text="Sources of Information" class="arc-fieldset">
                                     <RadzenStack Gap="0.75rem">
                                         <RadzenLabel Text="Select all sources of information reviewed for this determination:" />
                                         <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
@@ -660,7 +684,7 @@ else
                                 </RadzenFieldset>
 
                                 @* ═══ Fieldset D: Item 19 — Misconduct Assessment ═══ *@
-                                <RadzenFieldset Text="Misconduct Assessment" class="rz-mt-4">
+                                <RadzenFieldset Text="Misconduct Assessment" class="rz-mt-4 arc-fieldset">
                                     <RadzenStack Gap="1rem">
                                         <div class="detail-section">
                                             <RadzenLabel Text="Did the injury, illness, disease, or death result from the member's own misconduct?" class="fieldset-label" />
@@ -694,7 +718,7 @@ else
                                 </RadzenFieldset>
 
                                 @* ═══ Fieldset F: Item 21 — Commander's Recommendation ═══ *@
-                                <RadzenFieldset Text="Commander's Recommendation" class="rz-mt-4">
+                                <RadzenFieldset Text="Commander's Recommendation" class="rz-mt-4 arc-fieldset">
                                     <RadzenStack Gap="1rem">
                                         <RadzenLabel Text="Based on all available evidence, the commander recommends:" class="fieldset-label" />
                                         <RadzenStack Gap="0.75rem">
@@ -797,7 +821,7 @@ else
                         <RadzenTemplateForm TItem="LegalSJAReviewFormModel" Data="@_legalFormModel" Submit="@OnLegalFormSubmit">
 
                             @* ═══ Fieldset A: Item 24 — Legal Sufficiency Review ═══ *@
-                            <RadzenFieldset Text="Legal Sufficiency Review">
+                            <RadzenFieldset Text="Legal Sufficiency Review" class="arc-fieldset">
                                 <RadzenStack Gap="1.25rem">
                                     <div class="detail-section">
                                         <RadzenLabel Text="Is the LOD determination package legally sufficient?" class="fieldset-label" />

@@ -16,6 +16,7 @@ public class LineOfDutyCase : AuditableEntity
     public string MemberName { get; set; } = string.Empty;
     public string MemberRank { get; set; } = string.Empty;
     public string ServiceNumber { get; set; } = string.Empty; // SSN or DoD ID
+    public DateTime? MemberDateOfBirth { get; set; }
     public string Unit { get; set; } = string.Empty;
     public string FromLine { get; set; } = string.Empty; // Item 1: "FROM" line on form
     public IncidentType IncidentType { get; set; }

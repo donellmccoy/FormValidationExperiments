@@ -59,6 +59,7 @@ public static partial class LineOfDutyCaseMapper
             FirstName = firstName,
             MiddleInitial = middleInitial,
             SSN = source.ServiceNumber ?? string.Empty,
+            DateOfBirth = source.MemberDateOfBirth,
             Rank = ParseMilitaryRank(source.MemberRank),
             OrganizationUnit = source.Unit ?? string.Empty,
             MemberStatus = MapComponentToMemberStatus(source.Component)
@@ -196,6 +197,8 @@ public static partial class LineOfDutyCaseMapper
 
         target.MemberName = string.Join(" ", nameParts);
 
+        target.ServiceNumber = model.SSN ?? string.Empty;
+        target.MemberDateOfBirth = model.DateOfBirth;
         target.MemberRank = model.Rank.HasValue ? FormatRankToPayGrade(model.Rank.Value) : string.Empty;
         target.Unit = model.OrganizationUnit;
         target.InitiationDate = model.ReportDate ?? target.InitiationDate;
@@ -478,7 +481,7 @@ public static partial class LineOfDutyCaseMapper
         }
     }
 
-    private static MilitaryRank? ParseMilitaryRank(string rankString)
+    public static MilitaryRank? ParseMilitaryRank(string rankString)
     {
         if (string.IsNullOrWhiteSpace(rankString))
         {

@@ -82,4 +82,32 @@ public class MemberInfoFormModel : TrackableModel
     /// (e.g., AFR, ANG). (Item 8)
     /// </summary>
     public MemberStatus? MemberStatus { get; set; }
+
+    // ── Item G: Timely Medical Unit Notification ──
+
+    /// <summary>
+    /// Gets or sets whether the member notified the Medical Unit timely IAW AFI 36-2910.
+    /// </summary>
+    public bool? NotifiedMedicalUnitTimely { get; set; }
+
+    // ── Item H: Timely Medical Documents / ROI Submission ──
+
+    /// <summary>
+    /// Gets or sets whether the member submitted medical documents or ROI timely IAW AFI 36-2910.
+    /// </summary>
+    public bool? SubmittedMedicalDocumentsTimely { get; set; }
+
+    // ── Item I: Sexual Assault ──
+
+    /// <summary>
+    /// Gets or sets whether this case involves a sexual assault.
+    /// </summary>
+    public bool? InvolvesSexualAssault { get; set; }
+
+    // ── Item J: Restricted Report ──
+
+    /// <summary>
+    /// Gets or sets whether this is a restricted report. Null indicates N/A.
+    /// </summary>
+    public bool? IsRestrictedReport { get; set; }
 }

@@ -6,11 +6,13 @@ using ECTSystem.Shared.Models;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using ECTSystem.Web.Services;
 using ECTSystem.Shared.ViewModels;
 using ECTSystem.Web.Shared;
 using Radzen;
 using Radzen.Blazor;
+using Radzen.Blazor.Rendering;
 
 namespace ECTSystem.Web.Pages;
 
@@ -41,6 +43,9 @@ public partial class EditCase : ComponentBase, IDisposable
     [Inject]
     private JsonSerializerOptions JsonOptions { get; set; }
 
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
     [Parameter]
     public string CaseId { get; set; }
 
@@ -61,6 +66,8 @@ public partial class EditCase : ComponentBase, IDisposable
     private int selectedTabIndex;
 
     private int currentStepIndex;
+
+    private int _selectedMemberId;
 
     private MemberInfoFormModel _memberFormModel = new();
 
@@ -115,6 +122,8 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
+    private string MemberGrade => _memberGrade ?? "";
+
     private bool ShowServiceAggravated => _formModel.IsEptsNsa == true;
 
     // ──── Commander Review Conditional Visibility ────
@@ -130,10 +139,15 @@ public partial class EditCase : ComponentBase, IDisposable
     private WorkflowStep CurrentStep => workflowSteps.Count > 0 ? workflowSteps[currentStepIndex] : null;
 
     // ──── Member Search ────
+    private string _memberGrade = string.Empty;
     private string memberSearchText = string.Empty;
     private List<Member> memberSearchResults = [];
     private bool isMemberSearching;
     private CancellationTokenSource _searchCts = new();
+    private RadzenTextBox _memberSearchTextBox;
+    private Popup _memberSearchPopup;
+    private RadzenDataGrid<Member> _memberSearchGrid;
+    private int _memberSearchSelectedIndex;
     private System.Timers.Timer _debounceTimer;
 
     protected override async Task OnInitializedAsync()
@@ -295,6 +309,58 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
                 "Case has been forwarded to the Medical Officer.");
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private async Task OnStartLod()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to start the LOD process?",
+            "Start LOD",
+            new ConfirmOptions { OkButtonText = "Start", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Creating LOD case...");
+
+        try
+        {
+            var newCase = new LineOfDutyCase
+            {
+                CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                MemberId = _selectedMemberId,
+                InitiationDate = DateTime.UtcNow,
+                IncidentDate = DateTime.UtcNow
+            };
+
+            LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, newCase);
+
+            newCase.IsSexualAssaultCase = _memberFormModel.InvolvesSexualAssault == true;
+            newCase.RestrictedReporting = _memberFormModel.IsRestrictedReport == true;
+
+            var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
+
+            _lodCase = saved;
+            CaseId = saved.CaseId;
+            _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(saved);
+
+            TakeSnapshots();
+
+            NotificationService.Notify(NotificationSeverity.Success, "LOD Started",
+                $"Case {saved.CaseId} created for {saved.MemberName}.");
+
+            Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Create Failed", ex.Message);
         }
         finally
         {
@@ -982,8 +1048,41 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
+    private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
+    {
+        var items = memberSearchResults;
+        var popupOpened = await JSRuntime.InvokeAsync<bool>("Radzen.popupOpened", "member-search-popup");
+
+        var key = args.Code ?? args.Key;
+
+        if (!args.AltKey && (key == "ArrowDown" || key == "ArrowUp"))
+        {
+            var result = await JSRuntime.InvokeAsync<int[]>("Radzen.focusTableRow", "member-search-grid", key, _memberSearchSelectedIndex, null, false);
+            _memberSearchSelectedIndex = result.First();
+        }
+        else if (args.AltKey && key == "ArrowDown" || key == "Enter" || key == "NumpadEnter")
+        {
+            if (popupOpened && (key == "Enter" || key == "NumpadEnter"))
+            {
+                var selected = items.ElementAtOrDefault(_memberSearchSelectedIndex);
+                if (selected != null)
+                {
+                    await OnMemberSelected(selected);
+                    return;
+                }
+            }
+
+            await _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element);
+        }
+        else if (key == "Escape" || key == "Tab")
+        {
+            await _memberSearchPopup.CloseAsync();
+        }
+    }
+
     private async Task OnMemberSearchInput(ChangeEventArgs args)
     {
+        _memberSearchSelectedIndex = 0;
         memberSearchText = args.Value?.ToString() ?? string.Empty;
 
         _debounceTimer?.Stop();
@@ -1042,6 +1141,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnMemberSelected(Member member)
     {
+        memberSearchText = string.Empty;
+        await _memberSearchPopup.CloseAsync();
+
+        _selectedMemberId = member.Id;
+
         _memberFormModel.FirstName = member.FirstName;
         _memberFormModel.LastName = member.LastName;
         _memberFormModel.MiddleInitial = member.MiddleInitial;
@@ -1049,10 +1153,8 @@ public partial class EditCase : ComponentBase, IDisposable
         _memberFormModel.SSN = member.ServiceNumber;
         _memberFormModel.DateOfBirth = member.DateOfBirth;
 
-        if (Enum.TryParse<MilitaryRank>(member.Rank, true, out var rank))
-        {
-            _memberFormModel.Rank = rank;
-        }
+        _memberGrade = member.Rank;
+        _memberFormModel.Rank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
 
         _caseInfo.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
         _caseInfo.Rank = member.Rank;
@@ -1061,11 +1163,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
         selectedTabIndex = 0;
         StateHasChanged();
-
-        if (IsNewCase)
-        {
-            await CreateCaseForMemberAsync(member);
-        }
     }
 
     private async Task CreateCaseForMemberAsync(Member member)
