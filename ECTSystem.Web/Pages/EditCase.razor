@@ -219,9 +219,9 @@ else
                                             <RadzenStack Gap="1rem">
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12">
-                                                        <RadzenLabel Text="Did the member notify the Medical Unit timely IAW AFI 36-2910:" class="rz-fw-bold" />
+                                                        <RadzenLabel Text="Did the member notify the Medical Unit timely IAW AFI 36-2910:" class="fieldset-label" />
                                                         <RadzenRadioButtonList @bind-Value="_memberFormModel.NotifiedMedicalUnitTimely" TValue="bool?"
-                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                                              Orientation="Orientation.Horizontal" Disabled="@(!IsNewCase)" class="rz-ms-4">
                                                             <Items>
                                                                 <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
                                                                 <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
@@ -231,9 +231,9 @@ else
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12">
-                                                        <RadzenLabel Text="Did the member submit medical documents or ROI (Release of Information) timely IAW AFI 36-2910:" class="rz-fw-bold" />
+                                                        <RadzenLabel Text="Did the member submit medical documents or ROI (Release of Information) timely IAW AFI 36-2910:" class="fieldset-label" />
                                                         <RadzenRadioButtonList @bind-Value="_memberFormModel.SubmittedMedicalDocumentsTimely" TValue="bool?"
-                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                                              Orientation="Orientation.Horizontal" Disabled="@(!IsNewCase)" class="rz-ms-4">
                                                             <Items>
                                                                 <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
                                                                 <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
@@ -243,9 +243,9 @@ else
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12">
-                                                        <RadzenLabel Text="Does this case involve a sexual assault:" class="rz-fw-bold" />
+                                                        <RadzenLabel Text="Does this case involve a sexual assault:" class="fieldset-label" />
                                                         <RadzenRadioButtonList @bind-Value="_memberFormModel.InvolvesSexualAssault" TValue="bool?"
-                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                                              Orientation="Orientation.Horizontal" Disabled="@(!IsNewCase)" class="rz-ms-4">
                                                             <Items>
                                                                 <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
                                                                 <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
@@ -255,9 +255,9 @@ else
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12">
-                                                        <RadzenLabel Text="Is this a restricted report:" class="rz-fw-bold" />
+                                                        <RadzenLabel Text="Is this a restricted report:" class="fieldset-label" />
                                                         <RadzenRadioButtonList @bind-Value="_memberFormModel.IsRestrictedReport" TValue="bool?"
-                                                                              Orientation="Orientation.Horizontal" class="rz-ms-4">
+                                                                              Orientation="Orientation.Horizontal" Disabled="@(!IsNewCase)" class="rz-ms-4">
                                                             <Items>
                                                                 <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
                                                                 <RadzenRadioButtonListItem Text="No" Value="@((bool?)false)" />
@@ -283,10 +283,10 @@ else
                             </RadzenTabsItem>
 
                             @* ─── Medical Tab ─── *@
-                            <RadzenTabsItem Text="Medical" Disabled="@IsNewCase">
+                            <RadzenTabsItem Text="Medical Technician" Disabled="@IsNewCase">
                                 <Template>
                                     <span class="tab-label">
-                                        Medical @if (!IsNewCase && _formModel.IsDirty) {
+                                        Medical Technician @if (!IsNewCase && _formModel.IsDirty) {
                                         <span class="dirty-indicator"></span>
                                     }
                                 </span>
@@ -298,7 +298,7 @@ else
                                     @* ═══ Fieldset B: Item 9 — Type of Investigation ═══ *@
                                     <RadzenFieldset Text="Type of Investigation" class="arc-fieldset">
                                         <RadzenStack Gap="0.75rem">
-                                            <RadzenLabel Text="Select the type of investigation:" />
+                                            <RadzenLabel Text="Select the type of investigation:" class="fieldset-label" />
                                             <RadzenRadioButtonList @bind-Value="_formModel.InvestigationType" TValue="IncidentType?"
                                                                    Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                 <Items>
@@ -496,7 +496,7 @@ else
                                     <RadzenFieldset Text="EPTS / Service Aggravation" class="rz-mt-4 epts-fieldset">
                                         <RadzenStack Gap="1rem">
                                             <div class="epts-header">
-                                                <RadzenLabel Text="Is this an Existed Prior to Service – Not Service Aggravated (EPTS-NSA) condition?" />
+                                                <RadzenLabel Text="Is this an Existed Prior to Service – Not Service Aggravated (EPTS-NSA) condition?" class="fieldset-label" />
                                                 <RadzenButton Variant="Variant.Text" Icon="help" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.ExtraSmall"
                                                               title="EPTS-NSA requires informal LOD per DAFI 36-2910." />
                                             </div>
@@ -575,6 +575,14 @@ else
                                         </RadzenFormField>
                                     </RadzenFieldset>
 
+                                    @* ═══ Documents Accordion ═══ *@
+                                    <RadzenAccordion class="rz-mt-4">
+                                        <Items>
+                                            <RadzenAccordionItem Text="Documents" Icon="description">
+                                            </RadzenAccordionItem>
+                                        </Items>
+                                    </RadzenAccordion>
+
                                     @* ═══ Form Actions ═══ *@
                                     <div class="form-actions rz-mt-2">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
@@ -592,10 +600,9 @@ else
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                             <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
-                                            <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
+                                            <RadzenSplitButton Click="@OnMedTechForwardClick" Text="Forward to Medical Officer" Icon="send"
                                                                ButtonStyle="ButtonStyle.Primary">
                                                 <ChildContent>
-                                                    <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
                                                     <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                 </ChildContent>
                                             </RadzenSplitButton>
@@ -603,6 +610,34 @@ else
                                     </RadzenFieldset>
 
                                 </RadzenTemplateForm>
+                            </ChildContent>
+                        </RadzenTabsItem>
+
+                        @* ─── Medical Officer Tab ─── *@
+                        <RadzenTabsItem Text="Medical Officer" Disabled="@IsNewCase">
+                            <Template>
+                                <span class="tab-label">
+                                    Medical Officer
+                                </span>
+                            </Template>
+                            <ChildContent>
+                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                    Medical Officer review content will be added here.
+                                </RadzenText>
+
+                                @* ═══ Routing ═══ *@
+                                <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                        <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
+                                                           ButtonStyle="ButtonStyle.Primary">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
+                                                <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                            </ChildContent>
+                                        </RadzenSplitButton>
+                                    </RadzenStack>
+                                </RadzenFieldset>
                             </ChildContent>
                         </RadzenTabsItem>
 
@@ -797,7 +832,8 @@ else
                                         <RadzenSplitButton Click="@OnCommanderForwardClick" Text="Forward to Wing JA" Icon="send"
                                                            ButtonStyle="ButtonStyle.Primary">
                                             <ChildContent>
-                                                <RadzenSplitButtonItem Text="Return to Board Medical" Icon="replay" Value="return" />
+                                                <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                                <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
                                                 <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                             </ChildContent>
                                         </RadzenSplitButton>
@@ -805,6 +841,36 @@ else
                                 </RadzenFieldset>
 
                             </RadzenTemplateForm>
+                        </ChildContent>
+                    </RadzenTabsItem>
+
+                    @* ─── Wing JA Review Tab ─── *@
+                    <RadzenTabsItem Text="Wing JA Review" Disabled="@IsNewCase">
+                        <Template>
+                            <span class="tab-label">
+                                Wing JA Review
+                            </span>
+                        </Template>
+                        <ChildContent>
+                            <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                Wing JA review content will be added here.
+                            </RadzenText>
+
+                            @* ═══ Routing ═══ *@
+                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenSplitButton Click="@OnWingJAForwardClick" Text="Forward to Wing CC" Icon="send"
+                                                       ButtonStyle="ButtonStyle.Primary">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
+                                            <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </RadzenFieldset>
                         </ChildContent>
                     </RadzenTabsItem>
 
@@ -885,7 +951,10 @@ else
                                     <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Appointing Authority" Icon="send"
                                                        ButtonStyle="ButtonStyle.Primary">
                                         <ChildContent>
+                                            <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
                                             <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
                                             <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                         </ChildContent>
                                     </RadzenSplitButton>
@@ -926,7 +995,11 @@ else
                                 <RadzenSplitButton Click="@OnWingForwardClick" Text="Forward to Board Review" Icon="send"
                                                    ButtonStyle="ButtonStyle.Primary">
                                     <ChildContent>
-                                        <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return" />
+                                        <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
+                                        <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
+                                        <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
+                                        <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                        <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                     </ChildContent>
                                 </RadzenSplitButton>
@@ -973,18 +1046,6 @@ else
                                 </RadzenStack>
                             </RadzenFieldset>
                         </div>
-                    </ChildContent>
-                </RadzenTabsItem>
-
-                @* ─── Appeals Tab ─── *@
-                <RadzenTabsItem Text="Appeals" Disabled="@IsNewCase">
-                    <Template>
-                        <span class="tab-label">Appeals</span>
-                    </Template>
-                    <ChildContent>
-                        <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
-                            Appeals and reconsideration requests.
-                        </RadzenText>
                     </ChildContent>
                 </RadzenTabsItem>
 

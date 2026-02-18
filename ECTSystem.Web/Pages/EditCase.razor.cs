@@ -22,8 +22,9 @@ public partial class EditCase : ComponentBase, IDisposable
     private static class TabNames
     {
         public const string MemberInformation = "Member Information";
-        public const string MedicalAssessment = "Medical Assessment";
+        public const string MedicalTechnician = "Medical Technician";
         public const string CommanderReview = "Commander Review";
+        public const string WingJAReview = "Wing JA Review";
         public const string LegalSJAReview = "Legal SJA Review";
         public const string Draft = "Draft";
     }
@@ -241,7 +242,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnFormSubmit(MedicalAssessmentFormModel model)
     {
-        await SaveCurrentTabAsync(TabNames.MedicalAssessment);
+        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
     }
 
     private async Task OnMemberFormSubmit(MemberInfoFormModel model)
@@ -386,9 +387,11 @@ public partial class EditCase : ComponentBase, IDisposable
         var source = selectedTabIndex switch
         {
             0 => TabNames.MemberInformation,
-            1 => TabNames.MedicalAssessment,
-            2 => TabNames.CommanderReview,
-            3 => TabNames.LegalSJAReview,
+            1 => TabNames.MedicalTechnician,
+            2 => "Medical Officer",
+            3 => TabNames.CommanderReview,
+            4 => TabNames.WingJAReview,
+            5 => TabNames.LegalSJAReview,
             _ => TabNames.Draft
         };
 
@@ -403,6 +406,58 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         await SaveCurrentTabAsync(source);
+    }
+
+    private async Task OnMedTechForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "cancel")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward this case to the Medical Officer?",
+                "Confirm Forward",
+                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Forwarding to Medical Officer...");
+
+            try
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
+                    "Case has been forwarded to the Medical Officer for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
     }
 
     private async Task OnMedicalForwardClick(RadzenSplitButtonItem item)
@@ -486,10 +541,10 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnCommanderForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return")
+        if (item?.Value == "return-med-officer")
         {
             var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to Board Medical?",
+                "Are you sure you want to return this case to the Medical Officer?",
                 "Confirm Return",
                 new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
 
@@ -498,13 +553,38 @@ public partial class EditCase : ComponentBase, IDisposable
                 return;
             }
 
-            await SetBusyAsync("Returning to Board Medical...");
+            await SetBusyAsync("Returning to Medical Officer...");
 
             try
             {
-                // Return to Board Medical
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Board Medical",
-                    "Case has been returned to the Board Medical for review.");
+                // Return to Medical Officer
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-tech")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Technician?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Technician...");
+
+            try
+            {
+                // Return to Medical Technician
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
             }
             finally
             {
@@ -563,9 +643,9 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnLegalForwardClick(RadzenSplitButtonItem item)
+    private async Task OnWingJAForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return")
+        if (item?.Value == "return-unit-cc")
         {
             var confirmed = await DialogService.Confirm(
                 "Are you sure you want to return this case to the Unit Commander?",
@@ -584,6 +664,210 @@ public partial class EditCase : ComponentBase, IDisposable
                 // Return to Unit CC
                 NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
                     "Case has been returned to the Unit Commander for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-officer")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Officer?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Officer...");
+
+            try
+            {
+                // Return to Medical Officer
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-tech")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Technician?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Technician...");
+
+            try
+            {
+                // Return to Medical Technician
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "cancel")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Cancelling investigation...");
+
+            try
+            {
+                // Cancel Investigation
+                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
+                    "The LOD investigation has been cancelled.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward this case to the Wing Commander?",
+                "Confirm Forward",
+                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Forwarding to Wing CC...");
+
+            try
+            {
+                // Forward to Wing CC (default action)
+                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing CC",
+                    "Case has been forwarded to the Wing Commander.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+    }
+
+    private async Task OnLegalForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "return-wing-ja")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Wing Judge Advocate?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Wing JA...");
+
+            try
+            {
+                // Return to Wing JA
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA",
+                    "Case has been returned to the Wing Judge Advocate for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Unit Commander?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Unit CC...");
+
+            try
+            {
+                // Return to Unit CC
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-officer")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Officer?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Officer...");
+
+            try
+            {
+                // Return to Medical Officer
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-tech")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Technician?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Technician...");
+
+            try
+            {
+                // Return to Medical Technician
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
             }
             finally
             {
@@ -644,7 +928,32 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnWingForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return")
+        if (item?.Value == "return-wing-cc")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Wing Commander?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Wing CC...");
+
+            try
+            {
+                // Return to Wing CC
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing CC",
+                    "Case has been returned to the Wing Commander for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-wing-ja")
         {
             var confirmed = await DialogService.Confirm(
                 "Are you sure you want to return this case to the Wing Judge Advocate?",
@@ -663,6 +972,81 @@ public partial class EditCase : ComponentBase, IDisposable
                 // Return to Wing JA
                 NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA",
                     "Case has been returned to the Wing Judge Advocate for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-unit-cc")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Unit Commander?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Unit CC...");
+
+            try
+            {
+                // Return to Unit CC
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-officer")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Officer?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Officer...");
+
+            try
+            {
+                // Return to Medical Officer
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else if (item?.Value == "return-med-tech")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Are you sure you want to return this case to the Medical Technician?",
+                "Confirm Return",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Returning to Medical Technician...");
+
+            try
+            {
+                // Return to Medical Technician
+                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
             }
             finally
             {
@@ -850,7 +1234,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 case TabNames.MemberInformation:
                     LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, _lodCase);
                     break;
-                case TabNames.MedicalAssessment:
+                case TabNames.MedicalTechnician:
                     LineOfDutyCaseMapper.ApplyMedicalAssessment(_formModel, _lodCase);
                     break;
                 case TabNames.CommanderReview:
@@ -886,7 +1270,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 case TabNames.MemberInformation:
                     _memberFormModel.TakeSnapshot(JsonOptions);
                     break;
-                case TabNames.MedicalAssessment:
+                case TabNames.MedicalTechnician:
                     _formModel.TakeSnapshot(JsonOptions);
                     break;
                 case TabNames.CommanderReview:
