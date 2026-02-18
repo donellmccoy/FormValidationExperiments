@@ -17,6 +17,11 @@ public class CaseInfoModel
     public string MemberName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the member's service component (e.g., "Air Force Reserve").
+    /// </summary>
+    public string Component { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the member's rank abbreviation (e.g., "SrA", "TSgt").
     /// </summary>
     public string Rank { get; set; } = string.Empty;

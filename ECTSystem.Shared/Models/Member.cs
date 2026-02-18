@@ -12,6 +12,7 @@ public class Member : AuditableEntity
     public string ServiceNumber { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public ServiceComponent Component { get; set; }
+    public DateTime? DateOfBirth { get; set; }
 
     //public List<LineOfDutyCase> LineOfDutyCases { get; set; } = [];
 }

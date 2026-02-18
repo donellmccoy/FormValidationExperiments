@@ -50,9 +50,16 @@ public class MemberInfoFormModel : TrackableModel
     // ── Item 5: SSN ──
 
     /// <summary>
-    /// Gets or sets the last four digits of the member's Social Security Number. (Item 5)
+    /// Gets or sets the member's Social Security Number. (Item 5)
     /// </summary>
     public string SSN { get; set; } = string.Empty;
+
+    // ── Date of Birth ──
+
+    /// <summary>
+    /// Gets or sets the member's date of birth.
+    /// </summary>
+    public DateTime? DateOfBirth { get; set; }
 
     // ── Item 6: Rank/Grade ──
 

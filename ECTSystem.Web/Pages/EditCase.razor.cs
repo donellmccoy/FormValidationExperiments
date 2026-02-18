@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
@@ -18,7 +19,6 @@ public partial class EditCase : ComponentBase, IDisposable
     // ──── Tab Name Constants ────
     private static class TabNames
     {
-        public const string Start = "Start";
         public const string MemberInformation = "Member Information";
         public const string MedicalAssessment = "Medical Assessment";
         public const string CommanderReview = "Commander Review";
@@ -54,63 +54,76 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool isSaving;
 
-    private bool isBusy;
-    private string busyMessage = string.Empty;
+    private bool _isBusy;
+
+    private string _busyMessage = string.Empty;
 
     private int selectedTabIndex;
 
     private int currentStepIndex;
 
-    private MemberInfoFormModel memberFormModel = new();
+    private MemberInfoFormModel _memberFormModel = new();
 
-    private MedicalAssessmentFormModel formModel = new();
+    private MedicalAssessmentFormModel _formModel = new();
 
     private RadzenTemplateForm<MedicalAssessmentFormModel> medicalForm;
 
-    private CommanderReviewFormModel commanderFormModel = new();
+    private CommanderReviewFormModel _commanderFormModel = new();
 
-    private LegalSJAReviewFormModel legalFormModel = new();
+    private LegalSJAReviewFormModel _legalFormModel = new();
 
-    private CaseInfoModel caseInfo = new()
+    private CaseInfoModel _caseInfo = new()
     {
-        CaseNumber = "Pending",
-        MemberName = "Pending",
-        Rank = "—",
-        Unit = "—",
-        DateOfInjury = "—",
+        CaseNumber = "Pending...",
+        MemberName = "Pending...",
+        Component = "Pending...",
+        Rank = "Pending...",
+        Unit = "Pending...",
+        DateOfInjury = "Pending...",
         Status = "New"
     };
 
     // ──── Form Model Collection ────
-    private IReadOnlyList<TrackableModel> AllFormModels => [memberFormModel, formModel, commanderFormModel, legalFormModel];
+    private IReadOnlyList<TrackableModel> AllFormModels => [_memberFormModel, _formModel, _commanderFormModel, _legalFormModel];
 
     // ──── Dirty Tracking ────
     private bool HasAnyChanges => AllFormModels.Any(m => m.IsDirty);
 
     // ──── Conditional Visibility ────
-    private bool ShowSubstanceType => formModel.WasUnderInfluence == true;
+    private bool ShowSubstanceType => _formModel.WasUnderInfluence == true;
 
     // ──── Lookup Data ────
     private IEnumerable<MilitaryRank> militaryRanks = Enum.GetValues<MilitaryRank>();
 
-    private bool ShowToxicologyResults => formModel.ToxicologyTestDone == true;
+    private bool ShowToxicologyResults => _formModel.ToxicologyTestDone == true;
 
-    private bool ShowPsychEvalDetails => formModel.PsychiatricEvalCompleted == true;
+    private bool ShowPsychEvalDetails => _formModel.PsychiatricEvalCompleted == true;
 
-    private bool ShowOtherTestDetails => formModel.OtherTestsDone == true;
+    private bool ShowOtherTestDetails => _formModel.OtherTestsDone == true;
 
     private bool ShowArcSection => true; // Set true for demo; in production, derive from member's ServiceComponent (AFR/ANG)
-    private bool ShowArcSubFields => formModel.IsAtDeployedLocation == false;
+    private bool ShowArcSubFields => _formModel.IsAtDeployedLocation == false;
 
-    private bool ShowServiceAggravated => formModel.IsEptsNsa == true;
+    private string MemberFullName
+    {
+        get
+        {
+            var mi = string.IsNullOrWhiteSpace(_memberFormModel.MiddleInitial)
+                ? ""
+                : $" {_memberFormModel.MiddleInitial}.";
+            return $"{_memberFormModel.LastName}, {_memberFormModel.FirstName}{mi}".Trim(' ', ',');
+        }
+    }
+
+    private bool ShowServiceAggravated => _formModel.IsEptsNsa == true;
 
     // ──── Commander Review Conditional Visibility ────
-    private bool ShowMisconductExplanation => commanderFormModel.ResultOfMisconduct == true;
+    private bool ShowMisconductExplanation => _commanderFormModel.ResultOfMisconduct == true;
 
-    private bool ShowOtherSourceDescription => commanderFormModel.OtherSourcesReviewed == true;
+    private bool ShowOtherSourceDescription => _commanderFormModel.OtherSourcesReviewed == true;
 
     // ──── Legal SJA Review Conditional Visibility ────
-    private bool ShowNonConcurrenceReason => legalFormModel.ConcurWithRecommendation == false;
+    private bool ShowNonConcurrenceReason => _legalFormModel.ConcurWithRecommendation == false;
 
     private List<WorkflowStep> workflowSteps = [];
 
@@ -128,6 +141,7 @@ public partial class EditCase : ComponentBase, IDisposable
         if (IsNewCase)
         {
             InitializeWorkflowSteps();
+            TakeSnapshots();
         }
         else
         {
@@ -139,8 +153,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task LoadCaseAsync()
     {
-        busyMessage = "Loading case...";
-        isBusy = true;
+        await SetBusyAsync("Loading case...", true);
 
         try
         {
@@ -149,18 +162,20 @@ public partial class EditCase : ComponentBase, IDisposable
             if (_lodCase is null)
             {
                 InitializeWorkflowSteps();
+
                 return;
             }
 
             var dto = LineOfDutyCaseMapper.ToCaseViewModelsDto(_lodCase);
 
-            caseInfo = dto.CaseInfo;
-            memberFormModel = dto.MemberInfo;
-            formModel = dto.MedicalAssessment;
-            commanderFormModel = dto.CommanderReview;
-            legalFormModel = dto.LegalSJAReview;
+            _caseInfo = dto.CaseInfo;
+            _memberFormModel = dto.MemberInfo;
+            _formModel = dto.MedicalAssessment;
+            _commanderFormModel = dto.CommanderReview;
+            _legalFormModel = dto.LegalSJAReview;
 
             InitializeWorkflowSteps();
+
             TakeSnapshots();
         }
         catch (OperationCanceledException)
@@ -181,7 +196,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         finally
         {
-            isBusy = false;
+            await SetBusyAsync(isBusy: false);
         }
     }
 
@@ -216,32 +231,6 @@ public partial class EditCase : ComponentBase, IDisposable
     private async Task OnMemberFormSubmit(MemberInfoFormModel model)
     {
         await SaveCurrentTabAsync(TabNames.MemberInformation);
-    }
-
-    private async Task OnMemberForwardClick()
-    {
-        var confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward this case to the Medical Officer?",
-            "Confirm Forward",
-            new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding to Medical Officer...");
-
-        try
-        {
-            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
-                "Case has been forwarded to the Medical Officer.");
-        }
-        finally
-        {
-            isBusy = false;
-            StateHasChanged();
-        }
     }
 
     private async Task OnCommanderFormSubmit(CommanderReviewFormModel model)
@@ -288,19 +277,29 @@ public partial class EditCase : ComponentBase, IDisposable
         selectedTabIndex = 0;
     }
 
-    private async Task OnSaveDraft()
+    private async Task OnMemberForwardClick()
     {
         var confirmed = await DialogService.Confirm(
-            "Are you sure you want to save?",
-            "Confirm Save",
-            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
+            "Are you sure you want to forward this case to the Medical Officer?",
+            "Confirm Forward",
+            new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
 
         if (confirmed != true)
         {
             return;
         }
 
-        await SaveCurrentTabAsync(TabNames.Draft);
+        await SetBusyAsync("Forwarding to Medical Officer...");
+
+        try
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
+                "Case has been forwarded to the Medical Officer.");
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
     private async Task OnSplitButtonClick(RadzenSplitButtonItem item)
@@ -308,21 +307,23 @@ public partial class EditCase : ComponentBase, IDisposable
         if (item?.Value == "revert")
         {
             await OnRevertChanges();
+
             return;
         }
 
         // Validate the medical tab before saving
-        if (selectedTabIndex == 2 && medicalForm?.EditContext?.Validate() == false)
+        if (selectedTabIndex == 1 && medicalForm?.EditContext?.Validate() == false)
+        {
             return;
+        }
 
         // Determine which tab to save based on the currently selected tab index
         var source = selectedTabIndex switch
         {
-            0 => TabNames.Start,
-            1 => TabNames.MemberInformation,
-            2 => TabNames.MedicalAssessment,
-            3 => TabNames.CommanderReview,
-            4 => TabNames.LegalSJAReview,
+            0 => TabNames.MemberInformation,
+            1 => TabNames.MedicalAssessment,
+            2 => TabNames.CommanderReview,
+            3 => TabNames.LegalSJAReview,
             _ => TabNames.Draft
         };
 
@@ -363,8 +364,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else if (item?.Value == "cancel")
@@ -389,8 +389,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else
@@ -415,8 +414,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
     }
@@ -445,8 +443,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else if (item?.Value == "cancel")
@@ -471,8 +468,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else
@@ -497,8 +493,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
     }
@@ -527,8 +522,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else if (item?.Value == "cancel")
@@ -553,8 +547,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else
@@ -579,8 +572,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
     }
@@ -609,8 +601,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else if (item?.Value == "cancel")
@@ -635,8 +626,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else
@@ -661,8 +651,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
     }
@@ -691,8 +680,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else if (item?.Value == "cancel")
@@ -717,8 +705,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
         else
@@ -743,8 +730,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
             finally
             {
-                isBusy = false;
-                StateHasChanged();
+                await SetBusyAsync(isBusy: false);
             }
         }
     }
@@ -777,8 +763,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         finally
         {
-            isBusy = false;
-            StateHasChanged();
+            await SetBusyAsync(isBusy: false);
         }
     }
 
@@ -798,27 +783,27 @@ public partial class EditCase : ComponentBase, IDisposable
             switch (source)
             {
                 case TabNames.MemberInformation:
-                    LineOfDutyCaseMapper.ApplyMemberInfo(memberFormModel, _lodCase);
+                    LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, _lodCase);
                     break;
                 case TabNames.MedicalAssessment:
-                    LineOfDutyCaseMapper.ApplyMedicalAssessment(formModel, _lodCase);
+                    LineOfDutyCaseMapper.ApplyMedicalAssessment(_formModel, _lodCase);
                     break;
                 case TabNames.CommanderReview:
-                    LineOfDutyCaseMapper.ApplyCommanderReview(commanderFormModel, _lodCase);
+                    LineOfDutyCaseMapper.ApplyCommanderReview(_commanderFormModel, _lodCase);
                     break;
                 case TabNames.LegalSJAReview:
-                    LineOfDutyCaseMapper.ApplyLegalSJAReview(legalFormModel, _lodCase);
+                    LineOfDutyCaseMapper.ApplyLegalSJAReview(_legalFormModel, _lodCase);
                     break;
                 default:
                     // Draft / save-all: apply everything
                     LineOfDutyCaseMapper.ApplyAll(
                         new CaseViewModelsDto
                         {
-                            CaseInfo = caseInfo,
-                            MemberInfo = memberFormModel,
-                            MedicalAssessment = formModel,
-                            CommanderReview = commanderFormModel,
-                            LegalSJAReview = legalFormModel
+                            CaseInfo = _caseInfo,
+                            MemberInfo = _memberFormModel,
+                            MedicalAssessment = _formModel,
+                            CommanderReview = _commanderFormModel,
+                            LegalSJAReview = _legalFormModel
                         },
                         _lodCase);
                     break;
@@ -828,22 +813,22 @@ public partial class EditCase : ComponentBase, IDisposable
             _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
 
             // Refresh the read-only case info from the saved entity
-            caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(_lodCase);
+            _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(_lodCase);
 
             // Re-snapshot only the saved model so other tabs retain their dirty state
             switch (source)
             {
                 case TabNames.MemberInformation:
-                    memberFormModel.TakeSnapshot(JsonOptions);
+                    _memberFormModel.TakeSnapshot(JsonOptions);
                     break;
                 case TabNames.MedicalAssessment:
-                    formModel.TakeSnapshot(JsonOptions);
+                    _formModel.TakeSnapshot(JsonOptions);
                     break;
                 case TabNames.CommanderReview:
-                    commanderFormModel.TakeSnapshot(JsonOptions);
+                    _commanderFormModel.TakeSnapshot(JsonOptions);
                     break;
                 case TabNames.LegalSJAReview:
-                    legalFormModel.TakeSnapshot(JsonOptions);
+                    _legalFormModel.TakeSnapshot(JsonOptions);
                     break;
                 default:
                     TakeSnapshots();
@@ -875,17 +860,15 @@ public partial class EditCase : ComponentBase, IDisposable
         finally
         {
             isSaving = false;
-            isBusy = false;
-            StateHasChanged();
+            await SetBusyAsync(isBusy: false);
         }
     }
 
-    private async Task SetBusyAsync(string message = "Working...")
+    private async Task SetBusyAsync(string message = "Working...", bool? isBusy = true)
     {
-        busyMessage = message;
-        isBusy = true;
+        _busyMessage = message;
+        _isBusy = isBusy.GetValueOrDefault(true);
         StateHasChanged();
-        await Task.Delay(500);
     }
 
     private async Task OnRevertChanges()
@@ -922,17 +905,20 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (string.IsNullOrEmpty(value))
         {
-            memberFormModel.SSN = string.Empty;
+            _memberFormModel.SSN = string.Empty;
+
             return;
         }
 
-        var digits = new string(value.Where(char.IsDigit).ToArray());
+        var digits = new string([.. value.Where(char.IsDigit)]);
+
         if (digits.Length > 4)
         {
             digits = digits[..4];
         }
 
-        memberFormModel.SSN = digits;
+        _memberFormModel.SSN = digits;
+
         StateHasChanged();
     }
 
@@ -940,50 +926,60 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private void OnIsMilitaryFacilityChanged()
     {
-        if (formModel.IsMilitaryFacility != true)
-            formModel.TreatmentFacilityName = null;
+        if (_formModel.IsMilitaryFacility != true)
+        {
+            _formModel.TreatmentFacilityName = null;
+        }
     }
 
     private void OnWasUnderInfluenceChanged()
     {
-        if (formModel.WasUnderInfluence != true)
-            formModel.SubstanceType = null;
+        if (_formModel.WasUnderInfluence != true)
+        {
+            _formModel.SubstanceType = null;
+        }
     }
 
     private void OnToxicologyTestDoneChanged()
     {
-        if (formModel.ToxicologyTestDone != true)
-            formModel.ToxicologyTestResults = null;
+        if (_formModel.ToxicologyTestDone != true)
+        {
+            _formModel.ToxicologyTestResults = null;
+        }
     }
 
     private void OnPsychiatricEvalCompletedChanged()
     {
-        if (formModel.PsychiatricEvalCompleted != true)
+        if (_formModel.PsychiatricEvalCompleted != true)
         {
-            formModel.PsychiatricEvalDate = null;
-            formModel.PsychiatricEvalResults = null;
+            _formModel.PsychiatricEvalDate = null;
+            _formModel.PsychiatricEvalResults = null;
         }
     }
 
     private void OnOtherTestsDoneChanged()
     {
-        if (formModel.OtherTestsDone != true)
+        if (_formModel.OtherTestsDone != true)
         {
-            formModel.OtherTestDate = null;
-            formModel.OtherTestResults = null;
+            _formModel.OtherTestDate = null;
+            _formModel.OtherTestResults = null;
         }
     }
 
     private void OnIsEptsNsaChanged()
     {
-        if (formModel.IsEptsNsa != true)
-            formModel.IsServiceAggravated = null;
+        if (_formModel.IsEptsNsa != true)
+        {
+            _formModel.IsServiceAggravated = null;
+        }
     }
 
     private void OnIsAtDeployedLocationChanged()
     {
-        if (formModel.IsAtDeployedLocation != false)
-            formModel.RequiresArcBoard = null;
+        if (_formModel.IsAtDeployedLocation != false)
+        {
+            _formModel.RequiresArcBoard = null;
+        }
     }
 
     private async Task OnMemberSearchInput(ChangeEventArgs args)
@@ -996,17 +992,23 @@ public partial class EditCase : ComponentBase, IDisposable
         if (string.IsNullOrWhiteSpace(memberSearchText))
         {
             memberSearchResults = [];
+
             StateHasChanged();
+
             return;
         }
 
-        _debounceTimer = new System.Timers.Timer(300);
-        _debounceTimer.AutoReset = false;
+        _debounceTimer = new System.Timers.Timer(300)
+        {
+            AutoReset = false
+        };
+
         _debounceTimer.Elapsed += async (_, _) =>
         {
             await InvokeAsync(async () =>
             {
                 await _searchCts.CancelAsync();
+
                 _searchCts.Dispose();
                 _searchCts = new CancellationTokenSource();
 
@@ -1029,29 +1031,41 @@ public partial class EditCase : ComponentBase, IDisposable
                 finally
                 {
                     isMemberSearching = false;
+
                     StateHasChanged();
                 }
             });
         };
+
         _debounceTimer.Start();
     }
 
     private async Task OnMemberSelected(Member member)
     {
+        _memberFormModel.FirstName = member.FirstName;
+        _memberFormModel.LastName = member.LastName;
+        _memberFormModel.MiddleInitial = member.MiddleInitial;
+        _memberFormModel.OrganizationUnit = member.Unit;
+        _memberFormModel.SSN = member.ServiceNumber;
+        _memberFormModel.DateOfBirth = member.DateOfBirth;
+
+        if (Enum.TryParse<MilitaryRank>(member.Rank, true, out var rank))
+        {
+            _memberFormModel.Rank = rank;
+        }
+
+        _caseInfo.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
+        _caseInfo.Rank = member.Rank;
+        _caseInfo.MemberName = $"{member.LastName}, {member.FirstName}";
+        _caseInfo.Unit = member.Unit;
+
+        selectedTabIndex = 0;
+        StateHasChanged();
+
         if (IsNewCase)
         {
             await CreateCaseForMemberAsync(member);
-            return;
         }
-
-        memberFormModel.FirstName = member.FirstName;
-        memberFormModel.LastName = member.LastName;
-        memberFormModel.MiddleInitial = member.MiddleInitial;
-        memberFormModel.OrganizationUnit = member.Unit;
-
-        // Switch to the Member tab
-        selectedTabIndex = 1;
-        StateHasChanged();
     }
 
     private async Task CreateCaseForMemberAsync(Member member)
@@ -1074,8 +1088,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 
-            NotificationService.Notify(NotificationSeverity.Success, "Case Created",
-                $"Case {saved.CaseId} created for {member.Rank} {member.LastName}.");
+            NotificationService.Notify(NotificationSeverity.Success, "Case Created", $"Case {saved.CaseId} created for {member.Rank} {member.LastName}.");
 
             Navigation.NavigateTo($"/case/{saved.CaseId}");
         }
@@ -1085,8 +1098,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         finally
         {
-            isBusy = false;
-            StateHasChanged();
+            await SetBusyAsync(isBusy: false);
         }
     }
 

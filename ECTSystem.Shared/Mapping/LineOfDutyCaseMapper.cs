@@ -28,6 +28,7 @@ public static partial class LineOfDutyCaseMapper
         {
             CaseNumber = source.CaseId ?? string.Empty,
             MemberName = source.MemberName ?? string.Empty,
+            Component = FormatEnum(source.Component),
             Rank = source.MemberRank ?? string.Empty,
             Unit = source.Unit ?? string.Empty,
             DateOfInjury = source.IncidentDate.ToString("yyyy-MM-dd"),
@@ -57,7 +58,7 @@ public static partial class LineOfDutyCaseMapper
             LastName = lastName,
             FirstName = firstName,
             MiddleInitial = middleInitial,
-            SSN = ExtractLastFourSsn(source.ServiceNumber),
+            SSN = source.ServiceNumber ?? string.Empty,
             Rank = ParseMilitaryRank(source.MemberRank),
             OrganizationUnit = source.Unit ?? string.Empty,
             MemberStatus = MapComponentToMemberStatus(source.Component)

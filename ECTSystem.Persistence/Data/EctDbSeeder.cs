@@ -45,7 +45,8 @@ public static class EctDbSeeder
                 Rank = Ranks[rng.Next(Ranks.Length)],
                 ServiceNumber = $"{rng.Next(100, 999)}-{rng.Next(10, 99)}-{rng.Next(1000, 9999)}",
                 Unit = Units[rng.Next(Units.Length)],
-                Component = component
+                Component = component,
+                DateOfBirth = new DateTime(1980 + rng.Next(0, 20), rng.Next(1, 13), rng.Next(1, 28))
             });
         }
 
