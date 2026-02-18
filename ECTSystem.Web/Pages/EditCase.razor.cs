@@ -125,6 +125,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private string MemberGrade => _memberGrade ?? "";
 
+    private string MemberDateOfBirth => _memberFormModel.DateOfBirth?.ToString("MM/dd/yyyy") ?? "";
+
     private bool ShowServiceAggravated => _formModel.IsEptsNsa == true;
 
     // ──── Commander Review Conditional Visibility ────
@@ -1536,11 +1538,17 @@ public partial class EditCase : ComponentBase, IDisposable
         _memberFormModel.SSN = member.ServiceNumber;
         _memberFormModel.DateOfBirth = member.DateOfBirth;
 
-        _memberGrade = member.Rank;
         _memberFormModel.Rank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
 
+        var parsedRank = _memberFormModel.Rank;
+        _memberGrade = parsedRank.HasValue
+            ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value)
+            : member.Rank;
+
         _caseInfo.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
-        _caseInfo.Rank = member.Rank;
+        _caseInfo.Rank = parsedRank.HasValue
+            ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value)
+            : member.Rank;
         _caseInfo.MemberName = $"{member.LastName}, {member.FirstName}";
         _caseInfo.Unit = member.Unit;
 
@@ -1559,8 +1567,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
                 MemberName = $"{member.LastName}, {member.FirstName}",
                 MemberRank = member.Rank,
+                MemberDateOfBirth = member.DateOfBirth,
                 ServiceNumber = member.ServiceNumber,
                 Unit = member.Unit,
+                Component = member.Component,
                 MemberId = member.Id,
                 InitiationDate = DateTime.UtcNow,
                 IncidentDate = DateTime.UtcNow

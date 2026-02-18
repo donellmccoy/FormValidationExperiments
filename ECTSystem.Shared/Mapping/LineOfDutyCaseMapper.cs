@@ -29,7 +29,9 @@ public static partial class LineOfDutyCaseMapper
             CaseNumber = source.CaseId ?? string.Empty,
             MemberName = source.MemberName ?? string.Empty,
             Component = FormatEnum(source.Component),
-            Rank = source.MemberRank ?? string.Empty,
+            Rank = ParseMilitaryRank(source.MemberRank) is { } parsedRank
+                ? FormatRankToFullName(parsedRank)
+                : source.MemberRank ?? string.Empty,
             Unit = source.Unit ?? string.Empty,
             DateOfInjury = source.IncidentDate.ToString("yyyy-MM-dd"),
             SSN = MaskSsn(source.ServiceNumber),
@@ -59,7 +61,7 @@ public static partial class LineOfDutyCaseMapper
             FirstName = firstName,
             MiddleInitial = middleInitial,
             SSN = source.ServiceNumber ?? string.Empty,
-            DateOfBirth = source.MemberDateOfBirth,
+            DateOfBirth = source.MemberDateOfBirth ?? source.Member?.DateOfBirth,
             Rank = ParseMilitaryRank(source.MemberRank),
             OrganizationUnit = source.Unit ?? string.Empty,
             MemberStatus = MapComponentToMemberStatus(source.Component),
@@ -349,7 +351,7 @@ public static partial class LineOfDutyCaseMapper
         return authority;
     }
 
-    private static string FormatRankToPayGrade(MilitaryRank rank)
+    public static string FormatRankToPayGrade(MilitaryRank rank)
     {
         return rank switch
         {
@@ -372,6 +374,34 @@ public static partial class LineOfDutyCaseMapper
             MilitaryRank.MajGen => "O-8",
             MilitaryRank.LtGen => "O-9",
             MilitaryRank.Gen => "O-10",
+            _ => rank.ToString()
+        };
+    }
+
+    public static string FormatRankToFullName(MilitaryRank rank)
+    {
+        return rank switch
+        {
+            MilitaryRank.AB => "Airman Basic",
+            MilitaryRank.Amn => "Airman",
+            MilitaryRank.A1C => "Airman First Class",
+            MilitaryRank.SrA => "Senior Airman",
+            MilitaryRank.SSgt => "Staff Sergeant",
+            MilitaryRank.TSgt => "Technical Sergeant",
+            MilitaryRank.MSgt => "Master Sergeant",
+            MilitaryRank.SMSgt => "Senior Master Sergeant",
+            MilitaryRank.CMSgt => "Chief Master Sergeant",
+            MilitaryRank.SecondLt => "Second Lieutenant",
+            MilitaryRank.FirstLt => "First Lieutenant",
+            MilitaryRank.Capt => "Captain",
+            MilitaryRank.Maj => "Major",
+            MilitaryRank.LtCol => "Lieutenant Colonel",
+            MilitaryRank.Col => "Colonel",
+            MilitaryRank.BrigGen => "Brigadier General",
+            MilitaryRank.MajGen => "Major General",
+            MilitaryRank.LtGen => "Lieutenant General",
+            MilitaryRank.Gen => "General",
+            MilitaryRank.Cadet => "Cadet",
             _ => rank.ToString()
         };
     }
