@@ -62,7 +62,11 @@ public static partial class LineOfDutyCaseMapper
             DateOfBirth = source.MemberDateOfBirth,
             Rank = ParseMilitaryRank(source.MemberRank),
             OrganizationUnit = source.Unit ?? string.Empty,
-            MemberStatus = MapComponentToMemberStatus(source.Component)
+            MemberStatus = MapComponentToMemberStatus(source.Component),
+            NotifiedMedicalUnitTimely = source.NotifiedMedicalUnitTimely,
+            SubmittedMedicalDocumentsTimely = source.SubmittedMedicalDocumentsTimely,
+            InvolvesSexualAssault = source.IsSexualAssaultCase,
+            IsRestrictedReport = source.RestrictedReporting
         };
     }
 
@@ -207,6 +211,12 @@ public static partial class LineOfDutyCaseMapper
         {
             target.Component = MapMemberStatusToComponent(model.MemberStatus.Value);
         }
+
+        // Notification & Reporting
+        target.NotifiedMedicalUnitTimely = model.NotifiedMedicalUnitTimely;
+        target.SubmittedMedicalDocumentsTimely = model.SubmittedMedicalDocumentsTimely;
+        target.IsSexualAssaultCase = model.InvolvesSexualAssault;
+        target.RestrictedReporting = model.IsRestrictedReport;
 
         // Update authority names
         var commander = FindOrCreateAuthority(target, "Immediate Commander");

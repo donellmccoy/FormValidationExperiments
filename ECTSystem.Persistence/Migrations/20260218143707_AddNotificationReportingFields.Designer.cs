@@ -4,6 +4,7 @@ using ECTSystem.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECTSystem.Persistence.Migrations
 {
     [DbContext(typeof(EctDbContext))]
-    partial class EctDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218143707_AddNotificationReportingFields")]
+    partial class AddNotificationReportingFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -322,7 +325,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<bool?>("IsServiceAggravated")
                         .HasColumnType("bit");
 
-                    b.Property<bool?>("IsSexualAssaultCase")
+                    b.Property<bool>("IsSexualAssaultCase")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsUSAFA")
@@ -472,7 +475,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<bool?>("RequiresArcBoard")
                         .HasColumnType("bit");
 
-                    b.Property<bool?>("RestrictedReporting")
+                    b.Property<bool>("RestrictedReporting")
                         .HasColumnType("bit");
 
                     b.Property<string>("SARCCoordination")

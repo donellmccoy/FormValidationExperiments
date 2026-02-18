@@ -188,6 +188,8 @@ public partial class EditCase : ComponentBase, IDisposable
             _commanderFormModel = dto.CommanderReview;
             _legalFormModel = dto.LegalSJAReview;
 
+            _memberGrade = _lodCase.MemberRank ?? string.Empty;
+
             InitializeWorkflowSteps();
 
             TakeSnapshots();
@@ -341,9 +343,6 @@ public partial class EditCase : ComponentBase, IDisposable
             };
 
             LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, newCase);
-
-            newCase.IsSexualAssaultCase = _memberFormModel.InvolvesSexualAssault == true;
-            newCase.RestrictedReporting = _memberFormModel.IsRestrictedReport == true;
 
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 

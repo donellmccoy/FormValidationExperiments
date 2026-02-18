@@ -153,9 +153,13 @@ public class LineOfDutyCase : AuditableEntity
     public LineOfDutyFinding? ApprovingFinding { get; set; } // Item 34
     public bool ApprovingReferForFormal { get; set; }        // REFER option
 
+    // Notification & Reporting
+    public bool? NotifiedMedicalUnitTimely { get; set; }
+    public bool? SubmittedMedicalDocumentsTimely { get; set; }
+
     // Special Handling
-    public bool IsSexualAssaultCase { get; set; }
-    public bool RestrictedReporting { get; set; }
+    public bool? IsSexualAssaultCase { get; set; }
+    public bool? RestrictedReporting { get; set; }
     public string SARCCoordination { get; set; } = string.Empty; // Sexual Assault Response Coordinator
 
     // Documents and Evidence
