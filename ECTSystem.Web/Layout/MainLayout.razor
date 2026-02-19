@@ -9,7 +9,9 @@
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@sidebarExpanded">
         <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Line Of Duty Cases" Icon="folder_open" Path="/" />
+            <RadzenPanelMenuItem Text="Line Of Duty Cases" Icon="folder_open" Path="/">
+                <RadzenPanelMenuItem Text="My Bookmarks" Icon="bookmarks" Path="/bookmarks" />
+            </RadzenPanelMenuItem>
         </RadzenPanelMenu>
     </RadzenSidebar>
     <RadzenBody>

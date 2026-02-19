@@ -213,6 +213,77 @@ public class LineOfDutyCaseHttpService : IDataService
         ["General"] = "O-10",          ["Gen"] = "O-10",
     };
 
+    private static readonly JsonSerializerOptions ODataJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    // ──────────────────────────── Bookmark Operations ────────────────────────────
+
+    public async Task<ODataServiceResult<CaseBookmark>> GetBookmarkedCasesAsync(
+        string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, bool? count = null,
+        CancellationToken cancellationToken = default)
+    {
+        var parts = new List<string> { "$expand=LineOfDutyCase" };
+
+        if (!string.IsNullOrEmpty(filter))
+            parts.Add($"$filter={filter}");
+        if (top.HasValue)
+            parts.Add($"$top={top.Value}");
+        if (skip.HasValue)
+            parts.Add($"$skip={skip.Value}");
+        if (!string.IsNullOrEmpty(orderby))
+            parts.Add($"$orderby={orderby}");
+        if (count == true)
+            parts.Add("$count=true");
+
+        var url = $"odata/CaseBookmarks?{string.Join("&", parts)}";
+        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<CaseBookmark>>(
+            url, ODataJsonOptions, cancellationToken);
+
+        return new ODataServiceResult<CaseBookmark>
+        {
+            Value = response?.Value ?? [],
+            Count = response?.Count ?? 0
+        };
+    }
+
+    public async Task AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        var payload = new { LineOfDutyCaseId = caseId };
+        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks", payload, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.DeleteAsync($"odata/CaseBookmarks/DeleteByCaseId?caseId={caseId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetFromJsonAsync<IsBookmarkedResponse>(
+            $"odata/CaseBookmarks/IsBookmarked(caseId={caseId})", ODataJsonOptions, cancellationToken);
+        return response?.Value ?? false;
+    }
+
+    private class IsBookmarkedResponse
+    {
+        [JsonPropertyName("value")]
+        public bool Value { get; set; }
+    }
+
+    private class ODataCountResponse<T>
+    {
+        [JsonPropertyName("value")]
+        public List<T> Value { get; set; } = [];
+
+        [JsonPropertyName("@odata.count")]
+        public int Count { get; set; }
+    }
+
     private class ODataResponse<T>
     {
         [JsonPropertyName("value")]

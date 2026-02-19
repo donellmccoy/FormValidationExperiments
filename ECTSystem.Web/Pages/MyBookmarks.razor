@@ -1,0 +1,87 @@
+@page "/bookmarks"
+
+<PageTitle>My Bookmarks - Electronic Case Tracking System</PageTitle>
+
+@if (_isLoading && _bookmarks == null)
+{
+    <RadzenStack Gap="1rem">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
+                      Style="margin-bottom: 1rem;">
+            <RadzenSkeleton Style="width: 240px; height: 32px;" Animation="SkeletonAnimation.Wave" />
+        </RadzenStack>
+        <RadzenStack Gap="0" Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 1rem;">
+            <RadzenSkeleton Style="width: 100%; height: 40px; margin-bottom: 0.75rem;" Animation="SkeletonAnimation.Wave" />
+            @for (var i = 0; i < 5; i++)
+            {
+                <RadzenSkeleton Style="width: 100%; height: 36px; margin-bottom: 0.5rem;" Animation="SkeletonAnimation.Wave" />
+            }
+        </RadzenStack>
+    </RadzenStack>
+}
+else
+{
+
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
+              Style="margin-bottom: 1rem;">
+    <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+        My Bookmarks
+    </RadzenText>
+</RadzenStack>
+
+@if (_bookmarks != null && !_bookmarks.Any())
+{
+    <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" Style="padding: 3rem 0;">
+        <span class="material-symbols-outlined" style="font-size: 48px; color: rgba(255, 255, 255, 0.3);">bookmarks</span>
+        <RadzenText TextStyle="TextStyle.Body1" Style="color: rgba(255, 255, 255, 0.5);">
+            No bookmarked cases yet. Open a case and click the bookmark icon to save it here.
+        </RadzenText>
+    </RadzenStack>
+}
+else
+{
+<RadzenDataGrid TItem="CaseBookmark"
+                Data="@_bookmarks"
+                Count="@_count"
+                LoadData="@LoadData"
+                IsLoading="@_isLoading"
+                AllowSorting="true"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                PageSize="10"
+                AllowPaging="true"
+                ShowPagingSummary="true"
+                PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
+                PageSizeOptions="@(new[] { 5, 10, 25, 50 })"
+                PagerHorizontalAlign="HorizontalAlign.Center"
+                GridLines="DataGridGridLines.Both"
+                Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+    <Columns>
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.CaseId" Title="Case ID" Width="180px" Filterable="false" Sortable="false">
+            <Template Context="bookmark">
+                <RadzenLink Path="@($"case/{bookmark.LineOfDutyCase?.CaseId}")" Text="@bookmark.LineOfDutyCase?.CaseId" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.MemberName" Title="Member" Width="220px" Filterable="false" Sortable="false" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center" Filterable="false" Sortable="false" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.Unit" Title="Unit" Filterable="false" Sortable="false" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.IncidentType" Title="Type" Filterable="false" Sortable="false">
+            <Template Context="bookmark">
+                @if (bookmark.LineOfDutyCase != null)
+                {
+                    @FormatEnum(bookmark.LineOfDutyCase.IncidentType)
+                }
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="BookmarkedDate" Title="Bookmarked" FormatString="{0:yyyy-MM-dd}" Width="140px" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Title="" Width="60px" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+            <Template Context="bookmark">
+                <RadzenButton Icon="bookmark_remove" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                              title="Remove bookmark"
+                              Click="@(() => OnRemoveBookmark(bookmark))" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+}
+
+}

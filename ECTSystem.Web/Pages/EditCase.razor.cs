@@ -175,6 +175,19 @@ public partial class EditCase : ComponentBase, IDisposable
             InitializeWorkflowSteps();
 
             TakeSnapshots();
+
+            // Check if this case is bookmarked
+            if (_lodCase.Id > 0)
+            {
+                try
+                {
+                    _isBookmarked = await CaseService.IsBookmarkedAsync(_lodCase.Id, _cts.Token);
+                }
+                catch
+                {
+                    // Non-critical — default to not bookmarked
+                }
+            }
         }
         catch (OperationCanceledException)
         {
@@ -268,14 +281,38 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnBookmarkClick()
     {
+        if (_lodCase?.Id is null or 0)
+            return;
+
         _isBookmarked = !_isBookmarked;
 
         if (_isBookmarked)
         {
             _bookmarkAnimating = true;
             StateHasChanged();
+
+            try
+            {
+                await CaseService.AddBookmarkAsync(_lodCase.Id, _cts.Token);
+            }
+            catch
+            {
+                _isBookmarked = false; // Revert on failure
+            }
+
             await Task.Delay(800);
             _bookmarkAnimating = false;
+        }
+        else
+        {
+            try
+            {
+                await CaseService.RemoveBookmarkAsync(_lodCase.Id, _cts.Token);
+            }
+            catch
+            {
+                _isBookmarked = true; // Revert on failure
+            }
         }
     }
 

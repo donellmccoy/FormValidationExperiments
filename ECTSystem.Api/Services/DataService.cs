@@ -14,7 +14,8 @@ public class DataService :
     ILineOfDutyAppealService,
     ILineOfDutyAuthorityService,
     ILineOfDutyTimelineService,
-    ILineOfDutyNotificationService
+    ILineOfDutyNotificationService,
+    ICaseBookmarkService
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
@@ -381,5 +382,64 @@ public class DataService :
         notification.ReadDate = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
         return true;
+    }
+
+    // ──────────────────────────── Bookmark Operations ────────────────────────────
+
+    public IQueryable<CaseBookmark> GetBookmarksQueryable(string userId)
+    {
+        _queryContext ??= _contextFactory.CreateDbContext();
+
+        return _queryContext.CaseBookmarks
+            .AsNoTracking()
+            .Include(b => b.LineOfDutyCase)
+            .Where(b => b.UserId == userId);
+    }
+
+    public async Task<CaseBookmark> AddBookmarkAsync(string userId, int caseId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.CaseBookmarks
+            .FirstOrDefaultAsync(b => b.UserId == userId && b.LineOfDutyCaseId == caseId, ct);
+
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var bookmark = new CaseBookmark
+        {
+            UserId = userId,
+            LineOfDutyCaseId = caseId,
+            BookmarkedDate = DateTime.UtcNow
+        };
+
+        context.CaseBookmarks.Add(bookmark);
+        await context.SaveChangesAsync(ct);
+        return bookmark;
+    }
+
+    public async Task<bool> RemoveBookmarkAsync(string userId, int caseId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var bookmark = await context.CaseBookmarks
+            .FirstOrDefaultAsync(b => b.UserId == userId && b.LineOfDutyCaseId == caseId, ct);
+
+        if (bookmark is null)
+        {
+            return false;
+        }
+
+        context.CaseBookmarks.Remove(bookmark);
+        await context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> IsBookmarkedAsync(string userId, int caseId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await context.CaseBookmarks
+            .AnyAsync(b => b.UserId == userId && b.LineOfDutyCaseId == caseId, ct);
     }
 }

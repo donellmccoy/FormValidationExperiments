@@ -27,6 +27,7 @@ builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService
 builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<DataService>());
 builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<DataService>());
 builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<ICaseBookmarkService>(sp => sp.GetRequiredService<DataService>());
 
 // OData Entity Data Model
 var odataBuilder = new ODataConventionModelBuilder();
@@ -39,6 +40,7 @@ odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
 odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
 odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
 odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
+odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
 
 // Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
 
