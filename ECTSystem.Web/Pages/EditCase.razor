@@ -668,7 +668,7 @@ else
                             </span>
                         </Template>
                         <ChildContent>
-                            <RadzenTemplateForm TItem="UnitCommanderModel" Data="@_commanderFormModel" Submit="@OnCommanderFormSubmit">
+                            <RadzenTemplateForm TItem="UnitCommanderFormModel" Data="@_commanderFormModel" Submit="@OnCommanderFormSubmit">
 
                                 @* ═══ Fieldset A: Item 16 — Sources of Information ═══ *@
                                 <RadzenFieldset Text="Sources of Information" class="arc-fieldset">
@@ -910,13 +910,13 @@ else
                     <RadzenTabsItem Text="Wing CC Review" Disabled="@IsNewCase">
                         <Template>
                             <span class="tab-label">
-                                Wing CC Review @if (!IsNewCase && _wingCommanderommanderommanderFormModel.IsDirty) {
+                                Wing CC Review @if (!IsNewCase && _wingCommanderFormModel.IsDirty) {
                                 <span class="dirty-indicator"></span>
                             }
                         </span>
                     </Template>
                     <ChildContent>
-                        <RadzenTemplateForm TItem="WingCommanderFormModel" Data="@_wingCommanderFormModel" Submit="@OnWingCommanderOnWingCommanderOnWingCommanderFormSubmit">
+                        <RadzenTemplateForm TItem="WingCommanderFormModel" Data="@_wingCommanderFormModel" Submit="@OnWingCommanderFormSubmit">
 
                             @* ═══ Fieldset A: Item 24 — Legal Sufficiency Review ═══ *@
                             <RadzenFieldset Text="Legal Sufficiency Review" class="arc-fieldset">
