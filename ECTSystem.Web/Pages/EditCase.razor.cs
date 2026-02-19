@@ -261,6 +261,30 @@ public partial class EditCase : ComponentBase, IDisposable
         await SaveCurrentTabAsync(TabNames.BoardReview);
     }
 
+    private bool _isBookmarked;
+    private bool _bookmarkAnimating;
+
+    private string BookmarkIcon => _bookmarkAnimating ? "bookmark_added" : _isBookmarked ? "bookmark_remove" : "bookmark_add";
+
+    private async Task OnBookmarkClick()
+    {
+        _isBookmarked = !_isBookmarked;
+
+        if (_isBookmarked)
+        {
+            _bookmarkAnimating = true;
+            StateHasChanged();
+            await Task.Delay(800);
+            _bookmarkAnimating = false;
+        }
+    }
+
+    private async Task OnAttachFileClick()
+    {
+        // TODO: Implement file attachment dialog/upload
+        await Task.CompletedTask;
+    }
+
     private void OnStepSelected(WorkflowStep step)
     {
         _currentStepIndex = step.Number - 1;
