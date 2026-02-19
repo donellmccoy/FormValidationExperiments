@@ -27,6 +27,10 @@ public class LegalSJAReviewFormModel : TrackableModel
     /// </summary>
     public string NonConcurrenceReason { get; set; } = string.Empty;
 
+    // ── Conditional Visibility ──
+
+    public bool ShowNonConcurrenceReason => ConcurWithRecommendation == false;
+
     // ── Item 25: Legal Remarks ──
 
     /// <summary>

@@ -187,6 +187,20 @@ public class MedicalAssessmentFormModel : TrackableModel, IValidatableObject
     [StringLength(4000)]
     public string MedicalRecommendation { get; set; } = string.Empty;
 
+    // ── Conditional Visibility ──
+
+    public bool ShowSubstanceType => WasUnderInfluence == true;
+
+    public bool ShowToxicologyResults => ToxicologyTestDone == true;
+
+    public bool ShowPsychEvalDetails => PsychiatricEvalCompleted == true;
+
+    public bool ShowOtherTestDetails => OtherTestsDone == true;
+
+    public bool ShowArcSubFields => IsAtDeployedLocation == false;
+
+    public bool ShowServiceAggravated => IsEptsNsa == true;
+
     // ── Conditional & Date Validation ──
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

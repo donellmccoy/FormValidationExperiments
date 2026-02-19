@@ -1,5 +1,3 @@
-using ECTSystem.Shared.Enums;
-
 namespace ECTSystem.Shared.ViewModels;
 
 /// <summary>
@@ -66,7 +64,29 @@ public class MemberInfoFormModel : TrackableModel
     /// <summary>
     /// Gets or sets the member's military rank or grade. (Item 6)
     /// </summary>
-    public MilitaryRank? Rank { get; set; }
+    public string Rank { get; set; } = string.Empty;
+
+    public string Grade { get; set; } = string.Empty;
+
+    public string Component { get; set; } = string.Empty;
+
+    public string MemberFullName
+    {
+        get
+        {
+            var mi = string.IsNullOrWhiteSpace(MiddleInitial)
+                ? ""
+                : $" {MiddleInitial}.";
+            return $"{LastName}, {FirstName}{mi}".Trim(' ', ',');
+        }
+    }
+
+
+    // ── Conditional Visibility ──
+
+    public bool ShowArcSection =>
+        Component.Contains("Reserve", StringComparison.OrdinalIgnoreCase) ||
+        Component.Contains("National Guard", StringComparison.OrdinalIgnoreCase);
 
     // ── Item 7: Organization/Unit ──
 
@@ -81,7 +101,7 @@ public class MemberInfoFormModel : TrackableModel
     /// Gets or sets the member's status at the time of the incident
     /// (e.g., AFR, ANG). (Item 8)
     /// </summary>
-    public MemberStatus? MemberStatus { get; set; }
+    public string MemberStatus { get; set; } = string.Empty;
 
     // ── Item G: Timely Medical Unit Notification ──
 

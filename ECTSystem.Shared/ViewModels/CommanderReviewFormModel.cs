@@ -95,6 +95,12 @@ public class CommanderReviewFormModel : TrackableModel
     /// </summary>
     public string RecommendationRemarks { get; set; } = string.Empty;
 
+    // ── Conditional Visibility ──
+
+    public bool ShowMisconductExplanation => ResultOfMisconduct == true;
+
+    public bool ShowOtherSourceDescription => OtherSourcesReviewed == true;
+
     // ── Items 22–23: Commander Signature Block ──
 
     /// <summary>

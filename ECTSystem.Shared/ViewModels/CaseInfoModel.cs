@@ -27,6 +27,11 @@ public class CaseInfoModel
     public string Rank { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the grade or pay grade associated with the member.
+    /// </summary>
+    public string Grade { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the member's assigned unit or organization (e.g., "452 AMW (AFRC)").
     /// </summary>
     public string Unit { get; set; } = string.Empty;

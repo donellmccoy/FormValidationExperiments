@@ -62,9 +62,14 @@ public static partial class LineOfDutyCaseMapper
             MiddleInitial = middleInitial,
             SSN = source.ServiceNumber ?? string.Empty,
             DateOfBirth = source.MemberDateOfBirth ?? source.Member?.DateOfBirth,
-            Rank = ParseMilitaryRank(source.MemberRank),
+            Rank = ParseMilitaryRank(source.MemberRank) is { } parsedRank
+                ? FormatRankToFullName(parsedRank)
+                : source.MemberRank ?? string.Empty,
+            Component = FormatEnum(source.Component),
             OrganizationUnit = source.Unit ?? string.Empty,
-            MemberStatus = MapComponentToMemberStatus(source.Component),
+            MemberStatus = MapComponentToMemberStatus(source.Component) is { } ms
+                ? ms.ToString()
+                : string.Empty,
             NotifiedMedicalUnitTimely = source.NotifiedMedicalUnitTimely,
             SubmittedMedicalDocumentsTimely = source.SubmittedMedicalDocumentsTimely,
             InvolvesSexualAssault = source.IsSexualAssaultCase,
@@ -205,13 +210,14 @@ public static partial class LineOfDutyCaseMapper
 
         target.ServiceNumber = model.SSN ?? string.Empty;
         target.MemberDateOfBirth = model.DateOfBirth;
-        target.MemberRank = model.Rank.HasValue ? FormatRankToPayGrade(model.Rank.Value) : string.Empty;
+        target.MemberRank = model.Rank ?? string.Empty;
         target.Unit = model.OrganizationUnit;
         target.InitiationDate = model.ReportDate ?? target.InitiationDate;
 
-        if (model.MemberStatus.HasValue)
+        if (!string.IsNullOrWhiteSpace(model.MemberStatus) &&
+            Enum.TryParse<MemberStatus>(model.MemberStatus, ignoreCase: true, out var memberStatus))
         {
-            target.Component = MapMemberStatusToComponent(model.MemberStatus.Value);
+            target.Component = MapMemberStatusToComponent(memberStatus);
         }
 
         // Notification & Reporting
@@ -296,7 +302,7 @@ public static partial class LineOfDutyCaseMapper
         commander.Title = model.CommanderOrganization;
         if (!string.IsNullOrWhiteSpace(model.RecommendationRemarks))
         {
-            commander.Comments = new List<string> { model.RecommendationRemarks };
+            commander.Comments = [model.RecommendationRemarks];
         }
     }
 
@@ -345,7 +351,7 @@ public static partial class LineOfDutyCaseMapper
         if (authority is null)
         {
             authority = new LineOfDutyAuthority { Role = role };
-            source.Authorities ??= new List<LineOfDutyAuthority>();
+            source.Authorities ??= [];
             source.Authorities.Add(authority);
         }
         return authority;
@@ -451,17 +457,6 @@ public static partial class LineOfDutyCaseMapper
         }
 
         return serviceNumber;
-    }
-
-    private static string ExtractLastFourSsn(string serviceNumber)
-    {
-        if (string.IsNullOrWhiteSpace(serviceNumber))
-        {
-            return string.Empty;
-        }
-
-        var digits = serviceNumber.Replace("-", "");
-        return digits.Length >= 4 ? digits[^4..] : digits;
     }
 
     private static void ParseMemberName(string fullName, out string lastName, out string firstName, out string middleInitial)

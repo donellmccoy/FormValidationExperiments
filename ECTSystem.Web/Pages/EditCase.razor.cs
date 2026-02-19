@@ -18,11 +18,11 @@ namespace ECTSystem.Web.Pages;
 
 public partial class EditCase : ComponentBase, IDisposable
 {
-    // ──── Tab Name Constants ────
     private static class TabNames
     {
         public const string MemberInformation = "Member Information";
         public const string MedicalTechnician = "Medical Technician";
+        public const string MedicalOfficer = "Medical Officer";
         public const string CommanderReview = "Commander Review";
         public const string WingJAReview = "Wing JA Review";
         public const string LegalSJAReview = "Legal SJA Review";
@@ -52,6 +52,24 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
+    private string memberSearchText = string.Empty;
+
+    private List<Member> memberSearchResults = [];
+
+    private bool isMemberSearching;
+
+    private CancellationTokenSource _searchCts = new();
+
+    private RadzenTextBox _memberSearchTextBox;
+
+    private Popup _memberSearchPopup;
+
+    private RadzenDataGrid<Member> _memberSearchGrid;
+
+    private int _memberSearchSelectedIndex;
+
+    private System.Timers.Timer _debounceTimer;
+
     private readonly CancellationTokenSource _cts = new();
 
     private LineOfDutyCase _lodCase;
@@ -74,7 +92,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private MedicalAssessmentFormModel _formModel = new();
 
-    private RadzenTemplateForm<MedicalAssessmentFormModel> medicalForm;
+    private RadzenTemplateForm<MedicalAssessmentFormModel> _medicalForm;
 
     private CommanderReviewFormModel _commanderFormModel = new();
 
@@ -86,72 +104,19 @@ public partial class EditCase : ComponentBase, IDisposable
         MemberName = "Pending...",
         Component = "Pending...",
         Rank = "Pending...",
+        Grade = "Pending...",
         Unit = "Pending...",
         DateOfInjury = "Pending...",
         Status = "New"
     };
 
-    // ──── Form Model Collection ────
     private IReadOnlyList<TrackableModel> AllFormModels => [_memberFormModel, _formModel, _commanderFormModel, _legalFormModel];
 
-    // ──── Dirty Tracking ────
     private bool HasAnyChanges => AllFormModels.Any(m => m.IsDirty);
-
-    // ──── Conditional Visibility ────
-    private bool ShowSubstanceType => _formModel.WasUnderInfluence == true;
-
-    // ──── Lookup Data ────
-    private IEnumerable<MilitaryRank> militaryRanks = Enum.GetValues<MilitaryRank>();
-
-    private bool ShowToxicologyResults => _formModel.ToxicologyTestDone == true;
-
-    private bool ShowPsychEvalDetails => _formModel.PsychiatricEvalCompleted == true;
-
-    private bool ShowOtherTestDetails => _formModel.OtherTestsDone == true;
-
-    private bool ShowArcSection => true; // Set true for demo; in production, derive from member's ServiceComponent (AFR/ANG)
-    private bool ShowArcSubFields => _formModel.IsAtDeployedLocation == false;
-
-    private string MemberFullName
-    {
-        get
-        {
-            var mi = string.IsNullOrWhiteSpace(_memberFormModel.MiddleInitial)
-                ? ""
-                : $" {_memberFormModel.MiddleInitial}.";
-            return $"{_memberFormModel.LastName}, {_memberFormModel.FirstName}{mi}".Trim(' ', ',');
-        }
-    }
-
-    private string MemberGrade => _memberGrade ?? "";
-
-    private string MemberDateOfBirth => _memberFormModel.DateOfBirth?.ToString("MM/dd/yyyy") ?? "";
-
-    private bool ShowServiceAggravated => _formModel.IsEptsNsa == true;
-
-    // ──── Commander Review Conditional Visibility ────
-    private bool ShowMisconductExplanation => _commanderFormModel.ResultOfMisconduct == true;
-
-    private bool ShowOtherSourceDescription => _commanderFormModel.OtherSourcesReviewed == true;
-
-    // ──── Legal SJA Review Conditional Visibility ────
-    private bool ShowNonConcurrenceReason => _legalFormModel.ConcurWithRecommendation == false;
 
     private List<WorkflowStep> workflowSteps = [];
 
     private WorkflowStep CurrentStep => workflowSteps.Count > 0 ? workflowSteps[currentStepIndex] : null;
-
-    // ──── Member Search ────
-    private string _memberGrade = string.Empty;
-    private string memberSearchText = string.Empty;
-    private List<Member> memberSearchResults = [];
-    private bool isMemberSearching;
-    private CancellationTokenSource _searchCts = new();
-    private RadzenTextBox _memberSearchTextBox;
-    private Popup _memberSearchPopup;
-    private RadzenDataGrid<Member> _memberSearchGrid;
-    private int _memberSearchSelectedIndex;
-    private System.Timers.Timer _debounceTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -191,7 +156,7 @@ public partial class EditCase : ComponentBase, IDisposable
             _commanderFormModel = dto.CommanderReview;
             _legalFormModel = dto.LegalSJAReview;
 
-            _memberGrade = _lodCase.MemberRank ?? string.Empty;
+            _memberFormModel.Grade = _lodCase.MemberRank ?? string.Empty;
 
             InitializeWorkflowSteps();
 
@@ -296,31 +261,6 @@ public partial class EditCase : ComponentBase, IDisposable
         selectedTabIndex = 0;
     }
 
-    private async Task OnMemberForwardClick()
-    {
-        var confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward this case to the Medical Officer?",
-            "Confirm Forward",
-            new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding to Medical Officer...");
-
-        try
-        {
-            NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
-                "Case has been forwarded to the Medical Officer.");
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
     private async Task OnStartLod()
     {
         var confirmed = await DialogService.Confirm(
@@ -355,8 +295,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             TakeSnapshots();
 
-            NotificationService.Notify(NotificationSeverity.Success, "LOD Started",
-                $"Case {saved.CaseId} created for {saved.MemberName}.");
+            NotificationService.Notify(NotificationSeverity.Success, "LOD Started",$"Case {saved.CaseId} created for {saved.MemberName}.");
 
             Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
         }
@@ -380,7 +319,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         // Validate the medical tab before saving
-        if (selectedTabIndex == 1 && medicalForm?.EditContext?.Validate() == false)
+        if (selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
         {
             return;
         }
@@ -390,7 +329,7 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             0 => TabNames.MemberInformation,
             1 => TabNames.MedicalTechnician,
-            2 => "Medical Officer",
+            2 => TabNames.MedicalOfficer,
             3 => TabNames.CommanderReview,
             4 => TabNames.WingJAReview,
             5 => TabNames.LegalSJAReview,
@@ -1498,8 +1437,6 @@ public partial class EditCase : ComponentBase, IDisposable
         StateHasChanged();
     }
 
-    // ──── Child-Clearing Handlers ────
-
     private void OnIsMilitaryFacilityChanged()
     {
         if (_formModel.IsMilitaryFacility != true)
@@ -1662,59 +1599,19 @@ public partial class EditCase : ComponentBase, IDisposable
         _memberFormModel.OrganizationUnit = member.Unit;
         _memberFormModel.SSN = member.ServiceNumber;
         _memberFormModel.DateOfBirth = member.DateOfBirth;
+        _memberFormModel.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
+        var parsedRank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
+        _memberFormModel.Rank = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value) : member.Rank;
+        _memberFormModel.Grade = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value): member.Rank;
 
-        _memberFormModel.Rank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
-
-        var parsedRank = _memberFormModel.Rank;
-        _memberGrade = parsedRank.HasValue
-            ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value)
-            : member.Rank;
-
-        _caseInfo.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
-        _caseInfo.Rank = parsedRank.HasValue
-            ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value)
-            : member.Rank;
-        _caseInfo.MemberName = $"{member.LastName}, {member.FirstName}";
-        _caseInfo.Unit = member.Unit;
+        _caseInfo.MemberName = $"{_memberFormModel.LastName}, {_memberFormModel.FirstName}";
+        _caseInfo.Component = _memberFormModel.Component;
+        _caseInfo.Rank = _memberFormModel.Rank;
+        _caseInfo.Grade = _memberFormModel.Grade;
+        _caseInfo.Unit = _memberFormModel.OrganizationUnit;
 
         selectedTabIndex = 0;
         StateHasChanged();
-    }
-
-    private async Task CreateCaseForMemberAsync(Member member)
-    {
-        await SetBusyAsync("Creating case...");
-
-        try
-        {
-            var newCase = new LineOfDutyCase
-            {
-                CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
-                MemberName = $"{member.LastName}, {member.FirstName}",
-                MemberRank = member.Rank,
-                MemberDateOfBirth = member.DateOfBirth,
-                ServiceNumber = member.ServiceNumber,
-                Unit = member.Unit,
-                Component = member.Component,
-                MemberId = member.Id,
-                InitiationDate = DateTime.UtcNow,
-                IncidentDate = DateTime.UtcNow
-            };
-
-            var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
-
-            NotificationService.Notify(NotificationSeverity.Success, "Case Created", $"Case {saved.CaseId} created for {member.Rank} {member.LastName}.");
-
-            Navigation.NavigateTo($"/case/{saved.CaseId}");
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Create Failed", ex.Message);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
     }
 
     public void Dispose()
