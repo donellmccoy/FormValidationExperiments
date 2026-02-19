@@ -116,13 +116,13 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="CommanderReviewFormModel"/> (AF Form 348, Items 16–23).
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="UnitCommanderFormModel"/> (AF Form 348, Items 16–23).
     /// </summary>
-    public static CommanderReviewFormModel ToCommanderReviewFormModel(LineOfDutyCase source)
+    public static UnitCommanderFormModel ToUnitCommanderFormModel(LineOfDutyCase source)
     {
         var commander = FindAuthority(source, "Immediate Commander");
 
-        return new CommanderReviewFormModel
+        return new UnitCommanderFormModel
         {
             MemberStatementReviewed = source.MemberStatementReviewed,
             MedicalRecordsReviewed = source.MedicalRecordsReviewed,
@@ -148,14 +148,14 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="LegalSJAReviewFormModel"/> (AF Form 348, Items 24–25).
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="WingCommanderFormModel"/>.
     /// </summary>
-    public static LegalSJAReviewFormModel ToLegalSJAReviewFormModel(LineOfDutyCase source)
+    public static WingCommanderFormModel ToWingCommanderFormModel(LineOfDutyCase source)
     {
         var sja = FindAuthority(source, "Staff Judge Advocate");
         var isLegallySufficient = sja?.Recommendation?.Contains("sufficient", StringComparison.OrdinalIgnoreCase) == true;
 
-        return new LegalSJAReviewFormModel
+        return new WingCommanderFormModel
         {
             IsLegallySufficient = sja != null ? isLegallySufficient : null,
             ConcurWithRecommendation = sja != null ? true : null,
@@ -168,6 +168,38 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="MedicalTechnicianFormModel"/>.
+    /// </summary>
+    public static MedicalTechnicianFormModel ToMedicalTechnicianFormModel(LineOfDutyCase source)
+    {
+        return new MedicalTechnicianFormModel();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="WingJudgeAdvocateFormModel"/>.
+    /// </summary>
+    public static WingJudgeAdvocateFormModel ToWingJudgeAdvocateFormModel(LineOfDutyCase source)
+    {
+        return new WingJudgeAdvocateFormModel();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="AppointingAuthorityFormModel"/>.
+    /// </summary>
+    public static AppointingAuthorityFormModel ToAppointingAuthorityFormModel(LineOfDutyCase source)
+    {
+        return new AppointingAuthorityFormModel();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="LineOfDutyBoardFormModel"/>.
+    /// </summary>
+    public static LineOfDutyBoardFormModel ToLineOfDutyBoardFormModel(LineOfDutyCase source)
+    {
+        return new LineOfDutyBoardFormModel();
+    }
+
+    /// <summary>
     /// Maps a <see cref="LineOfDutyCase"/> to a complete <see cref="CaseViewModelsDto"/>.
     /// </summary>
     public static CaseViewModelsDto ToCaseViewModelsDto(LineOfDutyCase source)
@@ -177,8 +209,12 @@ public static partial class LineOfDutyCaseMapper
             CaseInfo = ToCaseInfoModel(source),
             MemberInfo = ToMemberInfoFormModel(source),
             MedicalAssessment = ToMedicalAssessmentFormModel(source),
-            CommanderReview = ToCommanderReviewFormModel(source),
-            LegalSJAReview = ToLegalSJAReviewFormModel(source)
+            UnitCommander = ToUnitCommanderFormModel(source),
+            WingCommander = ToWingCommanderFormModel(source),
+            MedicalTechnician = ToMedicalTechnicianFormModel(source),
+            WingJudgeAdvocate = ToWingJudgeAdvocateFormModel(source),
+            AppointingAuthority = ToAppointingAuthorityFormModel(source),
+            BoardReview = ToLineOfDutyBoardFormModel(source)
         };
     }
 
@@ -273,9 +309,9 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
-    /// Applies <see cref="CommanderReviewFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// Applies <see cref="UnitCommanderFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
     /// </summary>
-    public static void ApplyCommanderReview(CommanderReviewFormModel model, LineOfDutyCase target)
+    public static void ApplyUnitCommander(UnitCommanderFormModel model, LineOfDutyCase target)
     {
         target.MemberStatementReviewed = model.MemberStatementReviewed;
         target.MedicalRecordsReviewed = model.MedicalRecordsReviewed;
@@ -307,9 +343,9 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
-    /// Applies <see cref="LegalSJAReviewFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// Applies <see cref="WingCommanderFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
     /// </summary>
-    public static void ApplyLegalSJAReview(LegalSJAReviewFormModel model, LineOfDutyCase target)
+    public static void ApplyWingCommander(WingCommanderFormModel model, LineOfDutyCase target)
     {
         var sja = FindOrCreateAuthority(target, "Staff Judge Advocate");
         sja.Name = model.SJAName;
@@ -333,14 +369,46 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
+    /// Applies <see cref="MedicalTechnicianFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyMedicalTechnician(MedicalTechnicianFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
+    /// Applies <see cref="WingJudgeAdvocateFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyWingJudgeAdvocate(WingJudgeAdvocateFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
+    /// Applies <see cref="AppointingAuthorityFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyAppointingAuthority(AppointingAuthorityFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
+    /// Applies <see cref="LineOfDutyBoardFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyBoardReview(LineOfDutyBoardFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
     /// Applies all view model changes from a <see cref="CaseViewModelsDto"/> to a <see cref="LineOfDutyCase"/>.
     /// </summary>
     public static void ApplyAll(CaseViewModelsDto dto, LineOfDutyCase target)
     {
         ApplyMemberInfo(dto.MemberInfo, target);
         ApplyMedicalAssessment(dto.MedicalAssessment, target);
-        ApplyCommanderReview(dto.CommanderReview, target);
-        ApplyLegalSJAReview(dto.LegalSJAReview, target);
+        ApplyUnitCommander(dto.UnitCommander, target);
+        ApplyWingCommander(dto.WingCommander, target);
+        ApplyMedicalTechnician(dto.MedicalTechnician, target);
+        ApplyWingJudgeAdvocate(dto.WingJudgeAdvocate, target);
+        ApplyAppointingAuthority(dto.AppointingAuthority, target);
+        ApplyBoardReview(dto.BoardReview, target);
     }
 
     // ──────────────────────────── Helper Methods ────────────────────────────

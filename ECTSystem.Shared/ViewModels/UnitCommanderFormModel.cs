@@ -3,11 +3,11 @@ using ECTSystem.Shared.Enums;
 namespace ECTSystem.Shared.ViewModels;
 
 /// <summary>
-/// Form model for the Commander Review step (AF Form 348, Items 16–23).
+/// Form model for the Unit Commander Review step (AF Form 348, Items 16–23).
 /// Captures the commander's endorsement, sources of information reviewed,
 /// misconduct assessment, proximate cause analysis, and recommendation.
 /// </summary>
-public class CommanderReviewFormModel : TrackableModel
+public class UnitCommanderFormModel : TrackableModel
 {
     // ── Item 16: Sources of Information ──
 

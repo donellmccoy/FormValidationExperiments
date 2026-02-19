@@ -3,11 +3,11 @@ using ECTSystem.Shared.Enums;
 namespace ECTSystem.Shared.ViewModels;
 
 /// <summary>
-/// Form model for the Legal / Staff Judge Advocate (SJA) Review step
-/// (AF Form 348, Items 24–25). Captures legal sufficiency determination,
+/// Form model for the Wing Commander Review step.
+/// Captures legal sufficiency determination,
 /// concurrence with the commander's recommendation, and SJA signature.
 /// </summary>
-public class LegalSJAReviewFormModel : TrackableModel
+public class WingCommanderFormModel : TrackableModel
 {
     // ── Item 24: Legal Sufficiency Review ──
 

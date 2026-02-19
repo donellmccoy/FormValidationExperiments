@@ -23,9 +23,11 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string MemberInformation = "Member Information";
         public const string MedicalTechnician = "Medical Technician";
         public const string MedicalOfficer = "Medical Officer";
-        public const string CommanderReview = "Commander Review";
-        public const string WingJAReview = "Wing JA Review";
-        public const string LegalSJAReview = "Legal SJA Review";
+        public const string UnitCommander = "Unit CC Review";
+        public const string WingJudgeAdvocate = "Wing JA Review";
+        public const string WingCommander = "Wing CC Review";
+        public const string AppointingAuthority = "Appointing Authority";
+        public const string BoardReview = "Board Review";
         public const string Draft = "Draft";
     }
 
@@ -52,11 +54,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
-    private string memberSearchText = string.Empty;
+    private string _memberSearchText = string.Empty;
 
-    private List<Member> memberSearchResults = [];
+    private List<Member> _memberSearchResults = [];
 
-    private bool isMemberSearching;
+    private bool _isMemberSearching;
 
     private CancellationTokenSource _searchCts = new();
 
@@ -74,29 +76,37 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private LineOfDutyCase _lodCase;
 
-    private bool isLoading = true;
+    private bool _isLoading = true;
 
-    private bool isSaving;
+    private bool _isSaving;
 
     private bool _isBusy;
 
     private string _busyMessage = string.Empty;
 
-    private int selectedTabIndex;
+    private int _selectedTabIndex;
 
-    private int currentStepIndex;
+    private int _currentStepIndex;
 
     private int _selectedMemberId;
 
     private MemberInfoFormModel _memberFormModel = new();
 
-    private MedicalAssessmentFormModel _formModel = new();
+    private MedicalAssessmentFormModel _medicalFormModel = new();
 
     private RadzenTemplateForm<MedicalAssessmentFormModel> _medicalForm;
 
-    private CommanderReviewFormModel _commanderFormModel = new();
+    private UnitCommanderFormModel _commanderFormModel = new();
 
-    private LegalSJAReviewFormModel _legalFormModel = new();
+    private WingJudgeAdvocateFormModel _wingJAFormModel = new();
+
+    private WingCommanderFormModel _wingCommanderFormModel = new();
+
+    private MedicalTechnicianFormModel _medTechFormModel = new();
+
+    private AppointingAuthorityFormModel _appointingAuthorityFormModel = new();
+
+    private LineOfDutyBoardFormModel _boardFormModel = new();
 
     private CaseInfoModel _caseInfo = new()
     {
@@ -110,13 +120,13 @@ public partial class EditCase : ComponentBase, IDisposable
         Status = "New"
     };
 
-    private IReadOnlyList<TrackableModel> AllFormModels => [_memberFormModel, _formModel, _commanderFormModel, _legalFormModel];
+    private IReadOnlyList<TrackableModel> AllFormModels => [_memberFormModel, _medicalFormModel, _commanderFormModel, _wingJAFormModel, _wingCommanderFormModel, _medTechFormModel, _appointingAuthorityFormModel, _boardFormModel];
 
     private bool HasAnyChanges => AllFormModels.Any(m => m.IsDirty);
 
-    private List<WorkflowStep> workflowSteps = [];
+    private List<WorkflowStep> _workflowSteps = [];
 
-    private WorkflowStep CurrentStep => workflowSteps.Count > 0 ? workflowSteps[currentStepIndex] : null;
+    private WorkflowStep CurrentStep => _workflowSteps.Count > 0 ? _workflowSteps[_currentStepIndex] : null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -130,7 +140,7 @@ public partial class EditCase : ComponentBase, IDisposable
             await LoadCaseAsync();
         }
 
-        isLoading = false;
+        _isLoading = false;
     }
 
     private async Task LoadCaseAsync()
@@ -152,9 +162,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _caseInfo = dto.CaseInfo;
             _memberFormModel = dto.MemberInfo;
-            _formModel = dto.MedicalAssessment;
-            _commanderFormModel = dto.CommanderReview;
-            _legalFormModel = dto.LegalSJAReview;
+            _medicalFormModel = dto.MedicalAssessment;
+            _commanderFormModel = dto.UnitCommander;
+            _medTechFormModel = dto.MedicalTechnician;
+            _wingJAFormModel = dto.WingJudgeAdvocate;
+            _wingCommanderFormModel = dto.WingCommander;
+            _appointingAuthorityFormModel = dto.AppointingAuthority;
+            _boardFormModel = dto.BoardReview;
 
             _memberFormModel.Grade = _lodCase.MemberRank ?? string.Empty;
 
@@ -194,7 +208,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private void InitializeWorkflowSteps()
     {
-        workflowSteps =
+        _workflowSteps =
         [
             new() { Number = 1,  Name = "Start Line Of Duty",    Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
             new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,    StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
@@ -217,21 +231,41 @@ public partial class EditCase : ComponentBase, IDisposable
         await SaveCurrentTabAsync(TabNames.MemberInformation);
     }
 
-    private async Task OnCommanderFormSubmit(CommanderReviewFormModel model)
+    private async Task OnCommanderFormSubmit(UnitCommanderFormModel model)
     {
-        await SaveCurrentTabAsync(TabNames.CommanderReview);
+        await SaveCurrentTabAsync(TabNames.UnitCommander);
     }
 
-    private async Task OnLegalFormSubmit(LegalSJAReviewFormModel model)
+    private async Task OnWingJAFormSubmit(WingJudgeAdvocateFormModel model)
     {
-        await SaveCurrentTabAsync(TabNames.LegalSJAReview);
+        await SaveCurrentTabAsync(TabNames.WingJudgeAdvocate);
+    }
+
+    private async Task OnWingCommanderFormSubmit(WingCommanderFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.WingCommander);
+    }
+
+    private async Task OnMedTechFormSubmit(MedicalTechnicianFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
+    }
+
+    private async Task OnAppointingAuthorityFormSubmit(AppointingAuthorityFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.AppointingAuthority);
+    }
+
+    private async Task OnBoardFormSubmit(LineOfDutyBoardFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.BoardReview);
     }
 
     private void OnStepSelected(WorkflowStep step)
     {
-        currentStepIndex = step.Number - 1;
+        _currentStepIndex = step.Number - 1;
 
-        foreach (var s in workflowSteps)
+        foreach (var s in _workflowSteps)
         {
             if (s.Number < step.Number)
             {
@@ -258,7 +292,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
         }
 
-        selectedTabIndex = 0;
+        _selectedTabIndex = 0;
     }
 
     private async Task OnStartLod()
@@ -319,20 +353,22 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         // Validate the medical tab before saving
-        if (selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
+        if (_selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
         {
             return;
         }
 
         // Determine which tab to save based on the currently selected tab index
-        var source = selectedTabIndex switch
+        var source = _selectedTabIndex switch
         {
             0 => TabNames.MemberInformation,
             1 => TabNames.MedicalTechnician,
             2 => TabNames.MedicalOfficer,
-            3 => TabNames.CommanderReview,
-            4 => TabNames.WingJAReview,
-            5 => TabNames.LegalSJAReview,
+            3 => TabNames.UnitCommander,
+            4 => TabNames.WingJudgeAdvocate,
+            5 => TabNames.WingCommander,
+            6 => TabNames.AppointingAuthority,
+            7 => TabNames.BoardReview,
             _ => TabNames.Draft
         };
 
@@ -353,901 +389,350 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (item?.Value == "cancel")
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+            await CancelInvestigationAsync();
         }
         else
         {
-            var confirmed = await DialogService.Confirm(
+            await ConfirmAndNotifyAsync(
                 "Are you sure you want to forward this case to the Medical Officer?",
-                "Confirm Forward",
-                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Forwarding to Medical Officer...");
-
-            try
-            {
-                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Medical Officer",
-                    "Case has been forwarded to the Medical Officer for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                "Confirm Forward", "Forward",
+                "Forwarding to Medical Officer...",
+                NotificationSeverity.Success, "Forwarded to Medical Officer",
+                "Case has been forwarded to the Medical Officer for review.");
         }
     }
 
     private async Task OnMedicalForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return")
+        switch (item?.Value)
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Technician?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Med Tech...");
-
-            try
-            {
-                // Return to Med Tech
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Med Tech",
+            case "return":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Med Tech...",
+                    NotificationSeverity.Info, "Returned to Med Tech",
                     "Case has been returned to the Medical Technician for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "cancel")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                // Cancel Investigation
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to forward this case to the Unit Commander?",
-                "Confirm Forward",
-                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Forwarding to Unit CC...");
-
-            try
-            {
-                // Forward to Unit CC (default action)
-                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Unit CC",
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to forward this case to the Unit Commander?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Unit CC...",
+                    NotificationSeverity.Success, "Forwarded to Unit CC",
                     "Case has been forwarded to the Unit Commander.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                break;
         }
     }
 
     private async Task OnCommanderForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return-med-officer")
+        switch (item?.Value)
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Officer?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Officer...");
-
-            try
-            {
-                // Return to Medical Officer
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+            case "return-med-officer":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
                     "Case has been returned to the Medical Officer for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-tech")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Technician?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Technician...");
-
-            try
-            {
-                // Return to Medical Technician
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                break;
+            case "return-med-tech":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
                     "Case has been returned to the Medical Technician for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "cancel")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                // Cancel Investigation
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to forward this case to the Wing Judge Advocate?",
-                "Confirm Forward",
-                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Forwarding to Wing JA...");
-
-            try
-            {
-                // Forward to Wing JA (default action)
-                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing JA",
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to forward this case to the Wing Judge Advocate?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Wing JA...",
+                    NotificationSeverity.Success, "Forwarded to Wing JA",
                     "Case has been forwarded to the Wing Judge Advocate.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                break;
         }
     }
 
     private async Task OnWingJAForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return-unit-cc")
+        switch (item?.Value)
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Unit Commander?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Unit CC...");
-
-            try
-            {
-                // Return to Unit CC
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+            case "return-unit-cc":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
                     "Case has been returned to the Unit Commander for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-officer")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Officer?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Officer...");
-
-            try
-            {
-                // Return to Medical Officer
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                break;
+            case "return-med-officer":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
                     "Case has been returned to the Medical Officer for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-tech")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Technician?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Technician...");
-
-            try
-            {
-                // Return to Medical Technician
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                break;
+            case "return-med-tech":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
                     "Case has been returned to the Medical Technician for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "cancel")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                // Cancel Investigation
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to forward this case to the Wing Commander?",
-                "Confirm Forward",
-                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Forwarding to Wing CC...");
-
-            try
-            {
-                // Forward to Wing CC (default action)
-                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing CC",
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to forward this case to the Wing Commander?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Wing CC...",
+                    NotificationSeverity.Success, "Forwarded to Wing CC",
                     "Case has been forwarded to the Wing Commander.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                break;
         }
     }
 
     private async Task OnLegalForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return-wing-ja")
+        switch (item?.Value)
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Wing Judge Advocate?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Wing JA...");
-
-            try
-            {
-                // Return to Wing JA
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA",
+            case "return-wing-ja":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, "Returned to Wing JA",
                     "Case has been returned to the Wing Judge Advocate for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Unit Commander?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Unit CC...");
-
-            try
-            {
-                // Return to Unit CC
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+                break;
+            case "return":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
                     "Case has been returned to the Unit Commander for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-officer")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Officer?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Officer...");
-
-            try
-            {
-                // Return to Medical Officer
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                break;
+            case "return-med-officer":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
                     "Case has been returned to the Medical Officer for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-tech")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Technician?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Technician...");
-
-            try
-            {
-                // Return to Medical Technician
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                break;
+            case "return-med-tech":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
                     "Case has been returned to the Medical Technician for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "cancel")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                // Cancel Investigation
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to forward this case to the Wing Commander?",
-                "Confirm Forward",
-                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Forwarding to Wing CC...");
-
-            try
-            {
-                // Forward to Wing CC (default action)
-                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Wing CC",
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to forward this case to the Wing Commander?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Wing CC...",
+                    NotificationSeverity.Success, "Forwarded to Wing CC",
                     "Case has been forwarded to the Wing Commander.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                break;
         }
     }
 
     private async Task OnWingForwardClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return-wing-cc")
+        switch (item?.Value)
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Wing Commander?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Wing CC...");
-
-            try
-            {
-                // Return to Wing CC
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing CC",
+            case "return-wing-cc":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Wing Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing CC...",
+                    NotificationSeverity.Info, "Returned to Wing CC",
                     "Case has been returned to the Wing Commander for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-wing-ja")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Wing Judge Advocate?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Wing JA...");
-
-            try
-            {
-                // Return to Wing JA
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA",
+                break;
+            case "return-wing-ja":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, "Returned to Wing JA",
                     "Case has been returned to the Wing Judge Advocate for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-unit-cc")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Unit Commander?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Unit CC...");
-
-            try
-            {
-                // Return to Unit CC
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+                break;
+            case "return-unit-cc":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
                     "Case has been returned to the Unit Commander for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-officer")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Officer?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Officer...");
-
-            try
-            {
-                // Return to Medical Officer
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                break;
+            case "return-med-officer":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
                     "Case has been returned to the Medical Officer for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-tech")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Technician?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Technician...");
-
-            try
-            {
-                // Return to Medical Technician
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                break;
+            case "return-med-tech":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
                     "Case has been returned to the Medical Technician for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "cancel")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                // Cancel Investigation
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to forward this case to the Board for review?",
-                "Confirm Forward",
-                new ConfirmOptions { OkButtonText = "Forward", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Forwarding to Board Review...");
-
-            try
-            {
-                // Forward to Board Review (default action)
-                NotificationService.Notify(NotificationSeverity.Success, "Forwarded to Board Review",
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to forward this case to the Board for review?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Review...",
+                    NotificationSeverity.Success, "Forwarded to Board Review",
                     "Case has been forwarded to the Board for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                break;
         }
     }
 
     private async Task OnBoardCompleteClick(RadzenSplitButtonItem item)
     {
-        if (item?.Value == "return-appointing-authority")
+        switch (item?.Value)
         {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Appointing Authority?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Appointing Authority...");
-
-            try
-            {
-                // Return to Appointing Authority
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Appointing Authority",
+            case "return-appointing-authority":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Appointing Authority?",
+                    "Confirm Return", 
+                    "Return",
+                    "Returning to Appointing Authority...",
+                    NotificationSeverity.Info, 
+                    "Returned to Appointing Authority",
                     "Case has been returned to the Appointing Authority for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-wing-cc")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Wing Commander?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Wing CC...");
-
-            try
-            {
-                // Return to Wing CC
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing CC",
+                break;
+            case "return-wing-cc":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Wing Commander?",
+                    "Confirm Return", 
+                    "Return",
+                    "Returning to Wing CC...",
+                    NotificationSeverity.Info, 
+                    "Returned to Wing CC",
                     "Case has been returned to the Wing Commander for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-wing-ja")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Wing Judge Advocate?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Wing JA...");
-
-            try
-            {
-                // Return to Wing JA
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Wing JA",
+                break;
+            case "return-wing-ja":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", 
+                    "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, 
+                    "Returned to Wing JA",
                     "Case has been returned to the Wing Judge Advocate for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-unit-cc")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Unit Commander?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Unit CC...");
-
-            try
-            {
-                // Return to Unit CC
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Unit CC",
+                break;
+            case "return-unit-cc":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", 
+                    "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, 
+                    "Returned to Unit CC",
                     "Case has been returned to the Unit Commander for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-officer")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Officer?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Officer...");
-
-            try
-            {
-                // Return to Medical Officer
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Officer",
+                break;
+            case "return-med-officer":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", 
+                    "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, 
+                    "Returned to Medical Officer",
                     "Case has been returned to the Medical Officer for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "return-med-tech")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to return this case to the Medical Technician?",
-                "Confirm Return",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Returning to Medical Technician...");
-
-            try
-            {
-                // Return to Medical Technician
-                NotificationService.Notify(NotificationSeverity.Info, "Returned to Medical Technician",
+                break;
+            case "return-med-tech":
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", 
+                    "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, 
+                    "Returned to Medical Technician",
                     "Case has been returned to the Medical Technician for review.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else if (item?.Value == "cancel")
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this investigation?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Yes, Cancel", CancelButtonText = "No" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Cancelling investigation...");
-
-            try
-            {
-                // Cancel Investigation
-                NotificationService.Notify(NotificationSeverity.Warning, "Investigation Cancelled",
-                    "The LOD investigation has been cancelled.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-        }
-        else
-        {
-            var confirmed = await DialogService.Confirm(
-                "Are you sure you want to complete the Board review?",
-                "Confirm Complete",
-                new ConfirmOptions { OkButtonText = "Complete", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Completing Board review...");
-
-            try
-            {
-                // Complete Review (default action)
-                NotificationService.Notify(NotificationSeverity.Success, "Review Completed",
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ConfirmAndNotifyAsync(
+                    "Are you sure you want to complete the Board review?",
+                    "Confirm Complete", 
+                    "Complete",
+                    "Completing Board review...",
+                    NotificationSeverity.Success, 
+                    "Review Completed",
                     "The Board review has been completed.");
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
+                break;
         }
+    }
+
+    private async Task ConfirmAndNotifyAsync(
+        string confirmMessage, 
+        string confirmTitle, 
+        string okButtonText,
+        string busyMessage, 
+        NotificationSeverity severity,
+        string notifySummary, 
+        string notifyDetail,
+        string cancelButtonText = "Cancel")
+    {
+        var confirmed = await DialogService.Confirm(confirmMessage, confirmTitle,
+            new ConfirmOptions { OkButtonText = okButtonText, CancelButtonText = cancelButtonText });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync(busyMessage);
+
+        try
+        {
+            NotificationService.Notify(severity, notifySummary, notifyDetail);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private Task CancelInvestigationAsync()
+    {
+        return ConfirmAndNotifyAsync(
+            "Are you sure you want to cancel this investigation?",
+            "Confirm Cancellation", 
+            "Yes, Cancel",
+            "Cancelling investigation...",
+            NotificationSeverity.Warning, 
+            "Investigation Cancelled",
+            "The LOD investigation has been cancelled.", 
+            "No");
     }
 
     private async Task OnDigitallySign()
@@ -1284,12 +769,12 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task SaveCurrentTabAsync(string source)
     {
-        if (isSaving)
+        if (_isSaving)
         {
             return;
         }
 
-        isSaving = true;
+        _isSaving = true;
         await SetBusyAsync("Saving...");
 
         try
@@ -1301,24 +786,36 @@ public partial class EditCase : ComponentBase, IDisposable
                     LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, _lodCase);
                     break;
                 case TabNames.MedicalTechnician:
-                    LineOfDutyCaseMapper.ApplyMedicalAssessment(_formModel, _lodCase);
+                    LineOfDutyCaseMapper.ApplyMedicalAssessment(_medicalFormModel, _lodCase);
                     break;
-                case TabNames.CommanderReview:
-                    LineOfDutyCaseMapper.ApplyCommanderReview(_commanderFormModel, _lodCase);
+                case TabNames.UnitCommander:
+                    LineOfDutyCaseMapper.ApplyUnitCommander(_commanderFormModel, _lodCase);
                     break;
-                case TabNames.LegalSJAReview:
-                    LineOfDutyCaseMapper.ApplyLegalSJAReview(_legalFormModel, _lodCase);
+                case TabNames.WingJudgeAdvocate:
+                    LineOfDutyCaseMapper.ApplyWingJudgeAdvocate(_wingJAFormModel, _lodCase);
+                    break;
+                case TabNames.WingCommander:
+                    LineOfDutyCaseMapper.ApplyWingCommander(_wingCommanderFormModel, _lodCase);
+                    break;
+                case TabNames.AppointingAuthority:
+                    LineOfDutyCaseMapper.ApplyAppointingAuthority(_appointingAuthorityFormModel, _lodCase);
+                    break;
+                case TabNames.BoardReview:
+                    LineOfDutyCaseMapper.ApplyBoardReview(_boardFormModel, _lodCase);
                     break;
                 default:
-                    // Draft / save-all: apply everything
                     LineOfDutyCaseMapper.ApplyAll(
                         new CaseViewModelsDto
                         {
                             CaseInfo = _caseInfo,
                             MemberInfo = _memberFormModel,
-                            MedicalAssessment = _formModel,
-                            CommanderReview = _commanderFormModel,
-                            LegalSJAReview = _legalFormModel
+                            MedicalAssessment = _medicalFormModel,
+                            UnitCommander = _commanderFormModel,
+                            MedicalTechnician = _medTechFormModel,
+                            WingJudgeAdvocate = _wingJAFormModel,
+                            WingCommander = _wingCommanderFormModel,
+                            AppointingAuthority = _appointingAuthorityFormModel,
+                            BoardReview = _boardFormModel
                         },
                         _lodCase);
                     break;
@@ -1337,13 +834,22 @@ public partial class EditCase : ComponentBase, IDisposable
                     _memberFormModel.TakeSnapshot(JsonOptions);
                     break;
                 case TabNames.MedicalTechnician:
-                    _formModel.TakeSnapshot(JsonOptions);
+                    _medicalFormModel.TakeSnapshot(JsonOptions);
                     break;
-                case TabNames.CommanderReview:
+                case TabNames.UnitCommander:
                     _commanderFormModel.TakeSnapshot(JsonOptions);
                     break;
-                case TabNames.LegalSJAReview:
-                    _legalFormModel.TakeSnapshot(JsonOptions);
+                case TabNames.WingJudgeAdvocate:
+                    _wingJAFormModel.TakeSnapshot(JsonOptions);
+                    break;
+                case TabNames.WingCommander:
+                    _wingCommanderFormModel.TakeSnapshot(JsonOptions);
+                    break;
+                case TabNames.AppointingAuthority:
+                    _appointingAuthorityFormModel.TakeSnapshot(JsonOptions);
+                    break;
+                case TabNames.BoardReview:
+                    _boardFormModel.TakeSnapshot(JsonOptions);
                     break;
                 default:
                     TakeSnapshots();
@@ -1374,7 +880,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         finally
         {
-            isSaving = false;
+            _isSaving = false;
             await SetBusyAsync(isBusy: false);
         }
     }
@@ -1383,7 +889,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         _busyMessage = message;
         _isBusy = isBusy.GetValueOrDefault(true);
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task OnRevertChanges()
@@ -1414,92 +920,68 @@ public partial class EditCase : ComponentBase, IDisposable
         StateHasChanged();
     }
 
-    private void OnSsnChanged(ChangeEventArgs args)
-    {
-        var value = args.Value?.ToString();
-
-        if (string.IsNullOrEmpty(value))
-        {
-            _memberFormModel.SSN = string.Empty;
-
-            return;
-        }
-
-        var digits = new string([.. value.Where(char.IsDigit)]);
-
-        if (digits.Length > 4)
-        {
-            digits = digits[..4];
-        }
-
-        _memberFormModel.SSN = digits;
-
-        StateHasChanged();
-    }
-
     private void OnIsMilitaryFacilityChanged()
     {
-        if (_formModel.IsMilitaryFacility != true)
+        if (_medicalFormModel.IsMilitaryFacility != true)
         {
-            _formModel.TreatmentFacilityName = null;
+            _medicalFormModel.TreatmentFacilityName = null;
         }
     }
 
     private void OnWasUnderInfluenceChanged()
     {
-        if (_formModel.WasUnderInfluence != true)
+        if (_medicalFormModel.WasUnderInfluence != true)
         {
-            _formModel.SubstanceType = null;
+            _medicalFormModel.SubstanceType = null;
         }
     }
 
     private void OnToxicologyTestDoneChanged()
     {
-        if (_formModel.ToxicologyTestDone != true)
+        if (_medicalFormModel.ToxicologyTestDone != true)
         {
-            _formModel.ToxicologyTestResults = null;
+            _medicalFormModel.ToxicologyTestResults = null;
         }
     }
 
     private void OnPsychiatricEvalCompletedChanged()
     {
-        if (_formModel.PsychiatricEvalCompleted != true)
+        if (_medicalFormModel.PsychiatricEvalCompleted != true)
         {
-            _formModel.PsychiatricEvalDate = null;
-            _formModel.PsychiatricEvalResults = null;
+            _medicalFormModel.PsychiatricEvalDate = null;
+            _medicalFormModel.PsychiatricEvalResults = null;
         }
     }
 
     private void OnOtherTestsDoneChanged()
     {
-        if (_formModel.OtherTestsDone != true)
+        if (_medicalFormModel.OtherTestsDone != true)
         {
-            _formModel.OtherTestDate = null;
-            _formModel.OtherTestResults = null;
+            _medicalFormModel.OtherTestDate = null;
+            _medicalFormModel.OtherTestResults = null;
         }
     }
 
     private void OnIsEptsNsaChanged()
     {
-        if (_formModel.IsEptsNsa != true)
+        if (_medicalFormModel.IsEptsNsa != true)
         {
-            _formModel.IsServiceAggravated = null;
+            _medicalFormModel.IsServiceAggravated = null;
         }
     }
 
     private void OnIsAtDeployedLocationChanged()
     {
-        if (_formModel.IsAtDeployedLocation != false)
+        if (_medicalFormModel.IsAtDeployedLocation != false)
         {
-            _formModel.RequiresArcBoard = null;
+            _medicalFormModel.RequiresArcBoard = null;
         }
     }
 
     private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
     {
-        var items = memberSearchResults;
+        var items = _memberSearchResults;
         var popupOpened = await JSRuntime.InvokeAsync<bool>("Radzen.popupOpened", "member-search-popup");
-
         var key = args.Code ?? args.Key;
 
         if (!args.AltKey && (key == "ArrowDown" || key == "ArrowUp"))
@@ -1530,14 +1012,14 @@ public partial class EditCase : ComponentBase, IDisposable
     private async Task OnMemberSearchInput(ChangeEventArgs args)
     {
         _memberSearchSelectedIndex = 0;
-        memberSearchText = args.Value?.ToString() ?? string.Empty;
+        _memberSearchText = args.Value?.ToString() ?? string.Empty;
 
         _debounceTimer?.Stop();
         _debounceTimer?.Dispose();
 
-        if (string.IsNullOrWhiteSpace(memberSearchText))
+        if (string.IsNullOrWhiteSpace(_memberSearchText))
         {
-            memberSearchResults = [];
+            _memberSearchResults = [];
 
             StateHasChanged();
 
@@ -1558,12 +1040,12 @@ public partial class EditCase : ComponentBase, IDisposable
                 _searchCts.Dispose();
                 _searchCts = new CancellationTokenSource();
 
-                isMemberSearching = true;
+                _isMemberSearching = true;
                 StateHasChanged();
 
                 try
                 {
-                    memberSearchResults = await CaseService.SearchMembersAsync(memberSearchText, _searchCts.Token);
+                    _memberSearchResults = await CaseService.SearchMembersAsync(_memberSearchText, _searchCts.Token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -1572,11 +1054,11 @@ public partial class EditCase : ComponentBase, IDisposable
                 catch (Exception ex)
                 {
                     NotificationService.Notify(NotificationSeverity.Error, "Search Failed", ex.Message);
-                    memberSearchResults = [];
+                    _memberSearchResults = [];
                 }
                 finally
                 {
-                    isMemberSearching = false;
+                    _isMemberSearching = false;
 
                     StateHasChanged();
                 }
@@ -1588,7 +1070,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnMemberSelected(Member member)
     {
-        memberSearchText = string.Empty;
+        _memberSearchText = string.Empty;
         await _memberSearchPopup.CloseAsync();
 
         _selectedMemberId = member.Id;
@@ -1600,6 +1082,7 @@ public partial class EditCase : ComponentBase, IDisposable
         _memberFormModel.SSN = member.ServiceNumber;
         _memberFormModel.DateOfBirth = member.DateOfBirth;
         _memberFormModel.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
+
         var parsedRank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
         _memberFormModel.Rank = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value) : member.Rank;
         _memberFormModel.Grade = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value): member.Rank;
@@ -1610,7 +1093,7 @@ public partial class EditCase : ComponentBase, IDisposable
         _caseInfo.Grade = _memberFormModel.Grade;
         _caseInfo.Unit = _memberFormModel.OrganizationUnit;
 
-        selectedTabIndex = 0;
+        _selectedTabIndex = 0;
         StateHasChanged();
     }
 

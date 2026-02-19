@@ -8,7 +8,11 @@ public class CaseViewModelsDto
 {
     public CaseInfoModel CaseInfo { get; set; } = new();
     public MemberInfoFormModel MemberInfo { get; set; } = new();
+    public MedicalTechnicianFormModel MedicalTechnician { get; set; } = new();
     public MedicalAssessmentFormModel MedicalAssessment { get; set; } = new();
-    public CommanderReviewFormModel CommanderReview { get; set; } = new();
-    public LegalSJAReviewFormModel LegalSJAReview { get; set; } = new();
+    public UnitCommanderFormModel UnitCommander { get; set; } = new();
+    public WingJudgeAdvocateFormModel WingJudgeAdvocate { get; set; } = new();
+    public WingCommanderFormModel WingCommander { get; set; } = new();
+    public AppointingAuthorityFormModel AppointingAuthority { get; set; } = new();
+    public LineOfDutyBoardFormModel BoardReview { get; set; } = new();
 }

@@ -21,7 +21,7 @@
 
 <PageTitle>@(IsNewCase ? "New Case" : "Edit Case") - LOD Case Management</PageTitle>
 
-@if (!isLoading && _isBusy)
+@if (!_isLoading && _isBusy)
 {
     <div class="busy-overlay">
         <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" Style="width: 640px; height: 3px;" />
@@ -29,7 +29,7 @@
     </div>
 }
 
-@if (isLoading)
+@if (_isLoading)
 {
     <div class="loading-container">
         <RadzenStack Gap="0.75rem">
@@ -55,7 +55,7 @@ else
 
         <RadzenStack Orientation="Orientation.Horizontal" class="assessment-layout">
             @* ═══════════ Workflow Sidebar ═══════════ *@
-            <WorkflowSidebar Steps="@workflowSteps" CurrentStepIndex="@currentStepIndex" OnStepClicked="@OnStepSelected" />
+            <WorkflowSidebar Steps="@_workflowSteps" CurrentStepIndex="@_currentStepIndex" OnStepClicked="@OnStepSelected" />
 
             @* ═══════════ Main Content ═══════════ *@
             <RadzenStack Gap="0.75rem" Orientation="Orientation.Vertical">
@@ -119,7 +119,7 @@ else
                         </RadzenStack>
                     </HeaderTemplate>
                     <ChildContent>
-                        <RadzenTabs @bind-SelectedIndex="selectedTabIndex" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
+                        <RadzenTabs @bind-SelectedIndex="_selectedTabIndex" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                             <Tabs>
                                 @* ─── Member Tab ─── *@
                                 <RadzenTabsItem Text="Member">
@@ -141,7 +141,7 @@ else
                                                     <RadzenRow>
                                                         <RadzenColumn Size="12">
                                                             <RadzenFormField Text="Member Search" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox @ref="_memberSearchTextBox" Value="@memberSearchText"
+                                                                <RadzenTextBox @ref="_memberSearchTextBox" Value="@_memberSearchText"
                                                                                Placeholder="Search by name, rank, unit, or service number..."
                                                                                @oninput="@OnMemberSearchInput"
                                                                                @onclick="@(args => _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element))"
@@ -152,8 +152,8 @@ else
                                                                    class="member-search-popup rz-shadow-3">
                                                                 <RadzenDataGrid @ref="_memberSearchGrid" id="member-search-grid"
                                                                                 TItem="ECTSystem.Shared.Models.Member"
-                                                                                Data="@memberSearchResults"
-                                                                                IsLoading="@isMemberSearching"
+                                                                                Data="@_memberSearchResults"
+                                                                                IsLoading="@_isMemberSearching"
                                                                                 RowSelect="@OnMemberSelected"
                                                                                 AllowSorting="false"
                                                                                 AllowFiltering="false"
@@ -165,7 +165,7 @@ else
                                                                                 Style="height:100%;">
                                                                     <EmptyTemplate>
                                                                         <RadzenText TextStyle="TextStyle.Body2" class="text-secondary rz-p-4">
-                                                                            @(string.IsNullOrWhiteSpace(memberSearchText) ? "Type to search for a member." : "No members found.")
+                                                                            @(string.IsNullOrWhiteSpace(_memberSearchText) ? "Type to search for a member." : "No members found.")
                                                                         </RadzenText>
                                                                     </EmptyTemplate>
                                                                     <Columns>
@@ -330,20 +330,20 @@ else
                             <RadzenTabsItem Text="Medical Officer" Disabled="@IsNewCase">
                                 <Template>
                                     <span class="tab-label">
-                                        Medical Officer @if (!IsNewCase && _formModel.IsDirty) {
+                                        Medical Officer @if (!IsNewCase && _medicalFormModel.IsDirty) {
                                         <span class="dirty-indicator"></span>
                                     }
                                 </span>
                             </Template>
                             <ChildContent>
-                                <RadzenTemplateForm @ref="_medicalForm" TItem="MedicalAssessmentFormModel" Data="@_formModel" Submit="@OnFormSubmit">
+                                <RadzenTemplateForm @ref="_medicalForm" TItem="MedicalAssessmentFormModel" Data="@_medicalFormModel" Submit="@OnFormSubmit">
                                     <RadzenDataAnnotationValidator />
 
                                     @* ═══ Fieldset B: Item 9 — Type of Investigation ═══ *@
                                     <RadzenFieldset Text="Type of Investigation" class="arc-fieldset">
                                         <RadzenStack Gap="0.75rem">
                                             <RadzenLabel Text="Select the type of investigation:" class="fieldset-label" />
-                                            <RadzenRadioButtonList @bind-Value="_formModel.InvestigationType" TValue="IncidentType?"
+                                            <RadzenRadioButtonList @bind-Value="_medicalFormModel.InvestigationType" TValue="IncidentType?"
                                                                    Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                 <Items>
                                                     @foreach (var item in Enum.GetValues<IncidentType>())
@@ -360,7 +360,7 @@ else
                                         <RadzenStack Gap="1rem">
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Was treatment at a military medical facility?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.IsMilitaryFacility" @bind-Value:after="OnIsMilitaryFacilityChanged" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.IsMilitaryFacility" @bind-Value:after="OnIsMilitaryFacilityChanged" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -369,11 +369,11 @@ else
                                                 </RadzenRadioButtonList>
                                             </div>
 
-                                            @if (_formModel.IsMilitaryFacility == true)
+                                            @if (_medicalFormModel.IsMilitaryFacility == true)
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Facility Name" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox @bind-Value="_formModel.TreatmentFacilityName" />
+                                                        <RadzenTextBox @bind-Value="_medicalFormModel.TreatmentFacilityName" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -385,7 +385,7 @@ else
                                         <RadzenRow Gap="1rem">
                                             <RadzenColumn Size="12" SizeMD="6">
                                                 <RadzenFormField Text="Date and Time of First Treatment" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="_formModel.TreatmentDateTime"
+                                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="_medicalFormModel.TreatmentDateTime"
                                                                       AllowInput="false" ShowTime="true"
                                                                       DateFormat="MM/dd/yyyy hh:mm tt" class="rz-w-100" />
                                                 </RadzenFormField>
@@ -397,10 +397,10 @@ else
                                     <RadzenFieldset Text="Clinical Diagnosis" class="rz-mt-4">
                                         <RadzenStack Gap="1rem">
                                             <RadzenFormField Text="Clinical Diagnosis" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                <RadzenTextBox @bind-Value="_formModel.ClinicalDiagnosis" />
+                                                <RadzenTextBox @bind-Value="_medicalFormModel.ClinicalDiagnosis" />
                                             </RadzenFormField>
                                             <RadzenFormField Text="Medical Findings" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                <RadzenTextArea @bind-Value="_formModel.MedicalFindings" Rows="4" class="rz-w-100" />
+                                                <RadzenTextArea @bind-Value="_medicalFormModel.MedicalFindings" Rows="4" class="rz-w-100" />
                                             </RadzenFormField>
                                         </RadzenStack>
                                     </RadzenFieldset>
@@ -412,7 +412,7 @@ else
                                             @* ── Item 13: Under the influence ── *@
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Was the member under the influence of drugs or alcohol?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.WasUnderInfluence" @bind-Value:after="OnWasUnderInfluenceChanged" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.WasUnderInfluence" @bind-Value:after="OnWasUnderInfluenceChanged" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -421,12 +421,12 @@ else
                                                 </RadzenRadioButtonList>
                                             </div>
 
-                                            @if (_formModel.ShowSubstanceType)
+                                            @if (_medicalFormModel.ShowSubstanceType)
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="12" SizeMD="6">
-                                                            <RadzenRadioButtonList @bind-Value="_formModel.SubstanceType" TValue="SubstanceType?"
+                                                            <RadzenRadioButtonList @bind-Value="_medicalFormModel.SubstanceType" TValue="SubstanceType?"
                                                                                    Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                                 <Items>
                                                                     @foreach (var item in Enum.GetValues<SubstanceType>())
@@ -443,7 +443,7 @@ else
                                             @* ── Item 13a: Toxicology testing ── *@
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Was toxicology testing performed?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.ToxicologyTestDone" @bind-Value:after="OnToxicologyTestDoneChanged" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.ToxicologyTestDone" @bind-Value:after="OnToxicologyTestDoneChanged" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -452,11 +452,11 @@ else
                                                 </RadzenRadioButtonList>
                                             </div>
 
-                                            @if (_formModel.ShowToxicologyResults)
+                                            @if (_medicalFormModel.ShowToxicologyResults)
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenFormField Text="Toxicology Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextArea @bind-Value="_formModel.ToxicologyTestResults" Rows="3" class="rz-w-100" />
+                                                        <RadzenTextArea @bind-Value="_medicalFormModel.ToxicologyTestResults" Rows="3" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </div>
                                             }
@@ -464,7 +464,7 @@ else
                                             @* ── Item 14: Mental responsibility ── *@
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Was the member mentally responsible at the time of the incident?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.WasMentallyResponsible" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.WasMentallyResponsible" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -476,7 +476,7 @@ else
                                             @* ── Item 14a: Psychiatric evaluation ── *@
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Was a psychiatric evaluation completed?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.PsychiatricEvalCompleted" @bind-Value:after="OnPsychiatricEvalCompletedChanged" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.PsychiatricEvalCompleted" @bind-Value:after="OnPsychiatricEvalCompletedChanged" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -485,16 +485,16 @@ else
                                                 </RadzenRadioButtonList>
                                             </div>
 
-                                            @if (_formModel.ShowPsychEvalDetails)
+                                            @if (_medicalFormModel.ShowPsychEvalDetails)
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
                                                         <RadzenFormField Text="Evaluation Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-50">
-                                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="_formModel.PsychiatricEvalDate"
+                                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="_medicalFormModel.PsychiatricEvalDate"
                                                                               AllowInput="false" ShowTime="true" class="rz-w-100" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextArea @bind-Value="_formModel.PsychiatricEvalResults" Rows="3" class="rz-w-100" />
+                                                            <RadzenTextArea @bind-Value="_medicalFormModel.PsychiatricEvalResults" Rows="3" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </RadzenStack>
                                                 </div>
@@ -503,14 +503,14 @@ else
                                             @* ── Item 14b: Other relevant conditions ── *@
                                             <div class="detail-section">
                                                 <RadzenFormField Text="Other Relevant Medical Conditions" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea @bind-Value="_formModel.OtherRelevantConditions" Rows="3" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="_medicalFormModel.OtherRelevantConditions" Rows="3" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </div>
 
                                             @* ── Item 14c: Other tests ── *@
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Were other tests performed?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.OtherTestsDone" @bind-Value:after="OnOtherTestsDoneChanged" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.OtherTestsDone" @bind-Value:after="OnOtherTestsDoneChanged" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -519,16 +519,16 @@ else
                                                 </RadzenRadioButtonList>
                                             </div>
 
-                                            @if (_formModel.ShowOtherTestDetails)
+                                            @if (_medicalFormModel.ShowOtherTestDetails)
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
                                                         <RadzenFormField Text="Test Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-50">
-                                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="_formModel.OtherTestDate"
+                                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="_medicalFormModel.OtherTestDate"
                                                                               AllowInput="false" ShowTime="true" class="rz-w-100" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                         </RadzenFormField>
                                                         <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextArea @bind-Value="_formModel.OtherTestResults" Rows="3" class="rz-w-100" />
+                                                            <RadzenTextArea @bind-Value="_medicalFormModel.OtherTestResults" Rows="3" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </RadzenStack>
                                                 </div>
@@ -544,7 +544,7 @@ else
                                                 <RadzenButton Variant="Variant.Text" Icon="help" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.ExtraSmall"
                                                               title="EPTS-NSA requires informal LOD per DAFI 36-2910." />
                                             </div>
-                                            <RadzenRadioButtonList @bind-Value="_formModel.IsEptsNsa" @bind-Value:after="OnIsEptsNsaChanged" TValue="bool?"
+                                            <RadzenRadioButtonList @bind-Value="_medicalFormModel.IsEptsNsa" @bind-Value:after="OnIsEptsNsaChanged" TValue="bool?"
                                                                    Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                 <Items>
                                                     <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -552,11 +552,11 @@ else
                                                 </Items>
                                             </RadzenRadioButtonList>
 
-                                            @if (_formModel.ShowServiceAggravated)
+                                            @if (_medicalFormModel.ShowServiceAggravated)
                                             {
                                                 <div class="conditional-section">
                                                     <RadzenLabel Text="Was the condition aggravated by military service?" class="fieldset-label" />
-                                                    <RadzenRadioButtonList @bind-Value="_formModel.IsServiceAggravated" TValue="bool?"
+                                                    <RadzenRadioButtonList @bind-Value="_medicalFormModel.IsServiceAggravated" TValue="bool?"
                                                                            Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                         <Items>
                                                             <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -568,7 +568,7 @@ else
 
                                             <div class="detail-section">
                                                 <RadzenLabel Text="Is the condition potentially unfitting for continued military service?" class="fieldset-label" />
-                                                <RadzenRadioButtonList @bind-Value="_formModel.IsPotentiallyUnfitting" TValue="bool?"
+                                                <RadzenRadioButtonList @bind-Value="_medicalFormModel.IsPotentiallyUnfitting" TValue="bool?"
                                                                        Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                     <Items>
                                                         <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -586,7 +586,7 @@ else
                                             <RadzenStack Gap="1rem">
                                                 <div class="detail-section">
                                                     <RadzenLabel Text="Was the member at a deployed location at time of incident?" class="fieldset-label" />
-                                                    <RadzenRadioButtonList @bind-Value="_formModel.IsAtDeployedLocation" @bind-Value:after="OnIsAtDeployedLocationChanged" TValue="bool?"
+                                                    <RadzenRadioButtonList @bind-Value="_medicalFormModel.IsAtDeployedLocation" @bind-Value:after="OnIsAtDeployedLocationChanged" TValue="bool?"
                                                                            Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                         <Items>
                                                             <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -595,11 +595,11 @@ else
                                                     </RadzenRadioButtonList>
                                                 </div>
 
-                                                @if (_formModel.ShowArcSubFields)
+                                                @if (_medicalFormModel.ShowArcSubFields)
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenLabel Text="Does this case require an ARC board review?" class="fieldset-label" />
-                                                        <RadzenRadioButtonList @bind-Value="_formModel.RequiresArcBoard" TValue="bool?"
+                                                        <RadzenRadioButtonList @bind-Value="_medicalFormModel.RequiresArcBoard" TValue="bool?"
                                                                                Orientation="Orientation.Horizontal" class="radio-list-styled">
                                                             <Items>
                                                                 <RadzenRadioButtonListItem Text="Yes" Value="@((bool?)true)" />
@@ -615,7 +615,7 @@ else
                                     @* ═══ Fieldset I: Medical Recommendation ═══ *@
                                     <RadzenFieldset Text="Medical Recommendation" class="rz-mt-4">
                                         <RadzenFormField Text="Medical Recommendation" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                            <RadzenTextArea @bind-Value="_formModel.MedicalRecommendation" Rows="5" class="rz-w-100" />
+                                            <RadzenTextArea @bind-Value="_medicalFormModel.MedicalRecommendation" Rows="5" class="rz-w-100" />
                                         </RadzenFormField>
                                     </RadzenFieldset>
 
@@ -632,7 +632,7 @@ else
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                             <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
                                                                Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
-                                                               Disabled="@(!_formModel.IsDirty)">
+                                                               Disabled="@(!_medicalFormModel.IsDirty)">
                                                 <ChildContent>
                                                     <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
                                                 </ChildContent>
@@ -668,7 +668,7 @@ else
                             </span>
                         </Template>
                         <ChildContent>
-                            <RadzenTemplateForm TItem="CommanderReviewFormModel" Data="@_commanderFormModel" Submit="@OnCommanderFormSubmit">
+                            <RadzenTemplateForm TItem="UnitCommanderModel" Data="@_commanderFormModel" Submit="@OnCommanderFormSubmit">
 
                                 @* ═══ Fieldset A: Item 16 — Sources of Information ═══ *@
                                 <RadzenFieldset Text="Sources of Information" class="arc-fieldset">
@@ -910,20 +910,20 @@ else
                     <RadzenTabsItem Text="Wing CC Review" Disabled="@IsNewCase">
                         <Template>
                             <span class="tab-label">
-                                Wing CC Review @if (!IsNewCase && _legalFormModel.IsDirty) {
+                                Wing CC Review @if (!IsNewCase && _wingCommanderommanderommanderFormModel.IsDirty) {
                                 <span class="dirty-indicator"></span>
                             }
                         </span>
                     </Template>
                     <ChildContent>
-                        <RadzenTemplateForm TItem="LegalSJAReviewFormModel" Data="@_legalFormModel" Submit="@OnLegalFormSubmit">
+                        <RadzenTemplateForm TItem="WingCommanderFormModel" Data="@_wingCommanderFormModel" Submit="@OnWingCommanderOnWingCommanderOnWingCommanderFormSubmit">
 
                             @* ═══ Fieldset A: Item 24 — Legal Sufficiency Review ═══ *@
                             <RadzenFieldset Text="Legal Sufficiency Review" class="arc-fieldset">
                                 <RadzenStack Gap="1.25rem">
                                     <div class="detail-section">
                                         <RadzenLabel Text="Is the LOD determination package legally sufficient?" class="fieldset-label" />
-                                        <RadzenRadioButtonList @bind-Value="_legalFormModel.IsLegallySufficient" TValue="bool?"
+                                        <RadzenRadioButtonList @bind-Value="_wingCommanderFormModel.IsLegallySufficient" TValue="bool?"
                                                                Orientation="Orientation.Horizontal" class="radio-list-styled">
                                             <Items>
                                                 <RadzenRadioButtonListItem Text="Legally Sufficient" Value="@((bool?)true)" />
@@ -934,7 +934,7 @@ else
 
                                     <div class="detail-section">
                                         <RadzenLabel Text="Do you concur with the commander's recommendation?" class="fieldset-label" />
-                                        <RadzenRadioButtonList @bind-Value="_legalFormModel.ConcurWithRecommendation" TValue="bool?"
+                                        <RadzenRadioButtonList @bind-Value="_wingCommanderFormModel.ConcurWithRecommendation" TValue="bool?"
                                                                Orientation="Orientation.Horizontal" class="radio-list-styled">
                                             <Items>
                                                 <RadzenRadioButtonListItem Text="Concur" Value="@((bool?)true)" />
@@ -943,11 +943,11 @@ else
                                         </RadzenRadioButtonList>
                                     </div>
 
-                                    @if (_legalFormModel.ShowNonConcurrenceReason)
+                                    @if (_wingCommanderFormModel.ShowNonConcurrenceReason)
                                     {
                                         <div class="conditional-section">
                                             <RadzenFormField Text="Basis for Non-Concurrence" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                <RadzenTextArea Value="@_legalFormModel.NonConcurrenceReason" @oninput="@(args => _legalFormModel.NonConcurrenceReason = args.Value?.ToString())" Rows="4" class="rz-w-100" />
+                                                <RadzenTextArea Value="@_wingCommanderFormModel.NonConcurrenceReason" @oninput="@(args => _wingCommanderFormModel.NonConcurrenceReason = args.Value?.ToString())" Rows="4" class="rz-w-100" />
                                             </RadzenFormField>
                                         </div>
                                     }
@@ -958,7 +958,7 @@ else
                             <RadzenFieldset Text="Legal Remarks" class="rz-mt-4">
                                 <RadzenStack Gap="1rem">
                                     <RadzenFormField Text="SJA Remarks / Legal Opinion" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                        <RadzenTextArea Value="@_legalFormModel.LegalRemarks" @oninput="@(args => _legalFormModel.LegalRemarks = args.Value?.ToString())" Rows="5" class="rz-w-100" />
+                                        <RadzenTextArea Value="@_wingCommanderFormModel.LegalRemarks" @oninput="@(args => _wingCommanderFormModel.LegalRemarks = args.Value?.ToString())" Rows="5" class="rz-w-100" />
                                     </RadzenFormField>
                                 </RadzenStack>
                             </RadzenFieldset>
@@ -968,7 +968,7 @@ else
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
                                                        Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
-                                                       Disabled="@(!_legalFormModel.IsDirty)">
+                                                       Disabled="@(!_wingCommanderFormModel.IsDirty)">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
                                         </ChildContent>

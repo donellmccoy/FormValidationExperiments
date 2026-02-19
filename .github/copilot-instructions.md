@@ -23,8 +23,12 @@ ECTSystem.Web/
 │   ├── CaseInfoModel.cs            # Read-only case header/summary data
 │   ├── MemberInfoFormModel.cs      # Items 1–8: member identification
 │   ├── MedicalAssessmentFormModel.cs # Items 9–15: medical/clinical data
-│   ├── CommanderReviewFormModel.cs  # Items 16–23: commander endorsement
-│   ├── LegalSJAReviewFormModel.cs  # Items 24–25: legal sufficiency review
+│   ├── MedicalTechnicianFormModel.cs # Medical technician review
+│   ├── UnitCommanderFormModel.cs    # Items 16–23: unit commander endorsement
+│   ├── WingJudgeAdvocateFormModel.cs # Wing JA legal review
+│   ├── WingCommanderFormModel.cs    # Items 24–25: wing commander review
+│   ├── AppointingAuthorityFormModel.cs # Appointing authority review
+│   ├── LineOfDutyBoardFormModel.cs  # Board review
 │   └── DocumentItem.cs            # Supporting document metadata
 ├── Models/                 # Domain model classes (namespace: ECTSystem.Web.Models)
 │   ├── LODCase.cs                # Root aggregate — full LOD case record
@@ -73,7 +77,7 @@ ECTSystem.Web/
 - Namespaces follow the folder structure (e.g., `ECTSystem.Web.Models`, `ECTSystem.Web.Enums`).
 - Format enum display names by inserting spaces before uppercase letters using `Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1")`.
 - Use component-scoped CSS (`.razor.css`) rather than global styles where possible.
-- Follow the existing pattern of one form model per workflow step (e.g., `MemberInfoFormModel`, `MedicalAssessmentFormModel`, `CommanderReviewFormModel`, `LegalSJAReviewFormModel`).
+- Follow the existing pattern of one form model per workflow step (e.g., `MemberInfoFormModel`, `MedicalAssessmentFormModel`, `UnitCommanderFormModel`, `WingCommanderFormModel`).
 - Workflow steps are tracked via a `List<WorkflowStep>` with the `WorkflowStepStatus` enum (`Completed`, `InProgress`, `Pending`), defined in `Shared/WorkflowSidebar.razor.cs`.
 - Use conditional visibility properties (e.g., `ShowSubstanceType`, `ShowToxicologyResults`) to toggle dependent form sections.
 - Dropdown data sources use helper classes like `DropdownItem<T>` populated from `Enum.GetValues<T>()`.
