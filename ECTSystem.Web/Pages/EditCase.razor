@@ -8,7 +8,7 @@
         position: absolute;
         overflow: hidden;
         height: 360px;
-        width: 840px;
+        width: 1020px;
         border: var(--rz-panel-border);
         background-color: var(--rz-panel-background-color);
         color: var(--rz-text-color);
@@ -178,6 +178,11 @@ else
                                                                         <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="DateOfBirth" Title="Date of Birth" Width="140px" FormatString="{0:MM/dd/yyyy}" />
                                                                         <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Rank" Title="Grade" Width="100px" />
                                                                         <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Unit" Title="Unit" Width="200px" />
+                                                                        <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Member" Property="Component" Title="Component" Width="180px">
+                                                                            <Template Context="member">
+                                                                                @(System.Text.RegularExpressions.Regex.Replace(member.Component.ToString(), @"(\B[A-Z])", " $1"))
+                                                                            </Template>
+                                                                        </RadzenDataGridColumn>
                                                                     </Columns>
                                                                 </RadzenDataGrid>
                                                             </Popup>

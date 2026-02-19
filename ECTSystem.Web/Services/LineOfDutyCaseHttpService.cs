@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using PanoramicData.OData.Client;
 using Radzen;
@@ -130,6 +132,38 @@ public class LineOfDutyCaseHttpService : IDataService
                      $" or contains(tolower(Unit),tolower('{encoded}'))" +
                      $" or contains(tolower(ServiceNumber),tolower('{encoded}'))";
 
+        // Match rank titles/abbreviations to pay grade strings stored in DB
+        var matchingPayGrades = RankToPayGrade
+            .Where(r => r.Key.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .Select(r => r.Value)
+            .Distinct()
+            .ToList();
+
+        if (matchingPayGrades.Count > 0)
+        {
+            var rankClauses = string.Join(" or ",
+                matchingPayGrades.Select(pg => $"Rank eq '{pg}'"));
+            filter += $" or {rankClauses}";
+        }
+
+        // Match Component enum values by raw name or display name (e.g. "Reserve" → AirForceReserve)
+        var matchingComponents = Enum.GetValues<ServiceComponent>()
+            .Where(c =>
+            {
+                var name = c.ToString();
+                var display = Regex.Replace(name, @"(\B[A-Z])", " $1");
+                return name.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                       || display.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+            })
+            .ToList();
+
+        if (matchingComponents.Count > 0)
+        {
+            var componentClauses = string.Join(" or ",
+                matchingComponents.Select(c => $"Component eq ECTSystem.Shared.Enums.ServiceComponent'{c}'"));
+            filter += $" or {componentClauses}";
+        }
+
         var url = $"odata/Members?$filter={filter}&$top=25&$orderby=LastName,FirstName";
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         options.Converters.Add(new JsonStringEnumConverter());
@@ -151,6 +185,33 @@ public class LineOfDutyCaseHttpService : IDataService
         }
         return dict;
     }
+
+    // Maps rank titles and abbreviations to pay grade strings stored in the DB.
+    // Multiple keys can map to the same pay grade (e.g., "Major" and "Maj" both → "O-4").
+    private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Enlisted
+        ["Airman Basic"] = "E-1",      ["AB"] = "E-1",
+        ["Airman"] = "E-2",            ["Amn"] = "E-2",
+        ["Airman First Class"] = "E-3",["A1C"] = "E-3",
+        ["Senior Airman"] = "E-4",     ["SrA"] = "E-4",
+        ["Staff Sergeant"] = "E-5",    ["SSgt"] = "E-5",
+        ["Technical Sergeant"] = "E-6",["TSgt"] = "E-6",
+        ["Master Sergeant"] = "E-7",   ["MSgt"] = "E-7",
+        ["Senior Master Sergeant"] = "E-8", ["SMSgt"] = "E-8",
+        ["Chief Master Sergeant"] = "E-9",  ["CMSgt"] = "E-9",
+        // Officer
+        ["Second Lieutenant"] = "O-1", ["2d Lt"] = "O-1", ["SecondLt"] = "O-1",
+        ["First Lieutenant"] = "O-2",  ["1st Lt"] = "O-2",["FirstLt"] = "O-2",
+        ["Captain"] = "O-3",           ["Capt"] = "O-3",
+        ["Major"] = "O-4",             ["Maj"] = "O-4",
+        ["Lieutenant Colonel"] = "O-5",["Lt Col"] = "O-5",["LtCol"] = "O-5",
+        ["Colonel"] = "O-6",           ["Col"] = "O-6",
+        ["Brigadier General"] = "O-7", ["Brig Gen"] = "O-7", ["BrigGen"] = "O-7",
+        ["Major General"] = "O-8",     ["Maj Gen"] = "O-8",  ["MajGen"] = "O-8",
+        ["Lieutenant General"] = "O-9",["Lt Gen"] = "O-9",   ["LtGen"] = "O-9",
+        ["General"] = "O-10",          ["Gen"] = "O-10",
+    };
 
     private class ODataResponse<T>
     {
