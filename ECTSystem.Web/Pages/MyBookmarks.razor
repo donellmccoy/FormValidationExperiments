@@ -39,11 +39,14 @@ else
 }
 else
 {
-<RadzenDataGrid TItem="CaseBookmark"
+<RadzenDataGrid @ref="_grid" TItem="CaseBookmark"
                 Data="@_bookmarks"
                 Count="@_count"
                 LoadData="@LoadData"
                 IsLoading="@_isLoading"
+                SelectionMode="DataGridSelectionMode.Multiple"
+                AllowRowSelectOnRowClick="true"
+                @bind-Value="_selectedBookmarks"
                 AllowSorting="true"
                 AllowFiltering="true"
                 FilterMode="FilterMode.Simple"
@@ -56,15 +59,21 @@ else
                 GridLines="DataGridGridLines.Both"
                 Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
     <Columns>
-        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.CaseId" Title="Case ID" Width="180px" Filterable="false" Sortable="false">
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.CaseId" Title="Case ID" Width="220px">
             <Template Context="bookmark">
-                <RadzenLink Path="@($"case/{bookmark.LineOfDutyCase?.CaseId}")" Text="@bookmark.LineOfDutyCase?.CaseId" />
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                    <RadzenLink Path="@($"case/{bookmark.LineOfDutyCase?.CaseId}")" Text="@bookmark.LineOfDutyCase?.CaseId" />
+                    <RadzenButton Icon="bookmark_remove" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Small"
+                                  Style="box-shadow: none;"
+                                  title="Remove bookmark"
+                                  Click="@(() => OnRemoveBookmark(bookmark))" />
+                </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.MemberName" Title="Member" Width="220px" Filterable="false" Sortable="false" />
-        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center" Filterable="false" Sortable="false" />
-        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.Unit" Title="Unit" Filterable="false" Sortable="false" />
-        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.IncidentType" Title="Type" Filterable="false" Sortable="false">
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.MemberName" Title="Member" Width="220px" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.Unit" Title="Unit" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.IncidentType" Title="Type">
             <Template Context="bookmark">
                 @if (bookmark.LineOfDutyCase != null)
                 {
@@ -72,12 +81,13 @@ else
                 }
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="CaseBookmark" Property="BookmarkedDate" Title="Bookmarked" FormatString="{0:yyyy-MM-dd}" Width="140px" />
-        <RadzenDataGridColumn TItem="CaseBookmark" Title="" Width="60px" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" />
+        <RadzenDataGridColumn TItem="CaseBookmark" Property="LineOfDutyCase.ProcessType" Title="Process">
             <Template Context="bookmark">
-                <RadzenButton Icon="bookmark_remove" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                              title="Remove bookmark"
-                              Click="@(() => OnRemoveBookmark(bookmark))" />
+                @if (bookmark.LineOfDutyCase != null)
+                {
+                    @FormatEnum(bookmark.LineOfDutyCase.ProcessType)
+                }
             </Template>
         </RadzenDataGridColumn>
     </Columns>

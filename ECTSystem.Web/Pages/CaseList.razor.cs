@@ -15,9 +15,8 @@ public partial class CaseList : ComponentBase
     private NavigationManager Navigation { get; set; }
 
     private ODataEnumerable<LineOfDutyCase> cases;
-
+    private IList<LineOfDutyCase> _selectedCases = [];
     private int count;
-
     private bool isLoading;
 
     protected override async Task OnInitializedAsync()

@@ -35,7 +35,7 @@ public class CaseBookmarksController : ODataController
         return Created(created);
     }
 
-    [HttpDelete]
+    [HttpDelete("odata/CaseBookmarks/DeleteByCaseId")]
     public async Task<IActionResult> DeleteByCaseId([FromQuery] int caseId)
     {
         var removed = await _bookmarkService.RemoveBookmarkAsync(DefaultUserId, caseId);

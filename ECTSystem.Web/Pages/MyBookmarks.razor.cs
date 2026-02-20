@@ -3,6 +3,7 @@ using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
 using Radzen;
+using Radzen.Blazor;
 
 namespace ECTSystem.Web.Pages;
 
@@ -14,9 +15,18 @@ public partial class MyBookmarks : ComponentBase
     [Inject]
     private NavigationManager Navigation { get; set; }
 
+    [Inject]
+    private DialogService DialogService { get; set; }
+
+    [Inject]
+    private NotificationService NotificationService { get; set; }
+
+    private RadzenDataGrid<CaseBookmark> _grid;
     private ODataEnumerable<CaseBookmark> _bookmarks;
+    private IList<CaseBookmark> _selectedBookmarks = [];
     private int _count;
     private bool _isLoading;
+    private LoadDataArgs _lastArgs;
 
     protected override async Task OnInitializedAsync()
     {
@@ -25,6 +35,7 @@ public partial class MyBookmarks : ComponentBase
 
     private async Task LoadData(LoadDataArgs args)
     {
+        _lastArgs = args;
         _isLoading = true;
 
         try
@@ -53,14 +64,26 @@ public partial class MyBookmarks : ComponentBase
 
     private async Task OnRemoveBookmark(CaseBookmark bookmark)
     {
+        var confirmed = await DialogService.Confirm(
+            $"Remove bookmark for case {bookmark.LineOfDutyCase?.CaseId}?",
+            "Remove Bookmark",
+            new ConfirmOptions { OkButtonText = "Remove", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
         try
         {
             await CaseService.RemoveBookmarkAsync(bookmark.LineOfDutyCaseId);
-            await LoadData(new LoadDataArgs { Skip = 0, Top = 10 });
+            await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error removing bookmark: {ex}");
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove bookmark. Please try again.");
         }
     }
 

@@ -107,6 +107,7 @@ else
                 <RadzenPanel AllowCollapse="false" Style="width:1135px; height:950px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
                     <HeaderTemplate>
                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
+                                     Style="width: 100%"
                                      class="rz-py-4 rz-pe-6 rz-ps-2">
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
                                 <div class="panel-icon-box">
@@ -115,6 +116,24 @@ else
                                 <RadzenText TextStyle="TextStyle.H6" class="panel-title">
                                     @CurrentStep?.Name
                                 </RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" AlignItems="AlignItems.Center">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                              Click="@OnBookmarkClick"
+                                              class="toolbar-icon-btn"
+                                              title="@(_isBookmarked ? "Remove bookmark" : "Add bookmark")">
+                                    <ChildContent>
+                                        <span class="material-symbols-outlined @(_bookmarkAnimating ? "bookmark-flash" : "")">@BookmarkIcon</span>
+                                    </ChildContent>
+                                </RadzenButton>
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                              Click="@OnAttachFileClick"
+                                              class="toolbar-icon-btn"
+                                              title="Attach file">
+                                    <ChildContent>
+                                        <span class="material-symbols-outlined">attach_file</span>
+                                    </ChildContent>
+                                </RadzenButton>
                             </RadzenStack>
                         </RadzenStack>
                     </HeaderTemplate>
@@ -341,24 +360,6 @@ else
                                 </span>
                             </Template>
                             <ChildContent>
-                                <div class="medical-officer-header">
-                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                                  Click="@OnBookmarkClick"
-                                                  class="toolbar-icon-btn"
-                                                  title="@(_isBookmarked ? "Remove bookmark" : "Add bookmark")">
-                                        <ChildContent>
-                                            <span class="material-symbols-outlined @(_bookmarkAnimating ? "bookmark-flash" : "")">@BookmarkIcon</span>
-                                        </ChildContent>
-                                    </RadzenButton>
-                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                                  Click="@OnAttachFileClick"
-                                                  class="toolbar-icon-btn"
-                                                  title="Attach file">
-                                        <ChildContent>
-                                            <span class="material-symbols-outlined">attach_file</span>
-                                        </ChildContent>
-                                    </RadzenButton>
-                                </div>
                                 <RadzenTemplateForm @ref="_medicalForm" TItem="MedicalAssessmentFormModel" Data="@_medicalFormModel" Submit="@OnFormSubmit">
                                     <RadzenDataAnnotationValidator />
 
