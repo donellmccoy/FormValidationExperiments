@@ -34,9 +34,9 @@ public interface IDataService
     Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Queries bookmarked cases via OData with filtering, paging, sorting, and count.
+    /// Queries cases bookmarked by the current user via OData with filtering, paging, sorting, and count.
     /// </summary>
-    Task<ODataServiceResult<CaseBookmark>> GetBookmarkedCasesAsync(
+    Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, bool? count = null,
         CancellationToken cancellationToken = default);

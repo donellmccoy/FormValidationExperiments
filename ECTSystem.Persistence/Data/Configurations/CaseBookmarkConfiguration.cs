@@ -14,7 +14,7 @@ public class CaseBookmarkConfiguration : IEntityTypeConfiguration<CaseBookmark>
 
         builder.Property(e => e.UserId).HasMaxLength(256);
 
-        builder.HasOne(e => e.LineOfDutyCase)
+        builder.HasOne<LineOfDutyCase>()
                .WithMany()
                .HasForeignKey(e => e.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.Cascade);

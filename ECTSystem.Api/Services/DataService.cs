@@ -392,8 +392,15 @@ public class DataService :
 
         return _queryContext.CaseBookmarks
             .AsNoTracking()
-            .Include(b => b.LineOfDutyCase)
             .Where(b => b.UserId == userId);
+    }
+
+    public IQueryable<LineOfDutyCase> GetBookmarkedCasesQueryable(string userId)
+    {
+        _queryContext ??= _contextFactory.CreateDbContext();
+        return _queryContext.Cases
+            .AsNoTracking()
+            .Where(c => _queryContext.CaseBookmarks.Any(b => b.UserId == userId && b.LineOfDutyCaseId == c.Id));
     }
 
     public async Task<CaseBookmark> AddBookmarkAsync(string userId, int caseId, CancellationToken ct = default)

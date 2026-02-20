@@ -21,9 +21,12 @@ public partial class MyBookmarks : ComponentBase
     [Inject]
     private NotificationService NotificationService { get; set; }
 
-    private RadzenDataGrid<CaseBookmark> _grid;
-    private ODataEnumerable<CaseBookmark> _bookmarks;
-    private IList<CaseBookmark> _selectedBookmarks = [];
+    [Inject]
+    private BookmarkCountService BookmarkCountService { get; set; }
+
+    private RadzenDataGrid<LineOfDutyCase> _grid;
+    private ODataEnumerable<LineOfDutyCase> _bookmarks;
+    private IList<LineOfDutyCase> _selectedBookmarks = [];
     private int _count;
     private bool _isLoading;
     private LoadDataArgs _lastArgs;
@@ -62,10 +65,10 @@ public partial class MyBookmarks : ComponentBase
         }
     }
 
-    private async Task OnRemoveBookmark(CaseBookmark bookmark)
+    private async Task OnRemoveBookmark(LineOfDutyCase lodCase)
     {
         var confirmed = await DialogService.Confirm(
-            $"Remove bookmark for case {bookmark.LineOfDutyCase?.CaseId}?",
+            $"Remove bookmark for case {lodCase.CaseId}?",
             "Remove Bookmark",
             new ConfirmOptions { OkButtonText = "Remove", CancelButtonText = "Cancel" });
 
@@ -76,9 +79,11 @@ public partial class MyBookmarks : ComponentBase
 
         try
         {
-            await CaseService.RemoveBookmarkAsync(bookmark.LineOfDutyCaseId);
+            await CaseService.RemoveBookmarkAsync(lodCase.Id);
+            await BookmarkCountService.RefreshAsync();
             await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
             StateHasChanged();
+            NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }
         catch (Exception ex)
         {

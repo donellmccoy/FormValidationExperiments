@@ -25,6 +25,7 @@ builder.Services.AddScoped(sp => new HttpClient
 });
 
 builder.Services.AddRadzenComponents();
+builder.Services.AddScoped<BookmarkCountService>();
 
 // PanoramicData OData client — uses its own HttpClient with the /odata/ base path.
 // PanoramicData constructs relative URIs from the entity set name (e.g. "Cases?$top=10")

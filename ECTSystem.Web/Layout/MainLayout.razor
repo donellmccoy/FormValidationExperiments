@@ -3,15 +3,26 @@
 <RadzenLayout>
     <RadzenHeader>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
+            <RadzenSidebarToggle Click="@(() => _sidebarExpanded = !_sidebarExpanded)" />
             <RadzenLabel Text="Electronic Case Tracking System" />
         </RadzenStack>
     </RadzenHeader>
-    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="width: max-content">
+    <RadzenSidebar @bind-Expanded="@_sidebarExpanded" Style="width: max-content">
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Line Of Duty Cases" Icon="folder_open" Expanded="true">
                 <RadzenPanelMenuItem Text="All Cases" Icon="list" Path="/" />
-                <RadzenPanelMenuItem Text="My Bookmarks" Icon="bookmarks" Path="/bookmarks" />
+                <RadzenPanelMenuItem Icon="bookmarks" Path="/bookmarks">
+                    <Template>
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                     JustifyContent="JustifyContent.SpaceBetween" Style="flex: 1; padding-right: 0.5rem;">
+                            <span>My Bookmarks</span>
+                            @if (BookmarkCountService.Count > 0)
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Primary" Text="@BookmarkCountService.Count.ToString()" />
+                            }
+                        </RadzenStack>
+                    </Template>
+                </RadzenPanelMenuItem>
             </RadzenPanelMenuItem>
         </RadzenPanelMenu>
     </RadzenSidebar>
@@ -28,6 +39,3 @@
 <RadzenContextMenu />
 <RadzenTooltip />
 
-@code {
-    bool sidebarExpanded = true;
-}

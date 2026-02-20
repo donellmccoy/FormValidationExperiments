@@ -9,6 +9,4 @@ public class CaseBookmark
     public string UserId { get; set; } = string.Empty;
     public int LineOfDutyCaseId { get; set; }
     public DateTime BookmarkedDate { get; set; }
-
-    public LineOfDutyCase LineOfDutyCase { get; set; }
 }

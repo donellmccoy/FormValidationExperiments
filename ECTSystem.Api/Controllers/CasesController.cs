@@ -18,11 +18,15 @@ public class CasesController : ODataController
 {
     private readonly IDataService _dataService;
     private readonly IApiLogService _log;
+    private readonly ICaseBookmarkService _bookmarkService;
 
-    public CasesController(IDataService dataService, IApiLogService log)
+    private const string DefaultUserId = "System";
+
+    public CasesController(IDataService dataService, IApiLogService log, ICaseBookmarkService bookmarkService)
     {
         _dataService = dataService;
         _log = log;
+        _bookmarkService = bookmarkService;
     }
 
     /// <summary>
@@ -35,6 +39,18 @@ public class CasesController : ODataController
     {
         _log.QueryingCases();
         return Ok(_dataService.GetCasesQueryable());
+    }
+
+    /// <summary>
+    /// Returns LOD cases bookmarked by the current user.
+    /// OData route: GET /odata/Cases/Bookmarked
+    /// </summary>
+    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    [HttpGet("odata/Cases/Bookmarked")]
+    public IActionResult GetBookmarked()
+    {
+        _log.QueryingCases();
+        return Ok(_bookmarkService.GetBookmarkedCasesQueryable(DefaultUserId));
     }
 
     /// <summary>

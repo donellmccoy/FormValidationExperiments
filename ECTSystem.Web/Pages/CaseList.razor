@@ -39,6 +39,7 @@ else
                 SelectionMode="DataGridSelectionMode.Single"
                 AllowRowSelectOnRowClick="true"
                 @bind-Value="_selectedCases"
+                RowContextMenu="@((Action<DataGridRowMouseEventArgs<LineOfDutyCase>>)OnRowContextMenu)"
                 AllowSorting="true"
                 AllowFiltering="true"
                 FilterMode="FilterMode.Simple"

@@ -220,12 +220,12 @@ public class LineOfDutyCaseHttpService : IDataService
 
     // ──────────────────────────── Bookmark Operations ────────────────────────────
 
-    public async Task<ODataServiceResult<CaseBookmark>> GetBookmarkedCasesAsync(
+    public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        var parts = new List<string> { "$expand=LineOfDutyCase" };
+        var parts = new List<string>();
 
         if (!string.IsNullOrEmpty(filter))
             parts.Add($"$filter={filter}");
@@ -238,11 +238,13 @@ public class LineOfDutyCaseHttpService : IDataService
         if (count == true)
             parts.Add("$count=true");
 
-        var url = $"odata/CaseBookmarks?{string.Join("&", parts)}";
-        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<CaseBookmark>>(
+        var url = parts.Count > 0
+            ? $"odata/Cases/Bookmarked?{string.Join("&", parts)}"
+            : "odata/Cases/Bookmarked";
+        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(
             url, ODataJsonOptions, cancellationToken);
 
-        return new ODataServiceResult<CaseBookmark>
+        return new ODataServiceResult<LineOfDutyCase>
         {
             Value = response?.Value ?? [],
             Count = response?.Count ?? 0

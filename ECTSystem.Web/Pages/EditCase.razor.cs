@@ -35,6 +35,9 @@ public partial class EditCase : ComponentBase, IDisposable
     private IDataService CaseService { get; set; }
 
     [Inject]
+    private BookmarkCountService BookmarkCountService { get; set; }
+
+    [Inject]
     private NotificationService NotificationService { get; set; }
 
     [Inject]
@@ -294,6 +297,7 @@ public partial class EditCase : ComponentBase, IDisposable
             try
             {
                 await CaseService.AddBookmarkAsync(_lodCase.Id, _cts.Token);
+                await BookmarkCountService.RefreshAsync(_cts.Token);
             }
             catch
             {
@@ -308,6 +312,8 @@ public partial class EditCase : ComponentBase, IDisposable
             try
             {
                 await CaseService.RemoveBookmarkAsync(_lodCase.Id, _cts.Token);
+                await BookmarkCountService.RefreshAsync(_cts.Token);
+                NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_caseInfo?.CaseNumber} removed from bookmarks.", closeOnClick: true);
             }
             catch
             {
