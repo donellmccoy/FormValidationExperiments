@@ -31,7 +31,8 @@ builder.Services.AddScoped<ICaseBookmarkService>(sp => sp.GetRequiredService<Dat
 
 // OData Entity Data Model
 var odataBuilder = new ODataConventionModelBuilder();
-odataBuilder.EntitySet<LineOfDutyCase>("Cases");
+var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
+casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
 odataBuilder.EntitySet<Member>("Members");
 odataBuilder.EntitySet<Notification>("Notifications");
 odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
@@ -41,6 +42,8 @@ odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
 odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
 odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
+var edmModel = odataBuilder.GetEdmModel();
+builder.Services.AddSingleton<Microsoft.OData.Edm.IEdmModel>(edmModel);
 
 // Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
 
@@ -48,7 +51,7 @@ odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
 builder.Services.AddControllers()
     .AddOData(options =>
     {
-        options.AddRouteComponents("odata", odataBuilder.GetEdmModel())
+        options.AddRouteComponents("odata", edmModel)
                .Select()
                .Filter()
                .Expand()

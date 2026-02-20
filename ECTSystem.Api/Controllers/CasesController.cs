@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
@@ -19,14 +21,16 @@ public class CasesController : ODataController
     private readonly IDataService _dataService;
     private readonly IApiLogService _log;
     private readonly ICaseBookmarkService _bookmarkService;
+    private readonly IEdmModel _edmModel;
 
     private const string DefaultUserId = "System";
 
-    public CasesController(IDataService dataService, IApiLogService log, ICaseBookmarkService bookmarkService)
+    public CasesController(IDataService dataService, IApiLogService log, ICaseBookmarkService bookmarkService, IEdmModel edmModel)
     {
         _dataService = dataService;
         _log = log;
         _bookmarkService = bookmarkService;
+        _edmModel = edmModel;
     }
 
     /// <summary>
@@ -42,15 +46,35 @@ public class CasesController : ODataController
     }
 
     /// <summary>
-    /// Returns LOD cases bookmarked by the current user.
-    /// OData route: GET /odata/Cases/Bookmarked
+    /// Returns LOD cases bookmarked by the current user as an OData-formatted response.
+    /// Route: GET /odata/Cases/Bookmarked
+    /// Uses ODataQueryOptions to apply $filter/$orderby/$top/$skip/$count against the query.
     /// </summary>
-    [EnableQuery(MaxTop = 100, PageSize = 50)]
     [HttpGet("odata/Cases/Bookmarked")]
-    public IActionResult GetBookmarked()
+    public async Task<IActionResult> GetBookmarked(CancellationToken ct = default)
     {
         _log.QueryingCases();
-        return Ok(_bookmarkService.GetBookmarkedCasesQueryable(DefaultUserId));
+        var query = _bookmarkService.GetBookmarkedCasesQueryable(DefaultUserId);
+
+        var odataContext = new ODataQueryContext(_edmModel, typeof(LineOfDutyCase), new Microsoft.OData.UriParser.ODataPath());
+        var options = new ODataQueryOptions<LineOfDutyCase>(odataContext, Request);
+
+        bool countRequested = options.Count?.Value == true;
+        int? totalCount = countRequested ? query.Count() : null;
+
+        var applied = (IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true });
+        var items = await applied.ToListAsync(ct);
+
+        return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
+    }
+
+    private sealed class BookmarkedCasesResponse
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
+        public List<LineOfDutyCase> Value { get; init; } = [];
+
+        [System.Text.Json.Serialization.JsonPropertyName("@odata.count")]
+        public int? Count { get; init; }
     }
 
     /// <summary>
