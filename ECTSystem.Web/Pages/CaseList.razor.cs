@@ -26,6 +26,7 @@ public partial class CaseList : ComponentBase
 
     private ODataEnumerable<LineOfDutyCase> cases;
     private IList<LineOfDutyCase> _selectedCases = [];
+    private HashSet<int> bookmarkedCaseIds = [];
     private int count;
     private bool isLoading;
 
@@ -49,6 +50,8 @@ public partial class CaseList : ComponentBase
 
             cases = result.Value.AsODataEnumerable();
             count = result.Count;
+
+            await LoadBookmarkStates();
         }
         catch (Exception ex)
         {
@@ -60,6 +63,41 @@ public partial class CaseList : ComponentBase
         {
             isLoading = false;
         }
+    }
+
+    private async Task LoadBookmarkStates()
+    {
+        bookmarkedCaseIds.Clear();
+
+        if (cases == null) return;
+
+        foreach (var lodCase in cases)
+        {
+            if (await CaseService.IsBookmarkedAsync(lodCase.Id))
+            {
+                bookmarkedCaseIds.Add(lodCase.Id);
+            }
+        }
+    }
+
+    private async Task ToggleBookmark(LineOfDutyCase lodCase)
+    {
+        var isBookmarked = bookmarkedCaseIds.Contains(lodCase.Id);
+
+        if (isBookmarked)
+        {
+            await CaseService.RemoveBookmarkAsync(lodCase.Id);
+            bookmarkedCaseIds.Remove(lodCase.Id);
+            NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
+        }
+        else
+        {
+            await CaseService.AddBookmarkAsync(lodCase.Id);
+            bookmarkedCaseIds.Add(lodCase.Id);
+            NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
+        }
+
+        await BookmarkCountService.RefreshAsync();
     }
 
     private static string FormatEnum<T>(T value) where T : Enum

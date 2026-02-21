@@ -29,6 +29,7 @@ public partial class MyBookmarks : ComponentBase
     private IList<LineOfDutyCase> _selectedBookmarks = [];
     private int _count;
     private bool _isLoading;
+    private bool _hasBookmarks;
     private LoadDataArgs _lastArgs;
 
     protected override async Task OnInitializedAsync()
@@ -52,6 +53,11 @@ public partial class MyBookmarks : ComponentBase
 
             _bookmarks = result.Value.AsODataEnumerable();
             _count = result.Count;
+
+            if (_count > 0)
+            {
+                _hasBookmarks = true;
+            }
         }
         catch (Exception ex)
         {
@@ -82,6 +88,12 @@ public partial class MyBookmarks : ComponentBase
             await CaseService.RemoveBookmarkAsync(lodCase.Id);
             await BookmarkCountService.RefreshAsync();
             await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
+
+            if (_count == 0)
+            {
+                _hasBookmarks = false;
+            }
+
             StateHasChanged();
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }

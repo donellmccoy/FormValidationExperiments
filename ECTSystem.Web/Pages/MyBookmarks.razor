@@ -2,6 +2,7 @@
 
 <PageTitle>My Bookmarks - Electronic Case Tracking System</PageTitle>
 
+<div>
 @if (_isLoading && _bookmarks == null)
 {
     <RadzenStack Gap="1rem">
@@ -28,7 +29,7 @@ else
     </RadzenText>
 </RadzenStack>
 
-@if (_bookmarks != null && !_bookmarks.Any())
+@if (!_hasBookmarks && _bookmarks != null && !_bookmarks.Any())
 {
     <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" Style="padding: 3rem 0;">
         <span class="material-symbols-outlined" style="font-size: 48px; color: rgba(255, 255, 255, 0.3);">bookmarks</span>
@@ -57,17 +58,17 @@ else
                 PageSizeOptions="@(new[] { 5, 10, 25, 50 })"
                 PagerHorizontalAlign="HorizontalAlign.Center"
                 GridLines="DataGridGridLines.Both"
-                Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+                Style="border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
     <Columns>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="220px">
             <Template Context="lodCase">
-                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                    <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
-                    <RadzenButton Icon="bookmark_remove" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Small"
-                                  Style="box-shadow: none;"
+                <div class="case-id-cell">
+                    <RadzenLink Path="@($"case/{lodCase.CaseId}?from=bookmarks")" Text="@lodCase.CaseId" />
+                    <RadzenButton Icon="bookmark_remove" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.ExtraSmall"
+                                  class="bookmark-btn"
                                   title="Remove bookmark"
                                   Click="@(() => OnRemoveBookmark(lodCase))" />
-                </RadzenStack>
+                </div>
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
@@ -89,3 +90,4 @@ else
 }
 
 }
+</div>

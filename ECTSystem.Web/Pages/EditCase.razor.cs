@@ -27,7 +27,10 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string WingJudgeAdvocate = "Wing JA Review";
         public const string WingCommander = "Wing CC Review";
         public const string AppointingAuthority = "Appointing Authority";
-        public const string BoardReview = "Board Review";
+        public const string BoardTechnicianReview = "Board Technician Review";
+        public const string BoardMedicalReview = "Board Medical Review";
+        public const string BoardLegalReview = "Board Legal Review";
+        public const string BoardAdminReview = "Board Admin Review";
         public const string Draft = "Draft";
     }
 
@@ -55,7 +58,11 @@ public partial class EditCase : ComponentBase, IDisposable
     [Parameter]
     public string CaseId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "from")]
+    public string FromPage { get; set; }
+
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
+    private bool IsFromBookmarks => string.Equals(FromPage, "bookmarks", StringComparison.OrdinalIgnoreCase);
 
     private string _memberSearchText = string.Empty;
 
@@ -226,14 +233,17 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         _workflowSteps =
         [
-            new() { Number = 1,  Name = "Start Line Of Duty",    Icon = "flag",                  Status = WorkflowStepStatus.InProgress, StatusText = "Completed", CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Workflow initialization and initial data entry." },
-            new() { Number = 2,  Name = "Member Reports",       Icon = "person",                Status = WorkflowStepStatus.Pending,    StatusText = "Completed", CompletionDate = DateTime.Now.AddDays(-1).ToString("MM/dd/yyyy h:mm tt"), Description = "Member submission of injury details and statement." },
-            new() { Number = 3,  Name = "Line Of Duty Initiation",   Icon = "description",      Status = WorkflowStepStatus.Pending,    StatusText = "Approved",  CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt"), Description = "Formal initiation of the Line of Duty determination process." },
-            new() { Number = 4,  Name = "Medical Assessment",   Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Medical provider review and clinical impact assessment." },
-            new() { Number = 5,  Name = "Commander Review",     Icon = "edit_document",         Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
-            new() { Number = 6,  Name = "Legal SJA Review",     Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Legal office review if deemed necessary." },
-            new() { Number = 7,  Name = "Wing CC Review",       Icon = "stars",                 Status = WorkflowStepStatus.Pending,    Description = "Wing-level review if escalated." },
-            new() { Number = 8,  Name = "Board Review",         Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Formal adjudication by the LOD Board." }
+            new() { Number = 1,  Name = "Start Line Of Duty",         Icon = "flag",                  Status = WorkflowStepStatus.InProgress, Description = "Workflow initialization and initial data entry." },
+            new() { Number = 2,  Name = "Member Reports",             Icon = "person",                Status = WorkflowStepStatus.Pending,    Description = "Member submission of injury details and statement." },
+            new() { Number = 3,  Name = "Line Of Duty Initiation",    Icon = "description",           Status = WorkflowStepStatus.Pending,    Description = "Formal initiation of the Line of Duty determination process." },
+            new() { Number = 4,  Name = "Medical Assessment",         Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Medical provider review and clinical impact assessment." },
+            new() { Number = 5,  Name = "Commander Review",           Icon = "edit_document",         Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
+            new() { Number = 6,  Name = "Legal SJA Review",           Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Legal office review if deemed necessary." },
+            new() { Number = 7,  Name = "Wing CC Review",             Icon = "stars",                 Status = WorkflowStepStatus.Pending,    Description = "Wing-level review if escalated." },
+            new() { Number = 8,  Name = "Board Technician Review",    Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Board medical technician review." },
+            new() { Number = 9,  Name = "Board Medical Review",       Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Board medical officer review." },
+            new() { Number = 10, Name = "Board Legal Review",         Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Board legal review." },
+            new() { Number = 11, Name = "Board Admin Review",         Icon = "admin_panel_settings",  Status = WorkflowStepStatus.Pending,    Description = "Board administrative review." }
         ];
     }
 
@@ -274,7 +284,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnBoardFormSubmit(LineOfDutyBoardFormModel model)
     {
-        await SaveCurrentTabAsync(TabNames.BoardReview);
+        await SaveCurrentTabAsync(TabNames.BoardTechnicianReview);
     }
 
     private bool _isBookmarked;
@@ -435,7 +445,7 @@ public partial class EditCase : ComponentBase, IDisposable
             4 => TabNames.WingJudgeAdvocate,
             5 => TabNames.WingCommander,
             6 => TabNames.AppointingAuthority,
-            7 => TabNames.BoardReview,
+            7 => TabNames.BoardTechnicianReview,
             _ => TabNames.Draft
         };
 
@@ -867,7 +877,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 case TabNames.AppointingAuthority:
                     LineOfDutyCaseMapper.ApplyAppointingAuthority(_appointingAuthorityFormModel, _lodCase);
                     break;
-                case TabNames.BoardReview:
+                case TabNames.BoardTechnicianReview:
                     LineOfDutyCaseMapper.ApplyBoardReview(_boardFormModel, _lodCase);
                     break;
                 default:
@@ -915,7 +925,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 case TabNames.AppointingAuthority:
                     _appointingAuthorityFormModel.TakeSnapshot(JsonOptions);
                     break;
-                case TabNames.BoardReview:
+                case TabNames.BoardTechnicianReview:
                     _boardFormModel.TakeSnapshot(JsonOptions);
                     break;
                 default:

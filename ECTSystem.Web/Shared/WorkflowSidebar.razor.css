@@ -205,3 +205,17 @@
     color: #58a6ff;
     font-weight: 500;
 }
+
+/* Step details */
+.step-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 3px;
+}
+
+.step-detail {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.50);
+    line-height: 1.4;
+}

@@ -51,4 +51,18 @@ public class WorkflowStep
     public string StatusText { get; set; } = string.Empty;
     public string CompletionDate { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public DateTime? CompletedDate { get; set; }
+    public string CompletedBy { get; set; } = string.Empty;
+
+    public int? DaysInProcess
+    {
+        get
+        {
+            if (StartDate is null) return null;
+            var end = EndDate ?? DateTime.Now;
+            return (int)(end.Date - StartDate.Value.Date).TotalDays;
+        }
+    }
 }

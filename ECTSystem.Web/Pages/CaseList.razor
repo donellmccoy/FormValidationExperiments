@@ -2,6 +2,7 @@
 
 <PageTitle>Cases - Electronic Case Tracking System</PageTitle>
 
+<div>
 @if (isLoading && cases == null)
 {
     <RadzenStack Gap="1rem">
@@ -54,17 +55,26 @@ else
     <Columns>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
             <Template Context="lodCase">
-                <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
+                <div class="case-id-cell">
+                    <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
+                    <RadzenButton Icon="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Text"
+                                  Size="ButtonSize.ExtraSmall"
+                                  class="bookmark-btn"
+                                  Click="@(() => ToggleBookmark(lodCase))"
+                                  title="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark")" />
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" Width="120px" Filterable="false" Sortable="false">
+            <Template Context="lodCase">
+                @($"***-**-{lodCase.ServiceNumber[^4..]}")
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit"  />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">
-            <Template Context="lodCase">
-                @FormatEnum(lodCase.IncidentType)
-            </Template>
-        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process">
             <Template Context="lodCase">
@@ -75,3 +85,4 @@ else
 </RadzenDataGrid>
 
 }
+</div>

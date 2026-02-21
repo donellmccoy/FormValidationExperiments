@@ -1,0 +1,17 @@
+::deep .case-id-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+::deep .case-id-cell .bookmark-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    padding: 2px;
+    min-width: unset;
+}
+
+::deep .case-id-cell:hover .bookmark-btn {
+    opacity: 1;
+}

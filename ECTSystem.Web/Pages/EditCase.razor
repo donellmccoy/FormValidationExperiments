@@ -49,7 +49,14 @@ else
     <div class="case-page-root">
 
         <RadzenBreadCrumb class="rz-mb-3">
-            <RadzenBreadCrumbItem Path="/" Text="Cases" />
+            @if (IsFromBookmarks)
+            {
+                <RadzenBreadCrumbItem Path="/bookmarks" Text="My Bookmarks" />
+            }
+            else
+            {
+                <RadzenBreadCrumbItem Path="/" Text="All Cases" />
+            }
             <RadzenBreadCrumbItem Text="@(IsNewCase ? "New Case" : _caseInfo.CaseNumber)" />
         </RadzenBreadCrumb>
 
@@ -1064,15 +1071,153 @@ else
                     </ChildContent>
                 </RadzenTabsItem>
 
-                @* ─── Board Tab ─── *@
-                <RadzenTabsItem Text="Board Review" Disabled="@IsNewCase">
+                @* ─── Board Technician Review Tab ─── *@
+                <RadzenTabsItem Text="Board Technician Review" Disabled="@IsNewCase">
                     <Template>
-                        <span class="tab-label">Board Review</span>
+                        <span class="tab-label">Board Technician Review</span>
                     </Template>
                     <ChildContent>
                         <div class="rz-overflow-auto rz-h-100">
                             <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
                                 Board proceedings and findings for this LOD case.
+                            </RadzenText>
+
+                            @* ═══ Form Actions ═══ *@
+                            <div class="form-actions rz-mt-2">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                    <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Disabled="@(!HasAnyChanges)">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </div>
+
+                            @* ═══ Routing ═══ *@
+                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                                       ButtonStyle="ButtonStyle.Primary">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
+                                            <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
+                                            <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
+                                            <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </RadzenFieldset>
+                        </div>
+                    </ChildContent>
+                </RadzenTabsItem>
+
+                @* ─── Board Medical Review Tab ─── *@
+                <RadzenTabsItem Text="Board Medical Review" Disabled="@IsNewCase">
+                    <Template>
+                        <span class="tab-label">Board Medical Review</span>
+                    </Template>
+                    <ChildContent>
+                        <div class="rz-overflow-auto rz-h-100">
+                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                                Board medical officer review for this LOD case.
+                            </RadzenText>
+
+                            @* ═══ Form Actions ═══ *@
+                            <div class="form-actions rz-mt-2">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                    <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Disabled="@(!HasAnyChanges)">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </div>
+
+                            @* ═══ Routing ═══ *@
+                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                                       ButtonStyle="ButtonStyle.Primary">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
+                                            <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
+                                            <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
+                                            <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </RadzenFieldset>
+                        </div>
+                    </ChildContent>
+                </RadzenTabsItem>
+
+                @* ─── Board Legal Review Tab ─── *@
+                <RadzenTabsItem Text="Board Legal Review" Disabled="@IsNewCase">
+                    <Template>
+                        <span class="tab-label">Board Legal Review</span>
+                    </Template>
+                    <ChildContent>
+                        <div class="rz-overflow-auto rz-h-100">
+                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                                Board legal review for this LOD case.
+                            </RadzenText>
+
+                            @* ═══ Form Actions ═══ *@
+                            <div class="form-actions rz-mt-2">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                    <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Disabled="@(!HasAnyChanges)">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </div>
+
+                            @* ═══ Routing ═══ *@
+                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                                       ButtonStyle="ButtonStyle.Primary">
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
+                                            <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
+                                            <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                            <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
+                                            <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </RadzenFieldset>
+                        </div>
+                    </ChildContent>
+                </RadzenTabsItem>
+
+                @* ─── Board Admin Review Tab ─── *@
+                <RadzenTabsItem Text="Board Admin Review" Disabled="@IsNewCase">
+                    <Template>
+                        <span class="tab-label">Board Admin Review</span>
+                    </Template>
+                    <ChildContent>
+                        <div class="rz-overflow-auto rz-h-100">
+                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                                Board administrative review for this LOD case.
                             </RadzenText>
 
                             @* ═══ Form Actions ═══ *@
@@ -1128,36 +1273,9 @@ else
                         <span class="tab-label">Notifications</span>
                     </Template>
                     <ChildContent>
-                        <RadzenDataGrid TItem="ECTSystem.Shared.Models.Notification"
-                                        Data="@_lodCase?.Notifications"
-                                        AllowSorting="true"
-                                        AllowPaging="true"
-                                        PageSize="10"
-                                        ShowPagingSummary="true"
-                                        PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
-                                        PageSizeOptions="@(new[] { 5, 10, 25 })"
-                                        PagerHorizontalAlign="HorizontalAlign.Center"
-                                        GridLines="DataGridGridLines.Both"
-                                        class="rz-border rz-border-radius">
-                            <Columns>
-                                <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Notification" Property="Title" Title="Title" Width="220px" />
-                                <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Notification" Property="NotificationType" Title="Type" Width="140px" />
-                                <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Notification" Property="Recipient" Title="Recipient" Width="200px" />
-                                <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Notification" Property="CreatedDate" Title="Date" FormatString="{0:yyyy-MM-dd}" Width="120px" />
-                                <RadzenDataGridColumn TItem="ECTSystem.Shared.Models.Notification" Property="IsRead" Title="Read" Width="80px" TextAlign="TextAlign.Center">
-                                    <Template Context="notification">
-                                        @if (notification.IsRead)
-                                        {
-                                            <RadzenIcon Icon="check_circle" class="rz-color-success" />
-                                        }
-                                        else
-                                        {
-                                            <RadzenIcon Icon="radio_button_unchecked" class="rz-color-base-400" />
-                                        }
-                                    </Template>
-                                </RadzenDataGridColumn>
-                            </Columns>
-                        </RadzenDataGrid>
+                        <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                            Notifications for this LOD case.
+                        </RadzenText>
                     </ChildContent>
                 </RadzenTabsItem>
 
