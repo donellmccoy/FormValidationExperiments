@@ -14,5 +14,8 @@ public class CaseViewModelsDto
     public WingJudgeAdvocateFormModel WingJudgeAdvocate { get; set; } = new();
     public WingCommanderFormModel WingCommander { get; set; } = new();
     public AppointingAuthorityFormModel AppointingAuthority { get; set; } = new();
-    public LineOfDutyBoardFormModel BoardReview { get; set; } = new();
+    public BoardTechnicianFormModel BoardTechnician { get; set; } = new();
+    public BoardMedicalFormModel BoardMedical { get; set; } = new();
+    public BoardLegalFormModel BoardLegal { get; set; } = new();
+    public BoardAdminFormModel BoardAdmin { get; set; } = new();
 }

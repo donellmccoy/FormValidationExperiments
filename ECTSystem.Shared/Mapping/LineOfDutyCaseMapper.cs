@@ -192,11 +192,35 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="LineOfDutyBoardFormModel"/>.
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardTechnicianFormModel"/>.
     /// </summary>
-    public static LineOfDutyBoardFormModel ToLineOfDutyBoardFormModel(LineOfDutyCase source)
+    public static BoardTechnicianFormModel ToBoardTechnicianFormModel(LineOfDutyCase source)
     {
-        return new LineOfDutyBoardFormModel();
+        return new BoardTechnicianFormModel();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardMedicalFormModel"/>.
+    /// </summary>
+    public static BoardMedicalFormModel ToBoardMedicalFormModel(LineOfDutyCase source)
+    {
+        return new BoardMedicalFormModel();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardLegalFormModel"/>.
+    /// </summary>
+    public static BoardLegalFormModel ToBoardLegalFormModel(LineOfDutyCase source)
+    {
+        return new BoardLegalFormModel();
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardAdminFormModel"/>.
+    /// </summary>
+    public static BoardAdminFormModel ToBoardAdminFormModel(LineOfDutyCase source)
+    {
+        return new BoardAdminFormModel();
     }
 
     /// <summary>
@@ -214,7 +238,10 @@ public static partial class LineOfDutyCaseMapper
             MedicalTechnician = ToMedicalTechnicianFormModel(source),
             WingJudgeAdvocate = ToWingJudgeAdvocateFormModel(source),
             AppointingAuthority = ToAppointingAuthorityFormModel(source),
-            BoardReview = ToLineOfDutyBoardFormModel(source)
+            BoardTechnician = ToBoardTechnicianFormModel(source),
+            BoardMedical = ToBoardMedicalFormModel(source),
+            BoardLegal = ToBoardLegalFormModel(source),
+            BoardAdmin = ToBoardAdminFormModel(source)
         };
     }
 
@@ -390,9 +417,30 @@ public static partial class LineOfDutyCaseMapper
     }
 
     /// <summary>
-    /// Applies <see cref="LineOfDutyBoardFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// Applies <see cref="BoardTechnicianFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
     /// </summary>
-    public static void ApplyBoardReview(LineOfDutyBoardFormModel model, LineOfDutyCase target)
+    public static void ApplyBoardTechnician(BoardTechnicianFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
+    /// Applies <see cref="BoardMedicalFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyBoardMedical(BoardMedicalFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
+    /// Applies <see cref="BoardLegalFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyBoardLegal(BoardLegalFormModel model, LineOfDutyCase target)
+    {
+    }
+
+    /// <summary>
+    /// Applies <see cref="BoardAdminFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// </summary>
+    public static void ApplyBoardAdmin(BoardAdminFormModel model, LineOfDutyCase target)
     {
     }
 
@@ -408,7 +456,10 @@ public static partial class LineOfDutyCaseMapper
         ApplyMedicalTechnician(dto.MedicalTechnician, target);
         ApplyWingJudgeAdvocate(dto.WingJudgeAdvocate, target);
         ApplyAppointingAuthority(dto.AppointingAuthority, target);
-        ApplyBoardReview(dto.BoardReview, target);
+        ApplyBoardTechnician(dto.BoardTechnician, target);
+        ApplyBoardMedical(dto.BoardMedical, target);
+        ApplyBoardLegal(dto.BoardLegal, target);
+        ApplyBoardAdmin(dto.BoardAdmin, target);
     }
 
     // ──────────────────────────── Helper Methods ────────────────────────────

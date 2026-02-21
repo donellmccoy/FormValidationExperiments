@@ -12,8 +12,7 @@
     <div class="steps-list">
         @foreach (var step in Steps)
         {
-            <div class="step-item @GetStepCssClass(step)" title="@step.Description"
-                 @onclick="() => OnStepClicked.InvokeAsync(step)">
+            <div class="step-item @GetStepCssClass(step)" title="@step.Description">
                 <div class="step-indicator-col">
                     <div class="step-circle">
                         <span class="material-symbols-outlined">@(step.Status == WorkflowStepStatus.Completed ? "check" : step.Icon)</span>

@@ -1105,9 +1105,11 @@ else
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                     <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
-                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                    <RadzenSplitButton Click="@OnBoardTechForwardClick" Text="Forward to Board Medical" Icon="send"
                                                        ButtonStyle="ButtonStyle.Primary">
                                         <ChildContent>
+                                            <RadzenSplitButtonItem Text="Forward to Board Legal" Icon="send" Value="board-legal" />
+                                            <RadzenSplitButtonItem Text="Forward to Board Admin" Icon="send" Value="board-admin" />
                                             <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
                                             <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
                                             <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
@@ -1151,9 +1153,11 @@ else
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                     <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
-                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                    <RadzenSplitButton Click="@OnBoardMedForwardClick" Text="Forward to Board Legal" Icon="send"
                                                        ButtonStyle="ButtonStyle.Primary">
                                         <ChildContent>
+                                            <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
+                                            <RadzenSplitButtonItem Text="Forward to Board Admin" Icon="send" Value="board-admin" />
                                             <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
                                             <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
                                             <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
@@ -1197,9 +1201,11 @@ else
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                     <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
-                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                    <RadzenSplitButton Click="@OnBoardLegalForwardClick" Text="Forward to Board Admin" Icon="send"
                                                        ButtonStyle="ButtonStyle.Primary">
                                         <ChildContent>
+                                            <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
+                                            <RadzenSplitButtonItem Text="Forward to Board Medical" Icon="send" Value="board-med" />
                                             <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
                                             <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
                                             <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
@@ -1243,9 +1249,12 @@ else
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                     <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
-                                    <RadzenSplitButton Click="@OnBoardCompleteClick" Text="Complete Review" Icon="check_circle"
+                                    <RadzenSplitButton Click="@OnBoardAdminForwardClick" Text="Complete Review" Icon="check_circle"
                                                        ButtonStyle="ButtonStyle.Primary">
                                         <ChildContent>
+                                            <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
+                                            <RadzenSplitButtonItem Text="Forward to Board Medical" Icon="send" Value="board-med" />
+                                            <RadzenSplitButtonItem Text="Forward to Board Legal" Icon="send" Value="board-legal" />
                                             <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appointing-authority" />
                                             <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
                                             <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />

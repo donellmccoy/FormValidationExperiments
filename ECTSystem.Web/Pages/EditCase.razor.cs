@@ -116,7 +116,19 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private AppointingAuthorityFormModel _appointingAuthorityFormModel = new();
 
-    private LineOfDutyBoardFormModel _boardFormModel = new();
+    private BoardTechnicianFormModel _boardTechFormModel = new();
+
+    private BoardMedicalFormModel _boardMedFormModel = new();
+
+    private BoardLegalFormModel _boardLegalFormModel = new();
+
+    private BoardAdminFormModel _boardAdminFormModel = new();
+
+    private CaseDialogueFormModel _caseDialogueFormModel = new();
+
+    private CaseNotificationsFormModel _caseNotificationsFormModel = new();
+
+    private CaseDocumentsFormModel _caseDocumentsFormModel = new();
 
     private CaseInfoModel _caseInfo = new()
     {
@@ -130,13 +142,13 @@ public partial class EditCase : ComponentBase, IDisposable
         Status = "New"
     };
 
-    private IReadOnlyList<TrackableModel> AllFormModels => [_memberFormModel, _medicalFormModel, _commanderFormModel, _wingJAFormModel, _wingCommanderFormModel, _medTechFormModel, _appointingAuthorityFormModel, _boardFormModel];
+    private IReadOnlyList<TrackableModel> AllFormModels => [_memberFormModel, _medicalFormModel, _commanderFormModel, _wingJAFormModel, _wingCommanderFormModel, _medTechFormModel, _appointingAuthorityFormModel, _boardTechFormModel, _boardMedFormModel, _boardLegalFormModel, _boardAdminFormModel, _caseDialogueFormModel, _caseNotificationsFormModel, _caseDocumentsFormModel];
 
     private bool HasAnyChanges => AllFormModels.Any(m => m.IsDirty);
 
     private List<WorkflowStep> _workflowSteps = [];
 
-    private WorkflowStep CurrentStep => _workflowSteps.Count > 0 ? _workflowSteps[_currentStepIndex] : null;
+    private WorkflowStep CurrentStep => _workflowSteps.Count > 0 && _currentStepIndex >= 0 && _currentStepIndex < _workflowSteps.Count ? _workflowSteps[_currentStepIndex] : null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -178,7 +190,10 @@ public partial class EditCase : ComponentBase, IDisposable
             _wingJAFormModel = dto.WingJudgeAdvocate;
             _wingCommanderFormModel = dto.WingCommander;
             _appointingAuthorityFormModel = dto.AppointingAuthority;
-            _boardFormModel = dto.BoardReview;
+            _boardTechFormModel = dto.BoardTechnician;
+            _boardMedFormModel = dto.BoardMedical;
+            _boardLegalFormModel = dto.BoardLegal;
+            _boardAdminFormModel = dto.BoardAdmin;
 
             _memberFormModel.Grade = _lodCase.MemberRank ?? string.Empty;
 
@@ -233,8 +248,8 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         _workflowSteps =
         [
-            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.InProgress, Description = "Enter member identification and incident details to initiate the LOD case." },
-            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending,    Description = "Medical technician reviews the injury/illness and documents clinical findings." },
+            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, Description = "Enter member identification and incident details to initiate the LOD case." },
+            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, Description = "Medical technician reviews the injury/illness and documents clinical findings." },
             new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending,    Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
             new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending,    Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
             new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending,    Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
@@ -244,8 +259,10 @@ public partial class EditCase : ComponentBase, IDisposable
             new() { Number = 9,  Name = "Board Medical Review",       Icon = "medical_services",     Status = WorkflowStepStatus.Pending,    Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
             new() { Number = 10, Name = "Board Legal Review",         Icon = "gavel",                Status = WorkflowStepStatus.Pending,    Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
             new() { Number = 11, Name = "Board Admin Review",         Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending,    Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
-            new() { Number = 12, Name = "Completed",                  Icon = "check_circle",         Status = WorkflowStepStatus.Pending,    Description = "LOD determination has been finalized and the case is closed." }
+            new() { Number = 12, Name = "Completed",                  Icon = "check_circle",         Status = WorkflowStepStatus.Pending, Description = "LOD determination has been finalized and the case is closed." }
         ];
+
+        ApplyWorkflowState(_lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry);
     }
 
     private async Task OnFormSubmit(MedicalAssessmentFormModel model)
@@ -283,7 +300,7 @@ public partial class EditCase : ComponentBase, IDisposable
         await SaveCurrentTabAsync(TabNames.AppointingAuthority);
     }
 
-    private async Task OnBoardFormSubmit(LineOfDutyBoardFormModel model)
+    private async Task OnBoardFormSubmit(BoardTechnicianFormModel model)
     {
         await SaveCurrentTabAsync(TabNames.BoardTechnicianReview);
     }
@@ -341,36 +358,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private void OnStepSelected(WorkflowStep step)
     {
-        _currentStepIndex = step.Number - 1;
-
-        foreach (var s in _workflowSteps)
-        {
-            if (s.Number < step.Number)
-            {
-                s.Status = WorkflowStepStatus.Completed;
-                if (string.IsNullOrEmpty(s.StatusText))
-                {
-                    s.StatusText = "Completed";
-                }
-
-                if (string.IsNullOrEmpty(s.CompletionDate))
-                {
-                    s.CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
-                }
-            }
-            else if (s.Number == step.Number)
-            {
-                s.Status = WorkflowStepStatus.InProgress;
-            }
-            else
-            {
-                s.Status = WorkflowStepStatus.Pending;
-                s.StatusText = string.Empty;
-                s.CompletionDate = string.Empty;
-            }
-        }
-
-        _selectedTabIndex = 0;
+        ApplyWorkflowState((LineOfDutyWorkflowState)step.Number);
     }
 
     private async Task OnStartLod()
@@ -471,7 +459,8 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         else
         {
-            await ConfirmAndNotifyAsync(
+            await ChangeWorkflowStateAsync(
+                LineOfDutyWorkflowState.MedicalOfficerReview,
                 "Are you sure you want to forward this case to the Medical Officer?",
                 "Confirm Forward", "Forward",
                 "Forwarding to Medical Officer...",
@@ -485,7 +474,8 @@ public partial class EditCase : ComponentBase, IDisposable
         switch (item?.Value)
         {
             case "return":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
                     "Are you sure you want to return this case to the Medical Technician?",
                     "Confirm Return", "Return",
                     "Returning to Med Tech...",
@@ -496,7 +486,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CancelInvestigationAsync();
                 break;
             default:
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
                     "Are you sure you want to forward this case to the Unit Commander?",
                     "Confirm Forward", "Forward",
                     "Forwarding to Unit CC...",
@@ -511,7 +502,8 @@ public partial class EditCase : ComponentBase, IDisposable
         switch (item?.Value)
         {
             case "return-med-officer":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
                     "Are you sure you want to return this case to the Medical Officer?",
                     "Confirm Return", "Return",
                     "Returning to Medical Officer...",
@@ -519,7 +511,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Medical Officer for review.");
                 break;
             case "return-med-tech":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
                     "Are you sure you want to return this case to the Medical Technician?",
                     "Confirm Return", "Return",
                     "Returning to Medical Technician...",
@@ -530,7 +523,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CancelInvestigationAsync();
                 break;
             default:
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
                     "Are you sure you want to forward this case to the Wing Judge Advocate?",
                     "Confirm Forward", "Forward",
                     "Forwarding to Wing JA...",
@@ -545,7 +539,8 @@ public partial class EditCase : ComponentBase, IDisposable
         switch (item?.Value)
         {
             case "return-unit-cc":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
                     "Are you sure you want to return this case to the Unit Commander?",
                     "Confirm Return", "Return",
                     "Returning to Unit CC...",
@@ -553,7 +548,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Unit Commander for review.");
                 break;
             case "return-med-officer":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
                     "Are you sure you want to return this case to the Medical Officer?",
                     "Confirm Return", "Return",
                     "Returning to Medical Officer...",
@@ -561,7 +557,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Medical Officer for review.");
                 break;
             case "return-med-tech":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
                     "Are you sure you want to return this case to the Medical Technician?",
                     "Confirm Return", "Return",
                     "Returning to Medical Technician...",
@@ -572,7 +569,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CancelInvestigationAsync();
                 break;
             default:
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
                     "Are you sure you want to forward this case to the Wing Commander?",
                     "Confirm Forward", "Forward",
                     "Forwarding to Wing CC...",
@@ -587,7 +585,8 @@ public partial class EditCase : ComponentBase, IDisposable
         switch (item?.Value)
         {
             case "return-wing-ja":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
                     "Are you sure you want to return this case to the Wing Judge Advocate?",
                     "Confirm Return", "Return",
                     "Returning to Wing JA...",
@@ -595,7 +594,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Wing Judge Advocate for review.");
                 break;
             case "return":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
                     "Are you sure you want to return this case to the Unit Commander?",
                     "Confirm Return", "Return",
                     "Returning to Unit CC...",
@@ -603,7 +603,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Unit Commander for review.");
                 break;
             case "return-med-officer":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
                     "Are you sure you want to return this case to the Medical Officer?",
                     "Confirm Return", "Return",
                     "Returning to Medical Officer...",
@@ -611,7 +612,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Medical Officer for review.");
                 break;
             case "return-med-tech":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
                     "Are you sure you want to return this case to the Medical Technician?",
                     "Confirm Return", "Return",
                     "Returning to Medical Technician...",
@@ -622,12 +624,13 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CancelInvestigationAsync();
                 break;
             default:
-                await ConfirmAndNotifyAsync(
-                    "Are you sure you want to forward this case to the Wing Commander?",
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
+                    "Are you sure you want to forward this case to the Appointing Authority?",
                     "Confirm Forward", "Forward",
-                    "Forwarding to Wing CC...",
-                    NotificationSeverity.Success, "Forwarded to Wing CC",
-                    "Case has been forwarded to the Wing Commander.");
+                    "Forwarding to Appointing Authority...",
+                    NotificationSeverity.Success, "Forwarded to Appointing Authority",
+                    "Case has been forwarded to the Appointing Authority for review.");
                 break;
         }
     }
@@ -637,7 +640,8 @@ public partial class EditCase : ComponentBase, IDisposable
         switch (item?.Value)
         {
             case "return-wing-cc":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
                     "Are you sure you want to return this case to the Wing Commander?",
                     "Confirm Return", "Return",
                     "Returning to Wing CC...",
@@ -645,7 +649,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Wing Commander for review.");
                 break;
             case "return-wing-ja":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
                     "Are you sure you want to return this case to the Wing Judge Advocate?",
                     "Confirm Return", "Return",
                     "Returning to Wing JA...",
@@ -653,7 +658,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Wing Judge Advocate for review.");
                 break;
             case "return-unit-cc":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
                     "Are you sure you want to return this case to the Unit Commander?",
                     "Confirm Return", "Return",
                     "Returning to Unit CC...",
@@ -661,7 +667,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Unit Commander for review.");
                 break;
             case "return-med-officer":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
                     "Are you sure you want to return this case to the Medical Officer?",
                     "Confirm Return", "Return",
                     "Returning to Medical Officer...",
@@ -669,7 +676,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     "Case has been returned to the Medical Officer for review.");
                 break;
             case "return-med-tech":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
                     "Are you sure you want to return this case to the Medical Technician?",
                     "Confirm Return", "Return",
                     "Returning to Medical Technician...",
@@ -680,7 +688,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CancelInvestigationAsync();
                 break;
             default:
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardTechnicianReview,
                     "Are you sure you want to forward this case to the Board for review?",
                     "Confirm Forward", "Forward",
                     "Forwarding to Board Review...",
@@ -690,81 +699,447 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnBoardCompleteClick(RadzenSplitButtonItem item)
+    private async Task OnBoardTechForwardClick(RadzenSplitButtonItem item)
     {
         switch (item?.Value)
         {
+            case "board-legal":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardLegalReview,
+                    "Are you sure you want to forward this case to the Board Legal reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Legal...",
+                    NotificationSeverity.Success, "Forwarded to Board Legal",
+                    "Case has been forwarded to the Board Legal reviewer.");
+                break;
+            case "board-admin":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardAdminReview,
+                    "Are you sure you want to forward this case to the Board Admin reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Admin...",
+                    NotificationSeverity.Success, "Forwarded to Board Admin",
+                    "Case has been forwarded to the Board Admin reviewer.");
+                break;
             case "return-appointing-authority":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
                     "Are you sure you want to return this case to the Appointing Authority?",
-                    "Confirm Return", 
-                    "Return",
+                    "Confirm Return", "Return",
                     "Returning to Appointing Authority...",
-                    NotificationSeverity.Info, 
-                    "Returned to Appointing Authority",
+                    NotificationSeverity.Info, "Returned to Appointing Authority",
                     "Case has been returned to the Appointing Authority for review.");
                 break;
             case "return-wing-cc":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
                     "Are you sure you want to return this case to the Wing Commander?",
-                    "Confirm Return", 
-                    "Return",
+                    "Confirm Return", "Return",
                     "Returning to Wing CC...",
-                    NotificationSeverity.Info, 
-                    "Returned to Wing CC",
+                    NotificationSeverity.Info, "Returned to Wing CC",
                     "Case has been returned to the Wing Commander for review.");
                 break;
             case "return-wing-ja":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
                     "Are you sure you want to return this case to the Wing Judge Advocate?",
-                    "Confirm Return", 
-                    "Return",
+                    "Confirm Return", "Return",
                     "Returning to Wing JA...",
-                    NotificationSeverity.Info, 
-                    "Returned to Wing JA",
+                    NotificationSeverity.Info, "Returned to Wing JA",
                     "Case has been returned to the Wing Judge Advocate for review.");
                 break;
             case "return-unit-cc":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
                     "Are you sure you want to return this case to the Unit Commander?",
-                    "Confirm Return", 
-                    "Return",
+                    "Confirm Return", "Return",
                     "Returning to Unit CC...",
-                    NotificationSeverity.Info, 
-                    "Returned to Unit CC",
+                    NotificationSeverity.Info, "Returned to Unit CC",
                     "Case has been returned to the Unit Commander for review.");
                 break;
             case "return-med-officer":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
                     "Are you sure you want to return this case to the Medical Officer?",
-                    "Confirm Return", 
-                    "Return",
+                    "Confirm Return", "Return",
                     "Returning to Medical Officer...",
-                    NotificationSeverity.Info, 
-                    "Returned to Medical Officer",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
                     "Case has been returned to the Medical Officer for review.");
                 break;
             case "return-med-tech":
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
                     "Are you sure you want to return this case to the Medical Technician?",
-                    "Confirm Return", 
-                    "Return",
+                    "Confirm Return", "Return",
                     "Returning to Medical Technician...",
-                    NotificationSeverity.Info, 
-                    "Returned to Medical Technician",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
                     "Case has been returned to the Medical Technician for review.");
                 break;
             case "cancel":
                 await CancelInvestigationAsync();
                 break;
             default:
-                await ConfirmAndNotifyAsync(
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardMedicalReview,
+                    "Are you sure you want to forward this case to the Board Medical reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Medical...",
+                    NotificationSeverity.Success, "Forwarded to Board Medical",
+                    "Case has been forwarded to the Board Medical reviewer.");
+                break;
+        }
+    }
+
+    private async Task OnBoardMedForwardClick(RadzenSplitButtonItem item)
+    {
+        switch (item?.Value)
+        {
+            case "board-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardTechnicianReview,
+                    "Are you sure you want to forward this case to the Board Technician?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Technician...",
+                    NotificationSeverity.Success, "Forwarded to Board Technician",
+                    "Case has been forwarded to the Board Technician.");
+                break;
+            case "board-admin":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardAdminReview,
+                    "Are you sure you want to forward this case to the Board Admin reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Admin...",
+                    NotificationSeverity.Success, "Forwarded to Board Admin",
+                    "Case has been forwarded to the Board Admin reviewer.");
+                break;
+            case "return-appointing-authority":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
+                    "Are you sure you want to return this case to the Appointing Authority?",
+                    "Confirm Return", "Return",
+                    "Returning to Appointing Authority...",
+                    NotificationSeverity.Info, "Returned to Appointing Authority",
+                    "Case has been returned to the Appointing Authority for review.");
+                break;
+            case "return-wing-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
+                    "Are you sure you want to return this case to the Wing Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing CC...",
+                    NotificationSeverity.Info, "Returned to Wing CC",
+                    "Case has been returned to the Wing Commander for review.");
+                break;
+            case "return-wing-ja":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, "Returned to Wing JA",
+                    "Case has been returned to the Wing Judge Advocate for review.");
+                break;
+            case "return-unit-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+                break;
+            case "return-med-officer":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+                break;
+            case "return-med-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardLegalReview,
+                    "Are you sure you want to forward this case to the Board Legal reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Legal...",
+                    NotificationSeverity.Success, "Forwarded to Board Legal",
+                    "Case has been forwarded to the Board Legal reviewer.");
+                break;
+        }
+    }
+
+    private async Task OnBoardLegalForwardClick(RadzenSplitButtonItem item)
+    {
+        switch (item?.Value)
+        {
+            case "board-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardTechnicianReview,
+                    "Are you sure you want to forward this case to the Board Technician?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Technician...",
+                    NotificationSeverity.Success, "Forwarded to Board Technician",
+                    "Case has been forwarded to the Board Technician.");
+                break;
+            case "board-med":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardMedicalReview,
+                    "Are you sure you want to forward this case to the Board Medical reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Medical...",
+                    NotificationSeverity.Success, "Forwarded to Board Medical",
+                    "Case has been forwarded to the Board Medical reviewer.");
+                break;
+            case "return-appointing-authority":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
+                    "Are you sure you want to return this case to the Appointing Authority?",
+                    "Confirm Return", "Return",
+                    "Returning to Appointing Authority...",
+                    NotificationSeverity.Info, "Returned to Appointing Authority",
+                    "Case has been returned to the Appointing Authority for review.");
+                break;
+            case "return-wing-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
+                    "Are you sure you want to return this case to the Wing Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing CC...",
+                    NotificationSeverity.Info, "Returned to Wing CC",
+                    "Case has been returned to the Wing Commander for review.");
+                break;
+            case "return-wing-ja":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, "Returned to Wing JA",
+                    "Case has been returned to the Wing Judge Advocate for review.");
+                break;
+            case "return-unit-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+                break;
+            case "return-med-officer":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+                break;
+            case "return-med-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardAdminReview,
+                    "Are you sure you want to forward this case to the Board Admin reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Admin...",
+                    NotificationSeverity.Success, "Forwarded to Board Admin",
+                    "Case has been forwarded to the Board Admin reviewer.");
+                break;
+        }
+    }
+
+    private async Task OnBoardAdminForwardClick(RadzenSplitButtonItem item)
+    {
+        switch (item?.Value)
+        {
+            case "board-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardTechnicianReview,
+                    "Are you sure you want to forward this case to the Board Technician?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Technician...",
+                    NotificationSeverity.Success, "Forwarded to Board Technician",
+                    "Case has been forwarded to the Board Technician.");
+                break;
+            case "board-med":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardMedicalReview,
+                    "Are you sure you want to forward this case to the Board Medical reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Medical...",
+                    NotificationSeverity.Success, "Forwarded to Board Medical",
+                    "Case has been forwarded to the Board Medical reviewer.");
+                break;
+            case "board-legal":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.BoardLegalReview,
+                    "Are you sure you want to forward this case to the Board Legal reviewer?",
+                    "Confirm Forward", "Forward",
+                    "Forwarding to Board Legal...",
+                    NotificationSeverity.Success, "Forwarded to Board Legal",
+                    "Case has been forwarded to the Board Legal reviewer.");
+                break;
+            case "return-appointing-authority":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
+                    "Are you sure you want to return this case to the Appointing Authority?",
+                    "Confirm Return", "Return",
+                    "Returning to Appointing Authority...",
+                    NotificationSeverity.Info, "Returned to Appointing Authority",
+                    "Case has been returned to the Appointing Authority for review.");
+                break;
+            case "return-wing-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
+                    "Are you sure you want to return this case to the Wing Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing CC...",
+                    NotificationSeverity.Info, "Returned to Wing CC",
+                    "Case has been returned to the Wing Commander for review.");
+                break;
+            case "return-wing-ja":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, "Returned to Wing JA",
+                    "Case has been returned to the Wing Judge Advocate for review.");
+                break;
+            case "return-unit-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+                break;
+            case "return-med-officer":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+                break;
+            case "return-med-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.Completed,
                     "Are you sure you want to complete the Board review?",
-                    "Confirm Complete", 
-                    "Complete",
+                    "Confirm Complete", "Complete",
                     "Completing Board review...",
-                    NotificationSeverity.Success, 
-                    "Review Completed",
+                    NotificationSeverity.Success, "Review Completed",
+                    "The Board review has been completed.");
+                break;
+        }
+    }
+
+    private async Task OnBoardCompleteClick(RadzenSplitButtonItem item)
+    {
+        switch (item?.Value)
+        {
+            case "return-appointing-authority":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
+                    "Are you sure you want to return this case to the Appointing Authority?",
+                    "Confirm Return", "Return",
+                    "Returning to Appointing Authority...",
+                    NotificationSeverity.Info, "Returned to Appointing Authority",
+                    "Case has been returned to the Appointing Authority for review.");
+                break;
+            case "return-wing-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingCommanderReview,
+                    "Are you sure you want to return this case to the Wing Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing CC...",
+                    NotificationSeverity.Info, "Returned to Wing CC",
+                    "Case has been returned to the Wing Commander for review.");
+                break;
+            case "return-wing-ja":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+                    "Are you sure you want to return this case to the Wing Judge Advocate?",
+                    "Confirm Return", "Return",
+                    "Returning to Wing JA...",
+                    NotificationSeverity.Info, "Returned to Wing JA",
+                    "Case has been returned to the Wing Judge Advocate for review.");
+                break;
+            case "return-unit-cc":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.UnitCommanderReview,
+                    "Are you sure you want to return this case to the Unit Commander?",
+                    "Confirm Return", "Return",
+                    "Returning to Unit CC...",
+                    NotificationSeverity.Info, "Returned to Unit CC",
+                    "Case has been returned to the Unit Commander for review.");
+                break;
+            case "return-med-officer":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
+                    "Are you sure you want to return this case to the Medical Officer?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Officer...",
+                    NotificationSeverity.Info, "Returned to Medical Officer",
+                    "Case has been returned to the Medical Officer for review.");
+                break;
+            case "return-med-tech":
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
+                    "Are you sure you want to return this case to the Medical Technician?",
+                    "Confirm Return", "Return",
+                    "Returning to Medical Technician...",
+                    NotificationSeverity.Info, "Returned to Medical Technician",
+                    "Case has been returned to the Medical Technician for review.");
+                break;
+            case "cancel":
+                await CancelInvestigationAsync();
+                break;
+            default:
+                await ChangeWorkflowStateAsync(
+                    LineOfDutyWorkflowState.Completed,
+                    "Are you sure you want to complete the Board review?",
+                    "Confirm Complete", "Complete",
+                    "Completing Board review...",
+                    NotificationSeverity.Success, "Review Completed",
                     "The Board review has been completed.");
                 break;
         }
@@ -793,6 +1168,104 @@ public partial class EditCase : ComponentBase, IDisposable
         try
         {
             NotificationService.Notify(severity, notifySummary, notifyDetail);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    /// <summary>
+    /// Syncs the workflow sidebar step statuses and <see cref="_currentStepIndex"/> to match
+    /// <paramref name="state"/>. Does NOT persist the state change to the database.
+    /// </summary>
+    private void ApplyWorkflowState(LineOfDutyWorkflowState state)
+    {
+        // Clamp to valid range — DB rows that predate the WorkflowState migration have int value 0
+        var stateInt = (int)state < 1 ? 1 : (int)state > _workflowSteps.Count ? _workflowSteps.Count : (int)state;
+        _currentStepIndex = stateInt - 1;
+        _selectedTabIndex = GetTabIndexForState((LineOfDutyWorkflowState)stateInt);
+
+        foreach (var step in _workflowSteps)
+        {
+            if (step.Number < stateInt)
+            {
+                step.Status = WorkflowStepStatus.Completed;
+                if (string.IsNullOrEmpty(step.StatusText))
+                    step.StatusText = "Completed";
+                if (string.IsNullOrEmpty(step.CompletionDate))
+                    step.CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
+            }
+            else if (step.Number == stateInt)
+            {
+                step.Status = WorkflowStepStatus.InProgress;
+            }
+            else
+            {
+                step.Status = WorkflowStepStatus.Pending;
+                step.StatusText = string.Empty;
+                step.CompletionDate = string.Empty;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Maps a <see cref="LineOfDutyWorkflowState"/> to its 0-based tab index in the RadzenTabs control.
+    /// Tab order: Member(0) · Med Tech(1) · Med Officer(2) · Unit CC(3) · Wing JA(4) · Wing CC(5) · Appointing Auth(6) · Board Tech(7) · Board Med(8) · Board Legal(9) · Board Admin(10)
+    /// </summary>
+    private static int GetTabIndexForState(LineOfDutyWorkflowState state) => state switch
+    {
+        LineOfDutyWorkflowState.MemberInformationEntry    => 0,
+        LineOfDutyWorkflowState.MedicalTechnicianReview   => 1,
+        LineOfDutyWorkflowState.MedicalOfficerReview      => 2,
+        LineOfDutyWorkflowState.UnitCommanderReview       => 3,
+        LineOfDutyWorkflowState.WingJudgeAdvocateReview   => 4,
+        LineOfDutyWorkflowState.WingCommanderReview       => 5,
+        LineOfDutyWorkflowState.AppointingAuthorityReview => 6,
+        LineOfDutyWorkflowState.BoardTechnicianReview     => 7,
+        LineOfDutyWorkflowState.BoardMedicalReview        => 8,
+        LineOfDutyWorkflowState.BoardLegalReview          => 9,
+        LineOfDutyWorkflowState.BoardAdminReview          => 10,
+        LineOfDutyWorkflowState.Completed                 => 10,
+        _                                                 => 0,
+    };
+
+    /// <summary>
+    /// Confirms with the user, advances the LOD <see cref="LineOfDutyCase.WorkflowState"/> to
+    /// <paramref name="targetState"/>, persists the change, updates the sidebar, and notifies.
+    /// </summary>
+    private async Task ChangeWorkflowStateAsync(
+        LineOfDutyWorkflowState targetState,
+        string confirmMessage,
+        string confirmTitle,
+        string okButtonText,
+        string busyMessage,
+        NotificationSeverity severity,
+        string notifySummary,
+        string notifyDetail,
+        string cancelButtonText = "Cancel")
+    {
+        if (_lodCase is null)
+            return;
+
+        var confirmed = await DialogService.Confirm(confirmMessage, confirmTitle,
+            new ConfirmOptions { OkButtonText = okButtonText, CancelButtonText = cancelButtonText });
+
+        if (confirmed != true)
+            return;
+
+        await SetBusyAsync(busyMessage);
+
+        try
+        {
+            _lodCase.WorkflowState = targetState;
+            _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
+            ApplyWorkflowState(targetState);
+            NotificationService.Notify(severity, notifySummary, notifyDetail);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "State Change Failed", ex.Message);
         }
         finally
         {
@@ -879,7 +1352,7 @@ public partial class EditCase : ComponentBase, IDisposable
                     LineOfDutyCaseMapper.ApplyAppointingAuthority(_appointingAuthorityFormModel, _lodCase);
                     break;
                 case TabNames.BoardTechnicianReview:
-                    LineOfDutyCaseMapper.ApplyBoardReview(_boardFormModel, _lodCase);
+                    LineOfDutyCaseMapper.ApplyBoardTechnician(_boardTechFormModel, _lodCase);
                     break;
                 default:
                     LineOfDutyCaseMapper.ApplyAll(
@@ -893,7 +1366,10 @@ public partial class EditCase : ComponentBase, IDisposable
                             WingJudgeAdvocate = _wingJAFormModel,
                             WingCommander = _wingCommanderFormModel,
                             AppointingAuthority = _appointingAuthorityFormModel,
-                            BoardReview = _boardFormModel
+                            BoardTechnician = _boardTechFormModel,
+                            BoardMedical = _boardMedFormModel,
+                            BoardLegal = _boardLegalFormModel,
+                            BoardAdmin = _boardAdminFormModel
                         },
                         _lodCase);
                     break;
@@ -927,7 +1403,7 @@ public partial class EditCase : ComponentBase, IDisposable
                     _appointingAuthorityFormModel.TakeSnapshot(JsonOptions);
                     break;
                 case TabNames.BoardTechnicianReview:
-                    _boardFormModel.TakeSnapshot(JsonOptions);
+                    _boardTechFormModel.TakeSnapshot(JsonOptions);
                     break;
                 default:
                     TakeSnapshots();
