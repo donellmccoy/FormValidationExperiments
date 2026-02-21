@@ -2,6 +2,7 @@
   <Project Path="ECTSystem.Api/ECTSystem.Api.csproj" />
   <Project Path="ECTSystem.Persistence/ECTSystem.Persistence.csproj" />
   <Project Path="ECTSystem.Shared/ECTSystem.Shared.csproj" />
+  <Project Path="ECTSystem.Tests/ECTSystem.Tests.csproj" />
   <Project Path="ECTSystem.Web/ECTSystem.Web.csproj" />
   <Project Path="ECTSystem.PdfGenerator/ECTSystem.PdfGenerator.csproj" />
   <Project Path="ECTSystem.PdfGenerator.Tests/ECTSystem.PdfGenerator.Tests.csproj" />
