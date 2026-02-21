@@ -1318,40 +1318,57 @@ else
                                              ValueChanged="@OnFileSelected"
                                              @bind-FileName="_uploadedFileName"
                                              @bind-FileSize="_uploadedFileSize"
-                                             TValue="byte[]"
+                                             TValue="string"
                                              ChooseText="Choose File"
                                              Accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
                                              MaxFileSize="10000000"
                                              Error="@(args => NotificationService.Notify(NotificationSeverity.Error, "Upload Error", args.Message))" />
 
-                            @* ═══ Documents Data Grid ═══ *@
-                            <RadzenDataGrid Data="@SortedDocuments" TItem="LineOfDutyDocument"
-                                            AllowSorting="true"
-                                            AllowPaging="true" PageSize="10"
+                            @* ═══ Documents Data List ═══ *@
+                            <RadzenDataList AllowPaging="true" PageSize="10"
                                             ShowPagingSummary="true"
                                             PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
-                                            PageSizeOptions="@(new[] { 5, 10, 25, 50 })"
                                             PagerHorizontalAlign="HorizontalAlign.Center"
-                                            AllowColumnResize="true"
-                                            GridLines="DataGridGridLines.Both"
-                                            Style="border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;width: 100%;">
+                                            WrapItems="true"
+                                            IsLoading="@_isDocumentsLoading"
+                                            LoadData="@OnDocumentsLoadData"
+                                            Data="@_pagedDocuments"
+                                            Count="@_documentsCount"
+                                            TItem="LineOfDutyDocument">
                                 <EmptyTemplate>
-                                    <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                        No documents have been uploaded for this case.
-                                    </RadzenText>
+                                    <p style="color: var(--rz-text-tertiary-color); text-align: center; padding: 2rem;">
+                                        No documents to display.
+                                    </p>
                                 </EmptyTemplate>
-                                <Columns>
-                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="FileName" Title="File Name" Width="220px" />
-                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="Description" Title="Description" />
-                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="FileSize" Title="Size" Width="100px" Sortable="true">
-                                        <Template Context="doc">
-                                            @FormatFileSize(doc.FileSize)
-                                        </Template>
-                                    </RadzenDataGridColumn>
-                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="UploadDate" Title="Uploaded" Width="160px" FormatString="{0:MM/dd/yyyy HH:mm}" SortOrder="SortOrder.Descending" />
-                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="Uploaded By" Width="140px" />
-                                </Columns>
-                            </RadzenDataGrid>
+                                <Template Context="doc">
+                                    <div class="doc-row">
+                                        <div class="doc-icon">
+                                            <RadzenIcon Icon="@GetDocumentIcon(doc.FileName)" Style="font-size: 1.5rem; color: var(--rz-text-tertiary-color);" />
+                                        </div>
+                                        <div class="doc-info">
+                                            <a href="@GetDocumentDownloadUrl(doc)" target="_blank" download class="doc-name"
+                                               style="text-decoration: none; color: var(--rz-primary);">@doc.FileName</a>
+                                            @if (!string.IsNullOrEmpty(doc.Description))
+                                            {
+                                                <span class="doc-desc">@doc.Description</span>
+                                            }
+                                        </div>
+                                        <div class="doc-meta">
+                                            <span class="doc-label">Uploaded</span>
+                                            <span>@(doc.UploadDate?.ToString("MM/dd/yyyy hh:mm tt") ?? "—")</span>
+                                        </div>
+                                        <div class="doc-meta">
+                                            <span class="doc-label">By</span>
+                                            <span>@(doc.CreatedBy ?? "—")</span>
+                                        </div>
+                                        <div class="doc-actions">
+                                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger"
+                                                          Variant="Variant.Text" Size="ButtonSize.Small"
+                                                          Click="@(() => OnDeleteDocumentAsync(doc))" />
+                                        </div>
+                                    </div>
+                                </Template>
+                            </RadzenDataList>
                         </RadzenStack>
                     </ChildContent>
                 </RadzenTabsItem>

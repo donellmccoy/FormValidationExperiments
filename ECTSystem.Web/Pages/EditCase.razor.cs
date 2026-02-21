@@ -151,17 +151,23 @@ public partial class EditCase : ComponentBase, IDisposable
     private int DocumentCount => _lodCase?.Documents?.Count ?? 0;
 
     private IEnumerable<LineOfDutyDocument> SortedDocuments =>
-        _lodCase?.Documents?.OrderByDescending(d => d.UploadDate ?? d.CreatedDate) ?? Enumerable.Empty<LineOfDutyDocument>();
+        _lodCase?.Documents?
+            .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
+            .ThenByDescending(d => d.Id) ?? Enumerable.Empty<LineOfDutyDocument>();
 
-    private byte[] _uploadedFileContent;
+    private IEnumerable<LineOfDutyDocument> _pagedDocuments = [];
+    private int _documentsCount;
+    private bool _isDocumentsLoading;
+
+    private string _uploadedFileContent;
     private string _uploadedFileName;
     private long? _uploadedFileSize;
 
-    private async Task OnFileSelected(byte[] content)
+    private async Task OnFileSelected(string content)
     {
         _uploadedFileContent = content;
 
-        if (_uploadedFileContent is { Length: > 0 } && !string.IsNullOrWhiteSpace(_uploadedFileName))
+        if (!string.IsNullOrWhiteSpace(_uploadedFileContent) && !string.IsNullOrWhiteSpace(_uploadedFileName))
         {
             await AddDocumentAsync();
         }
@@ -169,7 +175,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task AddDocumentAsync()
     {
-        if (_uploadedFileContent is null or { Length: 0 } || string.IsNullOrWhiteSpace(_uploadedFileName))
+        if (string.IsNullOrWhiteSpace(_uploadedFileContent) || string.IsNullOrWhiteSpace(_uploadedFileName))
             return;
 
         if (_lodCase?.Id is null or 0)
@@ -185,8 +191,16 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
+            // RadzenFileInput returns a base64 data URI (e.g., "data:application/pdf;base64,JVBERi0...")
+            var base64Data = _uploadedFileContent;
+            if (base64Data.Contains(","))
+            {
+                base64Data = base64Data.Split(',')[1];
+            }
+            var fileBytes = Convert.FromBase64String(base64Data);
+
             var saved = await CaseService.UploadDocumentAsync(
-                _lodCase.Id, _uploadedFileName, contentType, _uploadedFileContent, _cts.Token);
+                _lodCase.Id, _uploadedFileName, contentType, fileBytes, _cts.Token);
 
             if (saved is not null)
             {
@@ -197,6 +211,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", ex.Message);
         }
+
+        // Refresh the DataList
+        var sorted = SortedDocuments.ToList();
+        _documentsCount = sorted.Count;
+        _pagedDocuments = sorted.Take(10);
 
         // Reset upload fields
         _uploadedFileContent = null;
@@ -229,6 +248,73 @@ public partial class EditCase : ComponentBase, IDisposable
             < 1048576 => $"{bytes / 1024.0:F1} KB",
             _ => $"{bytes / 1048576.0:F1} MB"
         };
+    }
+
+    private static string GetDocumentIcon(string fileName)
+    {
+        var ext = System.IO.Path.GetExtension(fileName)?.ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "picture_as_pdf",
+            ".doc" or ".docx" => "article",
+            ".xls" or ".xlsx" => "grid_on",
+            ".png" or ".jpg" or ".jpeg" => "image",
+            ".txt" => "text_snippet",
+            _ => "description"
+        };
+    }
+
+    private string GetDocumentDownloadUrl(LineOfDutyDocument doc)
+    {
+        return $"https://localhost:7173/api/cases/{_lodCase.Id}/documents/{doc.Id}/download";
+    }
+
+    private async Task OnDownloadDocumentAsync(LineOfDutyDocument doc)
+    {
+        var url = GetDocumentDownloadUrl(doc);
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private void OnDocumentsLoadData(LoadDataArgs args)
+    {
+        _isDocumentsLoading = true;
+
+        var sorted = SortedDocuments.ToList();
+        _documentsCount = sorted.Count;
+        _pagedDocuments = sorted.Skip(args.Skip ?? 0).Take(args.Top ?? 10);
+
+        _isDocumentsLoading = false;
+    }
+
+    private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
+    {
+        if (_lodCase?.Id is null or 0 || doc.Id == 0)
+            return;
+
+        var confirmed = await DialogService.Confirm(
+            $"Are you sure you want to delete \"{doc.FileName}\"?",
+            "Delete Document",
+            new ConfirmOptions { OkButtonText = "Delete", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await CaseService.DeleteDocumentAsync(_lodCase.Id, doc.Id, _cts.Token);
+            _lodCase.Documents?.Remove(doc);
+
+            // Refresh the DataList
+            var sorted = SortedDocuments.ToList();
+            _documentsCount = sorted.Count;
+            _pagedDocuments = sorted.Take(10);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Deleted", $"\"{doc.FileName}\" was removed.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Delete Failed", ex.Message);
+        }
     }
 
     private List<WorkflowStep> _workflowSteps = [];
