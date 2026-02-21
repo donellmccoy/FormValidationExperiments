@@ -4,6 +4,7 @@ using ECTSystem.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECTSystem.Persistence.Migrations
 {
     [DbContext(typeof(EctDbContext))]
-    partial class EctDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260221025221_AddWorkflowStateToCase")]
+    partial class AddWorkflowStateToCase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -659,120 +662,6 @@ namespace ECTSystem.Persistence.Migrations
                     b.HasIndex("LineOfDutyCaseId");
 
                     b.ToTable("Documents");
-                });
-
-            modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyWorkflowStateLookup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("LineOfDutyWorkflowState", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Enter member identification and incident details to initiate the LOD case.",
-                            DisplayOrder = 1,
-                            Name = "Member Information Entry"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Medical technician reviews the injury/illness and documents clinical findings.",
-                            DisplayOrder = 2,
-                            Name = "Medical Technician Review"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Medical officer reviews the technician's findings and provides a clinical assessment.",
-                            DisplayOrder = 3,
-                            Name = "Medical Officer Review"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Unit commander reviews the case and submits a recommendation for the LOD determination.",
-                            DisplayOrder = 4,
-                            Name = "Unit CC Review"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance.",
-                            DisplayOrder = 5,
-                            Name = "Wing JA Review"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Description = "Appointing authority reviews the case and issues a formal LOD determination.",
-                            DisplayOrder = 6,
-                            Name = "Appointing Authority Review"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Description = "Wing commander reviews the case and renders a preliminary LOD determination.",
-                            DisplayOrder = 7,
-                            Name = "Wing CC Review"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Description = "Board medical technician reviews the case file for completeness and accuracy.",
-                            DisplayOrder = 8,
-                            Name = "Board Technician Review"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Description = "Board medical officer reviews all medical evidence and provides a formal assessment.",
-                            DisplayOrder = 9,
-                            Name = "Board Medical Review"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Description = "Board legal counsel reviews the case for legal sufficiency before final decision.",
-                            DisplayOrder = 10,
-                            Name = "Board Legal Review"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Description = "Board administrative officer finalizes the case package and prepares the formal determination.",
-                            DisplayOrder = 11,
-                            Name = "Board Admin Review"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Description = "LOD determination has been finalized and the case is closed.",
-                            DisplayOrder = 12,
-                            Name = "Completed"
-                        });
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.MEDCONDetail", b =>

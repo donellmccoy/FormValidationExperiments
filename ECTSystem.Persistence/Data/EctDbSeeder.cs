@@ -70,6 +70,20 @@ public static class EctDbSeeder
             var wasUnderInfluence = rng.Next(100) < 15;
             var isInterim = processType == LineOfDutyProcessType.Informal && rng.Next(100) < 40;
             var completed = rng.Next(100) < 75;
+            var workflowState = completed
+                ? LineOfDutyWorkflowState.Completed
+                : PickRandom(rng,
+                    LineOfDutyWorkflowState.MemberInformationEntry,
+                    LineOfDutyWorkflowState.MedicalTechnicianReview,
+                    LineOfDutyWorkflowState.MedicalOfficerReview,
+                    LineOfDutyWorkflowState.UnitCommanderReview,
+                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+                    LineOfDutyWorkflowState.AppointingAuthorityReview,
+                    LineOfDutyWorkflowState.WingCommanderReview,
+                    LineOfDutyWorkflowState.BoardTechnicianReview,
+                    LineOfDutyWorkflowState.BoardMedicalReview,
+                    LineOfDutyWorkflowState.BoardLegalReview,
+                    LineOfDutyWorkflowState.BoardAdminReview);
             var rank = Ranks[rng.Next(Ranks.Length)];
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
             var memberName = $"{firstName} {MiddleInitials[rng.Next(MiddleInitials.Length)]}. {lastName}";
@@ -81,6 +95,7 @@ public static class EctDbSeeder
                 CaseId = $"{incidentDate:yyyyMMdd}-{(i + 1):D3}",
                 MemberId = members[i % members.Count].Id,
                 ProcessType = processType,
+                WorkflowState = workflowState,
                 Component = component,
                 MemberName = memberName,
                 MemberRank = rank,

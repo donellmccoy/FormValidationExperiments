@@ -12,6 +12,7 @@ public class LineOfDutyCase : AuditableEntity
     // Basic Case Information
     public string CaseId { get; set; } = string.Empty;
     public LineOfDutyProcessType ProcessType { get; set; } // Informal or Formal
+    public LineOfDutyWorkflowState WorkflowState { get; set; } = LineOfDutyWorkflowState.MemberInformationEntry;
     public ServiceComponent Component { get; set; } // RegAF, AFR, etc.
     public string MemberName { get; set; } = string.Empty;
     public string MemberRank { get; set; } = string.Empty;

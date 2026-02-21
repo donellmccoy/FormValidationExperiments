@@ -127,16 +127,18 @@ else
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" AlignItems="AlignItems.Center">
                                 <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
                                               Click="@OnBookmarkClick"
+                                              Disabled="@(_lodCase is null || _lodCase.Id == 0)"
                                               class="toolbar-icon-btn"
-                                              title="@(_isBookmarked ? "Remove bookmark" : "Add bookmark")">
+                                              title="@((_lodCase is null || _lodCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _isBookmarked ? "Remove bookmark" : "Add bookmark")">
                                     <ChildContent>
                                         <span class="material-symbols-outlined @(_bookmarkAnimating ? "bookmark-flash" : "")">@BookmarkIcon</span>
                                     </ChildContent>
                                 </RadzenButton>
                                 <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
                                               Click="@OnAttachFileClick"
+                                              Disabled="@(_lodCase is null || _lodCase.Id == 0)"
                                               class="toolbar-icon-btn"
-                                              title="Attach file">
+                                              title="@((_lodCase is null || _lodCase.Id == 0) ? "Save the LOD first to enable attachments" : "Attach file")">
                                     <ChildContent>
                                         <span class="material-symbols-outlined">attach_file_add</span>
                                     </ChildContent>
@@ -233,12 +235,12 @@ else
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
-                                                    <RadzenColumn Size="12" SizeMD="3">
+                                                    <RadzenColumn Size="12" SizeMD="4">
                                                         <RadzenFormField Text="Component" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
                                                             <RadzenTextBox Value="@_memberFormModel.Component" ReadOnly="true" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
-                                                    <RadzenColumn Size="12" SizeMD="3">
+                                                    <RadzenColumn Size="12" SizeMD="5">
                                                         <RadzenFormField Text="Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
                                                             <RadzenTextBox Value="@_memberFormModel.Rank" ReadOnly="true" />
                                                         </RadzenFormField>
@@ -248,7 +250,9 @@ else
                                                             <RadzenTextBox Value="@_memberFormModel.Grade" ReadOnly="true" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
-                                                    <RadzenColumn Size="12" SizeMD="4">
+                                                </RadzenRow>
+                                                <RadzenRow Gap="1rem">
+                                                    <RadzenColumn Size="9">
                                                         <RadzenFormField Text="Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
                                                             <RadzenTextBox Value="@_memberFormModel.OrganizationUnit" ReadOnly="true" />
                                                         </RadzenFormField>
@@ -305,13 +309,15 @@ else
                                         </RadzenFieldset>
 
                                         @* ═══ Form Actions ═══ *@
-                                        <div class="form-actions rz-mt-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
-                                                <RadzenButton Click="@OnStartLod" Text="Start LOD" Icon="play_arrow"
-                                                              Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
-                                                              Disabled="@(!IsNewCase)" />
-                                            </RadzenStack>
-                                        </div>
+                                        @if (IsNewCase)
+                                        {
+                                            <div class="form-actions rz-mt-4">
+                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                                    <RadzenButton Click="@OnStartLod" Text="Start LOD" Icon="play_arrow"
+                                                                  Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary" />
+                                                </RadzenStack>
+                                            </div>
+                                        }
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
@@ -1034,7 +1040,7 @@ else
                         <span class="tab-label">Appointing Authority</span>
                     </Template>
                     <ChildContent>
-                        <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                             Wing-level review and approval for this LOD case.
                         </RadzenText>
 
@@ -1078,9 +1084,9 @@ else
                     </Template>
                     <ChildContent>
                         <div class="rz-overflow-auto rz-h-100">
-                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                 Board proceedings and findings for this LOD case.
-                            </RadzenText>
+                        </RadzenText>
 
                             @* ═══ Form Actions ═══ *@
                             <div class="form-actions rz-mt-2">
@@ -1124,7 +1130,7 @@ else
                     </Template>
                     <ChildContent>
                         <div class="rz-overflow-auto rz-h-100">
-                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                 Board medical officer review for this LOD case.
                             </RadzenText>
 
@@ -1170,7 +1176,7 @@ else
                     </Template>
                     <ChildContent>
                         <div class="rz-overflow-auto rz-h-100">
-                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                 Board legal review for this LOD case.
                             </RadzenText>
 
@@ -1216,7 +1222,7 @@ else
                     </Template>
                     <ChildContent>
                         <div class="rz-overflow-auto rz-h-100">
-                            <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                 Board administrative review for this LOD case.
                             </RadzenText>
 

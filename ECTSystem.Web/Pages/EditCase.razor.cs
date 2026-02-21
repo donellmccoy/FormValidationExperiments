@@ -233,17 +233,18 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         _workflowSteps =
         [
-            new() { Number = 1,  Name = "Start Line Of Duty",         Icon = "flag",                  Status = WorkflowStepStatus.InProgress, Description = "Workflow initialization and initial data entry." },
-            new() { Number = 2,  Name = "Member Reports",             Icon = "person",                Status = WorkflowStepStatus.Pending,    Description = "Member submission of injury details and statement." },
-            new() { Number = 3,  Name = "Line Of Duty Initiation",    Icon = "description",           Status = WorkflowStepStatus.Pending,    Description = "Formal initiation of the Line of Duty determination process." },
-            new() { Number = 4,  Name = "Medical Assessment",         Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Medical provider review and clinical impact assessment." },
-            new() { Number = 5,  Name = "Commander Review",           Icon = "edit_document",         Status = WorkflowStepStatus.Pending,    Description = "Commander's recommendation and endorsement." },
-            new() { Number = 6,  Name = "Legal SJA Review",           Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Legal office review if deemed necessary." },
-            new() { Number = 7,  Name = "Wing CC Review",             Icon = "stars",                 Status = WorkflowStepStatus.Pending,    Description = "Wing-level review if escalated." },
-            new() { Number = 8,  Name = "Board Technician Review",    Icon = "rate_review",           Status = WorkflowStepStatus.Pending,    Description = "Board medical technician review." },
-            new() { Number = 9,  Name = "Board Medical Review",       Icon = "medical_services",      Status = WorkflowStepStatus.Pending,    Description = "Board medical officer review." },
-            new() { Number = 10, Name = "Board Legal Review",         Icon = "gavel",                 Status = WorkflowStepStatus.Pending,    Description = "Board legal review." },
-            new() { Number = 11, Name = "Board Admin Review",         Icon = "admin_panel_settings",  Status = WorkflowStepStatus.Pending,    Description = "Board administrative review." }
+            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.InProgress, Description = "Enter member identification and incident details to initiate the LOD case." },
+            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending,    Description = "Medical technician reviews the injury/illness and documents clinical findings." },
+            new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending,    Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
+            new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending,    Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
+            new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending,    Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
+            new() { Number = 6,  Name = "Appointing Authority",       Icon = "verified_user",        Status = WorkflowStepStatus.Pending,    Description = "Appointing authority reviews the case and issues a formal LOD determination." },
+            new() { Number = 7,  Name = "Wing CC Review",             Icon = "stars",                Status = WorkflowStepStatus.Pending,    Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
+            new() { Number = 8,  Name = "Board Technician Review",    Icon = "rate_review",          Status = WorkflowStepStatus.Pending,    Description = "Board medical technician reviews the case file for completeness and accuracy." },
+            new() { Number = 9,  Name = "Board Medical Review",       Icon = "medical_services",     Status = WorkflowStepStatus.Pending,    Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
+            new() { Number = 10, Name = "Board Legal Review",         Icon = "gavel",                Status = WorkflowStepStatus.Pending,    Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
+            new() { Number = 11, Name = "Board Admin Review",         Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending,    Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
+            new() { Number = 12, Name = "Completed",                  Icon = "check_circle",         Status = WorkflowStepStatus.Pending,    Description = "LOD determination has been finalized and the case is closed." }
         ];
     }
 

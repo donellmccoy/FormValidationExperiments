@@ -39,7 +39,10 @@ public enum WorkflowStepStatus
 {
     Completed,
     InProgress,
-    Pending
+    Pending,
+    Cancelled,
+    OnHold,
+    Closed
 }
 
 public class WorkflowStep

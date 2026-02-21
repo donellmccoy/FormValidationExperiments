@@ -23,6 +23,7 @@ public class EctDbContext : DbContext
     public DbSet<TimelineStep> TimelineSteps { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<CaseBookmark> CaseBookmarks { get; set; }
+    public DbSet<LineOfDutyWorkflowStateLookup> WorkflowStates { get; set; }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
