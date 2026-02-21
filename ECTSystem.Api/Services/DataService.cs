@@ -72,14 +72,16 @@ public class DataService :
         // 2. Synchronize the Authorities collection
         SyncAuthorities(context, existing, update.Authorities);
 
-        // 3. Update MEDCON / INCAP scalar properties
+        // 3. Update MEDCON / INCAP scalar properties (preserve keys before SetValues)
         if (existing.MEDCON is not null && update.MEDCON is not null)
         {
+            update.MEDCON.Id = existing.MEDCON.Id;
             context.Entry(existing.MEDCON).CurrentValues.SetValues(update.MEDCON);
         }
 
         if (existing.INCAP is not null && update.INCAP is not null)
         {
+            update.INCAP.Id = existing.INCAP.Id;
             context.Entry(existing.INCAP).CurrentValues.SetValues(update.INCAP);
         }
 

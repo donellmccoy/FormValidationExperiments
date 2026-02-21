@@ -16,11 +16,28 @@ public abstract class DataServiceTestBase
     protected readonly Mock<IDbContextFactory<EctDbContext>> MockFactory;
     protected readonly DataService Sut;
 
+    protected const int DefaultMemberId = 1;
+
     protected DataServiceTestBase()
     {
         DbOptions = new DbContextOptionsBuilder<EctDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
+
+        // Seed a default Member so that required FK references are valid
+        // when querying with Include(c => c.Member) on the InMemory provider.
+        using (var seedCtx = new EctDbContext(DbOptions))
+        {
+            seedCtx.Members.Add(new Member
+            {
+                Id = DefaultMemberId,
+                FirstName = "John",
+                LastName = "Doe",
+                Rank = "SSgt",
+                Unit = "99 ABW"
+            });
+            seedCtx.SaveChanges();
+        }
 
         MockFactory = new Mock<IDbContextFactory<EctDbContext>>();
 
@@ -47,6 +64,7 @@ public abstract class DataServiceTestBase
     {
         Id = id,
         CaseId = caseId ?? $"CASE-{id:D4}",
+        MemberId = DefaultMemberId,
         MemberName = "SSgt John Doe",
         MemberRank = "SSgt",
         Unit = "99 ABW",

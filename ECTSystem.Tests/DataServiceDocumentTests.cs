@@ -48,8 +48,8 @@ public class DataServiceDocumentTests : DataServiceTestBase
         var result = await Sut.GetDocumentsByCaseIdAsync(1);
 
         Assert.Single(result);
-        // Content should NOT be returned by this method
-        Assert.Null(result[0].Content);
+        // Content should NOT be returned by this method (defaults to empty array)
+        Assert.Empty(result[0].Content);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class DataServiceDocumentTests : DataServiceTestBase
         var result = await Sut.GetDocumentByIdAsync(doc.Id);
 
         Assert.NotNull(result);
-        Assert.Null(result.Content);
+        Assert.Empty(result.Content);
     }
 
     // ──────────────────────── GetDocumentContentAsync ────────────────────────
