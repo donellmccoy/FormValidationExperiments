@@ -623,3 +623,9 @@
     outline-offset: 4px;
     border-radius: 4px;
 }
+
+/* ═══════════════════ File Input — Hide Delete Button ═══════════════════ */
+
+::deep .rz-fileupload-row button {
+    display: none !important;
+}

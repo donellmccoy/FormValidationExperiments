@@ -324,7 +324,7 @@ else
                             </RadzenTabsItem>
 
                         @* ─── Medical Technician Tab ─── *@
-                        <RadzenTabsItem Text="Medical Technician" Disabled="@IsNewCase">
+                        <RadzenTabsItem Text="Medical Technician" Disabled="@IsTabDisabled(1)">
                             <Template>
                                 <span class="tab-label">
                                     Medical Technician
@@ -364,7 +364,7 @@ else
                         </RadzenTabsItem>
 
                         @* ─── Medical Officer Tab ─── *@
-                            <RadzenTabsItem Text="Medical Officer" Disabled="@IsNewCase">
+                            <RadzenTabsItem Text="Medical Officer" Disabled="@IsTabDisabled(2)">
                                 <Template>
                                     <span class="tab-label">
                                         Medical Officer @if (!IsNewCase && _medicalFormModel.IsDirty) {
@@ -696,7 +696,7 @@ else
                         </RadzenTabsItem>
 
                         @* ─── Commander Review Tab ─── *@
-                        <RadzenTabsItem Text="Unit CC Review" Disabled="@IsNewCase">
+                        <RadzenTabsItem Text="Unit CC Review" Disabled="@IsTabDisabled(3)">
                             <Template>
                                 <span class="tab-label">
                                     Unit CC Review @if (!IsNewCase && _commanderFormModel.IsDirty) {
@@ -901,7 +901,7 @@ else
                     </RadzenTabsItem>
 
                     @* ─── Wing JA Review Tab ─── *@
-                    <RadzenTabsItem Text="Wing JA Review" Disabled="@IsNewCase">
+                    <RadzenTabsItem Text="Wing JA Review" Disabled="@IsTabDisabled(4)">
                         <Template>
                             <span class="tab-label">
                                 Wing JA Review
@@ -944,7 +944,7 @@ else
                     </RadzenTabsItem>
 
                     @* ─── Legal Tab ─── *@
-                    <RadzenTabsItem Text="Wing CC Review" Disabled="@IsNewCase">
+                    <RadzenTabsItem Text="Wing CC Review" Disabled="@IsTabDisabled(5)">
                         <Template>
                             <span class="tab-label">
                                 Wing CC Review @if (!IsNewCase && _wingCommanderFormModel.IsDirty) {
@@ -1035,7 +1035,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Wing Tab ─── *@
-                <RadzenTabsItem Text="Appointing Authority" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Appointing Authority" Disabled="@IsTabDisabled(6)">
                     <Template>
                         <span class="tab-label">Appointing Authority</span>
                     </Template>
@@ -1078,7 +1078,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Board Technician Review Tab ─── *@
-                <RadzenTabsItem Text="Board Technician Review" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Board Technician Review" Disabled="@IsTabDisabled(7)">
                     <Template>
                         <span class="tab-label">Board Technician Review</span>
                     </Template>
@@ -1126,7 +1126,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Board Medical Review Tab ─── *@
-                <RadzenTabsItem Text="Board Medical Review" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Board Medical Review" Disabled="@IsTabDisabled(8)">
                     <Template>
                         <span class="tab-label">Board Medical Review</span>
                     </Template>
@@ -1174,7 +1174,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Board Legal Review Tab ─── *@
-                <RadzenTabsItem Text="Board Legal Review" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Board Legal Review" Disabled="@IsTabDisabled(9)">
                     <Template>
                         <span class="tab-label">Board Legal Review</span>
                     </Template>
@@ -1222,7 +1222,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Board Admin Review Tab ─── *@
-                <RadzenTabsItem Text="Board Admin Review" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Board Admin Review" Disabled="@IsTabDisabled(10)">
                     <Template>
                         <span class="tab-label">Board Admin Review</span>
                     </Template>
@@ -1271,7 +1271,7 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Case Dialogue Tab ─── *@
-                <RadzenTabsItem Text="Case Dialogue" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Case Dialogue">
                     <Template>
                         <span class="tab-label">Case Dialogue</span>
                     </Template>
@@ -1283,9 +1283,15 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Notifications Tab ─── *@
-                <RadzenTabsItem Text="Notifications" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Notifications">
                     <Template>
-                        <span class="tab-label">Notifications</span>
+                        <span class="tab-label">
+                            Notifications
+                            @if (NotificationCount > 0)
+                            {
+                                <RadzenBadge Text="@NotificationCount.ToString()" BadgeStyle="BadgeStyle.Info" IsPill="true" class="rz-ml-1" />
+                            }
+                        </span>
                     </Template>
                     <ChildContent>
                         <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
@@ -1295,14 +1301,58 @@ else
                 </RadzenTabsItem>
 
                 @* ─── Documents Tab ─── *@
-                <RadzenTabsItem Text="Documents" Disabled="@IsNewCase">
+                <RadzenTabsItem Text="Documents">
                     <Template>
-                        <span class="tab-label">Documents</span>
+                        <span class="tab-label">
+                            Documents
+                            @if (DocumentCount > 0)
+                            {
+                                <RadzenBadge Text="@DocumentCount.ToString()" BadgeStyle="BadgeStyle.Info" IsPill="true" class="rz-ml-1" />
+                            }
+                        </span>
                     </Template>
                     <ChildContent>
-                        <RadzenText TextStyle="TextStyle.Body1" class="text-secondary">
-                            Upload and manage supporting documents for this LOD case.
-                        </RadzenText>
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" class="rz-p-4">
+                            @* ═══ File Upload Section ═══ *@
+                            <RadzenFileInput Value="_uploadedFileContent"
+                                             ValueChanged="@OnFileSelected"
+                                             @bind-FileName="_uploadedFileName"
+                                             @bind-FileSize="_uploadedFileSize"
+                                             TValue="byte[]"
+                                             ChooseText="Choose File"
+                                             Accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+                                             MaxFileSize="10000000"
+                                             Error="@(args => NotificationService.Notify(NotificationSeverity.Error, "Upload Error", args.Message))" />
+
+                            @* ═══ Documents Data Grid ═══ *@
+                            <RadzenDataGrid Data="@SortedDocuments" TItem="LineOfDutyDocument"
+                                            AllowSorting="true"
+                                            AllowPaging="true" PageSize="10"
+                                            ShowPagingSummary="true"
+                                            PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
+                                            PageSizeOptions="@(new[] { 5, 10, 25, 50 })"
+                                            PagerHorizontalAlign="HorizontalAlign.Center"
+                                            AllowColumnResize="true"
+                                            GridLines="DataGridGridLines.Both"
+                                            Style="border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;width: 100%;">
+                                <EmptyTemplate>
+                                    <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                        No documents have been uploaded for this case.
+                                    </RadzenText>
+                                </EmptyTemplate>
+                                <Columns>
+                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="FileName" Title="File Name" Width="220px" />
+                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="Description" Title="Description" />
+                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="FileSize" Title="Size" Width="100px" Sortable="true">
+                                        <Template Context="doc">
+                                            @FormatFileSize(doc.FileSize)
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="UploadDate" Title="Uploaded" Width="160px" FormatString="{0:MM/dd/yyyy HH:mm}" SortOrder="SortOrder.Descending" />
+                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="Uploaded By" Width="140px" />
+                                </Columns>
+                            </RadzenDataGrid>
+                        </RadzenStack>
                     </ChildContent>
                 </RadzenTabsItem>
             </Tabs>

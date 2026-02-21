@@ -271,6 +271,26 @@ public class LineOfDutyCaseHttpService : IDataService
         return response?.Value ?? false;
     }
 
+    public async Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, byte[] content, CancellationToken cancellationToken = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(content);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        form.Add(fileContent, "file", fileName);
+        form.Add(new StringContent(string.Empty), "documentType");
+        form.Add(new StringContent(string.Empty), "description");
+
+        var response = await _httpClient.PostAsync($"api/cases/{caseId}/documents", form, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<LineOfDutyDocument>(ODataJsonOptions, cancellationToken))!;
+    }
+
+    public async Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.DeleteAsync($"api/cases/{caseId}/documents/{documentId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     private class IsBookmarkedResponse
     {
         [JsonPropertyName("value")]

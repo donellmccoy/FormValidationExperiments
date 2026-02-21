@@ -146,6 +146,91 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool HasAnyChanges => AllFormModels.Any(m => m.IsDirty);
 
+    private int NotificationCount => _lodCase?.Notifications?.Count ?? 0;
+
+    private int DocumentCount => _lodCase?.Documents?.Count ?? 0;
+
+    private IEnumerable<LineOfDutyDocument> SortedDocuments =>
+        _lodCase?.Documents?.OrderByDescending(d => d.UploadDate ?? d.CreatedDate) ?? Enumerable.Empty<LineOfDutyDocument>();
+
+    private byte[] _uploadedFileContent;
+    private string _uploadedFileName;
+    private long? _uploadedFileSize;
+
+    private async Task OnFileSelected(byte[] content)
+    {
+        _uploadedFileContent = content;
+
+        if (_uploadedFileContent is { Length: > 0 } && !string.IsNullOrWhiteSpace(_uploadedFileName))
+        {
+            await AddDocumentAsync();
+        }
+    }
+
+    private async Task AddDocumentAsync()
+    {
+        if (_uploadedFileContent is null or { Length: 0 } || string.IsNullOrWhiteSpace(_uploadedFileName))
+            return;
+
+        if (_lodCase?.Id is null or 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Save Case First",
+                "Please save the case before uploading documents.");
+            return;
+        }
+
+        _lodCase.Documents ??= [];
+
+        var contentType = GetContentType(_uploadedFileName);
+
+        try
+        {
+            var saved = await CaseService.UploadDocumentAsync(
+                _lodCase.Id, _uploadedFileName, contentType, _uploadedFileContent, _cts.Token);
+
+            if (saved is not null)
+            {
+                _lodCase.Documents.Add(saved);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", ex.Message);
+        }
+
+        // Reset upload fields
+        _uploadedFileContent = null;
+        _uploadedFileName = null;
+        _uploadedFileSize = null;
+    }
+
+    private static string GetContentType(string fileName)
+    {
+        var ext = System.IO.Path.GetExtension(fileName)?.ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "application/pdf",
+            ".doc" => "application/msword",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xls" => "application/vnd.ms-excel",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".txt" => "text/plain",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        return bytes switch
+        {
+            < 1024 => $"{bytes} B",
+            < 1048576 => $"{bytes / 1024.0:F1} KB",
+            _ => $"{bytes / 1048576.0:F1} MB"
+        };
+    }
+
     private List<WorkflowStep> _workflowSteps = [];
 
     private WorkflowStep CurrentStep => _workflowSteps.Count > 0 && _currentStepIndex >= 0 && _currentStepIndex < _workflowSteps.Count ? _workflowSteps[_currentStepIndex] : null;
@@ -1229,6 +1314,20 @@ public partial class EditCase : ComponentBase, IDisposable
         LineOfDutyWorkflowState.Completed                 => 10,
         _                                                 => 0,
     };
+
+    /// <summary>
+    /// Returns true if the tab at <paramref name="tabIndex"/> should be disabled.
+    /// Workflow tabs (0–10): enabled for the current state and all prior states; disabled for future states.
+    /// Always-on tabs (11+): Case Dialogue, Notifications, and Documents — never disabled.
+    /// </summary>
+    private bool IsTabDisabled(int tabIndex)
+    {
+        if (tabIndex >= 11)
+            return false;
+
+        var state = _lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry;
+        return tabIndex > GetTabIndexForState(state);
+    }
 
     /// <summary>
     /// Confirms with the user, advances the LOD <see cref="LineOfDutyCase.WorkflowState"/> to

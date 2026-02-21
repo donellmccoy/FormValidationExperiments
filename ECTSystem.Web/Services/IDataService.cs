@@ -55,4 +55,14 @@ public interface IDataService
     /// Checks whether the current user has bookmarked the given case.
     /// </summary>
     Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Uploads a document file to the given case via the Documents API.
+    /// </summary>
+    Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, byte[] content, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a document from the given case via the Documents API.
+    /// </summary>
+    Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default);
 }
