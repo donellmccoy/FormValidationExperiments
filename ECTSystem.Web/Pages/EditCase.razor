@@ -21,15 +21,15 @@
 
 <PageTitle>@(IsNewCase ? "New Case" : "Edit Case") - LOD Case Management</PageTitle>
 
-@if (!_isLoading && _isBusy)
+@if (!_page.IsLoading && _page.IsBusy)
 {
     <div class="busy-overlay">
         <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" Style="width: 640px; height: 3px;" />
-        <RadzenText TextStyle="TextStyle.Body2" class="rz-mt-2">@_busyMessage</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" class="rz-mt-2">@_page.BusyMessage</RadzenText>
     </div>
 }
 
-@if (_isLoading)
+@if (_page.IsLoading)
 {
     <div class="loading-container">
         <RadzenStack Gap="0.75rem">
@@ -129,9 +129,9 @@ else
                                               Click="@OnBookmarkClick"
                                               Disabled="@(_lodCase is null || _lodCase.Id == 0)"
                                               class="toolbar-icon-btn"
-                                              title="@((_lodCase is null || _lodCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _isBookmarked ? "Remove bookmark" : "Add bookmark")">
+                                              title="@((_lodCase is null || _lodCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _bookmark.IsBookmarked ? "Remove bookmark" : "Add bookmark")">
                                     <ChildContent>
-                                        <span class="material-symbols-outlined @(_bookmarkAnimating ? "bookmark-flash" : "")">@BookmarkIcon</span>
+                                        <span class="material-symbols-outlined @(_bookmark.IsAnimating ? "bookmark-flash" : "")">@_bookmark.Icon</span>
                                     </ChildContent>
                                 </RadzenButton>
                                 <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
@@ -169,7 +169,7 @@ else
                                                     <RadzenRow>
                                                         <RadzenColumn Size="12">
                                                             <RadzenFormField Text="Member Search" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox @ref="_memberSearchTextBox" Value="@_memberSearchText"
+                                                                <RadzenTextBox @ref="_memberSearchTextBox" Value="@_memberSearch.Text"
                                                                                Placeholder="Search by name, rank, unit, or service number..."
                                                                                @oninput="@OnMemberSearchInput"
                                                                                @onclick="@(args => _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element))"
@@ -180,8 +180,8 @@ else
                                                                    class="member-search-popup rz-shadow-3">
                                                                 <RadzenDataGrid @ref="_memberSearchGrid" id="member-search-grid"
                                                                                 TItem="ECTSystem.Shared.Models.Member"
-                                                                                Data="@_memberSearchResults"
-                                                                                IsLoading="@_isMemberSearching"
+                                                                                Data="@_memberSearch.Results"
+                                                                                IsLoading="@_memberSearch.IsSearching"
                                                                                 RowSelect="@OnMemberSelected"
                                                                                 AllowSorting="false"
                                                                                 AllowFiltering="false"
@@ -193,7 +193,7 @@ else
                                                                                 Style="height:100%;">
                                                                     <EmptyTemplate>
                                                                         <RadzenText TextStyle="TextStyle.Body2" class="text-secondary rz-p-4">
-                                                                            @(string.IsNullOrWhiteSpace(_memberSearchText) ? "Type to search for a member." : "No members found.")
+                                                                            @(string.IsNullOrWhiteSpace(_memberSearch.Text) ? "Type to search for a member." : "No members found.")
                                                                         </RadzenText>
                                                                     </EmptyTemplate>
                                                                     <Columns>
@@ -1314,10 +1314,10 @@ else
                     <ChildContent>
                         <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" class="rz-p-4">
                             @* ═══ File Upload Section ═══ *@
-                            <RadzenFileInput Value="_uploadedFileContent"
+                            <RadzenFileInput Value="_documents.UploadedFileContent"
                                              ValueChanged="@OnFileSelected"
-                                             @bind-FileName="_uploadedFileName"
-                                             @bind-FileSize="_uploadedFileSize"
+                                             @bind-FileName="_documents.UploadedFileName"
+                                             @bind-FileSize="_documents.UploadedFileSize"
                                              TValue="string"
                                              ChooseText="Choose File"
                                              Accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
@@ -1330,10 +1330,10 @@ else
                                             PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
                                             PagerHorizontalAlign="HorizontalAlign.Center"
                                             WrapItems="true"
-                                            IsLoading="@_isDocumentsLoading"
+                                            IsLoading="@_documents.IsLoading"
                                             LoadData="@OnDocumentsLoadData"
-                                            Data="@_pagedDocuments"
-                                            Count="@_documentsCount"
+                                            Data="@_documents.PagedItems"
+                                            Count="@_documents.Count"
                                             TItem="LineOfDutyDocument">
                                 <EmptyTemplate>
                                     <p style="color: var(--rz-text-tertiary-color); text-align: center; padding: 2rem;">
