@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
 
@@ -11,9 +12,6 @@ namespace ECTSystem.Shared.Mapping;
 /// </summary>
 public static partial class LineOfDutyCaseMapper
 {
-    [GeneratedRegex(@"(\B[A-Z])")]
-    private static partial Regex UpperCaseBoundaryPattern();
-
     [GeneratedRegex(@"^(AB|Amn|A1C|SrA|SSgt|TSgt|MSgt|SMSgt|CMSgt|CMSAF|2d Lt|1st Lt|Capt|Maj|Lt Col|Col|Brig Gen|Maj Gen|Lt Gen|Gen)\s+", RegexOptions.IgnoreCase)]
     private static partial Regex RankPrefixPattern();
 
@@ -28,14 +26,14 @@ public static partial class LineOfDutyCaseMapper
         {
             CaseNumber = source.CaseId ?? string.Empty,
             MemberName = source.MemberName ?? string.Empty,
-            Component = FormatEnum(source.Component),
+            Component = source.Component.ToDisplayString(),
             Rank = ParseMilitaryRank(source.MemberRank) is { } parsedRank
                 ? FormatRankToFullName(parsedRank)
                 : source.MemberRank ?? string.Empty,
             Unit = source.Unit ?? string.Empty,
             DateOfInjury = source.IncidentDate.ToString("yyyy-MM-dd"),
             SSN = MaskSsn(source.ServiceNumber),
-            DutyStatus = FormatEnum(source.IncidentDutyStatus),
+            DutyStatus = source.IncidentDutyStatus.ToDisplayString(),
             Status = DeriveStatus(source),
             IncidentCircumstances = source.IncidentDescription ?? string.Empty,
             ReportedInjury = source.IncidentDescription ?? string.Empty
@@ -65,7 +63,7 @@ public static partial class LineOfDutyCaseMapper
             Rank = ParseMilitaryRank(source.MemberRank) is { } parsedRank
                 ? FormatRankToFullName(parsedRank)
                 : source.MemberRank ?? string.Empty,
-            Component = FormatEnum(source.Component),
+            Component = source.Component.ToDisplayString(),
             OrganizationUnit = source.Unit ?? string.Empty,
             MemberStatus = MapComponentToMemberStatus(source.Component) is { } ms
                 ? ms.ToString()
@@ -79,40 +77,22 @@ public static partial class LineOfDutyCaseMapper
 
     /// <summary>
     /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="MedicalAssessmentFormModel"/> (AF Form 348, Items 9–15).
+    /// Delegates direct property copies to the Mapperly-generated <see cref="MedicalAssessmentMapper"/>
+    /// and applies custom logic for toxicology and EPTS/NSA fields.
     /// </summary>
     public static MedicalAssessmentFormModel ToMedicalAssessmentFormModel(LineOfDutyCase source)
     {
-        var medProvider = FindAuthority(source, "Medical Provider");
+        var model = MedicalAssessmentMapper.ToFormModel(source);
+
+        // Fields that require custom logic beyond simple property copy
         var hasToxReport = !string.IsNullOrWhiteSpace(source.ToxicologyReport)
                            && !source.ToxicologyReport.Equals("Not applicable", StringComparison.OrdinalIgnoreCase);
 
-        return new MedicalAssessmentFormModel
-        {
-            InvestigationType = source.IncidentType,
-            IsMilitaryFacility = source.IsMilitaryFacility,
-            TreatmentFacilityName = source.TreatmentFacilityName ?? string.Empty,
-            TreatmentDateTime = source.TreatmentDateTime,
-            ClinicalDiagnosis = source.ClinicalDiagnosis ?? string.Empty,
-            MedicalFindings = source.MedicalFindings ?? string.Empty,
-            WasUnderInfluence = source.WasUnderInfluence,
-            SubstanceType = source.SubstanceType,
-            ToxicologyTestDone = hasToxReport ? true : null,
-            ToxicologyTestResults = hasToxReport ? source.ToxicologyReport ?? string.Empty : string.Empty,
-            WasMentallyResponsible = source.WasMentallyResponsible,
-            PsychiatricEvalCompleted = source.PsychiatricEvalCompleted,
-            PsychiatricEvalDate = source.PsychiatricEvalDate,
-            PsychiatricEvalResults = source.PsychiatricEvalResults ?? string.Empty,
-            OtherRelevantConditions = source.OtherRelevantConditions ?? string.Empty,
-            OtherTestsDone = source.OtherTestsDone,
-            OtherTestDate = source.OtherTestDate,
-            OtherTestResults = source.OtherTestResults ?? string.Empty,
-            IsEptsNsa = source.IsPriorServiceCondition ? true : false,
-            IsServiceAggravated = source.IsServiceAggravated,
-            IsPotentiallyUnfitting = source.IsPotentiallyUnfitting,
-            IsAtDeployedLocation = source.IsAtDeployedLocation,
-            RequiresArcBoard = source.RequiresArcBoard,
-            MedicalRecommendation = source.MedicalRecommendation ?? string.Empty
-        };
+        model.IsEptsNsa = source.IsPriorServiceCondition ? true : false;
+        model.ToxicologyTestDone = hasToxReport ? true : null;
+        model.ToxicologyTestResults = hasToxReport ? source.ToxicologyReport ?? string.Empty : string.Empty;
+
+        return model;
     }
 
     /// <summary>
@@ -299,40 +279,19 @@ public static partial class LineOfDutyCaseMapper
 
     /// <summary>
     /// Applies <see cref="MedicalAssessmentFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
+    /// Delegates direct property copies to <see cref="MedicalAssessmentMapper"/>
+    /// and applies custom logic for incident type, EPTS/NSA, and toxicology fields.
     /// </summary>
     public static void ApplyMedicalAssessment(MedicalAssessmentFormModel model, LineOfDutyCase target)
     {
-        target.IncidentType = model.InvestigationType ?? target.IncidentType;
-        target.IsMilitaryFacility = model.IsMilitaryFacility;
-        target.TreatmentFacilityName = model.TreatmentFacilityName;
-        target.TreatmentDateTime = model.TreatmentDateTime;
-        target.ClinicalDiagnosis = model.ClinicalDiagnosis;
-        target.MedicalFindings = model.MedicalFindings;
-        target.WasUnderInfluence = model.WasUnderInfluence;
-        target.SubstanceType = model.SubstanceType;
-        target.WasMentallyResponsible = model.WasMentallyResponsible;
-        target.PsychiatricEvalCompleted = model.PsychiatricEvalCompleted;
-        target.PsychiatricEvalDate = model.PsychiatricEvalDate;
-        target.PsychiatricEvalResults = model.PsychiatricEvalResults;
-        target.OtherRelevantConditions = model.OtherRelevantConditions;
-        target.OtherTestsDone = model.OtherTestsDone;
-        target.OtherTestDate = model.OtherTestDate;
-        target.OtherTestResults = model.OtherTestResults;
-        target.IsPriorServiceCondition = model.IsEptsNsa == true;
-        target.IsServiceAggravated = model.IsServiceAggravated;
-        target.IsPotentiallyUnfitting = model.IsPotentiallyUnfitting;
-        target.IsAtDeployedLocation = model.IsAtDeployedLocation;
-        target.RequiresArcBoard = model.RequiresArcBoard;
-        target.MedicalRecommendation = model.MedicalRecommendation;
+        MedicalAssessmentMapper.ApplyToEntity(model, target);
 
-        if (model.ToxicologyTestDone == true)
-        {
-            target.ToxicologyReport = model.ToxicologyTestResults;
-        }
-        else
-        {
-            target.ToxicologyReport = "Not applicable";
-        }
+        // Fields that require custom logic beyond simple property copy
+        target.IncidentType = model.InvestigationType ?? target.IncidentType;
+        target.IsPriorServiceCondition = model.IsEptsNsa == true;
+        target.ToxicologyReport = model.ToxicologyTestDone == true
+            ? model.ToxicologyTestResults
+            : "Not applicable";
     }
 
     /// <summary>
@@ -340,33 +299,6 @@ public static partial class LineOfDutyCaseMapper
     /// </summary>
     public static void ApplyUnitCommander(UnitCommanderFormModel model, LineOfDutyCase target)
     {
-        target.MemberStatementReviewed = model.MemberStatementReviewed;
-        target.MedicalRecordsReviewed = model.MedicalRecordsReviewed;
-        target.WitnessStatementsReviewed = model.WitnessStatementsReviewed;
-        target.PoliceReportsReviewed = model.PoliceReportsReviewed;
-        target.CommanderReportReviewed = model.CommanderReportReviewed;
-        target.OtherSourcesReviewed = model.OtherSourcesReviewed;
-        target.OtherSourcesDescription = model.OtherSourcesDescription;
-        target.IncidentDutyStatus = model.DutyStatusAtTime ?? target.IncidentDutyStatus;
-        target.IncidentDescription = model.NarrativeOfCircumstances;
-        target.MisconductExplanation = model.MisconductExplanation;
-        target.ProximateCause = model.ProximateCause;
-
-        if (model.Recommendation.HasValue)
-        {
-            target.FinalFinding = MapRecommendationToFinding(model.Recommendation.Value);
-        }
-
-        // Update commander authority
-        var commander = FindOrCreateAuthority(target, "Immediate Commander");
-        commander.Name = model.CommanderName;
-        commander.Rank = model.CommanderRank.HasValue ? model.CommanderRank.Value.ToString() : string.Empty;
-        commander.ActionDate = model.CommanderSignatureDate;
-        commander.Title = model.CommanderOrganization;
-        if (!string.IsNullOrWhiteSpace(model.RecommendationRemarks))
-        {
-            commander.Comments = [model.RecommendationRemarks];
-        }
     }
 
     /// <summary>
@@ -710,8 +642,4 @@ public static partial class LineOfDutyCaseMapper
         return "In Progress";
     }
 
-    private static string FormatEnum<T>(T value) where T : Enum
-    {
-        return UpperCaseBoundaryPattern().Replace(value.ToString(), " $1");
-    }
 }

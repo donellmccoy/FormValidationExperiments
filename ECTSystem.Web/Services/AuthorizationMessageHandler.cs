@@ -5,16 +5,23 @@ using Blazored.LocalStorage;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// Holds the API base address so <see cref="AuthorizationMessageHandler"/> can
+/// build the token-refresh URL without depending on a manually-constructed <see cref="Uri"/>.
+/// Registered as a singleton so every handler instance shares the same endpoints.
+/// </summary>
+public record ApiEndpoints(Uri ApiBaseAddress);
+
 public class AuthorizationMessageHandler : DelegatingHandler
 {
     private readonly ILocalStorageService _localStorage;
-    private readonly Uri _baseAddress;
+    private readonly Uri _apiBaseAddress;
     private static readonly SemaphoreSlim RefreshLock = new(1, 1);
 
-    public AuthorizationMessageHandler(ILocalStorageService localStorage, Uri baseAddress)
+    public AuthorizationMessageHandler(ILocalStorageService localStorage, ApiEndpoints endpoints)
     {
         _localStorage = localStorage;
-        _baseAddress = baseAddress;
+        _apiBaseAddress = endpoints.ApiBaseAddress;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -33,8 +40,8 @@ public class AuthorizationMessageHandler : DelegatingHandler
             return response;
         }
 
-        // Attempt to refresh the token
-        if (!await TryRefreshTokenAsync(cancellationToken))
+        // Attempt to refresh the token (pass the failed token for double-check)
+        if (!await TryRefreshTokenAsync(token, cancellationToken))
         {
             return response;
         }
@@ -48,19 +55,26 @@ public class AuthorizationMessageHandler : DelegatingHandler
         return await base.SendAsync(retryRequest, cancellationToken);
     }
 
-    private async Task<bool> TryRefreshTokenAsync(CancellationToken cancellationToken)
+    private async Task<bool> TryRefreshTokenAsync(string failedToken, CancellationToken cancellationToken)
     {
         // Serialize refresh attempts so concurrent 401s don't all try to refresh at once
         await RefreshLock.WaitAsync(cancellationToken);
         try
         {
+            // Double-check: another request may have already refreshed while we waited
+            var currentToken = await _localStorage.GetItemAsStringAsync("accessToken");
+            if (!string.IsNullOrWhiteSpace(currentToken) && currentToken != failedToken)
+            {
+                return true;
+            }
+
             var refreshToken = await _localStorage.GetItemAsStringAsync("refreshToken");
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
                 return false;
             }
 
-            using var refreshRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(_baseAddress, "refresh"))
+            using var refreshRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(_apiBaseAddress, "refresh"))
             {
                 Content = JsonContent.Create(new { refreshToken })
             };

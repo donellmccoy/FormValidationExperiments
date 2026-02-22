@@ -111,11 +111,6 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         }
     }
 
-    private static string FormatEnum<T>(T value) where T : Enum
-    {
-        return Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1");
-    }
-
     public void Dispose()
     {
         _loadCts.Cancel();

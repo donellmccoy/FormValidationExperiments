@@ -108,11 +108,6 @@ public partial class CaseList : ComponentBase, IDisposable
         await BookmarkCountService.RefreshAsync();
     }
 
-    private static string FormatEnum<T>(T value) where T : Enum
-    {
-        return Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1");
-    }
-
     private void OnCreateCase()
     {
         Navigation.NavigateTo("/case/new");

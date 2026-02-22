@@ -77,13 +77,13 @@ else
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">
             <Template Context="lodCase">
-                @FormatEnum(lodCase.IncidentType)
+                @lodCase.IncidentType.ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process">
             <Template Context="lodCase">
-                @FormatEnum(lodCase.ProcessType)
+                @lodCase.ProcessType.ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
     </Columns>

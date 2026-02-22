@@ -4,6 +4,7 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using ECTSystem.Web;
 using ECTSystem.Web.Services;
 using PanoramicData.OData.Client;
@@ -27,42 +28,36 @@ builder.Services.AddScoped<JwtAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// HttpClient configured to call the Web API (with auth header + auto-refresh)
+// API base addresses
 var apiBaseAddress = new Uri("https://localhost:7173");
-builder.Services.AddScoped(sp =>
-{
-    var handler = new AuthorizationMessageHandler(
-        sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>(),
-        apiBaseAddress)
-    {
-        InnerHandler = new HttpClientHandler()
-    };
-    return new HttpClient(handler)
-    {
-        BaseAddress = apiBaseAddress
-    };
-});
+var odataBaseAddress = new Uri(apiBaseAddress, "odata/");
+builder.Services.AddSingleton(new ApiEndpoints(apiBaseAddress));
+builder.Services.AddTransient<AuthorizationMessageHandler>();
+
+// Named HttpClient for general API calls (with auth + resilience)
+builder.Services.AddHttpClient("Api", client => client.BaseAddress = apiBaseAddress)
+    .AddHttpMessageHandler<AuthorizationMessageHandler>()
+    .AddStandardResilienceHandler();
+
+// Named HttpClient for OData calls (with auth + resilience)
+builder.Services.AddHttpClient("OData", client => client.BaseAddress = odataBaseAddress)
+    .AddHttpMessageHandler<AuthorizationMessageHandler>()
+    .AddStandardResilienceHandler();
+
+// Default HttpClient resolves to the "Api" named client
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api"));
 
 builder.Services.AddRadzenComponents();
 builder.Services.AddScoped<BookmarkCountService>();
 
-// PanoramicData OData client — uses its own HttpClient with the /odata/ base path (with auth header).
+// PanoramicData OData client — uses the "OData" named HttpClient
 builder.Services.AddScoped(sp =>
 {
-    var odataHandler = new AuthorizationMessageHandler(
-        sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>(),
-        apiBaseAddress)
-    {
-        InnerHandler = new HttpClientHandler()
-    };
-    var odataHttpClient = new HttpClient(odataHandler)
-    {
-        BaseAddress = new Uri("https://localhost:7173/odata/")
-    };
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
     return new ODataClient(new ODataClientOptions
     {
-        BaseUrl = "https://localhost:7173/odata/",
-        HttpClient = odataHttpClient,
+        BaseUrl = odataBaseAddress.ToString(),
+        HttpClient = factory.CreateClient("OData"),
         JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
             PropertyNameCaseInsensitive = true,

@@ -1,11 +1,11 @@
-using System.Text.RegularExpressions;
+using Humanizer;
 
 namespace ECTSystem.Shared.Extensions;
 
 /// <summary>
 /// Extension methods for <see cref="Enum"/> types.
 /// </summary>
-public static partial class EnumExtensions
+public static class EnumExtensions
 {
     /// <summary>
     /// Formats an enum value as a display-friendly string by inserting spaces
@@ -13,9 +13,6 @@ public static partial class EnumExtensions
     /// </summary>
     public static string ToDisplayString(this Enum value)
     {
-        return PascalCaseRegex().Replace(value.ToString(), " $1");
+        return value.ToString().Humanize(LetterCasing.Title);
     }
-
-    [GeneratedRegex(@"(\B[A-Z])")]
-    private static partial Regex PascalCaseRegex();
 }
