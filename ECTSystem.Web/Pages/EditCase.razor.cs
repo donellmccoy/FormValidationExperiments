@@ -862,13 +862,18 @@ public partial class EditCase : ComponentBase, IDisposable
 
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 
+            // Advance to the first review state and persist
+            saved.WorkflowState = LineOfDutyWorkflowState.MedicalTechnicianReview;
+            saved = await CaseService.SaveCaseAsync(saved, _cts.Token);
+
             _lodCase = saved;
             CaseId = saved.CaseId;
             _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(saved);
+            ApplyWorkflowState(saved.WorkflowState);
 
             TakeSnapshots();
 
-            NotificationService.Notify(NotificationSeverity.Success, "LOD Started",$"Case {saved.CaseId} created for {saved.MemberName}.");
+            NotificationService.Notify(NotificationSeverity.Success, "LOD Started", $"Case {saved.CaseId} created for {saved.MemberName}.");
 
             Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
         }

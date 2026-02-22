@@ -73,7 +73,6 @@ public static class EctDbSeeder
             var workflowState = completed
                 ? LineOfDutyWorkflowState.Completed
                 : PickRandom(rng,
-                    LineOfDutyWorkflowState.MemberInformationEntry,
                     LineOfDutyWorkflowState.MedicalTechnicianReview,
                     LineOfDutyWorkflowState.MedicalOfficerReview,
                     LineOfDutyWorkflowState.UnitCommanderReview,
