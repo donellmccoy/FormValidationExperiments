@@ -34,6 +34,21 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string Draft = "Draft";
     }
 
+    private static readonly (string TabName, LineOfDutyWorkflowState State)[] WorkflowTabMap =
+    [
+        (TabNames.MemberInformation,     LineOfDutyWorkflowState.MemberInformationEntry),    // 0
+        (TabNames.MedicalTechnician,     LineOfDutyWorkflowState.MedicalTechnicianReview),   // 1
+        (TabNames.MedicalOfficer,        LineOfDutyWorkflowState.MedicalOfficerReview),      // 2
+        (TabNames.UnitCommander,         LineOfDutyWorkflowState.UnitCommanderReview),       // 3
+        (TabNames.WingJudgeAdvocate,     LineOfDutyWorkflowState.WingJudgeAdvocateReview),   // 4
+        (TabNames.WingCommander,         LineOfDutyWorkflowState.WingCommanderReview),       // 5
+        (TabNames.AppointingAuthority,   LineOfDutyWorkflowState.AppointingAuthorityReview), // 6
+        (TabNames.BoardTechnicianReview, LineOfDutyWorkflowState.BoardTechnicianReview),     // 7
+        (TabNames.BoardMedicalReview,    LineOfDutyWorkflowState.BoardMedicalReview),        // 8
+        (TabNames.BoardLegalReview,      LineOfDutyWorkflowState.BoardLegalReview),          // 9
+        (TabNames.BoardAdminReview,      LineOfDutyWorkflowState.BoardAdminReview),          // 10
+    ];
+
     [Inject]
     private IDataService CaseService { get; set; }
 
@@ -54,6 +69,12 @@ public partial class EditCase : ComponentBase, IDisposable
 
     [Inject]
     private IJSRuntime JSRuntime { get; set; }
+
+    [Inject]
+    private ILogger<EditCase> Logger { get; set; }
+
+    [Inject]
+    private HttpClient Http { get; set; }
 
     [Parameter]
     public string CaseId { get; set; }
@@ -77,23 +98,11 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private readonly MemberSearchUiState _memberSearch = new();
-
-    private CancellationTokenSource _searchCts = new();
-
-    private RadzenTextBox _memberSearchTextBox;
-
-    private Popup _memberSearchPopup;
-
-    private RadzenDataGrid<Member> _memberSearchGrid;
-
     private readonly PageOperationState _page = new();
 
     private readonly BookmarkUiState _bookmark = new();
 
     private readonly DocumentUiState _documents = new();
-
-    private System.Timers.Timer _debounceTimer;
 
     private readonly CancellationTokenSource _cts = new();
 
@@ -171,178 +180,6 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private int DocumentCount
-    {
-        get
-        {
-            return _lodCase?.Documents?.Count ?? 0;
-        }
-    }
-
-    private IEnumerable<LineOfDutyDocument> SortedDocuments
-    {
-        get
-        {
-            return _lodCase?.Documents?
-            .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
-            .ThenByDescending(d => d.Id) ?? Enumerable.Empty<LineOfDutyDocument>();
-        }
-    }
-
-    private async Task OnFileSelected(string content)
-    {
-        _documents.UploadedFileContent = content;
-
-        if (!string.IsNullOrWhiteSpace(_documents.UploadedFileContent) && !string.IsNullOrWhiteSpace(_documents.UploadedFileName))
-        {
-            await AddDocumentAsync();
-        }
-    }
-
-    private async Task AddDocumentAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_documents.UploadedFileContent) || string.IsNullOrWhiteSpace(_documents.UploadedFileName))
-            return;
-
-        if (_lodCase?.Id is null or 0)
-        {
-            NotificationService.Notify(NotificationSeverity.Warning, "Save Case First",
-                "Please save the case before uploading documents.");
-            return;
-        }
-
-        _lodCase.Documents ??= [];
-
-        var contentType = GetContentType(_documents.UploadedFileName);
-
-        try
-        {
-            // RadzenFileInput returns a base64 data URI (e.g., "data:application/pdf;base64,JVBERi0...")
-            var base64Data = _documents.UploadedFileContent;
-            if (base64Data.Contains(","))
-            {
-                base64Data = base64Data.Split(',')[1];
-            }
-            var fileBytes = Convert.FromBase64String(base64Data);
-
-            var saved = await CaseService.UploadDocumentAsync(
-                _lodCase.Id, _documents.UploadedFileName, contentType, fileBytes, _cts.Token);
-
-            if (saved is not null)
-            {
-                _lodCase.Documents.Add(saved);
-            }
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", ex.Message);
-        }
-
-        // Refresh the DataList
-        var sorted = SortedDocuments.ToList();
-        _documents.Count = sorted.Count;
-        _documents.PagedItems = sorted.Take(10);
-
-        // Reset upload fields
-        _documents.UploadedFileContent = null;
-        _documents.UploadedFileName = null;
-        _documents.UploadedFileSize = null;
-    }
-
-    private static string GetContentType(string fileName)
-    {
-        var ext = System.IO.Path.GetExtension(fileName)?.ToLowerInvariant();
-        return ext switch
-        {
-            ".pdf" => "application/pdf",
-            ".doc" => "application/msword",
-            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ".xls" => "application/vnd.ms-excel",
-            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            ".png" => "image/png",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".txt" => "text/plain",
-            _ => "application/octet-stream"
-        };
-    }
-
-    private static string FormatFileSize(long bytes)
-    {
-        return bytes switch
-        {
-            < 1024 => $"{bytes} B",
-            < 1048576 => $"{bytes / 1024.0:F1} KB",
-            _ => $"{bytes / 1048576.0:F1} MB"
-        };
-    }
-
-    private static string GetDocumentIcon(string fileName)
-    {
-        var ext = System.IO.Path.GetExtension(fileName)?.ToLowerInvariant();
-        return ext switch
-        {
-            ".pdf" => "picture_as_pdf",
-            ".doc" or ".docx" => "article",
-            ".xls" or ".xlsx" => "grid_on",
-            ".png" or ".jpg" or ".jpeg" => "image",
-            ".txt" => "text_snippet",
-            _ => "description"
-        };
-    }
-
-    private string GetDocumentDownloadUrl(LineOfDutyDocument doc)
-    {
-        return $"https://localhost:7173/api/cases/{_lodCase.Id}/documents/{doc.Id}/download";
-    }
-
-    private async Task OnDownloadDocumentAsync(LineOfDutyDocument doc)
-    {
-        var url = GetDocumentDownloadUrl(doc);
-        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
-    }
-
-    private void OnDocumentsLoadData(LoadDataArgs args)
-    {
-        _documents.IsLoading = true;
-
-        var sorted = SortedDocuments.ToList();
-        _documents.Count = sorted.Count;
-        _documents.PagedItems = sorted.Skip(args.Skip ?? 0).Take(args.Top ?? 10);
-
-        _documents.IsLoading = false;
-    }
-
-    private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
-    {
-        if (_lodCase?.Id is null or 0 || doc.Id == 0)
-            return;
-
-        var confirmed = await DialogService.Confirm(
-            $"Are you sure you want to delete \"{doc.FileName}\"?",
-            "Delete Document",
-            new ConfirmOptions { OkButtonText = "Delete", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-            return;
-
-        try
-        {
-            await CaseService.DeleteDocumentAsync(_lodCase.Id, doc.Id, _cts.Token);
-            _lodCase.Documents?.Remove(doc);
-
-            // Refresh the DataList
-            var sorted = SortedDocuments.ToList();
-            _documents.Count = sorted.Count;
-            _documents.PagedItems = sorted.Take(10);
-
-            NotificationService.Notify(NotificationSeverity.Success, "Deleted", $"\"{doc.FileName}\" was removed.");
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Delete Failed", ex.Message);
-        }
-    }
-
     private List<WorkflowStep> _workflowSteps = [];
 
     private WorkflowStep CurrentStep
@@ -353,301 +190,20 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (IsNewCase)
-        {
-            InitializeWorkflowSteps();
-            TakeSnapshots();
-        }
-        else
-        {
-            await LoadCaseAsync();
-        }
+    private Task OnBoardTechForwardClick(RadzenSplitButtonItem item) =>
+        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardTechnicianReview, item);
 
-        _page.IsLoading = false;
-    }
+    private Task OnBoardMedForwardClick(RadzenSplitButtonItem item) =>
+        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardMedicalReview, item);
 
-    private async Task LoadCaseAsync()
-    {
-        await SetBusyAsync("Loading case...");
+    private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item) =>
+        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardLegalReview, item);
 
-        try
-        {
-            _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+    private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item) =>
+        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardAdminReview, item);
 
-            if (_lodCase is null)
-            {
-                InitializeWorkflowSteps();
-
-                return;
-            }
-
-            var dto = LineOfDutyCaseMapper.ToCaseViewModelsDto(_lodCase);
-
-            _caseInfo = dto.CaseInfo;
-            _memberFormModel = dto.MemberInfo;
-            _medicalFormModel = dto.MedicalAssessment;
-            _commanderFormModel = dto.UnitCommander;
-            _medTechFormModel = dto.MedicalTechnician;
-            _wingJAFormModel = dto.WingJudgeAdvocate;
-            _wingCommanderFormModel = dto.WingCommander;
-            _appointingAuthorityFormModel = dto.AppointingAuthority;
-            _boardTechFormModel = dto.BoardTechnician;
-            _boardMedFormModel = dto.BoardMedical;
-            _boardLegalFormModel = dto.BoardLegal;
-            _boardAdminFormModel = dto.BoardAdmin;
-
-            _memberFormModel.Grade = _lodCase.MemberRank ?? string.Empty;
-
-            InitializeWorkflowSteps();
-
-            TakeSnapshots();
-
-            // Check if this case is bookmarked
-            if (_lodCase.Id > 0)
-            {
-                try
-                {
-                    _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lodCase.Id, _cts.Token);
-                }
-                catch
-                {
-                    // Non-critical — default to not bookmarked
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Component disposed during load — silently ignore
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Load Failed",
-                Detail = $"Failed to load case: {ex.Message}",
-                Duration = 5000
-            });
-
-            InitializeWorkflowSteps();
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    private void TakeSnapshots()
-    {
-        foreach (var model in AllFormModels)
-        {
-            model.TakeSnapshot(JsonOptions);
-        }
-    }
-
-    private void InitializeWorkflowSteps()
-    {
-        _workflowSteps =
-        [
-            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, Description = "Enter member identification and incident details to initiate the LOD case." },
-            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, Description = "Medical technician reviews the injury/illness and documents clinical findings." },
-            new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending,    Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
-            new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending,    Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
-            new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending,    Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
-            new() { Number = 6,  Name = "Appointing Authority",       Icon = "verified_user",        Status = WorkflowStepStatus.Pending,    Description = "Appointing authority reviews the case and issues a formal LOD determination." },
-            new() { Number = 7,  Name = "Wing CC Review",             Icon = "stars",                Status = WorkflowStepStatus.Pending,    Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
-            new() { Number = 8,  Name = "Board Technician Review",    Icon = "rate_review",          Status = WorkflowStepStatus.Pending,    Description = "Board medical technician reviews the case file for completeness and accuracy." },
-            new() { Number = 9,  Name = "Board Medical Review",       Icon = "medical_services",     Status = WorkflowStepStatus.Pending,    Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
-            new() { Number = 10, Name = "Board Legal Review",         Icon = "gavel",                Status = WorkflowStepStatus.Pending,    Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
-            new() { Number = 11, Name = "Board Admin Review",         Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending,    Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
-            new() { Number = 12, Name = "Completed",                  Icon = "check_circle",         Status = WorkflowStepStatus.Pending, Description = "LOD determination has been finalized and the case is closed." }
-        ];
-
-        ApplyWorkflowState(_lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry);
-    }
-
-    private async Task OnFormSubmit(MedicalAssessmentFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
-    }
-
-    private async Task OnMemberFormSubmit(MemberInfoFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.MemberInformation);
-    }
-
-    private async Task OnCommanderFormSubmit(UnitCommanderFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.UnitCommander);
-    }
-
-    private async Task OnWingJAFormSubmit(WingJudgeAdvocateFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.WingJudgeAdvocate);
-    }
-
-    private async Task OnWingCommanderFormSubmit(WingCommanderFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.WingCommander);
-    }
-
-    private async Task OnMedTechFormSubmit(MedicalTechnicianFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
-    }
-
-    private async Task OnAppointingAuthorityFormSubmit(AppointingAuthorityFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.AppointingAuthority);
-    }
-
-    private async Task OnBoardFormSubmit(BoardTechnicianFormModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.BoardTechnicianReview);
-    }
-
-    private async Task OnBookmarkClick()
-    {
-        if (_lodCase?.Id is null or 0)
-            return;
-
-        _bookmark.IsBookmarked = !_bookmark.IsBookmarked;
-
-        if (_bookmark.IsBookmarked)
-        {
-            _bookmark.IsAnimating = true;
-            StateHasChanged();
-
-            try
-            {
-                await CaseService.AddBookmarkAsync(_lodCase.Id, _cts.Token);
-                await BookmarkCountService.RefreshAsync(_cts.Token);
-            }
-            catch
-            {
-                _bookmark.IsBookmarked = false; // Revert on failure
-            }
-
-            await Task.Delay(800);
-            _bookmark.IsAnimating = false;
-        }
-        else
-        {
-            try
-            {
-                await CaseService.RemoveBookmarkAsync(_lodCase.Id, _cts.Token);
-                await BookmarkCountService.RefreshAsync(_cts.Token);
-                NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_caseInfo?.CaseNumber} removed from bookmarks.", closeOnClick: true);
-            }
-            catch
-            {
-                _bookmark.IsBookmarked = true; // Revert on failure
-            }
-        }
-    }
-
-    private async Task OnAttachFileClick()
-    {
-        // TODO: Implement file attachment dialog/upload
-        await Task.CompletedTask;
-    }
-
-    private void OnStepSelected(WorkflowStep step)
-    {
-        ApplyWorkflowState((LineOfDutyWorkflowState)step.Number);
-    }
-
-    private async Task OnStartLod()
-    {
-        var confirmed = await DialogService.Confirm(
-            "Are you sure you want to start the LOD process?",
-            "Start LOD",
-            new ConfirmOptions { OkButtonText = "Start", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Creating LOD case...");
-
-        try
-        {
-            var newCase = new LineOfDutyCase
-            {
-                CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
-                MemberId = _selectedMemberId,
-                InitiationDate = DateTime.UtcNow,
-                IncidentDate = DateTime.UtcNow
-            };
-
-            LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, newCase);
-
-            var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
-
-            _lodCase = saved;
-            CaseId = saved.CaseId;
-            _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(saved);
-
-            TakeSnapshots();
-
-            NotificationService.Notify(NotificationSeverity.Success, "LOD Started",$"Case {saved.CaseId} created for {saved.MemberName}.");
-
-            Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Create Failed", ex.Message);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    private async Task OnSplitButtonClick(RadzenSplitButtonItem item)
-    {
-        if (item?.Value == "revert")
-        {
-            await OnRevertChanges();
-
-            return;
-        }
-
-        // Validate the medical tab before saving
-        if (_selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
-        {
-            return;
-        }
-
-        // Determine which tab to save based on the currently selected tab index
-        var source = _selectedTabIndex switch
-        {
-            0 => TabNames.MemberInformation,
-            1 => TabNames.MedicalTechnician,
-            2 => TabNames.MedicalOfficer,
-            3 => TabNames.UnitCommander,
-            4 => TabNames.WingJudgeAdvocate,
-            5 => TabNames.WingCommander,
-            6 => TabNames.AppointingAuthority,
-            7 => TabNames.BoardTechnicianReview,
-            _ => TabNames.Draft
-        };
-
-        var confirmed = await DialogService.Confirm(
-            "Are you sure you want to save?",
-            "Confirm Save",
-            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SaveCurrentTabAsync(source);
-    }
+    private Task OnBoardCompleteClick(RadzenSplitButtonItem item) =>
+        HandleWorkflowActionAsync(LineOfDutyWorkflowState.Completed, item);
 
     private async Task HandleWorkflowActionAsync(LineOfDutyWorkflowState sourceState, RadzenSplitButtonItem item)
     {
@@ -694,21 +250,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private Task OnWingForwardClick(RadzenSplitButtonItem item) =>
         HandleWorkflowActionAsync(LineOfDutyWorkflowState.AppointingAuthorityReview, item);
-
-    private Task OnBoardTechForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardTechnicianReview, item);
-
-    private Task OnBoardMedForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardMedicalReview, item);
-
-    private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardLegalReview, item);
-
-    private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardAdminReview, item);
-
-    private Task OnBoardCompleteClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.Completed, item);
 
     private async Task ConfirmAndNotifyAsync(
         string confirmMessage, 
@@ -778,22 +319,19 @@ public partial class EditCase : ComponentBase, IDisposable
     /// Maps a <see cref="LineOfDutyWorkflowState"/> to its 0-based tab index in the RadzenTabs control.
     /// Tab order: Member(0) · Med Tech(1) · Med Officer(2) · Unit CC(3) · Wing JA(4) · Wing CC(5) · Appointing Auth(6) · Board Tech(7) · Board Med(8) · Board Legal(9) · Board Admin(10)
     /// </summary>
-    private static int GetTabIndexForState(LineOfDutyWorkflowState state) => state switch
+    private static int GetTabIndexForState(LineOfDutyWorkflowState state)
     {
-        LineOfDutyWorkflowState.MemberInformationEntry    => 0,
-        LineOfDutyWorkflowState.MedicalTechnicianReview   => 1,
-        LineOfDutyWorkflowState.MedicalOfficerReview      => 2,
-        LineOfDutyWorkflowState.UnitCommanderReview       => 3,
-        LineOfDutyWorkflowState.WingJudgeAdvocateReview   => 4,
-        LineOfDutyWorkflowState.WingCommanderReview       => 5,
-        LineOfDutyWorkflowState.AppointingAuthorityReview => 6,
-        LineOfDutyWorkflowState.BoardTechnicianReview     => 7,
-        LineOfDutyWorkflowState.BoardMedicalReview        => 8,
-        LineOfDutyWorkflowState.BoardLegalReview          => 9,
-        LineOfDutyWorkflowState.BoardAdminReview          => 10,
-        LineOfDutyWorkflowState.Completed                 => 10,
-        _                                                 => 0,
-    };
+        for (var i = 0; i < WorkflowTabMap.Length; i++)
+        {
+            if (WorkflowTabMap[i].State == state)
+                return i;
+        }
+
+        // Completed maps to the last workflow tab; unknown states default to first
+        return state == LineOfDutyWorkflowState.Completed
+            ? WorkflowTabMap.Length - 1
+            : 0;
+    }
 
     /// <summary>
     /// Returns true if the tab at <paramref name="tabIndex"/> should be disabled.
@@ -897,6 +435,18 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
+    private (Action Apply, TrackableModel Model)? GetTabOperations(string tabName) => tabName switch
+    {
+        TabNames.MemberInformation     => (() => LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, _lodCase),           _memberFormModel),
+        TabNames.MedicalTechnician     => (() => LineOfDutyCaseMapper.ApplyMedicalAssessment(_medicalFormModel, _lodCase),    _medicalFormModel),
+        TabNames.UnitCommander         => (() => LineOfDutyCaseMapper.ApplyUnitCommander(_commanderFormModel, _lodCase),      _commanderFormModel),
+        TabNames.WingJudgeAdvocate     => (() => LineOfDutyCaseMapper.ApplyWingJudgeAdvocate(_wingJAFormModel, _lodCase),     _wingJAFormModel),
+        TabNames.WingCommander         => (() => LineOfDutyCaseMapper.ApplyWingCommander(_wingCommanderFormModel, _lodCase),  _wingCommanderFormModel),
+        TabNames.AppointingAuthority   => (() => LineOfDutyCaseMapper.ApplyAppointingAuthority(_appointingAuthorityFormModel, _lodCase), _appointingAuthorityFormModel),
+        TabNames.BoardTechnicianReview => (() => LineOfDutyCaseMapper.ApplyBoardTechnician(_boardTechFormModel, _lodCase),    _boardTechFormModel),
+        _                              => null,
+    };
+
     private async Task SaveCurrentTabAsync(string source)
     {
         if (_page.IsSaving)
@@ -909,49 +459,31 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            // Apply only the specific tab's view model to the entity
-            switch (source)
+            var ops = GetTabOperations(source);
+
+            if (ops is { } tabOps)
             {
-                case TabNames.MemberInformation:
-                    LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, _lodCase);
-                    break;
-                case TabNames.MedicalTechnician:
-                    LineOfDutyCaseMapper.ApplyMedicalAssessment(_medicalFormModel, _lodCase);
-                    break;
-                case TabNames.UnitCommander:
-                    LineOfDutyCaseMapper.ApplyUnitCommander(_commanderFormModel, _lodCase);
-                    break;
-                case TabNames.WingJudgeAdvocate:
-                    LineOfDutyCaseMapper.ApplyWingJudgeAdvocate(_wingJAFormModel, _lodCase);
-                    break;
-                case TabNames.WingCommander:
-                    LineOfDutyCaseMapper.ApplyWingCommander(_wingCommanderFormModel, _lodCase);
-                    break;
-                case TabNames.AppointingAuthority:
-                    LineOfDutyCaseMapper.ApplyAppointingAuthority(_appointingAuthorityFormModel, _lodCase);
-                    break;
-                case TabNames.BoardTechnicianReview:
-                    LineOfDutyCaseMapper.ApplyBoardTechnician(_boardTechFormModel, _lodCase);
-                    break;
-                default:
-                    LineOfDutyCaseMapper.ApplyAll(
-                        new CaseViewModelsDto
-                        {
-                            CaseInfo = _caseInfo,
-                            MemberInfo = _memberFormModel,
-                            MedicalAssessment = _medicalFormModel,
-                            UnitCommander = _commanderFormModel,
-                            MedicalTechnician = _medTechFormModel,
-                            WingJudgeAdvocate = _wingJAFormModel,
-                            WingCommander = _wingCommanderFormModel,
-                            AppointingAuthority = _appointingAuthorityFormModel,
-                            BoardTechnician = _boardTechFormModel,
-                            BoardMedical = _boardMedFormModel,
-                            BoardLegal = _boardLegalFormModel,
-                            BoardAdmin = _boardAdminFormModel
-                        },
-                        _lodCase);
-                    break;
+                tabOps.Apply();
+            }
+            else
+            {
+                LineOfDutyCaseMapper.ApplyAll(
+                    new CaseViewModelsDto
+                    {
+                        CaseInfo = _caseInfo,
+                        MemberInfo = _memberFormModel,
+                        MedicalAssessment = _medicalFormModel,
+                        UnitCommander = _commanderFormModel,
+                        MedicalTechnician = _medTechFormModel,
+                        WingJudgeAdvocate = _wingJAFormModel,
+                        WingCommander = _wingCommanderFormModel,
+                        AppointingAuthority = _appointingAuthorityFormModel,
+                        BoardTechnician = _boardTechFormModel,
+                        BoardMedical = _boardMedFormModel,
+                        BoardLegal = _boardLegalFormModel,
+                        BoardAdmin = _boardAdminFormModel
+                    },
+                    _lodCase);
             }
 
             // Save the entity
@@ -961,32 +493,13 @@ public partial class EditCase : ComponentBase, IDisposable
             _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(_lodCase);
 
             // Re-snapshot only the saved model so other tabs retain their dirty state
-            switch (source)
+            if (ops is { } saved)
             {
-                case TabNames.MemberInformation:
-                    _memberFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                case TabNames.MedicalTechnician:
-                    _medicalFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                case TabNames.UnitCommander:
-                    _commanderFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                case TabNames.WingJudgeAdvocate:
-                    _wingJAFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                case TabNames.WingCommander:
-                    _wingCommanderFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                case TabNames.AppointingAuthority:
-                    _appointingAuthorityFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                case TabNames.BoardTechnicianReview:
-                    _boardTechFormModel.TakeSnapshot(JsonOptions);
-                    break;
-                default:
-                    TakeSnapshots();
-                    break;
+                saved.Model.TakeSnapshot(JsonOptions);
+            }
+            else
+            {
+                TakeSnapshots();
             }
 
             NotificationService.Notify(new NotificationMessage
@@ -1111,131 +624,310 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
+    protected override async Task OnInitializedAsync()
     {
-        var items = _memberSearch.Results;
-        var popupOpened = await JSRuntime.InvokeAsync<bool>("Radzen.popupOpened", "member-search-popup");
-        var key = args.Code ?? args.Key;
-
-        if (!args.AltKey && (key == "ArrowDown" || key == "ArrowUp"))
+        if (IsNewCase)
         {
-            var result = await JSRuntime.InvokeAsync<int[]>("Radzen.focusTableRow", "member-search-grid", key, _memberSearch.SelectedIndex, null, false);
-            _memberSearch.SelectedIndex = result.First();
+            InitializeWorkflowSteps();
+            TakeSnapshots();
         }
-        else if (args.AltKey && key == "ArrowDown" || key == "Enter" || key == "NumpadEnter")
+        else
         {
-            if (popupOpened && (key == "Enter" || key == "NumpadEnter"))
+            await LoadCaseAsync();
+        }
+
+        _page.IsLoading = false;
+    }
+
+    private async Task LoadCaseAsync()
+    {
+        await SetBusyAsync("Loading case...");
+
+        try
+        {
+            _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+
+            if (_lodCase is null)
             {
-                var selected = items.ElementAtOrDefault(_memberSearch.SelectedIndex);
-                if (selected != null)
-                {
-                    await OnMemberSelected(selected);
-                    return;
-                }
+                InitializeWorkflowSteps();
+
+                return;
             }
 
-            await _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element);
+            var dto = LineOfDutyCaseMapper.ToCaseViewModelsDto(_lodCase);
+
+            _caseInfo = dto.CaseInfo;
+            _memberFormModel = dto.MemberInfo;
+            _medicalFormModel = dto.MedicalAssessment;
+            _commanderFormModel = dto.UnitCommander;
+            _medTechFormModel = dto.MedicalTechnician;
+            _wingJAFormModel = dto.WingJudgeAdvocate;
+            _wingCommanderFormModel = dto.WingCommander;
+            _appointingAuthorityFormModel = dto.AppointingAuthority;
+            _boardTechFormModel = dto.BoardTechnician;
+            _boardMedFormModel = dto.BoardMedical;
+            _boardLegalFormModel = dto.BoardLegal;
+            _boardAdminFormModel = dto.BoardAdmin;
+
+            _memberFormModel.Grade = _lodCase.MemberRank ?? string.Empty;
+
+            InitializeWorkflowSteps();
+
+            TakeSnapshots();
+
+            // Check if this case is bookmarked
+            if (_lodCase.Id > 0)
+            {
+                try
+                {
+                    _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lodCase.Id, _cts.Token);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lodCase.Id);
+                }
+            }
         }
-        else if (key == "Escape" || key == "Tab")
+        catch (OperationCanceledException)
         {
-            await _memberSearchPopup.CloseAsync();
+            // Component disposed during load — silently ignore
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load case {CaseId}", CaseId);
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load Failed",
+                Detail = $"Failed to load case: {ex.Message}",
+                Duration = 5000
+            });
+
+            InitializeWorkflowSteps();
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
         }
     }
 
-    private async Task OnMemberSearchInput(ChangeEventArgs args)
+    private void TakeSnapshots()
     {
-        _memberSearch.SelectedIndex = 0;
-        _memberSearch.Text = args.Value?.ToString() ?? string.Empty;
-
-        _debounceTimer?.Stop();
-        _debounceTimer?.Dispose();
-
-        if (string.IsNullOrWhiteSpace(_memberSearch.Text))
+        foreach (var model in AllFormModels)
         {
-            _memberSearch.Results = [];
+            model.TakeSnapshot(JsonOptions);
+        }
+    }
 
+    private void InitializeWorkflowSteps()
+    {
+        _workflowSteps =
+        [
+            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.MemberInformationEntry,    Description = "Enter member identification and incident details to initiate the LOD case." },
+            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.MedicalTechnicianReview,   Description = "Medical technician reviews the injury/illness and documents clinical findings." },
+            new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.MedicalOfficerReview,      Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
+            new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.UnitCommanderReview,       Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
+            new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.WingJudgeAdvocateReview,   Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
+            new() { Number = 6,  Name = "Appointing Authority",      Icon = "verified_user",        Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.AppointingAuthorityReview, Description = "Appointing authority reviews the case and issues a formal LOD determination." },
+            new() { Number = 7,  Name = "Wing CC Review",            Icon = "stars",                Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.WingCommanderReview,       Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
+            new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
+            new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardMedicalReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
+            new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
+            new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardAdminReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
+            new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
+        ];
+
+        ApplyWorkflowState(_lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry);
+    }
+
+    private async Task OnFormSubmit(MedicalAssessmentFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
+    }
+
+    private async Task OnMemberFormSubmit(MemberInfoFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.MemberInformation);
+    }
+
+    private async Task OnCommanderFormSubmit(UnitCommanderFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.UnitCommander);
+    }
+
+    private async Task OnWingJAFormSubmit(WingJudgeAdvocateFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.WingJudgeAdvocate);
+    }
+
+    private async Task OnWingCommanderFormSubmit(WingCommanderFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.WingCommander);
+    }
+
+    private async Task OnMedTechFormSubmit(MedicalTechnicianFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
+    }
+
+    private async Task OnAppointingAuthorityFormSubmit(AppointingAuthorityFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.AppointingAuthority);
+    }
+
+    private async Task OnBoardFormSubmit(BoardTechnicianFormModel model)
+    {
+        await SaveCurrentTabAsync(TabNames.BoardTechnicianReview);
+    }
+
+    private async Task OnBookmarkClick()
+    {
+        if (_lodCase?.Id is null or 0)
+            return;
+
+        _bookmark.IsBookmarked = !_bookmark.IsBookmarked;
+
+        if (_bookmark.IsBookmarked)
+        {
+            _bookmark.IsAnimating = true;
             StateHasChanged();
+
+            try
+            {
+                await CaseService.AddBookmarkAsync(_lodCase.Id, _cts.Token);
+                await BookmarkCountService.RefreshAsync(_cts.Token);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to add bookmark for case {CaseId}", _lodCase.Id);
+                _bookmark.IsBookmarked = false; // Revert on failure
+            }
+
+            await Task.Delay(800);
+            _bookmark.IsAnimating = false;
+        }
+        else
+        {
+            try
+            {
+                await CaseService.RemoveBookmarkAsync(_lodCase.Id, _cts.Token);
+                await BookmarkCountService.RefreshAsync(_cts.Token);
+                NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_caseInfo?.CaseNumber} removed from bookmarks.", closeOnClick: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to remove bookmark for case {CaseId}", _lodCase.Id);
+                _bookmark.IsBookmarked = true; // Revert on failure
+            }
+        }
+    }
+
+    private async Task OnAttachFileClick()
+    {
+        // TODO: Implement file attachment dialog/upload
+        await Task.CompletedTask;
+    }
+
+    private void OnStepSelected(WorkflowStep step)
+    {
+        ApplyWorkflowState(step.WorkflowState);
+    }
+
+    private async Task OnStartLod()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to start the LOD process?",
+            "Start LOD",
+            new ConfirmOptions { OkButtonText = "Start", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Creating LOD case...");
+
+        try
+        {
+            var newCase = new LineOfDutyCase
+            {
+                CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                MemberId = _selectedMemberId,
+                InitiationDate = DateTime.UtcNow,
+                IncidentDate = DateTime.UtcNow
+            };
+
+            LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, newCase);
+
+            var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
+
+            _lodCase = saved;
+            CaseId = saved.CaseId;
+            _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(saved);
+
+            TakeSnapshots();
+
+            NotificationService.Notify(NotificationSeverity.Success, "LOD Started",$"Case {saved.CaseId} created for {saved.MemberName}.");
+
+            Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Create Failed", ex.Message);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private async Task OnSplitButtonClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "revert")
+        {
+            await OnRevertChanges();
 
             return;
         }
 
-        _debounceTimer = new System.Timers.Timer(300)
+        // Validate the medical tab before saving
+        if (_selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
         {
-            AutoReset = false
+            return;
+        }
+
+        // Determine which tab to save based on the currently selected tab index
+        var source = _selectedTabIndex switch
+        {
+            0 => TabNames.MemberInformation,
+            1 => TabNames.MedicalTechnician,
+            2 => TabNames.MedicalOfficer,
+            3 => TabNames.UnitCommander,
+            4 => TabNames.WingJudgeAdvocate,
+            5 => TabNames.WingCommander,
+            6 => TabNames.AppointingAuthority,
+            7 => TabNames.BoardTechnicianReview,
+            _ => TabNames.Draft
         };
 
-        _debounceTimer.Elapsed += async (_, _) =>
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to save?",
+            "Confirm Save",
+            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
         {
-            await InvokeAsync(async () =>
-            {
-                await _searchCts.CancelAsync();
+            return;
+        }
 
-                _searchCts.Dispose();
-                _searchCts = new CancellationTokenSource();
-
-                _memberSearch.IsSearching = true;
-                StateHasChanged();
-
-                try
-                {
-                    _memberSearch.Results = await CaseService.SearchMembersAsync(_memberSearch.Text, _searchCts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Search was superseded — ignore
-                }
-                catch (Exception ex)
-                {
-                    NotificationService.Notify(NotificationSeverity.Error, "Search Failed", ex.Message);
-                    _memberSearch.Results = [];
-                }
-                finally
-                {
-                    _memberSearch.IsSearching = false;
-
-                    StateHasChanged();
-                }
-            });
-        };
-
-        _debounceTimer.Start();
-    }
-
-    private async Task OnMemberSelected(Member member)
-    {
-        _memberSearch.Text = string.Empty;
-        await _memberSearchPopup.CloseAsync();
-
-        _selectedMemberId = member.Id;
-
-        _memberFormModel.FirstName = member.FirstName;
-        _memberFormModel.LastName = member.LastName;
-        _memberFormModel.MiddleInitial = member.MiddleInitial;
-        _memberFormModel.OrganizationUnit = member.Unit;
-        _memberFormModel.SSN = member.ServiceNumber;
-        _memberFormModel.DateOfBirth = member.DateOfBirth;
-        _memberFormModel.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
-
-        var parsedRank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
-        _memberFormModel.Rank = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value) : member.Rank;
-        _memberFormModel.Grade = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value): member.Rank;
-
-        _caseInfo.MemberName = $"{_memberFormModel.LastName}, {_memberFormModel.FirstName}";
-        _caseInfo.Component = _memberFormModel.Component;
-        _caseInfo.Rank = _memberFormModel.Rank;
-        _caseInfo.Grade = _memberFormModel.Grade;
-        _caseInfo.Unit = _memberFormModel.OrganizationUnit;
-
-        _selectedTabIndex = 0;
-        StateHasChanged();
+        await SaveCurrentTabAsync(source);
     }
 
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
-        _debounceTimer?.Stop();
-        _debounceTimer?.Dispose();
         _searchCts.Cancel();
         _searchCts.Dispose();
     }

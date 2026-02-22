@@ -351,9 +351,9 @@ else
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign"  Variant="Variant.Outlined"/>
                                         <RadzenSplitButton Click="@OnMedTechForwardClick" Text="Forward to Medical Officer" Icon="send"
-                                                           ButtonStyle="ButtonStyle.Primary">
+                                                           ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                             <ChildContent>
                                                 <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                             </ChildContent>
