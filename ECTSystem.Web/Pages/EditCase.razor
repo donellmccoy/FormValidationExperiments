@@ -339,7 +339,7 @@ else
                                 <div class="form-actions rz-mt-2">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                         <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                           Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                           Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                            Disabled="true">
                                             <ChildContent>
                                                 <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -668,7 +668,7 @@ else
                                     <div class="form-actions rz-mt-2">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                             <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                               Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                               Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                                Disabled="@(!_medicalFormModel.IsDirty)">
                                                 <ChildContent>
                                                     <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -680,9 +680,9 @@ else
                                     @* ═══ Fieldset J: Routing ═══ *@
                                     <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                            <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                             <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
-                                                               ButtonStyle="ButtonStyle.Primary">
+                                                               ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                 <ChildContent>
                                                     <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
                                                     <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
@@ -872,7 +872,7 @@ else
                                 <div class="form-actions rz-mt-2">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                         <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                           Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                           Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                            Disabled="@(!_commanderFormModel.IsDirty)">
                                             <ChildContent>
                                                 <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -884,9 +884,9 @@ else
                                 @* ═══ Routing ═══ *@
                                 <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                        <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                         <RadzenSplitButton Click="@OnCommanderForwardClick" Text="Forward to Wing JA" Icon="send"
-                                                           ButtonStyle="ButtonStyle.Primary">
+                                                           ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                             <ChildContent>
                                                 <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
                                                 <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
@@ -916,7 +916,7 @@ else
                             <div class="form-actions rz-mt-2">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                        Disabled="true">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -928,9 +928,9 @@ else
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                     <RadzenSplitButton Click="@OnWingJAForwardClick" Text="Forward to Wing CC" Icon="send"
-                                                       ButtonStyle="ButtonStyle.Primary">
+                                                       ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
                                             <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
@@ -1004,7 +1004,7 @@ else
                             <div class="form-actions rz-mt-2">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                        Disabled="@(!_wingCommanderFormModel.IsDirty)">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -1016,9 +1016,9 @@ else
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                     <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Appointing Authority" Icon="send"
-                                                       ButtonStyle="ButtonStyle.Primary">
+                                                       ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
                                             <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return" />
@@ -1048,7 +1048,7 @@ else
                         <div class="form-actions rz-mt-2">
                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                 <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                   Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                   Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                    Disabled="@(!HasAnyChanges)">
                                     <ChildContent>
                                         <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -1060,9 +1060,9 @@ else
                         @* ═══ Routing ═══ *@
                         <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                 <RadzenSplitButton Click="@OnWingForwardClick" Text="Forward to Board Review" Icon="send"
-                                                   ButtonStyle="ButtonStyle.Primary">
+                                                   ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                     <ChildContent>
                                         <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
                                         <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
@@ -1092,7 +1092,7 @@ else
                             <div class="form-actions rz-mt-2">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                        Disabled="@(!HasAnyChanges)">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -1104,9 +1104,9 @@ else
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                     <RadzenSplitButton Click="@OnBoardTechForwardClick" Text="Forward to Board Medical" Icon="send"
-                                                       ButtonStyle="ButtonStyle.Primary">
+                                                       ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Forward to Board Legal" Icon="send" Value="board-legal" />
                                             <RadzenSplitButtonItem Text="Forward to Board Admin" Icon="send" Value="board-admin" />
@@ -1140,7 +1140,7 @@ else
                             <div class="form-actions rz-mt-2">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                        Disabled="@(!HasAnyChanges)">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -1152,9 +1152,9 @@ else
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                     <RadzenSplitButton Click="@OnBoardMedForwardClick" Text="Forward to Board Legal" Icon="send"
-                                                       ButtonStyle="ButtonStyle.Primary">
+                                                       ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
                                             <RadzenSplitButtonItem Text="Forward to Board Admin" Icon="send" Value="board-admin" />
@@ -1188,7 +1188,7 @@ else
                             <div class="form-actions rz-mt-2">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                        Disabled="@(!HasAnyChanges)">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -1200,9 +1200,9 @@ else
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                     <RadzenSplitButton Click="@OnBoardLegalForwardClick" Text="Forward to Board Admin" Icon="send"
-                                                       ButtonStyle="ButtonStyle.Primary">
+                                                       ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
                                             <RadzenSplitButtonItem Text="Forward to Board Medical" Icon="send" Value="board-med" />
@@ -1236,7 +1236,7 @@ else
                             <div class="form-actions rz-mt-2">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
                                     <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                       Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary"
+                                                       Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
                                                        Disabled="@(!HasAnyChanges)">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
@@ -1248,9 +1248,9 @@ else
                             @* ═══ Routing ═══ *@
                             <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" />
+                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
                                     <RadzenSplitButton Click="@OnBoardAdminForwardClick" Text="Complete Review" Icon="check_circle"
-                                                       ButtonStyle="ButtonStyle.Primary">
+                                                       ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                         <ChildContent>
                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
                                             <RadzenSplitButtonItem Text="Forward to Board Medical" Icon="send" Value="board-med" />
