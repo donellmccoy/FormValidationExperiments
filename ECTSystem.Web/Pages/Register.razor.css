@@ -1,0 +1,75 @@
+.register-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 480px;
+}
+
+.register-header {
+    text-align: center;
+    color: #e0e6ed;
+}
+
+.logo-icon {
+    font-size: 3rem;
+    color: var(--rz-primary);
+    margin-bottom: 0.5rem;
+}
+
+.logo-icon .rzi {
+    font-size: 3rem;
+}
+
+.register-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.register-subtitle {
+    font-size: 0.95rem;
+    color: #8899aa;
+    margin: 0;
+    font-weight: 400;
+}
+
+.register-card {
+    width: 100%;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(74, 127, 196, 0.2) !important;
+}
+
+::deep .rz-textbox,
+::deep .rz-password {
+    width: 100%;
+}
+
+::deep .rz-button.rz-w-100 {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.register-link {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #8899aa;
+}
+
+.register-footer {
+    text-align: center;
+    color: #556677;
+    font-size: 0.8rem;
+}
+
+.register-footer p {
+    margin: 0;
+}

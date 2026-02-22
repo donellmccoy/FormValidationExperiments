@@ -1,14 +1,18 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using ECTSystem.Persistence.Models;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Persistence.Data;
 
 /// <summary>
 /// Entity Framework Core database context for the ECT (LOD) application.
-/// Configured for SQL Server.
+/// Configured for SQL Server with ASP.NET Core Identity.
 /// </summary>
-public class EctDbContext : DbContext
+public class EctDbContext : IdentityDbContext<ApplicationUser>
 {
+    public string CurrentUserId { get; set; } = "System";
+
     public EctDbContext(DbContextOptions<EctDbContext> options) : base(options)
     {
     }
@@ -33,11 +37,11 @@ public class EctDbContext : DbContext
             {
                 case EntityState.Added:
                     entry.Entity.CreatedDate = DateTime.UtcNow;
-                    entry.Entity.CreatedBy = "System"; // Replace with actual user context
+                    entry.Entity.CreatedBy = CurrentUserId;
                     break;
                 case EntityState.Modified:
                     entry.Entity.ModifiedDate = DateTime.UtcNow;
-                    entry.Entity.ModifiedBy = "System"; // Replace with actual user context
+                    entry.Entity.ModifiedBy = CurrentUserId;
                     break;
             }
         }

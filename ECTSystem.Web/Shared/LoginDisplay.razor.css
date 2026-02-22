@@ -1,0 +1,19 @@
+.login-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.user-icon {
+    color: var(--rz-primary);
+    font-size: 1.25rem;
+}
+
+.user-email {
+    color: #b0bec5;
+    font-size: 0.85rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

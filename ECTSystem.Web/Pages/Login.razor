@@ -1,0 +1,50 @@
+@page "/login"
+@layout AuthLayout
+
+<div class="login-wrapper">
+    <RadzenRow Gap="0" class="login-row rz-border-radius-6 rz-shadow-10">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard class="rz-shadow-0 rz-border-radius-0 rz-text-align-center rz-p-12 branding-panel">
+                <div class="branding-content">
+                    <RadzenIcon Icon="verified_user" class="branding-icon" />
+                    <RadzenText TextStyle="TextStyle.DisplayH3" TagName="TagName.H2" class="rz-color-white rz-mb-2">
+                        ECT System
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6" class="rz-color-white rz-mb-4">
+                        Electronic Case Tracking
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2" class="rz-color-white branding-body">
+                        Line of Duty Determination System
+                    </RadzenText>
+                    <div class="branding-divider"></div>
+                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-white branding-footer">
+                        Department of the Air Force
+                    </RadzenText>
+                </div>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard class="rz-shadow-0 rz-border-radius-0 rz-p-12 login-panel">
+                <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H2" class="rz-mb-6">
+                    Login
+                </RadzenText>
+                <RadzenLogin AllowRegister="true"
+                             AllowResetPassword="false"
+                             Login="@OnLogin"
+                             Register="@OnRegister"
+                             Username="@username"
+                             Password="@password" />
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger"
+                                 Variant="Variant.Flat"
+                                 ShowIcon="true"
+                                 AllowClose="false"
+                                 class="rz-mt-4">
+                        @errorMessage
+                    </RadzenAlert>
+                }
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>

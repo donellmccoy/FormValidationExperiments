@@ -1,0 +1,76 @@
+@page "/register"
+@layout AuthLayout
+
+<div class="register-container">
+    <div class="register-header">
+        <div class="logo-icon">
+            <RadzenIcon Icon="shield" />
+        </div>
+        <h1 class="register-title">Create Account</h1>
+        <p class="register-subtitle">Electronic Case Tracking System</p>
+    </div>
+
+    <RadzenCard class="register-card">
+        <RadzenTemplateForm TItem="RegisterFormModel" Data="@formModel" Submit="@OnRegister">
+            <RadzenStack Gap="1.25rem" class="rz-p-4">
+                <RadzenFormField Text="Email" Variant="Variant.Outlined" Style="width: 100%;">
+                    <ChildContent>
+                        <RadzenTextBox Name="Email" @bind-Value="formModel.Email"
+                                       Placeholder="you@example.com" Style="width: 100%;" />
+                    </ChildContent>
+                    <Helper>
+                        <RadzenRequiredValidator Component="Email" Text="Email is required" />
+                        <RadzenEmailValidator Component="Email" Text="Enter a valid email address" />
+                    </Helper>
+                </RadzenFormField>
+
+                <RadzenFormField Text="Password" Variant="Variant.Outlined" Style="width: 100%;">
+                    <ChildContent>
+                        <RadzenPassword Name="Password" @bind-Value="formModel.Password"
+                                        Placeholder="Minimum 6 characters" Style="width: 100%;" />
+                    </ChildContent>
+                    <Helper>
+                        <RadzenRequiredValidator Component="Password" Text="Password is required" />
+                        <RadzenLengthValidator Component="Password" Min="6"
+                                               Text="Password must be at least 6 characters" />
+                    </Helper>
+                </RadzenFormField>
+
+                <RadzenFormField Text="Confirm Password" Variant="Variant.Outlined" Style="width: 100%;">
+                    <ChildContent>
+                        <RadzenPassword Name="ConfirmPassword" @bind-Value="formModel.ConfirmPassword"
+                                        Placeholder="Re-enter password" Style="width: 100%;" />
+                    </ChildContent>
+                    <Helper>
+                        <RadzenRequiredValidator Component="ConfirmPassword" Text="Please confirm your password" />
+                        <RadzenCompareValidator Component="ConfirmPassword" Value="@formModel.Password"
+                                                Text="Passwords do not match" />
+                    </Helper>
+                </RadzenFormField>
+
+                <RadzenButton ButtonType="ButtonType.Submit" Text="Create Account"
+                              ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large"
+                              class="rz-w-100" />
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger"
+                                 Variant="Variant.Flat"
+                                 ShowIcon="true"
+                                 AllowClose="false">
+                        @errorMessage
+                    </RadzenAlert>
+                }
+
+                <div class="register-link">
+                    Already have an account?
+                    <RadzenLink Path="/login" Text="Sign in" />
+                </div>
+            </RadzenStack>
+        </RadzenTemplateForm>
+    </RadzenCard>
+
+    <div class="register-footer">
+        <p>Department of the Air Force</p>
+    </div>
+</div>

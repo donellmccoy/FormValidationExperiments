@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
@@ -16,14 +18,13 @@ namespace ECTSystem.Api.Controllers;
 /// query parameters which the OData middleware translates directly into EF Core LINQ queries.
 /// Named "CasesController" to match the OData entity set "Cases" (convention routing).
 /// </summary>
+[Authorize]
 public class CasesController : ODataController
 {
     private readonly IDataService _dataService;
     private readonly IApiLogService _log;
     private readonly ICaseBookmarkService _bookmarkService;
     private readonly IEdmModel _edmModel;
-
-    private const string DefaultUserId = "System";
 
     public CasesController(IDataService dataService, IApiLogService log, ICaseBookmarkService bookmarkService, IEdmModel edmModel)
     {
@@ -32,6 +33,8 @@ public class CasesController : ODataController
         _bookmarkService = bookmarkService;
         _edmModel = edmModel;
     }
+
+    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User is not authenticated.");
 
     /// <summary>
     /// Returns an IQueryable of LOD cases for OData query composition.
@@ -54,7 +57,7 @@ public class CasesController : ODataController
     public async Task<IActionResult> GetBookmarked(CancellationToken ct = default)
     {
         _log.QueryingCases();
-        var query = _bookmarkService.GetBookmarkedCasesQueryable(DefaultUserId);
+        var query = _bookmarkService.GetBookmarkedCasesQueryable(UserId);
 
         var odataContext = new ODataQueryContext(_edmModel, typeof(LineOfDutyCase), new Microsoft.OData.UriParser.ODataPath());
         var options = new ODataQueryOptions<LineOfDutyCase>(odataContext, Request);

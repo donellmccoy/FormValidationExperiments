@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 
 namespace ECTSystem.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/cases/{caseId:int}/documents")]
 public class DocumentsController : ControllerBase

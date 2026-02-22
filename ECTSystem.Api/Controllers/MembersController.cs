@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
@@ -13,6 +14,7 @@ namespace ECTSystem.Api.Controllers;
 /// OData-enabled controller for Member CRUD operations.
 /// Named "MembersController" to match the OData entity set "Members" (convention routing).
 /// </summary>
+[Authorize]
 public class MembersController : ODataController
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;

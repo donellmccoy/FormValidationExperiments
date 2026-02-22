@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
@@ -10,35 +12,35 @@ namespace ECTSystem.Api.Controllers;
 /// OData-enabled controller for case bookmark operations.
 /// Named "CaseBookmarksController" to match the OData entity set "CaseBookmarks" (convention routing).
 /// </summary>
+[Authorize]
 public class CaseBookmarksController : ODataController
 {
     private readonly ICaseBookmarkService _bookmarkService;
-
-    // Hardcoded until authentication is implemented.
-    private const string DefaultUserId = "System";
 
     public CaseBookmarksController(ICaseBookmarkService bookmarkService)
     {
         _bookmarkService = bookmarkService;
     }
 
+    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User is not authenticated.");
+
     [EnableQuery(MaxTop = 100, PageSize = 50)]
     public IActionResult Get()
     {
-        return Ok(_bookmarkService.GetBookmarksQueryable(DefaultUserId));
+        return Ok(_bookmarkService.GetBookmarksQueryable(UserId));
     }
 
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark)
     {
-        var created = await _bookmarkService.AddBookmarkAsync(DefaultUserId, bookmark.LineOfDutyCaseId);
+        var created = await _bookmarkService.AddBookmarkAsync(UserId, bookmark.LineOfDutyCaseId);
         return Created(created);
     }
 
     [HttpDelete("odata/CaseBookmarks/DeleteByCaseId")]
     public async Task<IActionResult> DeleteByCaseId([FromQuery] int caseId)
     {
-        var removed = await _bookmarkService.RemoveBookmarkAsync(DefaultUserId, caseId);
+        var removed = await _bookmarkService.RemoveBookmarkAsync(UserId, caseId);
         if (!removed)
         {
             return NotFound();
@@ -50,7 +52,7 @@ public class CaseBookmarksController : ODataController
     [HttpGet("odata/CaseBookmarks/IsBookmarked(caseId={caseId})")]
     public async Task<IActionResult> IsBookmarked([FromRoute] int caseId)
     {
-        var result = await _bookmarkService.IsBookmarkedAsync(DefaultUserId, caseId);
+        var result = await _bookmarkService.IsBookmarkedAsync(UserId, caseId);
         return Ok(new { Value = result });
     }
 }

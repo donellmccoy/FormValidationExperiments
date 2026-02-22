@@ -1,0 +1,91 @@
+/* ── Wrapper ── */
+
+.login-wrapper {
+    width: 100%;
+    padding: 1rem;
+}
+
+/* ── Row card ── */
+
+::deep .login-row {
+    max-width: 900px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+/* ── Left branding panel ── */
+
+.branding-panel {
+    background: linear-gradient(160deg, #1b3a5c 0%, #0f2440 100%) !important;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.branding-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+::deep .branding-icon .rzi {
+    font-size: 4rem;
+    color: #7BAAE0;
+}
+
+.branding-divider {
+    width: 40px;
+    height: 2px;
+    background: rgba(123, 170, 224, 0.4);
+    margin: 1.5rem auto;
+    border-radius: 1px;
+}
+
+.branding-body {
+    opacity: 0.8;
+}
+
+.branding-footer {
+    opacity: 0.6;
+    letter-spacing: 2px !important;
+}
+
+/* ── Right login panel ── */
+
+.login-panel {
+    background: var(--rz-base-background-color) !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ── RadzenLogin overrides ── */
+
+::deep .rz-login {
+    width: 100%;
+    max-width: 100%;
+}
+
+::deep .rz-login .rz-form-field {
+    width: 100%;
+}
+
+::deep .rz-login .rz-button {
+    width: 100%;
+    justify-content: center;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+    .branding-panel {
+        padding: 2rem 1rem !important;
+    }
+
+    .login-panel {
+        padding: 2rem 1rem !important;
+    }
+}

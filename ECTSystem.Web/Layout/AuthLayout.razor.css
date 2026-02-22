@@ -1,0 +1,7 @@
+.auth-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a1628 0%, #1a2a45 50%, #0d1f3c 100%);
+}

@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.ModelBuilder;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Persistence.Models;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
@@ -15,6 +17,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Entity Framework Core — SQL Server
 builder.Services.AddDbContextFactory<EctDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("EctDatabase")));
+
+// ASP.NET Core Identity with Bearer token authentication
+builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+        options.Password.RequireDigit = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
+    })
+    .AddEntityFrameworkStores<EctDbContext>();
+
+builder.Services.AddAuthorization();
 
 // Logging
 builder.Services.AddSingleton<IApiLogService, ApiLogService>();
@@ -74,7 +89,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("https://localhost:7240", "http://localhost:5101")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -98,6 +114,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("BlazorClient");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Identity API endpoints: /register, /login, /refresh, /confirmEmail, etc.
+app.MapIdentityApi<ApplicationUser>();
+
 app.MapControllers();
 
 await app.RunAsync();

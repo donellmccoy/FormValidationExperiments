@@ -1,0 +1,35 @@
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <div class="login-display">
+            <RadzenIcon Icon="account_circle" class="user-icon" />
+            <span class="user-email">@context.User.Identity?.Name</span>
+            <RadzenButton Text="Logout"
+                          Icon="logout"
+                          ButtonStyle="ButtonStyle.Light"
+                          Variant="Variant.Text"
+                          Size="ButtonSize.Small"
+                          Click="@OnLogout" />
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="login-display">
+            <RadzenButton Text="Sign In"
+                          Icon="login"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Variant="Variant.Text"
+                          Size="ButtonSize.Small"
+                          Click="@(() => Navigation.NavigateTo("/login"))" />
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private async Task OnLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}
