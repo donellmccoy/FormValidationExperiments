@@ -1,15 +1,13 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using ECTSystem.Persistence.Models;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Persistence.Data;
 
 /// <summary>
-/// Entity Framework Core database context for the ECT (LOD) application.
-/// Configured for SQL Server with ASP.NET Core Identity.
+/// Entity Framework Core database context for the ECT (LOD) application domain model.
+/// Identity is handled separately by <see cref="EctIdentityDbContext"/>.
 /// </summary>
-public class EctDbContext : IdentityDbContext<ApplicationUser>
+public class EctDbContext : DbContext
 {
     public string CurrentUserId { get; set; } = "System";
 

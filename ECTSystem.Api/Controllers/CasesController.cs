@@ -57,18 +57,26 @@ public class CasesController : ODataController
     public async Task<IActionResult> GetBookmarked(CancellationToken ct = default)
     {
         _log.QueryingCases();
-        var query = _bookmarkService.GetBookmarkedCasesQueryable(UserId);
 
         var odataContext = new ODataQueryContext(_edmModel, typeof(LineOfDutyCase), new Microsoft.OData.UriParser.ODataPath());
         var options = new ODataQueryOptions<LineOfDutyCase>(odataContext, Request);
-
         bool countRequested = options.Count?.Value == true;
-        int? totalCount = countRequested ? query.Count() : null;
 
-        var applied = (IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true });
-        var items = await applied.ToListAsync(ct);
+        try
+        {
+            var (items, totalCount) = await _bookmarkService.GetBookmarkedCasesAsync(
+                UserId,
+                q => (IQueryable<LineOfDutyCase>)options.ApplyTo(q, new ODataQuerySettings { EnsureStableOrdering = true }),
+                countRequested,
+                ct);
 
-        return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
+            return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Client disconnected — return 499 (nginx convention) or just empty 200 to avoid 500 noise
+            return StatusCode(499);
+        }
     }
 
     private sealed class BookmarkedCasesResponse

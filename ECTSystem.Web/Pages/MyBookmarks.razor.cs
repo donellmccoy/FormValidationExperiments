@@ -7,7 +7,7 @@ using Radzen.Blazor;
 
 namespace ECTSystem.Web.Pages;
 
-public partial class MyBookmarks : ComponentBase
+public partial class MyBookmarks : ComponentBase, IDisposable
 {
     [Inject]
     private IDataService CaseService { get; set; }
@@ -31,14 +31,16 @@ public partial class MyBookmarks : ComponentBase
     private bool _isLoading;
     private bool _hasBookmarks;
     private LoadDataArgs _lastArgs;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData(new LoadDataArgs { Skip = 0, Top = 10 });
-    }
+    private CancellationTokenSource _loadCts = new();
 
     private async Task LoadData(LoadDataArgs args)
     {
+        // Cancel any previous in-flight request
+        await _loadCts.CancelAsync();
+        _loadCts.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
         _lastArgs = args;
         _isLoading = true;
 
@@ -49,7 +51,8 @@ public partial class MyBookmarks : ComponentBase
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
-                count: true);
+                count: true,
+                cancellationToken: ct);
 
             _bookmarks = result.Value.AsODataEnumerable();
             _count = result.Count;
@@ -58,6 +61,10 @@ public partial class MyBookmarks : ComponentBase
             {
                 _hasBookmarks = true;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Request was superseded by a newer one or component disposed — ignore
         }
         catch (Exception ex)
         {
@@ -107,5 +114,11 @@ public partial class MyBookmarks : ComponentBase
     private static string FormatEnum<T>(T value) where T : Enum
     {
         return Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1");
+    }
+
+    public void Dispose()
+    {
+        _loadCts.Cancel();
+        _loadCts.Dispose();
     }
 }

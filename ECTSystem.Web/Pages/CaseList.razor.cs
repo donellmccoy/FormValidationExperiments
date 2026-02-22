@@ -7,7 +7,7 @@ using Radzen.Blazor;
 
 namespace ECTSystem.Web.Pages;
 
-public partial class CaseList : ComponentBase
+public partial class CaseList : ComponentBase, IDisposable
 {
     [Inject]
     private IDataService CaseService { get; set; }
@@ -29,14 +29,16 @@ public partial class CaseList : ComponentBase
     private HashSet<int> bookmarkedCaseIds = [];
     private int count;
     private bool isLoading;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData(new LoadDataArgs { Skip = 0, Top = 10 });
-    }
+    private CancellationTokenSource _loadCts = new();
 
     private async Task LoadData(LoadDataArgs args)
     {
+        // Cancel any previous in-flight request
+        await _loadCts.CancelAsync();
+        _loadCts.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
         isLoading = true;
 
         try
@@ -46,12 +48,17 @@ public partial class CaseList : ComponentBase
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
-                count: true);
+                count: true,
+                cancellationToken: ct);
 
             cases = result.Value.AsODataEnumerable();
             count = result.Count;
 
-            await LoadBookmarkStates();
+            await LoadBookmarkStates(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Request was superseded by a newer one or component disposed — ignore
         }
         catch (Exception ex)
         {
@@ -65,7 +72,7 @@ public partial class CaseList : ComponentBase
         }
     }
 
-    private async Task LoadBookmarkStates()
+    private async Task LoadBookmarkStates(CancellationToken ct = default)
     {
         bookmarkedCaseIds.Clear();
 
@@ -73,7 +80,8 @@ public partial class CaseList : ComponentBase
 
         foreach (var lodCase in cases)
         {
-            if (await CaseService.IsBookmarkedAsync(lodCase.Id))
+            ct.ThrowIfCancellationRequested();
+            if (await CaseService.IsBookmarkedAsync(lodCase.Id, ct))
             {
                 bookmarkedCaseIds.Add(lodCase.Id);
             }
@@ -143,5 +151,11 @@ public partial class CaseList : ComponentBase
 
                 await BookmarkCountService.RefreshAsync();
             });
+    }
+
+    public void Dispose()
+    {
+        _loadCts.Cancel();
+        _loadCts.Dispose();
     }
 }

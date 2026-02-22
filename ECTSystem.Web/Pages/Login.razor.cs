@@ -1,6 +1,5 @@
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
-using Radzen;
 
 namespace ECTSystem.Web.Pages;
 
@@ -9,15 +8,14 @@ public partial class Login
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
-    private string username = string.Empty;
-    private string password = string.Empty;
+    private LoginFormModel formModel = new();
     private string errorMessage;
 
-    private async Task OnLogin(LoginArgs args)
+    private async Task OnSubmit()
     {
         errorMessage = null;
 
-        var result = await AuthService.LoginAsync(args.Username, args.Password);
+        var result = await AuthService.LoginAsync(formModel.Username, formModel.Password);
 
         if (result.Succeeded)
         {
@@ -29,8 +27,9 @@ public partial class Login
         }
     }
 
-    private void OnRegister()
+    private class LoginFormModel
     {
-        Navigation.NavigateTo("/register");
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }

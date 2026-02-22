@@ -20,27 +20,33 @@ public class JwtAuthStateProvider : AuthenticationStateProvider
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            return Unauthenticated();
         }
 
-        var claims = ParseClaimsFromJwt(token);
-        if (claims.Identity is not ClaimsIdentity { IsAuthenticated: true })
+        // JWT tokens start with "eyJ" — parse claims from the payload
+        if (token.StartsWith("eyJ", StringComparison.Ordinal))
         {
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-        }
-
-        // Check expiration
-        var exp = claims.FindFirst("exp")?.Value;
-        if (exp is not null && long.TryParse(exp, out var expSeconds))
-        {
-            var expDate = DateTimeOffset.FromUnixTimeSeconds(expSeconds);
-            if (expDate <= DateTimeOffset.UtcNow)
+            var principal = ParseClaimsFromJwt(token);
+            if (principal.Identity is not ClaimsIdentity { IsAuthenticated: true })
             {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return Unauthenticated();
             }
+
+            var exp = principal.FindFirst("exp")?.Value;
+            if (exp is not null && long.TryParse(exp, out var expSeconds))
+            {
+                if (DateTimeOffset.FromUnixTimeSeconds(expSeconds) <= DateTimeOffset.UtcNow)
+                {
+                    return Unauthenticated();
+                }
+            }
+
+            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(principal.Claims, "jwt")));
         }
 
-        var identity = new ClaimsIdentity(claims.Claims, "jwt");
+        // Opaque bearer token (ASP.NET Core Identity Data Protection token) —
+        // validated server-side only. Treat as authenticated if present.
+        var identity = new ClaimsIdentity("Bearer");
         return new AuthenticationState(new ClaimsPrincipal(identity));
     }
 
@@ -48,6 +54,9 @@ public class JwtAuthStateProvider : AuthenticationStateProvider
     {
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
+
+    private static AuthenticationState Unauthenticated() =>
+        new(new ClaimsPrincipal(new ClaimsIdentity()));
 
     private static ClaimsPrincipal ParseClaimsFromJwt(string jwt)
     {

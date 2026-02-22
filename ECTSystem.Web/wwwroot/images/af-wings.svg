@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 460" fill="rgba(255,255,255,0.12)">
+  <!-- USAF Hap Arnold Wings Symbol -->
+
+  <!-- Five-pointed star -->
+  <polygon points="256,144 267,175 300,176 273,196 283,227 256,208 229,227 239,196 212,176 245,175"/>
+
+  <!-- Circle ring around star -->
+  <circle cx="256" cy="190" r="48" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
+
+  <!-- Right Wing -->
+  <!-- Outer feather -->
+  <path d="M 292,168 C 348,118 430,54 492,20 C 432,56 350,124 292,180 Z"/>
+  <!-- Middle feather -->
+  <path d="M 294,188 C 346,146 414,94 462,58 C 416,96 348,152 294,200 Z"/>
+  <!-- Inner feather -->
+  <path d="M 298,208 C 336,186 382,156 422,122 C 384,158 338,190 298,218 Z"/>
+
+  <!-- Left Wing -->
+  <!-- Outer feather -->
+  <path d="M 220,168 C 164,118 82,54 20,20 C 80,56 162,124 220,180 Z"/>
+  <!-- Middle feather -->
+  <path d="M 218,188 C 166,146 98,94 50,58 C 96,96 164,152 218,200 Z"/>
+  <!-- Inner feather -->
+  <path d="M 214,208 C 176,186 130,156 90,122 C 128,158 174,190 214,218 Z"/>
+
+  <!-- Contrails -->
+  <polygon points="250,238 246,242 228,418 232,416"/>
+  <polygon points="262,238 266,242 284,418 280,416"/>
+
+  <!-- Bottom diamond -->
+  <polygon points="256,396 242,420 256,444 270,420"/>
+</svg>

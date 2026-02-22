@@ -15,8 +15,15 @@ using ECTSystem.Shared.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Entity Framework Core — SQL Server
+var connectionString = builder.Configuration.GetConnectionString("EctDatabase");
+
 builder.Services.AddDbContextFactory<EctDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("EctDatabase")));
+    options.UseSqlServer(connectionString));
+
+// Dedicated Identity DbContext — shares the same database but keeps Identity
+// concerns separate from the application domain model.
+builder.Services.AddDbContext<EctIdentityDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
 // ASP.NET Core Identity with Bearer token authentication
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
@@ -27,7 +34,7 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequiredLength = 6;
     })
-    .AddEntityFrameworkStores<EctDbContext>();
+    .AddEntityFrameworkStores<EctIdentityDbContext>();
 
 builder.Services.AddAuthorization();
 
@@ -104,6 +111,10 @@ using (var scope = app.Services.CreateScope())
     var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<EctDbContext>>();
     await using var context = await contextFactory.CreateDbContextAsync();
     await context.Database.MigrateAsync();
+
+    var identityContext = scope.ServiceProvider.GetRequiredService<EctIdentityDbContext>();
+    await identityContext.Database.MigrateAsync();
+
     await EctDbSeeder.SeedAsync(contextFactory);
 }
 
@@ -120,6 +131,11 @@ app.UseAuthorization();
 
 // Identity API endpoints: /register, /login, /refresh, /confirmEmail, etc.
 app.MapIdentityApi<ApplicationUser>();
+
+// Lightweight user-info endpoint for the Blazor WASM client
+app.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) =>
+    Results.Ok(new { user.Identity!.Name }))
+    .RequireAuthorization();
 
 app.MapControllers();
 

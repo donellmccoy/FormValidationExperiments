@@ -1,91 +1,195 @@
-/* ── Wrapper ── */
+/* ── Card container ── */
 
-.login-wrapper {
-    width: 100%;
-    padding: 1rem;
-}
-
-/* ── Row card ── */
-
-::deep .login-row {
+.login-card {
+    display: flex;
     max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
+    min-height: 480px;
     overflow: hidden;
+    border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Left branding panel ── */
 
 .branding-panel {
-    background: linear-gradient(160deg, #1b3a5c 0%, #0f2440 100%) !important;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.branding-content {
+    flex: 1;
+    background: linear-gradient(160deg, #1b3a5c 0%, #0f2440 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 3rem 2rem;
 }
 
-::deep .branding-icon .rzi {
-    font-size: 4rem;
-    color: #7BAAE0;
+.branding-watermark {
+    position: absolute;
+    inset: -10%;
+    background: url('/images/af-wings.svg') no-repeat center center;
+    background-size: 90%;
+    opacity: 1;
+    pointer-events: none;
 }
 
-.branding-divider {
-    width: 40px;
-    height: 2px;
-    background: rgba(123, 170, 224, 0.4);
-    margin: 1.5rem auto;
-    border-radius: 1px;
+.branding-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
 }
 
-.branding-body {
-    opacity: 0.8;
+.branding-title {
+    color: #fff;
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.5px;
+}
+
+.branding-subtitle {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin: 0;
+    opacity: 0.9;
 }
 
 .branding-footer {
-    opacity: 0.6;
-    letter-spacing: 2px !important;
+    position: relative;
+    z-index: 1;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    margin: 0;
+    margin-top: auto;
 }
 
 /* ── Right login panel ── */
 
 .login-panel {
-    background: var(--rz-base-background-color) !important;
-    height: 100%;
+    flex: 1;
+    background: #fff;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
+    padding: 3rem 2.5rem;
 }
 
-/* ── RadzenLogin overrides ── */
-
-::deep .rz-login {
+.form-fields {
     width: 100%;
-    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-::deep .rz-login .rz-form-field {
+::deep .field-full {
     width: 100%;
 }
 
-::deep .rz-login .rz-button {
+::deep .field-full .rz-textbox,
+::deep .field-full .rz-password {
+    width: 100%;
+}
+
+::deep .field-full .rzi {
+    color: #666;
+}
+
+::deep .login-button {
     width: 100%;
     justify-content: center;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    padding: 0.75rem;
+    background-color: #1b3a5c !important;
+    border-color: #1b3a5c !important;
+}
+
+/* ── Links row ── */
+
+.login-links {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+}
+
+.link-divider {
+    color: #999;
+}
+
+::deep .login-links .rz-link {
+    color: #1b3a5c;
+}
+
+/* Override Radzen dark theme for light login panel */
+
+::deep .login-panel .rz-form-field {
+    --rz-input-border: #ccc;
+    --rz-form-field-border-color: #ccc;
+    --rz-input-background-color: #fff;
+    --rz-input-color: #333;
+    --rz-form-field-label-color: #666;
+    --rz-placeholder-color: #999;
+    --rz-input-focus-border-color: #1b3a5c;
+    --rz-input-hover-border-color: #999;
+}
+
+::deep .login-panel .rz-form-field .rz-placeholder {
+    color: #999 !important;
+}
+
+::deep .login-panel .rz-textbox,
+::deep .login-panel .rz-password {
+    color: #333 !important;
+    background: #fff !important;
+}
+
+::deep .login-panel .rz-form-field-label {
+    color: #666 !important;
+}
+
+::deep .login-panel .rz-form-field .rzi {
+    color: #888 !important;
+}
+
+::deep .login-panel .rz-form-field-content {
+    background: #fff !important;
+    border-color: #ccc !important;
+}
+
+::deep .login-panel .rz-form-field.rz-variant-outlined .rz-form-field-content {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+}
+
+::deep .login-panel input::placeholder {
+    color: #999 !important;
+    opacity: 1 !important;
+}
+
+::deep .login-panel .rz-message-error,
+::deep .login-panel .rz-message {
+    color: #c00;
 }
 
 /* ── Responsive ── */
 
 @media (max-width: 768px) {
+    .login-card {
+        flex-direction: column;
+        max-width: 440px;
+    }
+
     .branding-panel {
-        padding: 2rem 1rem !important;
+        min-height: 200px;
+        padding: 2rem 1rem;
     }
 
     .login-panel {
-        padding: 2rem 1rem !important;
+        padding: 2rem 1.5rem;
     }
 }

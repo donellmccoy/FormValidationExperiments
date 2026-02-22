@@ -15,16 +15,23 @@ public class DataService :
     ILineOfDutyAuthorityService,
     ILineOfDutyTimelineService,
     ILineOfDutyNotificationService,
-    ICaseBookmarkService
+    ICaseBookmarkService,
+    IDisposable
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    // Long-lived context for IQueryable-based OData queries (disposed by DI scope)
+    // Long-lived context for IQueryable-based OData queries — disposed via IDisposable
+    // when the DI scope ends, returning the connection to the pool.
     private EctDbContext _queryContext;
 
     public DataService(IDbContextFactory<EctDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
+    }
+
+    public void Dispose()
+    {
+        _queryContext?.Dispose();
     }
 
     // ──────────────────────────── Case CRUD Operations ────────────────────────────
@@ -33,7 +40,7 @@ public class DataService :
     {
         // Create a long-lived context — OData needs the query to remain open
         // until the response is serialized. The context will be disposed by the DI scope.
-        _queryContext = _contextFactory.CreateDbContext();
+        _queryContext ??= _contextFactory.CreateDbContext();
         return _queryContext.Cases.AsNoTracking();
     }
 
@@ -403,6 +410,22 @@ public class DataService :
         return _queryContext.Cases
             .AsNoTracking()
             .Where(c => _queryContext.CaseBookmarks.Any(b => b.UserId == userId && b.LineOfDutyCaseId == c.Id));
+    }
+
+    public async Task<(List<LineOfDutyCase> Items, int? TotalCount)> GetBookmarkedCasesAsync(
+        string userId,
+        Func<IQueryable<LineOfDutyCase>, IQueryable<LineOfDutyCase>> applyQuery,
+        bool includeCount,
+        CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var query = context.Cases
+            .AsNoTracking()
+            .Where(c => context.CaseBookmarks.Any(b => b.UserId == userId && b.LineOfDutyCaseId == c.Id));
+
+        int? totalCount = includeCount ? await query.CountAsync(ct) : null;
+        var items = await applyQuery(query).ToListAsync(ct);
+        return (items, totalCount);
     }
 
     public async Task<CaseBookmark> AddBookmarkAsync(string userId, int caseId, CancellationToken ct = default)
