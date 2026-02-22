@@ -27,17 +27,19 @@ builder.Services.AddScoped<JwtAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// HttpClient configured to call the Web API (with auth header)
+// HttpClient configured to call the Web API (with auth header + auto-refresh)
+var apiBaseAddress = new Uri("https://localhost:7173");
 builder.Services.AddScoped(sp =>
 {
     var handler = new AuthorizationMessageHandler(
-        sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>())
+        sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>(),
+        apiBaseAddress)
     {
         InnerHandler = new HttpClientHandler()
     };
     return new HttpClient(handler)
     {
-        BaseAddress = new Uri("https://localhost:7173")
+        BaseAddress = apiBaseAddress
     };
 });
 
@@ -48,7 +50,8 @@ builder.Services.AddScoped<BookmarkCountService>();
 builder.Services.AddScoped(sp =>
 {
     var odataHandler = new AuthorizationMessageHandler(
-        sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>())
+        sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>(),
+        apiBaseAddress)
     {
         InnerHandler = new HttpClientHandler()
     };
