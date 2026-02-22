@@ -233,6 +233,9 @@ public partial class EditCase : ComponentBase, IDisposable
             transition.NotifyDetail);
     }
 
+    private Task OnMemberForwardClick(RadzenSplitButtonItem item) =>
+        HandleWorkflowActionAsync(LineOfDutyWorkflowState.MemberInformationEntry, item);
+
     private Task OnMedTechForwardClick(RadzenSplitButtonItem item) =>
         HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalTechnicianReview, item);
 

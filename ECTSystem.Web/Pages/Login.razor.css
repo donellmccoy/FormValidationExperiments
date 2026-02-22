@@ -7,7 +7,7 @@
     min-height: 480px;
     overflow: hidden;
     border-radius: 6px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Left branding panel ── */
@@ -69,7 +69,7 @@
 
 .login-panel {
     flex: 1;
-    background: #fff;
+    background: #1e1e1e;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -93,18 +93,12 @@
     width: 100%;
 }
 
-::deep .field-full .rzi {
-    color: #666;
-}
-
 ::deep .login-button {
     width: 100%;
     justify-content: center;
     margin-top: 0.5rem;
     font-size: 1rem;
     padding: 0.75rem;
-    background-color: #1b3a5c !important;
-    border-color: #1b3a5c !important;
 }
 
 /* ── Links row ── */
@@ -118,62 +112,7 @@
 }
 
 .link-divider {
-    color: #999;
-}
-
-::deep .login-links .rz-link {
-    color: #1b3a5c;
-}
-
-/* Override Radzen dark theme for light login panel */
-
-::deep .login-panel .rz-form-field {
-    --rz-input-border: #ccc;
-    --rz-form-field-border-color: #ccc;
-    --rz-input-background-color: #fff;
-    --rz-input-color: #333;
-    --rz-form-field-label-color: #666;
-    --rz-placeholder-color: #999;
-    --rz-input-focus-border-color: #1b3a5c;
-    --rz-input-hover-border-color: #999;
-}
-
-::deep .login-panel .rz-form-field .rz-placeholder {
-    color: #999 !important;
-}
-
-::deep .login-panel .rz-textbox,
-::deep .login-panel .rz-password {
-    color: #333 !important;
-    background: #fff !important;
-}
-
-::deep .login-panel .rz-form-field-label {
-    color: #666 !important;
-}
-
-::deep .login-panel .rz-form-field .rzi {
-    color: #888 !important;
-}
-
-::deep .login-panel .rz-form-field-content {
-    background: #fff !important;
-    border-color: #ccc !important;
-}
-
-::deep .login-panel .rz-form-field.rz-variant-outlined .rz-form-field-content {
-    border: 1px solid #ccc !important;
-    background: #fff !important;
-}
-
-::deep .login-panel input::placeholder {
-    color: #999 !important;
-    opacity: 1 !important;
-}
-
-::deep .login-panel .rz-message-error,
-::deep .login-panel .rz-message {
-    color: #c00;
+    color: rgba(255, 255, 255, 0.3);
 }
 
 /* ── Responsive ── */

@@ -107,6 +107,14 @@ public partial class EditCase
     private static readonly Dictionary<(LineOfDutyWorkflowState Source, string Action), WorkflowTransition> SourceTransitions = new()
     {
         // Default forward transitions (main button click, item?.Value is null)
+        [(LineOfDutyWorkflowState.MemberInformationEntry, "default")] = new(
+            LineOfDutyWorkflowState.MedicalTechnicianReview,
+            "Are you sure you want to forward this case to the Medical Technician?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Medical Technician...",
+            NotificationSeverity.Success, "Forwarded to Medical Technician",
+            "Case has been forwarded to the Medical Technician for review."),
+
         [(LineOfDutyWorkflowState.MedicalTechnicianReview, "default")] = new(
             LineOfDutyWorkflowState.MedicalOfficerReview,
             "Are you sure you want to forward this case to the Medical Officer?",

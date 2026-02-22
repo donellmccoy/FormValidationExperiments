@@ -310,15 +310,30 @@ else
                                         </RadzenFieldset>
 
                                         @* ═══ Form Actions ═══ *@
-                                        @if (IsNewCase)
-                                        {
-                                            <div class="form-actions rz-mt-4">
-                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
-                                                    <RadzenButton Click="@OnStartLod" Text="Start LOD" Icon="play_arrow"
-                                                                  Variant="Variant.Flat" ButtonStyle="ButtonStyle.Primary" />
-                                                </RadzenStack>
-                                            </div>
-                                        }
+                                        <div class="form-actions rz-mt-2">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                                <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
+                                                                   Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
+                                                                   Disabled="true">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
+                                            </RadzenStack>
+                                        </div>
+
+                                        @* ═══ Routing ═══ *@
+                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined"/>
+                                                <RadzenSplitButton Click="@OnMemberForwardClick" Text="Forward to Medical Technician" Icon="send"
+                                                                   ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
@@ -656,14 +671,6 @@ else
                                             <RadzenTextArea @bind-Value="_medicalFormModel.MedicalRecommendation" Rows="5" class="rz-w-100" />
                                         </RadzenFormField>
                                     </RadzenFieldset>
-
-                                    @* ═══ Documents Accordion ═══ *@
-                                    <RadzenAccordion class="rz-mt-4">
-                                        <Items>
-                                            <RadzenAccordionItem Text="Documents" Icon="description">
-                                            </RadzenAccordionItem>
-                                        </Items>
-                                    </RadzenAccordion>
 
                                     @* ═══ Form Actions ═══ *@
                                     <div class="form-actions rz-mt-2">
