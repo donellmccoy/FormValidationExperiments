@@ -50,6 +50,7 @@ builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredServ
 builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<DataService>());
 builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<DataService>());
 builder.Services.AddScoped<ICaseBookmarkService>(sp => sp.GetRequiredService<DataService>());
+builder.Services.AddScoped<IWorkflowStepHistoryService>(sp => sp.GetRequiredService<DataService>());
 
 // OData Entity Data Model
 var odataBuilder = new ODataConventionModelBuilder();
@@ -64,6 +65,7 @@ odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
 odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
 odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
+odataBuilder.EntitySet<WorkflowStepHistory>("WorkflowStepHistories");
 var edmModel = odataBuilder.GetEdmModel();
 builder.Services.AddSingleton<Microsoft.OData.Edm.IEdmModel>(edmModel);
 

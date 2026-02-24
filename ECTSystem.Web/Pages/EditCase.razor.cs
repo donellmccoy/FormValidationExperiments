@@ -286,7 +286,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
     /// <summary>
     /// Syncs the workflow sidebar step statuses and <see cref="_currentStepIndex"/> to match
-    /// <paramref name="state"/>. Does NOT persist the state change to the database.
+    /// <paramref name="state"/>. Uses WorkflowStepHistory entries as the primary source;
+    /// falls back to positional TimelineStep data for cases predating the history feature.
+    /// Does NOT persist the state change to the database.
     /// </summary>
     private void ApplyWorkflowState(LineOfDutyWorkflowState state)
     {
@@ -295,51 +297,64 @@ public partial class EditCase : ComponentBase, IDisposable
         _currentStepIndex = stateInt - 1;
         _selectedTabIndex = GetTabIndexForState((LineOfDutyWorkflowState)stateInt);
 
-        // Index TimelineSteps by position (1-based) for fast lookup
+        // Primary source: latest history entry per WorkflowState (highest Id = most recent)
+        var historyByState = _lodCase?.WorkflowStepHistories?
+            .GroupBy(h => h.WorkflowState)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.Id).First())
+            ?? new Dictionary<LineOfDutyWorkflowState, WorkflowStepHistory>();
+
+        // Fallback: positional TimelineStep data (backward compatibility with seeded cases)
         var timelineByIndex = _lodCase?.TimelineSteps
             .Select((ts, i) => (Index: i + 1, Step: ts))
-            .ToDictionary(x => x.Index, x => x.Step);
+            .ToDictionary(x => x.Index, x => x.Step)
+            ?? new Dictionary<int, TimelineStep>();
 
         foreach (var step in _workflowSteps)
         {
-            // Pull matching timeline data when available
-            var timeline = timelineByIndex?.GetValueOrDefault(step.Number);
-
-            if (step.Number < stateInt)
+            if (historyByState.TryGetValue(step.WorkflowState, out var history))
             {
-                step.Status = WorkflowStepStatus.Completed;
-                if (string.IsNullOrEmpty(step.StatusText))
-                    step.StatusText = "Completed";
-
-                step.StartDate = timeline?.StartDate;
-                step.CompletedDate = timeline?.CompletionDate;
-                step.CompletedBy = timeline?.ModifiedBy ?? string.Empty;
-                step.SignedDate = timeline?.SignedDate;
-                step.SignedBy = timeline?.SignedBy ?? string.Empty;
-
-                if (string.IsNullOrEmpty(step.CompletionDate))
-                    step.CompletionDate = step.CompletedDate?.ToString("MM/dd/yyyy h:mm tt")
-                        ?? DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
-            }
-            else if (step.Number == stateInt)
-            {
-                step.Status = WorkflowStepStatus.InProgress;
-                step.StartDate = timeline?.StartDate;
-                step.CompletedDate = null;
-                step.CompletedBy = string.Empty;
-                step.SignedDate = timeline?.SignedDate;
-                step.SignedBy = timeline?.SignedBy ?? string.Empty;
+                step.Status         = history.Status;
+                step.StartDate      = history.StartDate;
+                step.SignedDate     = history.SignedDate;
+                step.SignedBy       = history.SignedBy ?? string.Empty;
+                step.CompletedBy    = history.PerformedBy;
+                step.StatusText     = history.Status == WorkflowStepStatus.Completed ? "Completed" : string.Empty;
+                step.CompletedDate  = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt : null;
+                step.CompletionDate = history.Status == WorkflowStepStatus.Completed
+                    ? history.OccurredAt.ToString("MM/dd/yyyy h:mm tt")
+                    : string.Empty;
             }
             else
             {
-                step.Status = WorkflowStepStatus.Pending;
-                step.StatusText = string.Empty;
-                step.CompletionDate = string.Empty;
-                step.StartDate = null;
-                step.CompletedDate = null;
-                step.CompletedBy = string.Empty;
-                step.SignedDate = null;
-                step.SignedBy = string.Empty;
+                // No history — fall back to positional timeline data
+                var timeline = timelineByIndex.GetValueOrDefault(step.Number);
+
+                if (step.Number < stateInt)
+                {
+                    step.Status = WorkflowStepStatus.Completed;
+                    step.StatusText = "Completed";
+                    if (string.IsNullOrEmpty(step.CompletionDate))
+                        step.CompletionDate = timeline?.CompletionDate?.ToString("MM/dd/yyyy h:mm tt")
+                            ?? DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
+                }
+                else if (step.Number == stateInt)
+                {
+                    step.Status = WorkflowStepStatus.InProgress;
+                    step.StatusText = string.Empty;
+                    step.CompletionDate = string.Empty;
+                }
+                else
+                {
+                    step.Status = WorkflowStepStatus.Pending;
+                    step.StatusText = string.Empty;
+                    step.CompletionDate = string.Empty;
+                }
+
+                step.StartDate      = timeline?.StartDate;
+                step.SignedDate     = timeline?.SignedDate;
+                step.SignedBy       = timeline?.SignedBy ?? string.Empty;
+                step.CompletedDate  = timeline?.CompletionDate;
+                step.CompletedBy    = timeline?.ModifiedBy ?? string.Empty;
             }
         }
     }
@@ -404,8 +419,42 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
+            var sourceState  = _lodCase.WorkflowState;
+            var isForward    = (int)targetState > (int)sourceState;
+            var now          = DateTime.UtcNow;
+            var outgoingStep = _workflowSteps.FirstOrDefault(s => s.WorkflowState == sourceState);
+
             _lodCase.WorkflowState = targetState;
             await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
+
+            // Record outgoing step history snapshot
+            if (outgoingStep is not null)
+            {
+                await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+                {
+                    LineOfDutyCaseId = _lodCase.Id,
+                    WorkflowState    = sourceState,
+                    Action           = isForward ? TransitionAction.Completed : TransitionAction.Returned,
+                    Status           = isForward ? WorkflowStepStatus.Completed : WorkflowStepStatus.Pending,
+                    StartDate        = outgoingStep.StartDate,
+                    SignedDate       = isForward ? null : outgoingStep.SignedDate,
+                    SignedBy         = isForward ? null : (string.IsNullOrEmpty(outgoingStep.SignedBy) ? null : outgoingStep.SignedBy),
+                    OccurredAt       = now,
+                    PerformedBy      = string.Empty
+                }, _cts.Token);
+            }
+
+            // Record incoming step history snapshot (fresh start)
+            await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            {
+                LineOfDutyCaseId = _lodCase.Id,
+                WorkflowState    = targetState,
+                Action           = TransitionAction.Entered,
+                Status           = WorkflowStepStatus.InProgress,
+                StartDate        = now,
+                OccurredAt       = now,
+                PerformedBy      = string.Empty
+            }, _cts.Token);
 
             // Start the incoming (new current) timeline step
             var targetIndex = (int)targetState - 1;
@@ -419,7 +468,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 }
             }
 
-            // Re-fetch the full case with navigation properties (TimelineSteps, Member, etc.)
+            // Re-fetch the full case including WorkflowStepHistories
             _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
             ApplyWorkflowState(targetState);
             NotificationService.Notify(severity, notifySummary, notifyDetail);
@@ -477,7 +526,24 @@ public partial class EditCase : ComponentBase, IDisposable
             var signed = await CaseService.SignTimelineStepAsync(timelineStep.Id, _cts.Token);
 
             timelineStep.SignedDate = signed.SignedDate;
-            timelineStep.SignedBy = signed.SignedBy;
+            timelineStep.SignedBy   = signed.SignedBy;
+
+            // Record signed history entry so the sidebar shows the SignedDate immediately
+            var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            {
+                LineOfDutyCaseId = _lodCase.Id,
+                WorkflowState    = _lodCase.WorkflowState,
+                Action           = TransitionAction.Signed,
+                Status           = WorkflowStepStatus.InProgress,
+                StartDate        = CurrentStep?.StartDate,
+                SignedDate       = signed.SignedDate,
+                SignedBy         = signed.SignedBy,
+                OccurredAt       = DateTime.UtcNow,
+                PerformedBy      = string.Empty
+            }, _cts.Token);
+
+            _lodCase.WorkflowStepHistories ??= [];
+            _lodCase.WorkflowStepHistories.Add(historyEntry);
 
             ApplyWorkflowState(_lodCase.WorkflowState);
 
@@ -929,6 +995,30 @@ public partial class EditCase : ComponentBase, IDisposable
             // Advance to the first review state and persist
             saved.WorkflowState = LineOfDutyWorkflowState.MedicalTechnicianReview;
             saved = await CaseService.SaveCaseAsync(saved, _cts.Token);
+
+            // Record workflow history: MemberInformationEntry completed, MedicalTechnicianReview entered
+            var startNow = DateTime.UtcNow;
+            await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            {
+                LineOfDutyCaseId = saved.Id,
+                WorkflowState    = LineOfDutyWorkflowState.MemberInformationEntry,
+                Action           = TransitionAction.Completed,
+                Status           = WorkflowStepStatus.Completed,
+                StartDate        = saved.CreatedDate,
+                OccurredAt       = startNow,
+                PerformedBy      = string.Empty
+            }, _cts.Token);
+
+            await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            {
+                LineOfDutyCaseId = saved.Id,
+                WorkflowState    = LineOfDutyWorkflowState.MedicalTechnicianReview,
+                Action           = TransitionAction.Entered,
+                Status           = WorkflowStepStatus.InProgress,
+                StartDate        = startNow,
+                OccurredAt       = startNow,
+                PerformedBy      = string.Empty
+            }, _cts.Token);
 
             _lodCase = saved;
             CaseId = saved.CaseId;

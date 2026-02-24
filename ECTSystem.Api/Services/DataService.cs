@@ -16,6 +16,7 @@ public class DataService :
     ILineOfDutyTimelineService,
     ILineOfDutyNotificationService,
     ICaseBookmarkService,
+    IWorkflowStepHistoryService,
     IDisposable
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
@@ -105,6 +106,7 @@ public class DataService :
             return false;
         }
 
+        context.WorkflowStepHistories.RemoveRange(lodCase.WorkflowStepHistories);
         context.TimelineSteps.RemoveRange(lodCase.TimelineSteps);
         context.Authorities.RemoveRange(lodCase.Authorities);
         context.Documents.RemoveRange(lodCase.Documents);
@@ -147,7 +149,8 @@ public class DataService :
             .Include(c => c.Member)
             .Include(c => c.MEDCON)
             .Include(c => c.INCAP)
-            .Include(c => c.Notifications);
+            .Include(c => c.Notifications)
+            .Include(c => c.WorkflowStepHistories);
     }
 
     private static void SyncAuthorities(
@@ -389,6 +392,27 @@ public class DataService :
         await context.SaveChangesAsync(ct);
 
         return step;
+    }
+
+    // ──────────────────────────── Workflow Step History Operations ────────────────────────────
+
+    public async Task<List<WorkflowStepHistory>> GetHistoryByCaseIdAsync(int caseId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await context.WorkflowStepHistories
+            .AsNoTracking()
+            .Where(h => h.LineOfDutyCaseId == caseId)
+            .OrderBy(h => h.Id)
+            .ToListAsync(ct);
+    }
+
+    public async Task<WorkflowStepHistory> AddHistoryEntryAsync(WorkflowStepHistory entry, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
+        context.WorkflowStepHistories.Add(entry);
+        await context.SaveChangesAsync(ct);
+        return entry;
     }
 
     // ──────────────────────────── Notification Operations ────────────────────────────

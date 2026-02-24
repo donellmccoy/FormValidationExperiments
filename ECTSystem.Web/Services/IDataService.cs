@@ -75,4 +75,9 @@ public interface IDataService
     /// Sets the StartDate on the specified timeline step.
     /// </summary>
     Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Appends a workflow step history snapshot entry for a LOD case.
+    /// </summary>
+    Task<WorkflowStepHistory> AddHistoryEntryAsync(WorkflowStepHistory entry, CancellationToken cancellationToken = default);
 }

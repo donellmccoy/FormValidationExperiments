@@ -102,6 +102,7 @@ public class LineOfDutyCase : AuditableEntity
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
     public List<TimelineStep> TimelineSteps { get; set; } = new List<TimelineStep>();
     public List<LineOfDutyAuthority> Authorities { get; set; } = new List<LineOfDutyAuthority>();
+    public List<WorkflowStepHistory> WorkflowStepHistories { get; set; } = [];
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }

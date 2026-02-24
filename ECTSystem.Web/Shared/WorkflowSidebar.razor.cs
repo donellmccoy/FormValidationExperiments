@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using ECTSystem.Shared.Enums;
 
 namespace ECTSystem.Web.Shared;
 

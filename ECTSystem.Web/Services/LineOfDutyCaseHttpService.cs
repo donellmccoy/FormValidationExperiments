@@ -89,7 +89,7 @@ public class LineOfDutyCaseHttpService : IDataService
             .Expand("Documents,Authorities," +
                     "TimelineSteps($expand=ResponsibleAuthority)," +
                     "Appeals($expand=AppellateAuthority)," +
-                    "Member,MEDCON,INCAP,Notifications");
+                    "Member,MEDCON,INCAP,Notifications,WorkflowStepHistories");
 
         var response = await _client.GetAsync(query, cancellationToken);
 
@@ -164,7 +164,7 @@ public class LineOfDutyCaseHttpService : IDataService
             filter += $" or {componentClauses}";
         }
 
-        var url = $"odata/Members?$filter={filter}&$top=25&$orderby=LastName,FirstName";
+        var url = $"odata/Members?$filter={Uri.EscapeDataString(filter)}&$top=25&$orderby=LastName,FirstName";
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         options.Converters.Add(new JsonStringEnumConverter());
         var response = await _httpClient.GetFromJsonAsync<ODataResponse<Member>>(url, options, cancellationToken);
@@ -303,6 +303,13 @@ public class LineOfDutyCaseHttpService : IDataService
         var response = await _httpClient.PostAsync($"odata/TimelineSteps({stepId})/Start", null, cancellationToken);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
+    }
+
+    public async Task<WorkflowStepHistory> AddHistoryEntryAsync(WorkflowStepHistory entry, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync("odata/WorkflowStepHistories", entry, ODataJsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<WorkflowStepHistory>(ODataJsonOptions, cancellationToken))!;
     }
 
     private class IsBookmarkedResponse
