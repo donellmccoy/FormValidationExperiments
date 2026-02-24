@@ -69,20 +69,7 @@ public static class EctDbSeeder
             var finding = PickRandom(rng, LineOfDutyFinding.InLineOfDuty, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.ExistingPriorToServiceNotAggravated);
             var wasUnderInfluence = rng.Next(100) < 15;
             var isInterim = processType == LineOfDutyProcessType.Informal && rng.Next(100) < 40;
-            var completed = rng.Next(100) < 75;
-            var workflowState = completed
-                ? LineOfDutyWorkflowState.Completed
-                : PickRandom(rng,
-                    LineOfDutyWorkflowState.MedicalTechnicianReview,
-                    LineOfDutyWorkflowState.MedicalOfficerReview,
-                    LineOfDutyWorkflowState.UnitCommanderReview,
-                    LineOfDutyWorkflowState.WingJudgeAdvocateReview,
-                    LineOfDutyWorkflowState.AppointingAuthorityReview,
-                    LineOfDutyWorkflowState.WingCommanderReview,
-                    LineOfDutyWorkflowState.BoardTechnicianReview,
-                    LineOfDutyWorkflowState.BoardMedicalReview,
-                    LineOfDutyWorkflowState.BoardLegalReview,
-                    LineOfDutyWorkflowState.BoardAdminReview);
+            var workflowState = LineOfDutyWorkflowState.MemberInformationEntry;
             var rank = Ranks[rng.Next(Ranks.Length)];
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
             var memberName = $"{firstName} {MiddleInitials[rng.Next(MiddleInitials.Length)]}. {lastName}";
@@ -134,7 +121,7 @@ public static class EctDbSeeder
                     : string.Empty,
 
                 InitiationDate = initiationDate,
-                CompletionDate = completed ? initiationDate.AddDays(rng.Next(30, 150)) : null,
+                CompletionDate = null,
                 TotalTimelineDays = processType == LineOfDutyProcessType.Informal ? 90 : 160,
                 IsInterimLOD = isInterim,
                 InterimLODExpiration = isInterim ? initiationDate.AddDays(90) : null,
@@ -212,23 +199,23 @@ public static class EctDbSeeder
                         StepDescription = "Member Reports Injury/Illness",
                         TimelineDays = rng.Next(1, 3),
                         StartDate = incidentDate,
-                        CompletionDate = incidentDate.AddDays(rng.Next(0, 2)),
+                        CompletionDate = null,
                         IsOptional = false
                     },
                     new()
                     {
                         StepDescription = "Medical Provider Review",
                         TimelineDays = rng.Next(3, 7),
-                        StartDate = initiationDate,
-                        CompletionDate = initiationDate.AddDays(rng.Next(3, 7)),
+                        StartDate = null,
+                        CompletionDate = null,
                         IsOptional = false
                     },
                     new()
                     {
                         StepDescription = "Commander Review and Endorsement",
                         TimelineDays = rng.Next(7, 21),
-                        StartDate = initiationDate.AddDays(7),
-                        CompletionDate = completed ? initiationDate.AddDays(rng.Next(14, 28)) : null,
+                        StartDate = null,
+                        CompletionDate = null,
                         IsOptional = false
                     }
                 },

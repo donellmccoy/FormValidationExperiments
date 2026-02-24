@@ -37,39 +37,25 @@
                     @if (step.SignedDate.HasValue)
                     {
                         <span class="step-date">Signed &mdash; @step.SignedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                        @if (step.StartDate.HasValue)
+                        {
+                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                        }
                     }
-                    else if (step.Status == WorkflowStepStatus.Completed)
+                    else
                     {
-                        <span class="step-date">@step.StatusText &mdash; @step.CompletionDate</span>
-                    }
-                    else if (step.Status == WorkflowStepStatus.InProgress)
-                    {
-                        <span class="step-status in-progress">In Progress</span>
-                    }
-                    @if (step.StartDate.HasValue || step.CompletedDate.HasValue || step.SignedDate.HasValue)
-                    {
-                        <div class="step-details">
-                            @if (step.StartDate.HasValue)
-                            {
-                                <span class="step-detail">Start Date &ndash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
-                            }
-                            @if (step.SignedDate.HasValue)
-                            {
-                                <span class="step-detail">Signed &ndash; @step.SignedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
-                            }
-                            @if (!string.IsNullOrEmpty(step.SignedBy))
-                            {
-                                <span class="step-detail">Signed By &ndash; @step.SignedBy</span>
-                            }
-                            @if (step.CompletedDate.HasValue)
-                            {
-                                <span class="step-detail">Completed &ndash; @step.CompletedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
-                            }
-                            @if (!string.IsNullOrEmpty(step.CompletedBy))
-                            {
-                                <span class="step-detail">Completed By &ndash; @step.CompletedBy</span>
-                            }
-                        </div>
+                        @if (step.Status == WorkflowStepStatus.InProgress)
+                        {
+                            <span class="step-status in-progress">In Progress</span>
+                        }
+                        else if (step.Status == WorkflowStepStatus.Completed)
+                        {
+                            <span class="step-status in-progress">@step.StatusText</span>
+                        }
+                        @if (step.StartDate.HasValue)
+                        {
+                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                        }
                     }
                 </div>
             </div>

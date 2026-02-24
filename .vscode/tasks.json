@@ -1,5 +1,13 @@
 {
   "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "openSimpleBrowser",
+      "type": "command",
+      "command": "simpleBrowser.show",
+      "args": "https://localhost:7240"
+    }
+  ],
   "tasks": [
     {
       "label": "kill",
@@ -98,6 +106,16 @@
       "dependsOn": ["launch-api", "launch-web"],
       "dependsOrder": "sequence",
       "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "open-browser",
+      "type": "shell",
+      "command": "echo '${input:openSimpleBrowser}'",
+      "presentation": {
+        "reveal": "silent",
+        "close": true
+      },
       "problemMatcher": []
     }
   ]
