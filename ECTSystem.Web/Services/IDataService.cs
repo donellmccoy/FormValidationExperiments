@@ -65,4 +65,9 @@ public interface IDataService
     /// Deletes a document from the given case via the Documents API.
     /// </summary>
     Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Digitally signs the specified timeline step.
+    /// </summary>
+    Task<TimelineStep> SignTimelineStepAsync(int stepId, CancellationToken cancellationToken = default);
 }

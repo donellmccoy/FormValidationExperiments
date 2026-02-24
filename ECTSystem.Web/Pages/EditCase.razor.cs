@@ -314,6 +314,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 step.StartDate = timeline?.StartDate;
                 step.CompletedDate = timeline?.CompletionDate;
                 step.CompletedBy = timeline?.ModifiedBy ?? string.Empty;
+                step.SignedDate = timeline?.SignedDate;
+                step.SignedBy = timeline?.SignedBy ?? string.Empty;
 
                 if (string.IsNullOrEmpty(step.CompletionDate))
                     step.CompletionDate = step.CompletedDate?.ToString("MM/dd/yyyy h:mm tt")
@@ -325,6 +327,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 step.StartDate = timeline?.StartDate;
                 step.CompletedDate = null;
                 step.CompletedBy = string.Empty;
+                step.SignedDate = timeline?.SignedDate;
+                step.SignedBy = timeline?.SignedBy ?? string.Empty;
             }
             else
             {
@@ -334,6 +338,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 step.StartDate = null;
                 step.CompletedDate = null;
                 step.CompletedBy = string.Empty;
+                step.SignedDate = null;
+                step.SignedBy = string.Empty;
             }
         }
     }
@@ -438,11 +444,27 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
+        var timelineSteps = _lodCase?.TimelineSteps?.ToList();
+
+        if (timelineSteps is null || _currentStepIndex >= timelineSteps.Count)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "No Timeline Step",
+                "No timeline step found for the current workflow step.");
+            return;
+        }
+
+        var timelineStep = timelineSteps[_currentStepIndex];
+
         await SetBusyAsync("Applying digital signature...");
 
         try
         {
-            // TODO: persist digital signature to database
+            var signed = await CaseService.SignTimelineStepAsync(timelineStep.Id, _cts.Token);
+
+            timelineStep.SignedDate = signed.SignedDate;
+            timelineStep.SignedBy = signed.SignedBy;
+
+            ApplyWorkflowState(_lodCase.WorkflowState);
 
             NotificationService.Notify(new NotificationMessage
             {
@@ -451,6 +473,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 Detail = "Section has been digitally signed.",
                 Duration = 3000
             });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Signing Failed", ex.Message);
         }
         finally
         {

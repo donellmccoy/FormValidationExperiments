@@ -34,7 +34,11 @@
                             <span class="material-symbols-outlined step-action-icon">info</span>
                         }
                     </div>
-                    @if (step.Status == WorkflowStepStatus.Completed)
+                    @if (step.SignedDate.HasValue)
+                    {
+                        <span class="step-date">Signed &mdash; @step.SignedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                    }
+                    else if (step.Status == WorkflowStepStatus.Completed)
                     {
                         <span class="step-date">@step.StatusText &mdash; @step.CompletionDate</span>
                     }
@@ -42,12 +46,20 @@
                     {
                         <span class="step-status in-progress">In Progress</span>
                     }
-                    @if (step.StartDate.HasValue || step.CompletedDate.HasValue)
+                    @if (step.StartDate.HasValue || step.CompletedDate.HasValue || step.SignedDate.HasValue)
                     {
                         <div class="step-details">
                             @if (step.StartDate.HasValue)
                             {
                                 <span class="step-detail">Start Date &ndash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                            }
+                            @if (step.SignedDate.HasValue)
+                            {
+                                <span class="step-detail">Signed &ndash; @step.SignedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                            }
+                            @if (!string.IsNullOrEmpty(step.SignedBy))
+                            {
+                                <span class="step-detail">Signed By &ndash; @step.SignedBy</span>
                             }
                             @if (step.CompletedDate.HasValue)
                             {
