@@ -36,10 +36,10 @@
                     </div>
                     @if (step.SignedDate.HasValue)
                     {
-                        <span class="step-date">Signed &mdash; @step.SignedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                        <span class="step-date">Signed Date &mdash; @step.SignedDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
                         @if (step.StartDate.HasValue)
                         {
-                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
                         }
                     }
                     else
@@ -48,13 +48,9 @@
                         {
                             <span class="step-status in-progress">In Progress</span>
                         }
-                        else if (step.Status == WorkflowStepStatus.Completed)
-                        {
-                            <span class="step-status in-progress">@step.StatusText</span>
-                        }
                         @if (step.StartDate.HasValue)
                         {
-                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
                         }
                     }
                 </div>

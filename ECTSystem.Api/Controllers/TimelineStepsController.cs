@@ -41,4 +41,22 @@ public class TimelineStepsController : ODataController
             return NotFound();
         }
     }
+
+    /// <summary>
+    /// Sets the StartDate on a timeline step to UTC now.
+    /// OData action route: POST /odata/TimelineSteps({key})/Start
+    /// </summary>
+    [HttpPost("odata/TimelineSteps({key})/Start")]
+    public async Task<IActionResult> Start([FromRoute] int key, CancellationToken ct)
+    {
+        try
+        {
+            var step = await _timelineService.StartTimelineStepAsync(key, ct);
+            return Ok(step);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
 }

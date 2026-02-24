@@ -116,6 +116,14 @@ using (var scope = app.Services.CreateScope())
     await identityContext.Database.MigrateAsync();
 
     await EctDbSeeder.SeedAsync(contextFactory);
+
+    // Seed a default dev user so the app works immediately after a database reset
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    if (await userManager.FindByEmailAsync("admin@ect.mil") is null)
+    {
+        var devUser = new ApplicationUser { UserName = "admin@ect.mil", Email = "admin@ect.mil", EmailConfirmed = true };
+        await userManager.CreateAsync(devUser, "Pass123");
+    }
 }
 
 if (app.Environment.IsDevelopment())

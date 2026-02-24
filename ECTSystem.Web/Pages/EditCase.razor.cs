@@ -404,8 +404,35 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
+            // Sign the outgoing (current) timeline step
+            var timelineSteps = _lodCase.TimelineSteps?.ToList();
+            if (timelineSteps is not null && _currentStepIndex < timelineSteps.Count)
+            {
+                var outgoingStep = timelineSteps[_currentStepIndex];
+                if (!outgoingStep.SignedDate.HasValue)
+                {
+                    var signed = await CaseService.SignTimelineStepAsync(outgoingStep.Id, _cts.Token);
+                    outgoingStep.SignedDate = signed.SignedDate;
+                    outgoingStep.SignedBy = signed.SignedBy;
+                }
+            }
+
             _lodCase.WorkflowState = targetState;
             _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
+
+            // Start the incoming (new current) timeline step
+            var targetIndex = (int)targetState - 1;
+            var updatedSteps = _lodCase.TimelineSteps?.ToList();
+            if (updatedSteps is not null && targetIndex >= 0 && targetIndex < updatedSteps.Count)
+            {
+                var incomingStep = updatedSteps[targetIndex];
+                if (!incomingStep.StartDate.HasValue)
+                {
+                    var started = await CaseService.StartTimelineStepAsync(incomingStep.Id, _cts.Token);
+                    incomingStep.StartDate = started.StartDate;
+                }
+            }
+
             ApplyWorkflowState(targetState);
             NotificationService.Notify(severity, notifySummary, notifyDetail);
         }

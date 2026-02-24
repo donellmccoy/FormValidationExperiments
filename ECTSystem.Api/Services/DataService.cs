@@ -375,6 +375,22 @@ public class DataService :
         return step;
     }
 
+    public async Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var step = await context.TimelineSteps.FindAsync([stepId], ct);
+
+        if (step is null)
+        {
+            throw new InvalidOperationException($"TimelineStep with Id {stepId} not found.");
+        }
+
+        step.StartDate = DateTime.UtcNow;
+        await context.SaveChangesAsync(ct);
+
+        return step;
+    }
+
     // ──────────────────────────── Notification Operations ────────────────────────────
 
     public async Task<List<Notification>> GetNotificationsByCaseIdAsync(int caseId, CancellationToken ct = default)

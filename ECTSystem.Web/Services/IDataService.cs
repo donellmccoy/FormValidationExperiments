@@ -70,4 +70,9 @@ public interface IDataService
     /// Digitally signs the specified timeline step.
     /// </summary>
     Task<TimelineStep> SignTimelineStepAsync(int stepId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the StartDate on the specified timeline step.
+    /// </summary>
+    Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default);
 }

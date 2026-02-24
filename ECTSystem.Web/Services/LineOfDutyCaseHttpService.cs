@@ -298,6 +298,13 @@ public class LineOfDutyCaseHttpService : IDataService
         return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
     }
 
+    public async Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync($"odata/TimelineSteps({stepId})/Start", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
+    }
+
     private class IsBookmarkedResponse
     {
         [JsonPropertyName("value")]

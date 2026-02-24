@@ -11,4 +11,5 @@ public interface ILineOfDutyTimelineService
     Task<TimelineStep> AddTimelineStepAsync(TimelineStep step, CancellationToken ct = default);
     Task<TimelineStep> UpdateTimelineStepAsync(TimelineStep step, CancellationToken ct = default);
     Task<TimelineStep> SignTimelineStepAsync(int stepId, string signedBy, CancellationToken ct = default);
+    Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken ct = default);
 }
