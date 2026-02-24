@@ -295,25 +295,45 @@ public partial class EditCase : ComponentBase, IDisposable
         _currentStepIndex = stateInt - 1;
         _selectedTabIndex = GetTabIndexForState((LineOfDutyWorkflowState)stateInt);
 
+        // Index TimelineSteps by position (1-based) for fast lookup
+        var timelineByIndex = _lodCase?.TimelineSteps
+            .Select((ts, i) => (Index: i + 1, Step: ts))
+            .ToDictionary(x => x.Index, x => x.Step);
+
         foreach (var step in _workflowSteps)
         {
+            // Pull matching timeline data when available
+            var timeline = timelineByIndex?.GetValueOrDefault(step.Number);
+
             if (step.Number < stateInt)
             {
                 step.Status = WorkflowStepStatus.Completed;
                 if (string.IsNullOrEmpty(step.StatusText))
                     step.StatusText = "Completed";
+
+                step.StartDate = timeline?.StartDate;
+                step.CompletedDate = timeline?.CompletionDate;
+                step.CompletedBy = timeline?.ModifiedBy ?? string.Empty;
+
                 if (string.IsNullOrEmpty(step.CompletionDate))
-                    step.CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
+                    step.CompletionDate = step.CompletedDate?.ToString("MM/dd/yyyy h:mm tt")
+                        ?? DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
             }
             else if (step.Number == stateInt)
             {
                 step.Status = WorkflowStepStatus.InProgress;
+                step.StartDate = timeline?.StartDate;
+                step.CompletedDate = null;
+                step.CompletedBy = string.Empty;
             }
             else
             {
                 step.Status = WorkflowStepStatus.Pending;
                 step.StatusText = string.Empty;
                 step.CompletionDate = string.Empty;
+                step.StartDate = null;
+                step.CompletedDate = null;
+                step.CompletedBy = string.Empty;
             }
         }
     }

@@ -11,6 +11,8 @@ public class TimelineStep : AuditableEntity
     public int TimelineDays { get; set; } // e.g., 5 calendar days
     public DateTime? StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
+    public DateTime? SignedDate { get; set; }
+    public string SignedBy { get; set; } = string.Empty;
     public bool IsOptional { get; set; }
     public int? ResponsibleAuthorityId { get; set; }
     public LineOfDutyAuthority ResponsibleAuthority { get; set; }

@@ -28,8 +28,10 @@ builder.Services.AddScoped<JwtAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// API base addresses
-var apiBaseAddress = new Uri("https://localhost:7173");
+// API base addresses (from wwwroot/appsettings.json)
+var apiBase = builder.Configuration["ApiBaseAddress"]
+    ?? throw new InvalidOperationException("ApiBaseAddress is not configured in appsettings.json");
+var apiBaseAddress = new Uri(apiBase);
 var odataBaseAddress = new Uri(apiBaseAddress, "odata/");
 builder.Services.AddSingleton(new ApiEndpoints(apiBaseAddress));
 builder.Services.AddTransient<AuthorizationMessageHandler>();

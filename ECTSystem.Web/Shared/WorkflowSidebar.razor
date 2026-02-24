@@ -45,21 +45,17 @@
                     @if (step.StartDate.HasValue || step.CompletedDate.HasValue)
                     {
                         <div class="step-details">
-                            @if (step.CompletedDate.HasValue)
-                            {
-                                <span class="step-detail">Completed &ndash; @step.CompletedDate.Value.ToString("MM/dd/yyyy h:mm tt")@(!string.IsNullOrEmpty(step.CompletedBy) ? $" by {step.CompletedBy}" : "")</span>
-                            }
                             @if (step.StartDate.HasValue)
                             {
                                 <span class="step-detail">Start Date &ndash; @step.StartDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
                             }
-                            @if (step.EndDate.HasValue)
+                            @if (step.CompletedDate.HasValue)
                             {
-                                <span class="step-detail">End Date &ndash; @step.EndDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
+                                <span class="step-detail">Completed &ndash; @step.CompletedDate.Value.ToString("MM/dd/yyyy h:mm tt")</span>
                             }
-                            @if (step.DaysInProcess.HasValue)
+                            @if (!string.IsNullOrEmpty(step.CompletedBy))
                             {
-                                <span class="step-detail">Days in Process &ndash; @step.DaysInProcess.Value</span>
+                                <span class="step-detail">Completed By &ndash; @step.CompletedBy</span>
                             }
                         </div>
                     }

@@ -15,6 +15,8 @@ public class WorkflowStep
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public DateTime? CompletedDate { get; set; }
+    public DateTime? SignedDate { get; set; }
+    public string SignedBy { get; set; } = string.Empty;
     public string CompletedBy { get; set; } = string.Empty;
 
     public int? DaysInProcess
