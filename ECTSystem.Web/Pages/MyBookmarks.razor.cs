@@ -111,6 +111,11 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         }
     }
 
+    private void OnCreateCase()
+    {
+        Navigation.NavigateTo("/case/new");
+    }
+
     public void Dispose()
     {
         _loadCts.Cancel();

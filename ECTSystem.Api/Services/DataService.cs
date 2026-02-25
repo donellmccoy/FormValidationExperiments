@@ -364,7 +364,7 @@ public class DataService :
     public async Task<TimelineStep> SignTimelineStepAsync(int stepId, string signedBy, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var step = await context.TimelineSteps.FindAsync([stepId], ct);
+        var step = await context.TimelineSteps.FindAsync(stepId, ct);
 
         if (step is null)
         {

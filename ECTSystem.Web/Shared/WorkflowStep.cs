@@ -23,7 +23,11 @@ public class WorkflowStep
     {
         get
         {
-            if (StartDate is null) return null;
+            if (StartDate is null)
+            {
+                return null;
+            }
+
             var end = EndDate ?? DateTime.Now;
             return (int)(end.Date - StartDate.Value.Date).TotalDays;
         }

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Tests;
@@ -27,6 +29,8 @@ public abstract class ControllerTestBase
             HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
         };
     }
+
+    protected static ILogger<T> CreateLogger<T>() => NullLoggerFactory.Instance.CreateLogger<T>();
 
     /// <summary>
     /// Creates a minimal fully-populated <see cref="LineOfDutyCase"/> suitable for

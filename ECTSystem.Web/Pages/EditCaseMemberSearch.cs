@@ -112,23 +112,20 @@ public partial class EditCase
 
         _selectedMemberId = member.Id;
 
-        _memberFormModel.FirstName = member.FirstName;
-        _memberFormModel.LastName = member.LastName;
-        _memberFormModel.MiddleInitial = member.MiddleInitial;
-        _memberFormModel.OrganizationUnit = member.Unit;
-        _memberFormModel.SSN = member.ServiceNumber;
-        _memberFormModel.DateOfBirth = member.DateOfBirth;
-        _memberFormModel.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
+        _viewModel.FirstName = member.FirstName;
+        _viewModel.LastName = member.LastName;
+        _viewModel.MiddleInitial = member.MiddleInitial;
+        _viewModel.OrganizationUnit = member.Unit;
+        _viewModel.SSN = member.ServiceNumber;
+        _viewModel.DateOfBirth = member.DateOfBirth;
+        _viewModel.Component = Regex.Replace(member.Component.ToString(), "(\\B[A-Z])", " $1");
 
         var parsedRank = LineOfDutyCaseMapper.ParseMilitaryRank(member.Rank);
-        _memberFormModel.Rank = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value) : member.Rank;
-        _memberFormModel.Grade = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value): member.Rank;
+        _viewModel.Rank = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToFullName(parsedRank.Value) : member.Rank;
+        _viewModel.Grade = parsedRank.HasValue ? LineOfDutyCaseMapper.FormatRankToPayGrade(parsedRank.Value): member.Rank;
 
-        _caseInfo.MemberName = $"{_memberFormModel.LastName}, {_memberFormModel.FirstName}";
-        _caseInfo.Component = _memberFormModel.Component;
-        _caseInfo.Rank = _memberFormModel.Rank;
-        _caseInfo.Grade = _memberFormModel.Grade;
-        _caseInfo.Unit = _memberFormModel.OrganizationUnit;
+        _viewModel.MemberName = $"{_viewModel.LastName}, {_viewModel.FirstName}";
+        _viewModel.Unit = _viewModel.OrganizationUnit;
 
         _selectedTabIndex = 0;
         StateHasChanged();

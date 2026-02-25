@@ -100,8 +100,8 @@ public class LineOfDutyCase : AuditableEntity
     public int TotalTimelineDays { get; set; } // e.g., 90 for Informal, 160 for Formal
     public bool IsInterimLOD { get; set; }
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
-    public List<TimelineStep> TimelineSteps { get; set; } = new List<TimelineStep>();
-    public List<LineOfDutyAuthority> Authorities { get; set; } = new List<LineOfDutyAuthority>();
+    public List<TimelineStep> TimelineSteps { get; set; } = [];
+    public List<LineOfDutyAuthority> Authorities { get; set; } = [];
     public List<WorkflowStepHistory> WorkflowStepHistories { get; set; } = [];
 
     // Findings and Determinations
@@ -165,15 +165,15 @@ public class LineOfDutyCase : AuditableEntity
     public string SARCCoordination { get; set; } = string.Empty; // Sexual Assault Response Coordinator
 
     // Documents and Evidence
-    public List<LineOfDutyDocument> Documents { get; set; } = new List<LineOfDutyDocument>();
-    public List<string> WitnessStatements { get; set; } = new List<string>();
+    public List<LineOfDutyDocument> Documents { get; set; } = [];
+    public List<string> WitnessStatements { get; set; } = [];
     public string ToxicologyReport { get; set; } = string.Empty;
 
     // Appeals
-    public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
+    public List<LineOfDutyAppeal> Appeals { get; set; } = [];
 
     // Notifications
-    public List<Notification> Notifications { get; set; } = new List<Notification>();
+    public List<Notification> Notifications { get; set; } = [];
 
     // Member
     public int MemberId { get; set; }
@@ -188,6 +188,6 @@ public class LineOfDutyCase : AuditableEntity
 
     // Audit and Notes
     public bool IsAudited { get; set; }
-    public List<string> AuditComments { get; set; } = new List<string>();
+    public List<string> AuditComments { get; set; } = [];
     public string PointOfContact { get; set; } = string.Empty; // e.g., AF/A1PP email
 }

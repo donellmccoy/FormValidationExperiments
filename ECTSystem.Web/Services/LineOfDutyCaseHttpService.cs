@@ -60,15 +60,29 @@ public class LineOfDutyCaseHttpService : IDataService
         var query = _client.For<LineOfDutyCase>("Cases");
 
         if (!string.IsNullOrEmpty(filter))
+        {
             query = query.Filter(filter);
+        }
+
         if (top.HasValue)
+        {
             query = query.Top(top.Value);
+        }
+
         if (skip.HasValue)
+        {
             query = query.Skip(skip.Value);
+        }
+
         if (!string.IsNullOrEmpty(orderby))
+        {
             query = query.OrderBy(orderby);
+        }
+
         if (count == true)
+        {
             query = query.Count();
+        }
 
         var response = await _client.GetAsync(query, cancellationToken);
 
@@ -125,12 +139,17 @@ public class LineOfDutyCaseHttpService : IDataService
         string searchText,
         CancellationToken cancellationToken = default)
     {
-        var encoded = Uri.EscapeDataString(searchText);
-        var filter = $"contains(tolower(LastName),tolower('{encoded}'))" +
-                     $" or contains(tolower(FirstName),tolower('{encoded}'))" +
-                     $" or contains(tolower(Rank),tolower('{encoded}'))" +
-                     $" or contains(tolower(Unit),tolower('{encoded}'))" +
-                     $" or contains(tolower(ServiceNumber),tolower('{encoded}'))";
+        // OData string literals escape single quotes by doubling them ('').
+        // Do NOT use Uri.EscapeDataString here — the outer Uri.EscapeDataString(filter)
+        // call below handles URL encoding. Applying it here creates double-encoding
+        // that causes OData to misinterpret %27 as a literal ' inside the string,
+        // producing a malformed filter and a 400 for names like O'Brien.
+        var literal = searchText.Replace("'", "''");
+        var filter = $"contains(tolower(LastName),tolower('{literal}'))" +
+                     $" or contains(tolower(FirstName),tolower('{literal}'))" +
+                     $" or contains(tolower(Rank),tolower('{literal}'))" +
+                     $" or contains(tolower(Unit),tolower('{literal}'))" +
+                     $" or contains(tolower(ServiceNumber),tolower('{literal}'))";
 
         // Match rank titles/abbreviations to pay grade strings stored in DB
         var matchingPayGrades = RankToPayGrade
@@ -228,15 +247,29 @@ public class LineOfDutyCaseHttpService : IDataService
         var parts = new List<string>();
 
         if (!string.IsNullOrEmpty(filter))
+        {
             parts.Add($"$filter={filter}");
+        }
+
         if (top.HasValue)
+        {
             parts.Add($"$top={top.Value}");
+        }
+
         if (skip.HasValue)
+        {
             parts.Add($"$skip={skip.Value}");
+        }
+
         if (!string.IsNullOrEmpty(orderby))
+        {
             parts.Add($"$orderby={orderby}");
+        }
+
         if (count == true)
+        {
             parts.Add("$count=true");
+        }
 
         var url = parts.Count > 0
             ? $"odata/Cases/Bookmarked?{string.Join("&", parts)}"

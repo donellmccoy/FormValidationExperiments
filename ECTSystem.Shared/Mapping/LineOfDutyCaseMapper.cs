@@ -8,102 +8,86 @@ namespace ECTSystem.Shared.Mapping;
 
 /// <summary>
 /// Static mapper for converting between <see cref="LineOfDutyCase"/> domain model
-/// and the per-step view models used by the LOD workflow forms.
+/// and the consolidated <see cref="LineOfDutyViewModel"/> used by the LOD workflow forms.
 /// </summary>
 public static partial class LineOfDutyCaseMapper
 {
     [GeneratedRegex(@"^(AB|Amn|A1C|SrA|SSgt|TSgt|MSgt|SMSgt|CMSgt|CMSAF|2d Lt|1st Lt|Capt|Maj|Lt Col|Col|Brig Gen|Maj Gen|Lt Gen|Gen)\s+", RegexOptions.IgnoreCase)]
     private static partial Regex RankPrefixPattern();
 
-    // ──────────────────────────── Domain → View Models ────────────────────────────
+    // ──────────────────────────── Domain → View Model ────────────────────────────
 
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the read-only <see cref="CaseInfoModel"/> header card.
-    /// </summary>
-    public static CaseInfoModel ToCaseInfoModel(LineOfDutyCase source)
+    public static LineOfDutyViewModel ToLineOfDutyViewModel(LineOfDutyCase source)
     {
-        return new CaseInfoModel
+        var commander = FindAuthority(source, "Immediate Commander");
+        var medProvider = FindAuthority(source, "Medical Provider");
+        var sja = FindAuthority(source, "Staff Judge Advocate");
+
+        ParseMemberName(source.MemberName, out var lastName, out var firstName, out var middleInitial);
+
+        var parsedRank = ParseMilitaryRank(source.MemberRank);
+        var hasToxReport = !string.IsNullOrWhiteSpace(source.ToxicologyReport)
+                           && !source.ToxicologyReport.Equals("Not applicable", StringComparison.OrdinalIgnoreCase);
+        var isLegallySufficient = sja?.Recommendation?.Contains("sufficient", StringComparison.OrdinalIgnoreCase) == true;
+
+        return new LineOfDutyViewModel
         {
             CaseNumber = source.CaseId ?? string.Empty,
             MemberName = source.MemberName ?? string.Empty,
             Component = source.Component.ToDisplayString(),
-            Rank = ParseMilitaryRank(source.MemberRank) is { } parsedRank
-                ? FormatRankToFullName(parsedRank)
+            Rank = parsedRank is { } rankForDisplay
+                ? FormatRankToFullName(rankForDisplay)
                 : source.MemberRank ?? string.Empty,
+            Grade = parsedRank is { } rankForGrade
+                ? FormatRankToPayGrade(rankForGrade)
+                : string.Empty,
             Unit = source.Unit ?? string.Empty,
             DateOfInjury = source.IncidentDate.ToString("yyyy-MM-dd"),
-            SSN = MaskSsn(source.ServiceNumber),
+            SSN = source.ServiceNumber ?? string.Empty,
             DutyStatus = source.IncidentDutyStatus.ToDisplayString(),
             Status = DeriveStatus(source),
             IncidentCircumstances = source.IncidentDescription ?? string.Empty,
-            ReportedInjury = source.IncidentDescription ?? string.Empty
-        };
-    }
+            ReportedInjury = source.IncidentDescription ?? string.Empty,
 
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="MemberInfoFormModel"/> (AF Form 348, Items 1–8).
-    /// </summary>
-    public static MemberInfoFormModel ToMemberInfoFormModel(LineOfDutyCase source)
-    {
-        var commander = FindAuthority(source, "Immediate Commander");
-        var medProvider = FindAuthority(source, "Medical Provider");
-
-        ParseMemberName(source.MemberName, out var lastName, out var firstName, out var middleInitial);
-
-        return new MemberInfoFormModel
-        {
             RequestingCommander = commander?.Name ?? string.Empty,
             MedicalProvider = medProvider?.Name ?? string.Empty,
             ReportDate = source.InitiationDate,
             LastName = lastName,
             FirstName = firstName,
             MiddleInitial = middleInitial,
-            SSN = source.ServiceNumber ?? string.Empty,
             DateOfBirth = source.MemberDateOfBirth ?? source.Member?.DateOfBirth,
-            Rank = ParseMilitaryRank(source.MemberRank) is { } parsedRank
-                ? FormatRankToFullName(parsedRank)
-                : source.MemberRank ?? string.Empty,
-            Component = source.Component.ToDisplayString(),
             OrganizationUnit = source.Unit ?? string.Empty,
-            MemberStatus = MapComponentToMemberStatus(source.Component) is { } ms
-                ? ms.ToString()
-                : string.Empty,
+            MemberStatus = MapComponentToMemberStatus(source.Component) is { } ms ? ms.ToString() : string.Empty,
             NotifiedMedicalUnitTimely = source.NotifiedMedicalUnitTimely,
             SubmittedMedicalDocumentsTimely = source.SubmittedMedicalDocumentsTimely,
             InvolvesSexualAssault = source.IsSexualAssaultCase,
-            IsRestrictedReport = source.RestrictedReporting
-        };
-    }
+            IsRestrictedReport = source.RestrictedReporting,
 
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="MedicalAssessmentFormModel"/> (AF Form 348, Items 9–15).
-    /// Delegates direct property copies to the Mapperly-generated <see cref="MedicalAssessmentMapper"/>
-    /// and applies custom logic for toxicology and EPTS/NSA fields.
-    /// </summary>
-    public static MedicalAssessmentFormModel ToMedicalAssessmentFormModel(LineOfDutyCase source)
-    {
-        var model = MedicalAssessmentMapper.ToFormModel(source);
+            InvestigationType = source.IncidentType,
+            IsMilitaryFacility = source.IsMilitaryFacility,
+            TreatmentFacilityName = source.TreatmentFacilityName ?? string.Empty,
+            TreatmentDateTime = source.TreatmentDateTime,
+            ClinicalDiagnosis = source.ClinicalDiagnosis ?? string.Empty,
+            MedicalFindings = source.MedicalFindings ?? string.Empty,
+            WasUnderInfluence = source.WasUnderInfluence,
+            SubstanceType = source.SubstanceType,
+            ToxicologyTestDone = hasToxReport ? true : null,
+            ToxicologyTestResults = hasToxReport ? source.ToxicologyReport ?? string.Empty : string.Empty,
+            WasMentallyResponsible = source.WasMentallyResponsible,
+            PsychiatricEvalCompleted = source.PsychiatricEvalCompleted,
+            PsychiatricEvalDate = source.PsychiatricEvalDate,
+            PsychiatricEvalResults = source.PsychiatricEvalResults ?? string.Empty,
+            OtherRelevantConditions = source.OtherRelevantConditions ?? string.Empty,
+            OtherTestsDone = source.OtherTestsDone,
+            OtherTestDate = source.OtherTestDate,
+            OtherTestResults = source.OtherTestResults ?? string.Empty,
+            IsEptsNsa = source.IsPriorServiceCondition ? true : false,
+            IsServiceAggravated = source.IsServiceAggravated,
+            IsPotentiallyUnfitting = source.IsPotentiallyUnfitting,
+            IsAtDeployedLocation = source.IsAtDeployedLocation,
+            RequiresArcBoard = source.RequiresArcBoard,
+            MedicalRecommendation = source.MedicalRecommendation ?? string.Empty,
 
-        // Fields that require custom logic beyond simple property copy
-        var hasToxReport = !string.IsNullOrWhiteSpace(source.ToxicologyReport)
-                           && !source.ToxicologyReport.Equals("Not applicable", StringComparison.OrdinalIgnoreCase);
-
-        model.IsEptsNsa = source.IsPriorServiceCondition ? true : false;
-        model.ToxicologyTestDone = hasToxReport ? true : null;
-        model.ToxicologyTestResults = hasToxReport ? source.ToxicologyReport ?? string.Empty : string.Empty;
-
-        return model;
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="UnitCommanderFormModel"/> (AF Form 348, Items 16–23).
-    /// </summary>
-    public static UnitCommanderFormModel ToUnitCommanderFormModel(LineOfDutyCase source)
-    {
-        var commander = FindAuthority(source, "Immediate Commander");
-
-        return new UnitCommanderFormModel
-        {
             MemberStatementReviewed = source.MemberStatementReviewed,
             MedicalRecordsReviewed = source.MedicalRecordsReviewed,
             WitnessStatementsReviewed = source.WitnessStatementsReviewed,
@@ -123,116 +107,22 @@ public static partial class LineOfDutyCaseMapper
             CommanderName = commander?.Name ?? string.Empty,
             CommanderRank = ParseMilitaryRank(commander?.Rank),
             CommanderOrganization = commander?.Title ?? string.Empty,
-            CommanderSignatureDate = commander?.ActionDate
-        };
-    }
+            CommanderSignatureDate = commander?.ActionDate,
 
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="WingCommanderFormModel"/>.
-    /// </summary>
-    public static WingCommanderFormModel ToWingCommanderFormModel(LineOfDutyCase source)
-    {
-        var sja = FindAuthority(source, "Staff Judge Advocate");
-        var isLegallySufficient = sja?.Recommendation?.Contains("sufficient", StringComparison.OrdinalIgnoreCase) == true;
-
-        return new WingCommanderFormModel
-        {
             IsLegallySufficient = sja != null ? isLegallySufficient : null,
             ConcurWithRecommendation = sja != null ? true : null,
             LegalRemarks = sja?.Comments != null ? string.Join(" ", sja.Comments) : string.Empty,
             SJAName = sja?.Name ?? string.Empty,
             SJARank = ParseMilitaryRank(sja?.Rank),
             SJAOrganization = sja?.Title ?? string.Empty,
-            SJASignatureDate = sja?.ActionDate
+            SJASignatureDate = sja?.ActionDate,
         };
     }
 
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="MedicalTechnicianFormModel"/>.
-    /// </summary>
-    public static MedicalTechnicianFormModel ToMedicalTechnicianFormModel(LineOfDutyCase source)
-    {
-        return new MedicalTechnicianFormModel();
-    }
+    // ──────────────────────────── View Model → Domain ────────────────────────────
 
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="WingJudgeAdvocateFormModel"/>.
-    /// </summary>
-    public static WingJudgeAdvocateFormModel ToWingJudgeAdvocateFormModel(LineOfDutyCase source)
+    public static void ApplyToCase(LineOfDutyViewModel model, LineOfDutyCase target)
     {
-        return new WingJudgeAdvocateFormModel();
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="AppointingAuthorityFormModel"/>.
-    /// </summary>
-    public static AppointingAuthorityFormModel ToAppointingAuthorityFormModel(LineOfDutyCase source)
-    {
-        return new AppointingAuthorityFormModel();
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardTechnicianFormModel"/>.
-    /// </summary>
-    public static BoardTechnicianFormModel ToBoardTechnicianFormModel(LineOfDutyCase source)
-    {
-        return new BoardTechnicianFormModel();
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardMedicalFormModel"/>.
-    /// </summary>
-    public static BoardMedicalFormModel ToBoardMedicalFormModel(LineOfDutyCase source)
-    {
-        return new BoardMedicalFormModel();
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardLegalFormModel"/>.
-    /// </summary>
-    public static BoardLegalFormModel ToBoardLegalFormModel(LineOfDutyCase source)
-    {
-        return new BoardLegalFormModel();
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to the <see cref="BoardAdminFormModel"/>.
-    /// </summary>
-    public static BoardAdminFormModel ToBoardAdminFormModel(LineOfDutyCase source)
-    {
-        return new BoardAdminFormModel();
-    }
-
-    /// <summary>
-    /// Maps a <see cref="LineOfDutyCase"/> to a complete <see cref="CaseViewModelsDto"/>.
-    /// </summary>
-    public static CaseViewModelsDto ToCaseViewModelsDto(LineOfDutyCase source)
-    {
-        return new CaseViewModelsDto
-        {
-            CaseInfo = ToCaseInfoModel(source),
-            MemberInfo = ToMemberInfoFormModel(source),
-            MedicalAssessment = ToMedicalAssessmentFormModel(source),
-            UnitCommander = ToUnitCommanderFormModel(source),
-            WingCommander = ToWingCommanderFormModel(source),
-            MedicalTechnician = ToMedicalTechnicianFormModel(source),
-            WingJudgeAdvocate = ToWingJudgeAdvocateFormModel(source),
-            AppointingAuthority = ToAppointingAuthorityFormModel(source),
-            BoardTechnician = ToBoardTechnicianFormModel(source),
-            BoardMedical = ToBoardMedicalFormModel(source),
-            BoardLegal = ToBoardLegalFormModel(source),
-            BoardAdmin = ToBoardAdminFormModel(source)
-        };
-    }
-
-    // ──────────────────────────── View Models → Domain ────────────────────────────
-
-    /// <summary>
-    /// Applies <see cref="MemberInfoFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyMemberInfo(MemberInfoFormModel model, LineOfDutyCase target)
-    {
-        // Reconstruct full name from parts
         var nameParts = new List<string>();
         if (!string.IsNullOrWhiteSpace(model.FirstName))
         {
@@ -250,62 +140,72 @@ public static partial class LineOfDutyCaseMapper
         }
 
         target.MemberName = string.Join(" ", nameParts);
-
         target.ServiceNumber = model.SSN ?? string.Empty;
         target.MemberDateOfBirth = model.DateOfBirth;
         target.MemberRank = model.Rank ?? string.Empty;
         target.Unit = model.OrganizationUnit;
         target.InitiationDate = model.ReportDate ?? target.InitiationDate;
 
-        if (!string.IsNullOrWhiteSpace(model.MemberStatus) &&
-            Enum.TryParse<MemberStatus>(model.MemberStatus, ignoreCase: true, out var memberStatus))
+        if (!string.IsNullOrWhiteSpace(model.MemberStatus)
+            && Enum.TryParse<MemberStatus>(model.MemberStatus, ignoreCase: true, out var memberStatus))
         {
             target.Component = MapMemberStatusToComponent(memberStatus);
         }
 
-        // Notification & Reporting
         target.NotifiedMedicalUnitTimely = model.NotifiedMedicalUnitTimely;
         target.SubmittedMedicalDocumentsTimely = model.SubmittedMedicalDocumentsTimely;
         target.IsSexualAssaultCase = model.InvolvesSexualAssault;
         target.RestrictedReporting = model.IsRestrictedReport;
 
-        // Update authority names
+        target.IncidentType = model.InvestigationType ?? target.IncidentType;
+        target.IsMilitaryFacility = model.IsMilitaryFacility;
+        target.TreatmentFacilityName = model.TreatmentFacilityName;
+        target.TreatmentDateTime = model.TreatmentDateTime;
+        target.ClinicalDiagnosis = model.ClinicalDiagnosis;
+        target.MedicalFindings = model.MedicalFindings;
+        target.WasUnderInfluence = model.WasUnderInfluence;
+        target.SubstanceType = model.SubstanceType;
+        target.WasMentallyResponsible = model.WasMentallyResponsible;
+        target.PsychiatricEvalCompleted = model.PsychiatricEvalCompleted;
+        target.PsychiatricEvalDate = model.PsychiatricEvalDate;
+        target.PsychiatricEvalResults = model.PsychiatricEvalResults;
+        target.OtherRelevantConditions = model.OtherRelevantConditions;
+        target.OtherTestsDone = model.OtherTestsDone;
+        target.OtherTestDate = model.OtherTestDate;
+        target.OtherTestResults = model.OtherTestResults;
+        target.IsPriorServiceCondition = model.IsEptsNsa == true;
+        target.IsServiceAggravated = model.IsServiceAggravated;
+        target.IsPotentiallyUnfitting = model.IsPotentiallyUnfitting;
+        target.IsAtDeployedLocation = model.IsAtDeployedLocation;
+        target.RequiresArcBoard = model.RequiresArcBoard;
+        target.MedicalRecommendation = model.MedicalRecommendation;
+        target.ToxicologyReport = model.ToxicologyTestDone == true ? model.ToxicologyTestResults : "Not applicable";
+
+        target.MemberStatementReviewed = model.MemberStatementReviewed;
+        target.MedicalRecordsReviewed = model.MedicalRecordsReviewed;
+        target.WitnessStatementsReviewed = model.WitnessStatementsReviewed;
+        target.PoliceReportsReviewed = model.PoliceReportsReviewed;
+        target.CommanderReportReviewed = model.CommanderReportReviewed;
+        target.OtherSourcesReviewed = model.OtherSourcesReviewed;
+        target.OtherSourcesDescription = model.OtherSourcesDescription;
+        target.IncidentDutyStatus = model.DutyStatusAtTime ?? target.IncidentDutyStatus;
+        target.IncidentDescription = model.NarrativeOfCircumstances;
+        target.FinalFinding = model.Recommendation.HasValue ? MapRecommendationToFinding(model.Recommendation.Value) : target.FinalFinding;
+        target.MisconductExplanation = model.MisconductExplanation;
+        target.ProximateCause = model.ProximateCause;
+
         var commander = FindOrCreateAuthority(target, "Immediate Commander");
-        commander.Name = model.RequestingCommander;
+        commander.Name = model.CommanderName;
+        commander.Rank = model.CommanderRank.HasValue ? model.CommanderRank.Value.ToString() : string.Empty;
+        commander.ActionDate = model.CommanderSignatureDate;
+        commander.Title = model.CommanderOrganization;
+        commander.Comments = string.IsNullOrWhiteSpace(model.RecommendationRemarks)
+            ? []
+            : [model.RecommendationRemarks];
 
         var medProvider = FindOrCreateAuthority(target, "Medical Provider");
         medProvider.Name = model.MedicalProvider;
-    }
 
-    /// <summary>
-    /// Applies <see cref="MedicalAssessmentFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// Delegates direct property copies to <see cref="MedicalAssessmentMapper"/>
-    /// and applies custom logic for incident type, EPTS/NSA, and toxicology fields.
-    /// </summary>
-    public static void ApplyMedicalAssessment(MedicalAssessmentFormModel model, LineOfDutyCase target)
-    {
-        MedicalAssessmentMapper.ApplyToEntity(model, target);
-
-        // Fields that require custom logic beyond simple property copy
-        target.IncidentType = model.InvestigationType ?? target.IncidentType;
-        target.IsPriorServiceCondition = model.IsEptsNsa == true;
-        target.ToxicologyReport = model.ToxicologyTestDone == true
-            ? model.ToxicologyTestResults
-            : "Not applicable";
-    }
-
-    /// <summary>
-    /// Applies <see cref="UnitCommanderFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyUnitCommander(UnitCommanderFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="WingCommanderFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyWingCommander(WingCommanderFormModel model, LineOfDutyCase target)
-    {
         var sja = FindOrCreateAuthority(target, "Staff Judge Advocate");
         sja.Name = model.SJAName;
         sja.Rank = model.SJARank.HasValue ? model.SJARank.Value.ToString() : string.Empty;
@@ -313,85 +213,18 @@ public static partial class LineOfDutyCaseMapper
         sja.Title = model.SJAOrganization;
         sja.Recommendation = model.IsLegallySufficient == true ? "Legally sufficient" : "Legally insufficient";
 
-        var remarks = new List<string>();
+        var sjaRemarks = new List<string>();
         if (!string.IsNullOrWhiteSpace(model.LegalRemarks))
         {
-            remarks.Add(model.LegalRemarks);
+            sjaRemarks.Add(model.LegalRemarks);
         }
 
         if (model.ConcurWithRecommendation == false && !string.IsNullOrWhiteSpace(model.NonConcurrenceReason))
         {
-            remarks.Add($"Non-concurrence: {model.NonConcurrenceReason}");
+            sjaRemarks.Add($"Non-concurrence: {model.NonConcurrenceReason}");
         }
 
-        sja.Comments = remarks;
-    }
-
-    /// <summary>
-    /// Applies <see cref="MedicalTechnicianFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyMedicalTechnician(MedicalTechnicianFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="WingJudgeAdvocateFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyWingJudgeAdvocate(WingJudgeAdvocateFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="AppointingAuthorityFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyAppointingAuthority(AppointingAuthorityFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="BoardTechnicianFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyBoardTechnician(BoardTechnicianFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="BoardMedicalFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyBoardMedical(BoardMedicalFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="BoardLegalFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyBoardLegal(BoardLegalFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies <see cref="BoardAdminFormModel"/> changes back to the <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyBoardAdmin(BoardAdminFormModel model, LineOfDutyCase target)
-    {
-    }
-
-    /// <summary>
-    /// Applies all view model changes from a <see cref="CaseViewModelsDto"/> to a <see cref="LineOfDutyCase"/>.
-    /// </summary>
-    public static void ApplyAll(CaseViewModelsDto dto, LineOfDutyCase target)
-    {
-        ApplyMemberInfo(dto.MemberInfo, target);
-        ApplyMedicalAssessment(dto.MedicalAssessment, target);
-        ApplyUnitCommander(dto.UnitCommander, target);
-        ApplyWingCommander(dto.WingCommander, target);
-        ApplyMedicalTechnician(dto.MedicalTechnician, target);
-        ApplyWingJudgeAdvocate(dto.WingJudgeAdvocate, target);
-        ApplyAppointingAuthority(dto.AppointingAuthority, target);
-        ApplyBoardTechnician(dto.BoardTechnician, target);
-        ApplyBoardMedical(dto.BoardMedical, target);
-        ApplyBoardLegal(dto.BoardLegal, target);
-        ApplyBoardAdmin(dto.BoardAdmin, target);
+        sja.Comments = sjaRemarks;
     }
 
     // ──────────────────────────── Helper Methods ────────────────────────────

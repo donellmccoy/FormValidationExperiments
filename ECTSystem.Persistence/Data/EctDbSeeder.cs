@@ -182,8 +182,8 @@ public static class EctDbSeeder
                         Comments = new List<string> { "Package reviewed and found legally sufficient." }
                     }
                 },
-                Documents = new List<LineOfDutyDocument>
-                {
+                Documents =
+                [
                     new()
                     {
                         DocumentType = "AF Form 348",
@@ -191,7 +191,7 @@ public static class EctDbSeeder
                         UploadDate = initiationDate.AddDays(rng.Next(3, 10)),
                         Description = "Line of Duty Determination form"
                     }
-                },
+                ],
                 TimelineSteps = new List<TimelineStep>
                 {
                     new()
@@ -219,8 +219,8 @@ public static class EctDbSeeder
                         IsOptional = false
                     }
                 },
-                Appeals = new List<LineOfDutyAppeal>(),
-                Notifications = GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)
+                Appeals = [],
+                Notifications = []//GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)
             };
 
             cases.Add(lodCase);

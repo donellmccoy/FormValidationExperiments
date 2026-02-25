@@ -57,9 +57,13 @@ public class DataServiceCaseTests : DataServiceTestBase
         var result = await Sut.GetCaseByKeyAsync(key);
 
         if (seedCase)
+        {
             Assert.NotNull(result);
+        }
         else
+        {
             Assert.Null(result);
+        }
     }
 
     [Fact]
@@ -176,7 +180,9 @@ public class DataServiceCaseTests : DataServiceTestBase
 
         var update = BuildCase(1);
         for (int i = 0; i < incomingCount; i++)
+        {
             update.Authorities.Add(new LineOfDutyAuthority { Role = $"Role-{i}", LineOfDutyCaseId = 1 });
+        }
 
         await Sut.UpdateCaseAsync(1, update);
 

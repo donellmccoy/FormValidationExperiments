@@ -27,7 +27,9 @@ public partial class EditCase
     private async Task AddDocumentAsync()
     {
         if (string.IsNullOrWhiteSpace(_documents.UploadedFileContent) || string.IsNullOrWhiteSpace(_documents.UploadedFileName))
+        {
             return;
+        }
 
         if (_lodCase?.Id is null or 0)
         {
@@ -140,7 +142,9 @@ public partial class EditCase
     private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
     {
         if (_lodCase?.Id is null or 0 || doc.Id == 0)
+        {
             return;
+        }
 
         var confirmed = await DialogService.Confirm(
             $"Are you sure you want to delete \"{doc.FileName}\"?",
@@ -148,7 +152,9 @@ public partial class EditCase
             new ConfirmOptions { OkButtonText = "Delete", CancelButtonText = "Cancel" });
 
         if (confirmed != true)
+        {
             return;
+        }
 
         try
         {

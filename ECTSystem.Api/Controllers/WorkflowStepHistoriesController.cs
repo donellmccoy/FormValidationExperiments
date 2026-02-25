@@ -25,9 +25,10 @@ public class WorkflowStepHistoriesController : ODataController
     public async Task<IActionResult> Post([FromBody] WorkflowStepHistory entry, CancellationToken ct)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
-        var saved = await _historyService.AddHistoryEntryAsync(entry, ct);
-        return Created(saved);
+        return Created(await _historyService.AddHistoryEntryAsync(entry, ct));
     }
 }

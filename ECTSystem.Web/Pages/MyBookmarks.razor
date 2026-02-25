@@ -28,6 +28,8 @@ else
     <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
         My Bookmarks
     </RadzenText>
+    <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
+                  Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
 
 @if (!_hasBookmarks && _bookmarks != null && !_bookmarks.Any())

@@ -15,7 +15,7 @@ public class WorkflowStepHistory : AuditableEntity
     public WorkflowStepStatus Status { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? SignedDate { get; set; }
-    public string SignedBy { get; set; }
+    public string SignedBy { get; set; } = string.Empty;
     public DateTime OccurredAt { get; set; }
     public string PerformedBy { get; set; } = string.Empty;
 

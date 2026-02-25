@@ -85,9 +85,13 @@ public class DataServiceDocumentTests : DataServiceTestBase
         var result = await Sut.GetDocumentByIdAsync(documentId);
 
         if (seedDocument)
+        {
             Assert.NotNull(result);
+        }
         else
+        {
             Assert.Null(result);
+        }
     }
 
     [Fact]

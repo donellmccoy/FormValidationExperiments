@@ -34,7 +34,7 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string Draft = "Draft";
     }
 
-    private static readonly (string TabName, LineOfDutyWorkflowState State)[] WorkflowTabMap =
+    private static readonly (string TabName, LineOfDutyWorkflowState State)[] _workflowTabMap =
     [
         (TabNames.MemberInformation,     LineOfDutyWorkflowState.MemberInformationEntry),    // 0
         (TabNames.MedicalTechnician,     LineOfDutyWorkflowState.MedicalTechnicianReview),   // 1
@@ -114,37 +114,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private int _selectedMemberId;
 
-    private MemberInfoFormModel _memberFormModel = new();
-
-    private MedicalAssessmentFormModel _medicalFormModel = new();
-
-    private RadzenTemplateForm<MedicalAssessmentFormModel> _medicalForm;
-
-    private UnitCommanderFormModel _commanderFormModel = new();
-
-    private WingJudgeAdvocateFormModel _wingJAFormModel = new();
-
-    private WingCommanderFormModel _wingCommanderFormModel = new();
-
-    private MedicalTechnicianFormModel _medTechFormModel = new();
-
-    private AppointingAuthorityFormModel _appointingAuthorityFormModel = new();
-
-    private BoardTechnicianFormModel _boardTechFormModel = new();
-
-    private BoardMedicalFormModel _boardMedFormModel = new();
-
-    private BoardLegalFormModel _boardLegalFormModel = new();
-
-    private BoardAdminFormModel _boardAdminFormModel = new();
-
-    private CaseDialogueFormModel _caseDialogueFormModel = new();
-
-    private CaseNotificationsFormModel _caseNotificationsFormModel = new();
-
-    private CaseDocumentsFormModel _caseDocumentsFormModel = new();
-
-    private CaseInfoModel _caseInfo = new()
+    private LineOfDutyViewModel _viewModel = new()
     {
         CaseNumber = "Pending...",
         MemberName = "Pending...",
@@ -156,11 +126,14 @@ public partial class EditCase : ComponentBase, IDisposable
         Status = "New"
     };
 
+
+    private RadzenTemplateForm<LineOfDutyViewModel> _medicalForm;
+
     private IReadOnlyList<TrackableModel> AllFormModels
     {
         get
         {
-            return [_memberFormModel, _medicalFormModel, _commanderFormModel, _wingJAFormModel, _wingCommanderFormModel, _medTechFormModel, _appointingAuthorityFormModel, _boardTechFormModel, _boardMedFormModel, _boardLegalFormModel, _boardAdminFormModel, _caseDialogueFormModel, _caseNotificationsFormModel, _caseDocumentsFormModel];
+            return [_viewModel];
         }
     }
 
@@ -168,7 +141,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         get
         {
-            return AllFormModels.Any(m => m.IsDirty);
+            return _viewModel.IsDirty;
         }
     }
 
@@ -190,20 +163,30 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private Task OnBoardTechForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardTechnicianReview, item);
+    private Task OnBoardTechForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardTechnicianReview, item);
+    }
 
-    private Task OnBoardMedForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardMedicalReview, item);
+    private Task OnBoardMedForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardMedicalReview, item);
+    }
 
-    private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardLegalReview, item);
+    private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardLegalReview, item);
+    }
 
-    private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardAdminReview, item);
+    private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardAdminReview, item);
+    }
 
-    private Task OnBoardCompleteClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.Completed, item);
+    private Task OnBoardCompleteClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.Completed, item);
+    }
 
     private async Task HandleWorkflowActionAsync(LineOfDutyWorkflowState sourceState, RadzenSplitButtonItem item)
     {
@@ -233,26 +216,52 @@ public partial class EditCase : ComponentBase, IDisposable
             transition.NotifyDetail);
     }
 
-    private Task OnMemberForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.MemberInformationEntry, item);
+    private async Task OnMemberForwardClick(RadzenSplitButtonItem item)
+    {
+        if (item?.Value == "cancel")
+        {
+            await CancelInvestigationAsync();
+            return;
+        }
 
-    private Task OnMedTechForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalTechnicianReview, item);
+        if (_lodCase is null)
+        {
+            await OnStartLod();
+            return;
+        }
 
-    private Task OnMedicalForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalOfficerReview, item);
+        await HandleWorkflowActionAsync(LineOfDutyWorkflowState.MemberInformationEntry, item);
+    }
 
-    private Task OnCommanderForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.UnitCommanderReview, item);
+    private Task OnMedTechForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalTechnicianReview, item);
+    }
 
-    private Task OnWingJAForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.WingJudgeAdvocateReview, item);
+    private Task OnMedicalForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalOfficerReview, item);
+    }
 
-    private Task OnLegalForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.WingCommanderReview, item);
+    private Task OnCommanderForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.UnitCommanderReview, item);
+    }
 
-    private Task OnWingForwardClick(RadzenSplitButtonItem item) =>
-        HandleWorkflowActionAsync(LineOfDutyWorkflowState.AppointingAuthorityReview, item);
+    private Task OnWingJAForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.WingJudgeAdvocateReview, item);
+    }
+
+    private Task OnLegalForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.WingCommanderReview, item);
+    }
+
+    private Task OnWingForwardClick(RadzenSplitButtonItem item)
+    {
+        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.AppointingAuthorityReview, item);
+    }
 
     private async Task ConfirmAndNotifyAsync(
         string confirmMessage, 
@@ -301,13 +310,13 @@ public partial class EditCase : ComponentBase, IDisposable
         var historyByState = _lodCase?.WorkflowStepHistories?
             .GroupBy(h => h.WorkflowState)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.Id).First())
-            ?? new Dictionary<LineOfDutyWorkflowState, WorkflowStepHistory>();
+            ?? [];
 
         // Fallback: positional TimelineStep data (backward compatibility with seeded cases)
         var timelineByIndex = _lodCase?.TimelineSteps
             .Select((ts, i) => (Index: i + 1, Step: ts))
             .ToDictionary(x => x.Index, x => x.Step)
-            ?? new Dictionary<int, TimelineStep>();
+            ?? [];
 
         foreach (var step in _workflowSteps)
         {
@@ -320,9 +329,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 step.CompletedBy    = history.PerformedBy;
                 step.StatusText     = history.Status == WorkflowStepStatus.Completed ? "Completed" : string.Empty;
                 step.CompletedDate  = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt : null;
-                step.CompletionDate = history.Status == WorkflowStepStatus.Completed
-                    ? history.OccurredAt.ToString("MM/dd/yyyy h:mm tt")
-                    : string.Empty;
+                step.CompletionDate = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt.ToString("MM/dd/yyyy h:mm tt") : string.Empty;
             }
             else
             {
@@ -334,8 +341,9 @@ public partial class EditCase : ComponentBase, IDisposable
                     step.Status = WorkflowStepStatus.Completed;
                     step.StatusText = "Completed";
                     if (string.IsNullOrEmpty(step.CompletionDate))
-                        step.CompletionDate = timeline?.CompletionDate?.ToString("MM/dd/yyyy h:mm tt")
-                            ?? DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
+                    {
+                        step.CompletionDate = timeline?.CompletionDate?.ToString("MM/dd/yyyy h:mm tt") ?? DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
+                    }
                 }
                 else if (step.Number == stateInt)
                 {
@@ -365,15 +373,17 @@ public partial class EditCase : ComponentBase, IDisposable
     /// </summary>
     private static int GetTabIndexForState(LineOfDutyWorkflowState state)
     {
-        for (var i = 0; i < WorkflowTabMap.Length; i++)
+        for (var i = 0; i < _workflowTabMap.Length; i++)
         {
-            if (WorkflowTabMap[i].State == state)
+            if (_workflowTabMap[i].State == state)
+            {
                 return i;
+            }
         }
 
         // Completed maps to the last workflow tab; unknown states default to first
         return state == LineOfDutyWorkflowState.Completed
-            ? WorkflowTabMap.Length - 1
+            ? _workflowTabMap.Length - 1
             : 0;
     }
 
@@ -385,7 +395,9 @@ public partial class EditCase : ComponentBase, IDisposable
     private bool IsTabDisabled(int tabIndex)
     {
         if (tabIndex >= 11)
+        {
             return false;
+        }
 
         var state = _lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry;
         return tabIndex > GetTabIndexForState(state);
@@ -407,13 +419,17 @@ public partial class EditCase : ComponentBase, IDisposable
         string cancelButtonText = "Cancel")
     {
         if (_lodCase is null)
+        {
             return;
+        }
 
         var confirmed = await DialogService.Confirm(confirmMessage, confirmTitle,
             new ConfirmOptions { OkButtonText = okButtonText, CancelButtonText = cancelButtonText });
 
         if (confirmed != true)
+        {
             return;
+        }
 
         await SetBusyAsync(busyMessage);
 
@@ -437,8 +453,8 @@ public partial class EditCase : ComponentBase, IDisposable
                     Action           = isForward ? TransitionAction.Completed : TransitionAction.Returned,
                     Status           = isForward ? WorkflowStepStatus.Completed : WorkflowStepStatus.Pending,
                     StartDate        = outgoingStep.StartDate,
-                    SignedDate       = isForward ? null : outgoingStep.SignedDate,
-                    SignedBy         = isForward ? null : (string.IsNullOrEmpty(outgoingStep.SignedBy) ? null : outgoingStep.SignedBy),
+                    SignedDate       = isForward ? now : outgoingStep.SignedDate,
+                    SignedBy         = isForward ? string.Empty : (string.IsNullOrEmpty(outgoingStep.SignedBy) ? null : outgoingStep.SignedBy),
                     OccurredAt       = now,
                     PerformedBy      = string.Empty
                 }, _cts.Token);
@@ -508,12 +524,15 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var timelineSteps = _lodCase?.TimelineSteps?.ToList();
+        var timelineSteps = _lodCase?.TimelineSteps;
 
-        if (timelineSteps is null || _currentStepIndex >= timelineSteps.Count)
+        if (_currentStepIndex >= timelineSteps.Count)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "No Timeline Step",
+            NotificationService.Notify(
+                NotificationSeverity.Warning, 
+                "No Timeline Step",
                 "No timeline step found for the current workflow step.");
+
             return;
         }
 
@@ -565,18 +584,6 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private (Action Apply, TrackableModel Model)? GetTabOperations(string tabName) => tabName switch
-    {
-        TabNames.MemberInformation     => (() => LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, _lodCase),           _memberFormModel),
-        TabNames.MedicalTechnician     => (() => LineOfDutyCaseMapper.ApplyMedicalAssessment(_medicalFormModel, _lodCase),    _medicalFormModel),
-        TabNames.UnitCommander         => (() => LineOfDutyCaseMapper.ApplyUnitCommander(_commanderFormModel, _lodCase),      _commanderFormModel),
-        TabNames.WingJudgeAdvocate     => (() => LineOfDutyCaseMapper.ApplyWingJudgeAdvocate(_wingJAFormModel, _lodCase),     _wingJAFormModel),
-        TabNames.WingCommander         => (() => LineOfDutyCaseMapper.ApplyWingCommander(_wingCommanderFormModel, _lodCase),  _wingCommanderFormModel),
-        TabNames.AppointingAuthority   => (() => LineOfDutyCaseMapper.ApplyAppointingAuthority(_appointingAuthorityFormModel, _lodCase), _appointingAuthorityFormModel),
-        TabNames.BoardTechnicianReview => (() => LineOfDutyCaseMapper.ApplyBoardTechnician(_boardTechFormModel, _lodCase),    _boardTechFormModel),
-        _                              => null,
-    };
-
     private async Task SaveCurrentTabAsync(string source)
     {
         if (_page.IsSaving)
@@ -589,48 +596,14 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            var ops = GetTabOperations(source);
-
-            if (ops is { } tabOps)
-            {
-                tabOps.Apply();
-            }
-            else
-            {
-                LineOfDutyCaseMapper.ApplyAll(
-                    new CaseViewModelsDto
-                    {
-                        CaseInfo = _caseInfo,
-                        MemberInfo = _memberFormModel,
-                        MedicalAssessment = _medicalFormModel,
-                        UnitCommander = _commanderFormModel,
-                        MedicalTechnician = _medTechFormModel,
-                        WingJudgeAdvocate = _wingJAFormModel,
-                        WingCommander = _wingCommanderFormModel,
-                        AppointingAuthority = _appointingAuthorityFormModel,
-                        BoardTechnician = _boardTechFormModel,
-                        BoardMedical = _boardMedFormModel,
-                        BoardLegal = _boardLegalFormModel,
-                        BoardAdmin = _boardAdminFormModel
-                    },
-                    _lodCase);
-            }
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lodCase);
 
             // Save the entity
             _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
 
-            // Refresh the read-only case info from the saved entity
-            _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(_lodCase);
-
-            // Re-snapshot only the saved model so other tabs retain their dirty state
-            if (ops is { } saved)
-            {
-                saved.Model.TakeSnapshot(JsonOptions);
-            }
-            else
-            {
-                TakeSnapshots();
-            }
+            // Refresh the view model from the saved entity and re-snapshot
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
+            TakeSnapshots();
 
             NotificationService.Notify(new NotificationMessage
             {
@@ -698,59 +671,59 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private void OnIsMilitaryFacilityChanged()
     {
-        if (_medicalFormModel.IsMilitaryFacility != true)
+        if (_viewModel.IsMilitaryFacility != true)
         {
-            _medicalFormModel.TreatmentFacilityName = null;
+            _viewModel.TreatmentFacilityName = null;
         }
     }
 
     private void OnWasUnderInfluenceChanged()
     {
-        if (_medicalFormModel.WasUnderInfluence != true)
+        if (_viewModel.WasUnderInfluence != true)
         {
-            _medicalFormModel.SubstanceType = null;
+            _viewModel.SubstanceType = null;
         }
     }
 
     private void OnToxicologyTestDoneChanged()
     {
-        if (_medicalFormModel.ToxicologyTestDone != true)
+        if (_viewModel.ToxicologyTestDone != true)
         {
-            _medicalFormModel.ToxicologyTestResults = null;
+            _viewModel.ToxicologyTestResults = null;
         }
     }
 
     private void OnPsychiatricEvalCompletedChanged()
     {
-        if (_medicalFormModel.PsychiatricEvalCompleted != true)
+        if (_viewModel.PsychiatricEvalCompleted != true)
         {
-            _medicalFormModel.PsychiatricEvalDate = null;
-            _medicalFormModel.PsychiatricEvalResults = null;
+            _viewModel.PsychiatricEvalDate = null;
+            _viewModel.PsychiatricEvalResults = null;
         }
     }
 
     private void OnOtherTestsDoneChanged()
     {
-        if (_medicalFormModel.OtherTestsDone != true)
+        if (_viewModel.OtherTestsDone != true)
         {
-            _medicalFormModel.OtherTestDate = null;
-            _medicalFormModel.OtherTestResults = null;
+            _viewModel.OtherTestDate = null;
+            _viewModel.OtherTestResults = null;
         }
     }
 
     private void OnIsEptsNsaChanged()
     {
-        if (_medicalFormModel.IsEptsNsa != true)
+        if (_viewModel.IsEptsNsa != true)
         {
-            _medicalFormModel.IsServiceAggravated = null;
+            _viewModel.IsServiceAggravated = null;
         }
     }
 
     private void OnIsAtDeployedLocationChanged()
     {
-        if (_medicalFormModel.IsAtDeployedLocation != false)
+        if (_viewModel.IsAtDeployedLocation != false)
         {
-            _medicalFormModel.RequiresArcBoard = null;
+            _viewModel.RequiresArcBoard = null;
         }
     }
 
@@ -784,22 +757,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 return;
             }
 
-            var dto = LineOfDutyCaseMapper.ToCaseViewModelsDto(_lodCase);
-
-            _caseInfo = dto.CaseInfo;
-            _memberFormModel = dto.MemberInfo;
-            _medicalFormModel = dto.MedicalAssessment;
-            _commanderFormModel = dto.UnitCommander;
-            _medTechFormModel = dto.MedicalTechnician;
-            _wingJAFormModel = dto.WingJudgeAdvocate;
-            _wingCommanderFormModel = dto.WingCommander;
-            _appointingAuthorityFormModel = dto.AppointingAuthority;
-            _boardTechFormModel = dto.BoardTechnician;
-            _boardMedFormModel = dto.BoardMedical;
-            _boardLegalFormModel = dto.BoardLegal;
-            _boardAdminFormModel = dto.BoardAdmin;
-
-            _memberFormModel.Grade = _lodCase.MemberRank ?? string.Empty;
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
 
             InitializeWorkflowSteps();
 
@@ -871,42 +829,42 @@ public partial class EditCase : ComponentBase, IDisposable
         ApplyWorkflowState(_lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry);
     }
 
-    private async Task OnFormSubmit(MedicalAssessmentFormModel model)
+    private async Task OnFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.MedicalTechnician);
     }
 
-    private async Task OnMemberFormSubmit(MemberInfoFormModel model)
+    private async Task OnMemberFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.MemberInformation);
     }
 
-    private async Task OnCommanderFormSubmit(UnitCommanderFormModel model)
+    private async Task OnCommanderFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.UnitCommander);
     }
 
-    private async Task OnWingJAFormSubmit(WingJudgeAdvocateFormModel model)
+    private async Task OnWingJAFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.WingJudgeAdvocate);
     }
 
-    private async Task OnWingCommanderFormSubmit(WingCommanderFormModel model)
+    private async Task OnWingCommanderFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.WingCommander);
     }
 
-    private async Task OnMedTechFormSubmit(MedicalTechnicianFormModel model)
+    private async Task OnMedTechFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.MedicalTechnician);
     }
 
-    private async Task OnAppointingAuthorityFormSubmit(AppointingAuthorityFormModel model)
+    private async Task OnAppointingAuthorityFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.AppointingAuthority);
     }
 
-    private async Task OnBoardFormSubmit(BoardTechnicianFormModel model)
+    private async Task OnBoardFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.BoardTechnicianReview);
     }
@@ -914,7 +872,9 @@ public partial class EditCase : ComponentBase, IDisposable
     private async Task OnBookmarkClick()
     {
         if (_lodCase?.Id is null or 0)
+        {
             return;
+        }
 
         _bookmark.IsBookmarked = !_bookmark.IsBookmarked;
 
@@ -943,7 +903,7 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 await CaseService.RemoveBookmarkAsync(_lodCase.Id, _cts.Token);
                 await BookmarkCountService.RefreshAsync(_cts.Token);
-                NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_caseInfo?.CaseNumber} removed from bookmarks.", closeOnClick: true);
+                NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_viewModel?.CaseNumber} removed from bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)
             {
@@ -966,6 +926,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnStartLod()
     {
+        if (_selectedMemberId <= 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "No Member Selected",
+                "Please search for and select a member before forwarding.");
+            return;
+        }
+
         var confirmed = await DialogService.Confirm(
             "Are you sure you want to start the LOD process?",
             "Start LOD",
@@ -988,7 +955,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 IncidentDate = DateTime.UtcNow
             };
 
-            LineOfDutyCaseMapper.ApplyMemberInfo(_memberFormModel, newCase);
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
 
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 
@@ -1005,6 +972,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 Action           = TransitionAction.Completed,
                 Status           = WorkflowStepStatus.Completed,
                 StartDate        = saved.CreatedDate,
+                SignedDate       = startNow,
                 OccurredAt       = startNow,
                 PerformedBy      = string.Empty
             }, _cts.Token);
@@ -1022,7 +990,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _lodCase = saved;
             CaseId = saved.CaseId;
-            _caseInfo = LineOfDutyCaseMapper.ToCaseInfoModel(saved);
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(saved);
             ApplyWorkflowState(saved.WorkflowState);
 
             TakeSnapshots();

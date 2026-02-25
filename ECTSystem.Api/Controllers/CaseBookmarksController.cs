@@ -33,8 +33,7 @@ public class CaseBookmarksController : ODataController
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark)
     {
-        var created = await _bookmarkService.AddBookmarkAsync(UserId, bookmark.LineOfDutyCaseId);
-        return Created(created);
+        return Created(await _bookmarkService.AddBookmarkAsync(UserId, bookmark.LineOfDutyCaseId));
     }
 
     [HttpDelete("odata/CaseBookmarks/DeleteByCaseId")]
@@ -52,7 +51,6 @@ public class CaseBookmarksController : ODataController
     [HttpGet("odata/CaseBookmarks/IsBookmarked(caseId={caseId})")]
     public async Task<IActionResult> IsBookmarked([FromRoute] int caseId)
     {
-        var result = await _bookmarkService.IsBookmarkedAsync(UserId, caseId);
-        return Ok(new { Value = result });
+        return Ok(new { Value = await _bookmarkService.IsBookmarkedAsync(UserId, caseId) });
     }
 }

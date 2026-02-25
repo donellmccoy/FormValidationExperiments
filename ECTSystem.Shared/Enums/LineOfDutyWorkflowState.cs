@@ -40,5 +40,9 @@ public enum LineOfDutyWorkflowState
     BoardAdminReview = 11,
 
     /// <summary>LOD determination has been finalized and the case is closed.</summary>
-    Completed = 12
+    Completed = 12,
+
+    Closed = 13,
+
+    Cancelled = 14
 }
