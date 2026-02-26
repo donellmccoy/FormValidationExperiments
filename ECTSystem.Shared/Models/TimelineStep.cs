@@ -16,7 +16,7 @@ public class TimelineStep : AuditableEntity
     public DateTime? SignedDate { get; set; }
     public string SignedBy { get; set; } = string.Empty;
     public bool IsOptional { get; set; }
-    public LineOfDutyWorkflowState? WorkflowState { get; set; }
+    public WorkflowState? WorkflowState { get; set; }
     public int? ResponsibleAuthorityId { get; set; }
     public LineOfDutyAuthority ResponsibleAuthority { get; set; }
 }

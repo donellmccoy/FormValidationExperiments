@@ -6,11 +6,11 @@ namespace ECTSystem.Shared.Models;
 /// Snapshot history entry recording the state of a workflow step at the moment
 /// a transition occurred. The latest entry per WorkflowState drives sidebar display.
 /// </summary>
-public class WorkflowStepHistory : AuditableEntity
+public class WorkflowStateHistory : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }
-    public LineOfDutyWorkflowState WorkflowState { get; set; }
+    public WorkflowState WorkflowState { get; set; }
     public TransitionAction Action { get; set; }
     public WorkflowStepStatus Status { get; set; }
     public DateTime? StartDate { get; set; }

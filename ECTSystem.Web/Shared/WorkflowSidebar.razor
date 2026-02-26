@@ -34,20 +34,30 @@
                             <span class="material-symbols-outlined step-action-icon">info</span>
                         }
                     </div>
-                    @if (step.SignedDate.HasValue)
+                    @if (step.Number == CurrentStepIndex + 1)
                     {
-                        <span class="step-date">Signed Date &mdash; @step.SignedDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
+                        @* Current/Incoming step: show SignedDate (if any) and StartDate *@
+                        @if (step.SignedDate.HasValue)
+                        {
+                            <span class="step-date">Signed Date &mdash; @step.SignedDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
+                        }
                         @if (step.StartDate.HasValue)
                         {
                             <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
                         }
                     }
-                    else
+                    else if (step.Status == WorkflowStepStatus.Completed)
                     {
-                        @if (step.Status == WorkflowStepStatus.InProgress)
+                        @* Completed/Outgoing steps: show status and StartDate, but NOT SignedDate *@
+                        @if (step.StartDate.HasValue)
                         {
-                            <span class="step-status in-progress">In Progress</span>
+                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
                         }
+                    }
+                    else if (step.Status == WorkflowStepStatus.InProgress)
+                    {
+                        @* In Progress but not current (shouldn't happen normally) *@
+                        <span class="step-status in-progress">In Progress</span>
                         @if (step.StartDate.HasValue)
                         {
                             <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>

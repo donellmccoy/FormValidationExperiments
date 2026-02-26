@@ -16,7 +16,7 @@ public class DataService :
     ILineOfDutyTimelineService,
     ILineOfDutyNotificationService,
     ICaseBookmarkService,
-    IWorkflowStepHistoryService,
+    IWorkflowStateHistoryService,
     IDisposable
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
@@ -106,7 +106,7 @@ public class DataService :
             return false;
         }
 
-        context.WorkflowStepHistories.RemoveRange(lodCase.WorkflowStepHistories);
+        context.WorkflowStateHistories.RemoveRange(lodCase.WorkflowStateHistories);
         context.TimelineSteps.RemoveRange(lodCase.TimelineSteps);
         context.Authorities.RemoveRange(lodCase.Authorities);
         context.Documents.RemoveRange(lodCase.Documents);
@@ -150,7 +150,7 @@ public class DataService :
             .Include(c => c.MEDCON)
             .Include(c => c.INCAP)
             .Include(c => c.Notifications)
-            .Include(c => c.WorkflowStepHistories);
+            .Include(c => c.WorkflowStateHistories);
     }
 
     private static void SyncAuthorities(
@@ -394,23 +394,23 @@ public class DataService :
         return step;
     }
 
-    // ──────────────────────────── Workflow Step History Operations ────────────────────────────
+    // ──────────────────────────── Workflow State History Operations ────────────────────────────
 
-    public async Task<List<WorkflowStepHistory>> GetHistoryByCaseIdAsync(int caseId, CancellationToken ct = default)
+    public async Task<List<WorkflowStateHistory>> GetHistoryByCaseIdAsync(int caseId, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        return await context.WorkflowStepHistories
+        return await context.WorkflowStateHistories
             .AsNoTracking()
             .Where(h => h.LineOfDutyCaseId == caseId)
             .OrderBy(h => h.Id)
             .ToListAsync(ct);
     }
 
-    public async Task<WorkflowStepHistory> AddHistoryEntryAsync(WorkflowStepHistory entry, CancellationToken ct = default)
+    public async Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistory entry, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
-        context.WorkflowStepHistories.Add(entry);
+        context.WorkflowStateHistories.Add(entry);
         await context.SaveChangesAsync(ct);
         return entry;
     }

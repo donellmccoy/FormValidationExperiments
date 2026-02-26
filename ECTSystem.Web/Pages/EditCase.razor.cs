@@ -34,19 +34,19 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string Draft = "Draft";
     }
 
-    private static readonly (string TabName, LineOfDutyWorkflowState State)[] _workflowTabMap =
+    private static readonly (string TabName, WorkflowState State)[] _workflowTabMap =
     [
-        (TabNames.MemberInformation,     LineOfDutyWorkflowState.MemberInformationEntry),    // 0
-        (TabNames.MedicalTechnician,     LineOfDutyWorkflowState.MedicalTechnicianReview),   // 1
-        (TabNames.MedicalOfficer,        LineOfDutyWorkflowState.MedicalOfficerReview),      // 2
-        (TabNames.UnitCommander,         LineOfDutyWorkflowState.UnitCommanderReview),       // 3
-        (TabNames.WingJudgeAdvocate,     LineOfDutyWorkflowState.WingJudgeAdvocateReview),   // 4
-        (TabNames.WingCommander,         LineOfDutyWorkflowState.WingCommanderReview),       // 5
-        (TabNames.AppointingAuthority,   LineOfDutyWorkflowState.AppointingAuthorityReview), // 6
-        (TabNames.BoardTechnicianReview, LineOfDutyWorkflowState.BoardTechnicianReview),     // 7
-        (TabNames.BoardMedicalReview,    LineOfDutyWorkflowState.BoardMedicalReview),        // 8
-        (TabNames.BoardLegalReview,      LineOfDutyWorkflowState.BoardLegalReview),          // 9
-        (TabNames.BoardAdminReview,      LineOfDutyWorkflowState.BoardAdminReview),          // 10
+        (TabNames.MemberInformation,     WorkflowState.MemberInformationEntry),    // 0
+        (TabNames.MedicalTechnician,     WorkflowState.MedicalTechnicianReview),   // 1
+        (TabNames.MedicalOfficer,        WorkflowState.MedicalOfficerReview),      // 2
+        (TabNames.UnitCommander,         WorkflowState.UnitCommanderReview),       // 3
+        (TabNames.WingJudgeAdvocate,     WorkflowState.WingJudgeAdvocateReview),   // 4
+        (TabNames.WingCommander,         WorkflowState.WingCommanderReview),       // 5
+        (TabNames.AppointingAuthority,   WorkflowState.AppointingAuthorityReview), // 6
+        (TabNames.BoardTechnicianReview, WorkflowState.BoardTechnicianReview),     // 7
+        (TabNames.BoardMedicalReview,    WorkflowState.BoardMedicalReview),        // 8
+        (TabNames.BoardLegalReview,      WorkflowState.BoardLegalReview),          // 9
+        (TabNames.BoardAdminReview,      WorkflowState.BoardAdminReview),          // 10
     ];
 
     [Inject]
@@ -165,30 +165,30 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private Task OnBoardTechForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardTechnicianReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardTechnicianReview, item);
     }
 
     private Task OnBoardMedForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardMedicalReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardMedicalReview, item);
     }
 
     private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardLegalReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardLegalReview, item);
     }
 
     private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.BoardAdminReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardAdminReview, item);
     }
 
     private Task OnBoardCompleteClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.Completed, item);
+        return HandleWorkflowActionAsync(WorkflowState.Completed, item);
     }
 
-    private async Task HandleWorkflowActionAsync(LineOfDutyWorkflowState sourceState, RadzenSplitButtonItem item)
+    private async Task HandleWorkflowActionAsync(WorkflowState sourceState, RadzenSplitButtonItem item)
     {
         if (item?.Value == "cancel")
         {
@@ -230,37 +230,37 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        await HandleWorkflowActionAsync(LineOfDutyWorkflowState.MemberInformationEntry, item);
+        await HandleWorkflowActionAsync(WorkflowState.MemberInformationEntry, item);
     }
 
     private Task OnMedTechForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalTechnicianReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.MedicalTechnicianReview, item);
     }
 
     private Task OnMedicalForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.MedicalOfficerReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.MedicalOfficerReview, item);
     }
 
     private Task OnCommanderForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.UnitCommanderReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.UnitCommanderReview, item);
     }
 
     private Task OnWingJAForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.WingJudgeAdvocateReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.WingJudgeAdvocateReview, item);
     }
 
     private Task OnLegalForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.WingCommanderReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.WingCommanderReview, item);
     }
 
     private Task OnWingForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(LineOfDutyWorkflowState.AppointingAuthorityReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.AppointingAuthorityReview, item);
     }
 
     private async Task ConfirmAndNotifyAsync(
@@ -295,19 +295,19 @@ public partial class EditCase : ComponentBase, IDisposable
 
     /// <summary>
     /// Syncs the workflow sidebar step statuses and <see cref="_currentStepIndex"/> to match
-    /// <paramref name="state"/>. Uses WorkflowStepHistory entries as the primary source;
+    /// <paramref name="state"/>. Uses WorkflowStateHistory entries as the primary source;
     /// falls back to positional TimelineStep data for cases predating the history feature.
     /// Does NOT persist the state change to the database.
     /// </summary>
-    private void ApplyWorkflowState(LineOfDutyWorkflowState state)
+    private void ApplyWorkflowState(WorkflowState state)
     {
         // Clamp to valid range — DB rows that predate the WorkflowState migration have int value 0
         var stateInt = (int)state < 1 ? 1 : (int)state > _workflowSteps.Count ? _workflowSteps.Count : (int)state;
         _currentStepIndex = stateInt - 1;
-        _selectedTabIndex = GetTabIndexForState((LineOfDutyWorkflowState)stateInt);
+        _selectedTabIndex = GetTabIndexForState((WorkflowState)stateInt);
 
         // Primary source: latest history entry per WorkflowState (highest Id = most recent)
-        var historyByState = _lodCase?.WorkflowStepHistories?
+        var historyByState = _lodCase?.WorkflowStateHistories?
             .GroupBy(h => h.WorkflowState)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.Id).First())
             ?? [];
@@ -368,10 +368,10 @@ public partial class EditCase : ComponentBase, IDisposable
     }
 
     /// <summary>
-    /// Maps a <see cref="LineOfDutyWorkflowState"/> to its 0-based tab index in the RadzenTabs control.
+    /// Maps a <see cref="WorkflowState"/> to its 0-based tab index in the RadzenTabs control.
     /// Tab order: Member(0) · Med Tech(1) · Med Officer(2) · Unit CC(3) · Wing JA(4) · Wing CC(5) · Appointing Auth(6) · Board Tech(7) · Board Med(8) · Board Legal(9) · Board Admin(10)
     /// </summary>
-    private static int GetTabIndexForState(LineOfDutyWorkflowState state)
+    private static int GetTabIndexForState(WorkflowState state)
     {
         for (var i = 0; i < _workflowTabMap.Length; i++)
         {
@@ -382,7 +382,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         // Completed maps to the last workflow tab; unknown states default to first
-        return state == LineOfDutyWorkflowState.Completed
+        return state == WorkflowState.Completed
             ? _workflowTabMap.Length - 1
             : 0;
     }
@@ -399,7 +399,7 @@ public partial class EditCase : ComponentBase, IDisposable
             return false;
         }
 
-        var state = _lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry;
+        var state = _lodCase?.WorkflowState ?? WorkflowState.MemberInformationEntry;
         return tabIndex > GetTabIndexForState(state);
     }
 
@@ -408,7 +408,7 @@ public partial class EditCase : ComponentBase, IDisposable
     /// <paramref name="targetState"/>, persists the change, updates the sidebar, and notifies.
     /// </summary>
     private async Task ChangeWorkflowStateAsync(
-        LineOfDutyWorkflowState targetState,
+        WorkflowState targetState,
         string confirmMessage,
         string confirmTitle,
         string okButtonText,
@@ -446,7 +446,7 @@ public partial class EditCase : ComponentBase, IDisposable
             // Record outgoing step history snapshot
             if (outgoingStep is not null)
             {
-                await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+                await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
                 {
                     LineOfDutyCaseId = _lodCase.Id,
                     WorkflowState    = sourceState,
@@ -461,7 +461,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
 
             // Record incoming step history snapshot (fresh start)
-            await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = _lodCase.Id,
                 WorkflowState    = targetState,
@@ -484,7 +484,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 }
             }
 
-            // Re-fetch the full case including WorkflowStepHistories
+            // Re-fetch the full case including WorkflowStateHistories
             _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
             ApplyWorkflowState(targetState);
             NotificationService.Notify(severity, notifySummary, notifyDetail);
@@ -514,12 +514,87 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnDigitallySign()
     {
-        var confirmed = await DialogService.Confirm(
+        // If LOD case doesn't exist yet, create it first (without advancing workflow)
+        if (_lodCase is null)
+        {
+            if (_selectedMemberId <= 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "No Member Selected",
+                    "Please search for and select a member before signing.");
+                return;
+            }
+
+            var confirmed = await DialogService.Confirm(
+                "This will create the LOD case and digitally sign the Member Information section. Continue?",
+                "Create and Sign",
+                new ConfirmOptions { OkButtonText = "Create & Sign", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Creating LOD case...");
+
+            try
+            {
+                var newCase = new LineOfDutyCase
+                {
+                    CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                    MemberId = _selectedMemberId,
+                    InitiationDate = DateTime.UtcNow,
+                    IncidentDate = DateTime.UtcNow,
+                    WorkflowState = WorkflowState.MemberInformationEntry
+                };
+
+                LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
+
+                var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
+
+                // Record workflow history entry
+                var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
+                {
+                    LineOfDutyCaseId = saved.Id,
+                    WorkflowState    = WorkflowState.MemberInformationEntry,
+                    Action           = TransitionAction.Entered,
+                    Status           = WorkflowStepStatus.InProgress,
+                    StartDate        = saved.CreatedDate,
+                    OccurredAt       = saved.CreatedDate, 
+                    CreatedBy        = saved.CreatedBy,
+                    CreatedDate      = saved.CreatedDate,
+                    ModifiedBy       = saved.ModifiedBy,
+                    ModifiedDate     = saved.ModifiedDate,
+                    PerformedBy      = string.Empty
+                }, _cts.Token);
+
+                _lodCase = saved;
+                CaseId = saved.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(saved);
+
+                ApplyWorkflowState(saved.WorkflowState);
+
+                TakeSnapshots();
+
+                Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Creation Failed", ex.Message);
+            }
+            finally            
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+            return;
+        }
+
+        var confirmed2 = await DialogService.Confirm(
             "Are you sure you want to digitally sign this section?",
             "Confirm Digital Signature",
             new ConfirmOptions { OkButtonText = "Sign", CancelButtonText = "Cancel" });
 
-        if (confirmed != true)
+        if (confirmed2 != true)
         {
             return;
         }
@@ -548,7 +623,7 @@ public partial class EditCase : ComponentBase, IDisposable
             timelineStep.SignedBy   = signed.SignedBy;
 
             // Record signed history entry so the sidebar shows the SignedDate immediately
-            var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = _lodCase.Id,
                 WorkflowState    = _lodCase.WorkflowState,
@@ -561,8 +636,8 @@ public partial class EditCase : ComponentBase, IDisposable
                 PerformedBy      = string.Empty
             }, _cts.Token);
 
-            _lodCase.WorkflowStepHistories ??= [];
-            _lodCase.WorkflowStepHistories.Add(historyEntry);
+            _lodCase.WorkflowStateHistories ??= [];
+            _lodCase.WorkflowStateHistories.Add(historyEntry);
 
             ApplyWorkflowState(_lodCase.WorkflowState);
 
@@ -742,6 +817,14 @@ public partial class EditCase : ComponentBase, IDisposable
         _page.IsLoading = false;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && IsNewCase && _memberSearchTextBox is not null)
+        {
+            await _memberSearchTextBox.Element.FocusAsync();
+        }
+    }
+
     private async Task LoadCaseAsync()
     {
         await SetBusyAsync("Loading case...");
@@ -812,21 +895,21 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         _workflowSteps =
         [
-            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.MemberInformationEntry,    Description = "Enter member identification and incident details to initiate the LOD case." },
-            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.MedicalTechnicianReview,   Description = "Medical technician reviews the injury/illness and documents clinical findings." },
-            new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.MedicalOfficerReview,      Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
-            new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.UnitCommanderReview,       Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
-            new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.WingJudgeAdvocateReview,   Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
-            new() { Number = 6,  Name = "Appointing Authority",      Icon = "verified_user",        Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.AppointingAuthorityReview, Description = "Appointing authority reviews the case and issues a formal LOD determination." },
-            new() { Number = 7,  Name = "Wing CC Review",            Icon = "stars",                Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.WingCommanderReview,       Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
-            new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
-            new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardMedicalReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
-            new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
-            new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.BoardAdminReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
-            new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = LineOfDutyWorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
+            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MemberInformationEntry,    Description = "Enter member identification and incident details to initiate the LOD case." },
+            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalTechnicianReview,   Description = "Medical technician reviews the injury/illness and documents clinical findings." },
+            new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalOfficerReview,      Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
+            new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.UnitCommanderReview,       Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
+            new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingJudgeAdvocateReview,   Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
+            new() { Number = 6,  Name = "Appointing Authority",      Icon = "verified_user",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.AppointingAuthorityReview, Description = "Appointing authority reviews the case and issues a formal LOD determination." },
+            new() { Number = 7,  Name = "Wing CC Review",            Icon = "stars",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingCommanderReview,       Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
+            new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
+            new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
+            new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
+            new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardAdminReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
+            new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
         ];
 
-        ApplyWorkflowState(_lodCase?.WorkflowState ?? LineOfDutyWorkflowState.MemberInformationEntry);
+        ApplyWorkflowState(_lodCase?.WorkflowState ?? WorkflowState.MemberInformationEntry);
     }
 
     private async Task OnFormSubmit(LineOfDutyViewModel model)
@@ -951,6 +1034,7 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
                 MemberId = _selectedMemberId,
+                WorkflowState = WorkflowState.MemberInformationEntry,
                 InitiationDate = DateTime.UtcNow,
                 IncidentDate = DateTime.UtcNow
             };
@@ -960,15 +1044,15 @@ public partial class EditCase : ComponentBase, IDisposable
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 
             // Advance to the first review state and persist
-            saved.WorkflowState = LineOfDutyWorkflowState.MedicalTechnicianReview;
+            saved.WorkflowState = WorkflowState.MedicalTechnicianReview;
             saved = await CaseService.SaveCaseAsync(saved, _cts.Token);
 
             // Record workflow history: MemberInformationEntry completed, MedicalTechnicianReview entered
             var startNow = DateTime.UtcNow;
-            await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = saved.Id,
-                WorkflowState    = LineOfDutyWorkflowState.MemberInformationEntry,
+                WorkflowState    = WorkflowState.MemberInformationEntry,
                 Action           = TransitionAction.Completed,
                 Status           = WorkflowStepStatus.Completed,
                 StartDate        = saved.CreatedDate,
@@ -977,10 +1061,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 PerformedBy      = string.Empty
             }, _cts.Token);
 
-            await CaseService.AddHistoryEntryAsync(new WorkflowStepHistory
+            await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = saved.Id,
-                WorkflowState    = LineOfDutyWorkflowState.MedicalTechnicianReview,
+                WorkflowState    = WorkflowState.MedicalTechnicianReview,
                 Action           = TransitionAction.Entered,
                 Status           = WorkflowStepStatus.InProgress,
                 StartDate        = startNow,

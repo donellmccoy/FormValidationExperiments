@@ -69,7 +69,7 @@ public static class EctDbSeeder
             var finding = PickRandom(rng, LineOfDutyFinding.InLineOfDuty, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.ExistingPriorToServiceNotAggravated);
             var wasUnderInfluence = rng.Next(100) < 15;
             var isInterim = processType == LineOfDutyProcessType.Informal && rng.Next(100) < 40;
-            var workflowState = LineOfDutyWorkflowState.MemberInformationEntry;
+            var workflowState = WorkflowState.MemberInformationEntry;
             var rank = Ranks[rng.Next(Ranks.Length)];
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
             var memberName = $"{firstName} {MiddleInitials[rng.Next(MiddleInitials.Length)]}. {lastName}";

@@ -9,15 +9,15 @@ using Xunit;
 
 namespace ECTSystem.Tests;
 
-public class WorkflowStepHistoriesControllerTests : ControllerTestBase
+public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 {
-    private readonly Mock<IWorkflowStepHistoryService>  _mockService;
-    private readonly WorkflowStepHistoriesController    _sut;
+    private readonly Mock<IWorkflowStateHistoryService>  _mockService;
+    private readonly WorkflowStateHistoriesController    _sut;
 
-    public WorkflowStepHistoriesControllerTests()
+    public WorkflowStateHistoriesControllerTests()
     {
-        _mockService = new Mock<IWorkflowStepHistoryService>();
-        _sut         = new WorkflowStepHistoriesController(_mockService.Object);
+        _mockService = new Mock<IWorkflowStateHistoryService>();
+        _sut         = new WorkflowStateHistoriesController(_mockService.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 
@@ -32,7 +32,7 @@ public class WorkflowStepHistoriesControllerTests : ControllerTestBase
 
         var result = await _sut.Post(entry, CancellationToken.None);
 
-        var r = Assert.IsType<CreatedODataResult<WorkflowStepHistory>>(result);
+        var r = Assert.IsType<CreatedODataResult<WorkflowStateHistory>>(result);
         Assert.Equal(entry, r.Value);
     }
 
@@ -41,7 +41,7 @@ public class WorkflowStepHistoriesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("WorkflowState", "Required");
 
-        var result = await _sut.Post(new WorkflowStepHistory(), CancellationToken.None);
+        var result = await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -63,17 +63,17 @@ public class WorkflowStepHistoriesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("key", "error");
 
-        await _sut.Post(new WorkflowStepHistory(), CancellationToken.None);
+        await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
 
-        _mockService.Verify(s => s.AddHistoryEntryAsync(It.IsAny<WorkflowStepHistory>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockService.Verify(s => s.AddHistoryEntryAsync(It.IsAny<WorkflowStateHistory>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ─────────────────────────────── Helpers ─────────────────────────────────
 
-    private static WorkflowStepHistory BuildEntry() => new WorkflowStepHistory
+    private static WorkflowStateHistory BuildEntry() => new WorkflowStateHistory
     {
         LineOfDutyCaseId = 1,
-        WorkflowState    = LineOfDutyWorkflowState.MemberInformationEntry,
+        WorkflowState    = WorkflowState.MemberInformationEntry,
         Action           = TransitionAction.Entered,
         Status           = WorkflowStepStatus.InProgress,
         OccurredAt       = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)

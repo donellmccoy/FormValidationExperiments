@@ -6,7 +6,7 @@ namespace ECTSystem.Web.Pages;
 public partial class EditCase
 {
     internal record WorkflowTransition(
-        LineOfDutyWorkflowState TargetState,
+        WorkflowState TargetState,
         string ConfirmMessage,
         string ConfirmTitle,
         string OkButtonText,
@@ -21,7 +21,7 @@ public partial class EditCase
     private static readonly Dictionary<string, WorkflowTransition> SharedTransitions = new()
     {
         ["return-med-tech"] = new(
-            LineOfDutyWorkflowState.MedicalTechnicianReview,
+            WorkflowState.MedicalTechnicianReview,
             "Are you sure you want to return this case to the Medical Technician?",
             "Confirm Return", "Return",
             "Returning to Medical Technician...",
@@ -29,7 +29,7 @@ public partial class EditCase
             "Case has been returned to the Medical Technician for review."),
 
         ["return-med-officer"] = new(
-            LineOfDutyWorkflowState.MedicalOfficerReview,
+            WorkflowState.MedicalOfficerReview,
             "Are you sure you want to return this case to the Medical Officer?",
             "Confirm Return", "Return",
             "Returning to Medical Officer...",
@@ -37,7 +37,7 @@ public partial class EditCase
             "Case has been returned to the Medical Officer for review."),
 
         ["return-unit-cc"] = new(
-            LineOfDutyWorkflowState.UnitCommanderReview,
+            WorkflowState.UnitCommanderReview,
             "Are you sure you want to return this case to the Unit Commander?",
             "Confirm Return", "Return",
             "Returning to Unit CC...",
@@ -45,7 +45,7 @@ public partial class EditCase
             "Case has been returned to the Unit Commander for review."),
 
         ["return-wing-ja"] = new(
-            LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+            WorkflowState.WingJudgeAdvocateReview,
             "Are you sure you want to return this case to the Wing Judge Advocate?",
             "Confirm Return", "Return",
             "Returning to Wing JA...",
@@ -53,7 +53,7 @@ public partial class EditCase
             "Case has been returned to the Wing Judge Advocate for review."),
 
         ["return-wing-cc"] = new(
-            LineOfDutyWorkflowState.WingCommanderReview,
+            WorkflowState.WingCommanderReview,
             "Are you sure you want to return this case to the Wing Commander?",
             "Confirm Return", "Return",
             "Returning to Wing CC...",
@@ -61,7 +61,7 @@ public partial class EditCase
             "Case has been returned to the Wing Commander for review."),
 
         ["return-appointing-authority"] = new(
-            LineOfDutyWorkflowState.AppointingAuthorityReview,
+            WorkflowState.AppointingAuthorityReview,
             "Are you sure you want to return this case to the Appointing Authority?",
             "Confirm Return", "Return",
             "Returning to Appointing Authority...",
@@ -69,7 +69,7 @@ public partial class EditCase
             "Case has been returned to the Appointing Authority for review."),
 
         ["board-tech"] = new(
-            LineOfDutyWorkflowState.BoardTechnicianReview,
+            WorkflowState.BoardTechnicianReview,
             "Are you sure you want to forward this case to the Board Technician?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Technician...",
@@ -77,7 +77,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Technician."),
 
         ["board-med"] = new(
-            LineOfDutyWorkflowState.BoardMedicalReview,
+            WorkflowState.BoardMedicalReview,
             "Are you sure you want to forward this case to the Board Medical reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Medical...",
@@ -85,7 +85,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Medical reviewer."),
 
         ["board-legal"] = new(
-            LineOfDutyWorkflowState.BoardLegalReview,
+            WorkflowState.BoardLegalReview,
             "Are you sure you want to forward this case to the Board Legal reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Legal...",
@@ -93,7 +93,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Legal reviewer."),
 
         ["board-admin"] = new(
-            LineOfDutyWorkflowState.BoardAdminReview,
+            WorkflowState.BoardAdminReview,
             "Are you sure you want to forward this case to the Board Admin reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Admin...",
@@ -104,99 +104,99 @@ public partial class EditCase
     /// <summary>
     /// Workflow transitions that depend on the source state: default forwards and context-dependent actions.
     /// </summary>
-    private static readonly Dictionary<(LineOfDutyWorkflowState Source, string Action), WorkflowTransition> SourceTransitions = new()
+    private static readonly Dictionary<(WorkflowState Source, string Action), WorkflowTransition> SourceTransitions = new()
     {
         // Default forward transitions (main button click, item?.Value is null)
-        [(LineOfDutyWorkflowState.MemberInformationEntry, "default")] = new(
-            LineOfDutyWorkflowState.MedicalTechnicianReview,
+        [(WorkflowState.MemberInformationEntry, "default")] = new(
+            WorkflowState.MedicalTechnicianReview,
             "Are you sure you want to forward this case to the Medical Technician?",
             "Confirm Forward", "Forward",
             "Forwarding to Medical Technician...",
             NotificationSeverity.Success, "Forwarded to Medical Technician",
             "Case has been forwarded to the Medical Technician for review."),
 
-        [(LineOfDutyWorkflowState.MedicalTechnicianReview, "default")] = new(
-            LineOfDutyWorkflowState.MedicalOfficerReview,
+        [(WorkflowState.MedicalTechnicianReview, "default")] = new(
+            WorkflowState.MedicalOfficerReview,
             "Are you sure you want to forward this case to the Medical Officer?",
             "Confirm Forward", "Forward",
             "Forwarding to Medical Officer...",
             NotificationSeverity.Success, "Forwarded to Medical Officer",
             "Case has been forwarded to the Medical Officer for review."),
 
-        [(LineOfDutyWorkflowState.MedicalOfficerReview, "default")] = new(
-            LineOfDutyWorkflowState.UnitCommanderReview,
+        [(WorkflowState.MedicalOfficerReview, "default")] = new(
+            WorkflowState.UnitCommanderReview,
             "Are you sure you want to forward this case to the Unit Commander?",
             "Confirm Forward", "Forward",
             "Forwarding to Unit CC...",
             NotificationSeverity.Success, "Forwarded to Unit CC",
             "Case has been forwarded to the Unit Commander."),
 
-        [(LineOfDutyWorkflowState.UnitCommanderReview, "default")] = new(
-            LineOfDutyWorkflowState.WingJudgeAdvocateReview,
+        [(WorkflowState.UnitCommanderReview, "default")] = new(
+            WorkflowState.WingJudgeAdvocateReview,
             "Are you sure you want to forward this case to the Wing Judge Advocate?",
             "Confirm Forward", "Forward",
             "Forwarding to Wing JA...",
             NotificationSeverity.Success, "Forwarded to Wing JA",
             "Case has been forwarded to the Wing Judge Advocate."),
 
-        [(LineOfDutyWorkflowState.WingJudgeAdvocateReview, "default")] = new(
-            LineOfDutyWorkflowState.WingCommanderReview,
+        [(WorkflowState.WingJudgeAdvocateReview, "default")] = new(
+            WorkflowState.WingCommanderReview,
             "Are you sure you want to forward this case to the Wing Commander?",
             "Confirm Forward", "Forward",
             "Forwarding to Wing CC...",
             NotificationSeverity.Success, "Forwarded to Wing CC",
             "Case has been forwarded to the Wing Commander."),
 
-        [(LineOfDutyWorkflowState.WingCommanderReview, "default")] = new(
-            LineOfDutyWorkflowState.AppointingAuthorityReview,
+        [(WorkflowState.WingCommanderReview, "default")] = new(
+            WorkflowState.AppointingAuthorityReview,
             "Are you sure you want to forward this case to the Appointing Authority?",
             "Confirm Forward", "Forward",
             "Forwarding to Appointing Authority...",
             NotificationSeverity.Success, "Forwarded to Appointing Authority",
             "Case has been forwarded to the Appointing Authority for review."),
 
-        [(LineOfDutyWorkflowState.AppointingAuthorityReview, "default")] = new(
-            LineOfDutyWorkflowState.BoardTechnicianReview,
+        [(WorkflowState.AppointingAuthorityReview, "default")] = new(
+            WorkflowState.BoardTechnicianReview,
             "Are you sure you want to forward this case to the Board for review?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Review...",
             NotificationSeverity.Success, "Forwarded to Board Review",
             "Case has been forwarded to the Board for review."),
 
-        [(LineOfDutyWorkflowState.BoardTechnicianReview, "default")] = new(
-            LineOfDutyWorkflowState.BoardMedicalReview,
+        [(WorkflowState.BoardTechnicianReview, "default")] = new(
+            WorkflowState.BoardMedicalReview,
             "Are you sure you want to forward this case to the Board Medical reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Medical...",
             NotificationSeverity.Success, "Forwarded to Board Medical",
             "Case has been forwarded to the Board Medical reviewer."),
 
-        [(LineOfDutyWorkflowState.BoardMedicalReview, "default")] = new(
-            LineOfDutyWorkflowState.BoardLegalReview,
+        [(WorkflowState.BoardMedicalReview, "default")] = new(
+            WorkflowState.BoardLegalReview,
             "Are you sure you want to forward this case to the Board Legal reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Legal...",
             NotificationSeverity.Success, "Forwarded to Board Legal",
             "Case has been forwarded to the Board Legal reviewer."),
 
-        [(LineOfDutyWorkflowState.BoardLegalReview, "default")] = new(
-            LineOfDutyWorkflowState.BoardAdminReview,
+        [(WorkflowState.BoardLegalReview, "default")] = new(
+            WorkflowState.BoardAdminReview,
             "Are you sure you want to forward this case to the Board Admin reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Admin...",
             NotificationSeverity.Success, "Forwarded to Board Admin",
             "Case has been forwarded to the Board Admin reviewer."),
 
-        [(LineOfDutyWorkflowState.BoardAdminReview, "default")] = new(
-            LineOfDutyWorkflowState.Completed,
+        [(WorkflowState.BoardAdminReview, "default")] = new(
+            WorkflowState.Completed,
             "Are you sure you want to complete the Board review?",
             "Confirm Complete", "Complete",
             "Completing Board review...",
             NotificationSeverity.Success, "Review Completed",
             "The Board review has been completed."),
 
-        [(LineOfDutyWorkflowState.Completed, "default")] = new(
-            LineOfDutyWorkflowState.Completed,
+        [(WorkflowState.Completed, "default")] = new(
+            WorkflowState.Completed,
             "Are you sure you want to complete the Board review?",
             "Confirm Complete", "Complete",
             "Completing Board review...",
@@ -204,16 +204,16 @@ public partial class EditCase
             "The Board review has been completed."),
 
         // Context-dependent "return" action (target varies by source state)
-        [(LineOfDutyWorkflowState.MedicalOfficerReview, "return")] = new(
-            LineOfDutyWorkflowState.MedicalTechnicianReview,
+        [(WorkflowState.MedicalOfficerReview, "return")] = new(
+            WorkflowState.MedicalTechnicianReview,
             "Are you sure you want to return this case to the Medical Technician?",
             "Confirm Return", "Return",
             "Returning to Med Tech...",
             NotificationSeverity.Info, "Returned to Med Tech",
             "Case has been returned to the Medical Technician for review."),
 
-        [(LineOfDutyWorkflowState.WingCommanderReview, "return")] = new(
-            LineOfDutyWorkflowState.UnitCommanderReview,
+        [(WorkflowState.WingCommanderReview, "return")] = new(
+            WorkflowState.UnitCommanderReview,
             "Are you sure you want to return this case to the Unit Commander?",
             "Confirm Return", "Return",
             "Returning to Unit CC...",

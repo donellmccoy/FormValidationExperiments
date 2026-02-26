@@ -9,7 +9,7 @@ $loginResult = Invoke-RestMethod -Uri "https://localhost:7173/login" `
 $token = $loginResult.accessToken
 Write-Host "Login OK, got token"
 
-# POST WorkflowStepHistory
+# POST WorkflowStateHistory
 $headers = @{ Authorization = "Bearer $token" }
 $body = @{
     lineOfDutyCaseId = 1
@@ -24,7 +24,7 @@ Write-Host "Sending POST..."
 Write-Host "Body: $body"
 
 try {
-    $response = Invoke-WebRequest -Uri "https://localhost:7173/odata/WorkflowStepHistories" `
+    $response = Invoke-WebRequest -Uri "https://localhost:7173/odata/WorkflowStateHistories" `
         -Method POST `
         -ContentType "application/json" `
         -Headers $headers `

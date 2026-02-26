@@ -57,7 +57,7 @@ public class Program
         builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<DataService>());
         builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<DataService>());
         builder.Services.AddScoped<ICaseBookmarkService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<IWorkflowStepHistoryService>(sp => sp.GetRequiredService<DataService>());
+        builder.Services.AddScoped<IWorkflowStateHistoryService>(sp => sp.GetRequiredService<DataService>());
 
         // OData Entity Data Model
         var odataBuilder = new ODataConventionModelBuilder();
@@ -80,7 +80,7 @@ public class Program
         caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked")
             .Returns<bool>()
             .Parameter<int>("caseId");
-        odataBuilder.EntitySet<WorkflowStepHistory>("WorkflowStepHistories");
+        odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
         var edmModel = odataBuilder.GetEdmModel();
         builder.Services.AddSingleton<IEdmModel>(edmModel);
 

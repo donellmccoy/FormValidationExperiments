@@ -21,7 +21,65 @@ namespace ECTSystem.Web.Services;
 public class LineOfDutyCaseHttpService : IDataService
 {
     private readonly ODataClient _client;
+
     private readonly HttpClient _httpClient;
+
+    private static readonly JsonSerializerOptions ODataJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    // Maps rank titles and abbreviations to pay grade strings stored in the DB.
+    // Multiple keys can map to the same pay grade (e.g., "Major" and "Maj" both → "O-4").
+    private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Enlisted
+        ["Airman Basic"] = "E-1",
+        ["AB"] = "E-1",
+        ["Airman"] = "E-2",
+        ["Amn"] = "E-2",
+        ["Airman First Class"] = "E-3",
+        ["A1C"] = "E-3",
+        ["Senior Airman"] = "E-4",
+        ["SrA"] = "E-4",
+        ["Staff Sergeant"] = "E-5",
+        ["SSgt"] = "E-5",
+        ["Technical Sergeant"] = "E-6",
+        ["TSgt"] = "E-6",
+        ["Master Sergeant"] = "E-7",
+        ["MSgt"] = "E-7",
+        ["Senior Master Sergeant"] = "E-8",
+        ["SMSgt"] = "E-8",
+        ["Chief Master Sergeant"] = "E-9",
+        ["CMSgt"] = "E-9",
+        // Officer
+        ["Second Lieutenant"] = "O-1",
+        ["2d Lt"] = "O-1",
+        ["SecondLt"] = "O-1",
+        ["First Lieutenant"] = "O-2",
+        ["1st Lt"] = "O-2",
+        ["FirstLt"] = "O-2",
+        ["Captain"] = "O-3",
+        ["Capt"] = "O-3",
+        ["Major"] = "O-4",
+        ["Maj"] = "O-4",
+        ["Lieutenant Colonel"] = "O-5",
+        ["Lt Col"] = "O-5",
+        ["LtCol"] = "O-5",
+        ["Colonel"] = "O-6",
+        ["Col"] = "O-6",
+        ["Brigadier General"] = "O-7",
+        ["Brig Gen"] = "O-7",
+        ["BrigGen"] = "O-7",
+        ["Major General"] = "O-8",
+        ["Maj Gen"] = "O-8",
+        ["MajGen"] = "O-8",
+        ["Lieutenant General"] = "O-9",
+        ["Lt Gen"] = "O-9",
+        ["LtGen"] = "O-9",
+        ["General"] = "O-10",
+        ["Gen"] = "O-10",
+    };
 
     /// <summary>
     /// Cached scalar property metadata for <see cref="LineOfDutyCase"/>.
@@ -29,7 +87,7 @@ public class LineOfDutyCaseHttpService : IDataService
     /// so PATCH requests must include only scalar (primitive, enum, DateTime, string) properties.
     /// </summary>
     private static readonly System.Reflection.PropertyInfo[] ScalarProperties =
-        typeof(LineOfDutyCase).GetProperties()
+        [.. typeof(LineOfDutyCase).GetProperties()
             .Where(p =>
             {
                 var type = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
@@ -40,8 +98,7 @@ public class LineOfDutyCaseHttpService : IDataService
                     || type == typeof(DateTimeOffset)
                     || type == typeof(Guid)
                     || type == typeof(decimal);
-            })
-            .ToArray();
+            })];
 
     public LineOfDutyCaseHttpService(ODataClient client, HttpClient httpClient)
     {
@@ -93,9 +150,7 @@ public class LineOfDutyCaseHttpService : IDataService
         };
     }
 
-    public async Task<LineOfDutyCase?> GetCaseAsync(
-        string caseId,
-        CancellationToken cancellationToken = default)
+    public async Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default)
     {
         var query = _client.For<LineOfDutyCase>("Cases")
             .Filter($"CaseId eq '{caseId}'")
@@ -103,22 +158,19 @@ public class LineOfDutyCaseHttpService : IDataService
             .Expand("Documents,Authorities," +
                     "TimelineSteps($expand=ResponsibleAuthority)," +
                     "Appeals($expand=AppellateAuthority)," +
-                    "Member,MEDCON,INCAP,Notifications,WorkflowStepHistories");
+                    "Member,MEDCON,INCAP,Notifications,WorkflowStateHistories");
 
         var response = await _client.GetAsync(query, cancellationToken);
 
         return response.Value?.FirstOrDefault();
     }
 
-    public async Task<LineOfDutyCase> SaveCaseAsync(
-        LineOfDutyCase lodCase,
-        CancellationToken cancellationToken = default)
+    public async Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default)
     {
         if (lodCase.Id == 0)
         {
             // POST — create new entity
-            var created = await _client.CreateAsync("Cases", lodCase, null, cancellationToken);
-            return created ?? lodCase;
+            return (LineOfDutyCase?)await _client.CreateAsync("Cases", lodCase, null, cancellationToken) ?? lodCase;
         }
         else
         {
@@ -128,16 +180,13 @@ public class LineOfDutyCaseHttpService : IDataService
             // properties or collections (Member, MEDCON, Documents, etc.), so we
             // must strip them out. Sending a Dictionary<string, object?> produces
             // the same JSON as an anonymous object with only the desired fields.
-            var patchBody = BuildScalarPatchBody(lodCase);
-            var updated = await _client.UpdateAsync<LineOfDutyCase>(
-                "Cases", lodCase.Id, patchBody, null, cancellationToken);
+            var updated = await _client.UpdateAsync<LineOfDutyCase>("Cases", lodCase.Id, BuildScalarPatchBody(lodCase), null, cancellationToken);
+
             return updated ?? lodCase;
         }
     }
 
-    public async Task<List<Member>> SearchMembersAsync(
-        string searchText,
-        CancellationToken cancellationToken = default)
+    public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)
     {
         // OData string literals escape single quotes by doubling them ('').
         // Do NOT use Uri.EscapeDataString here — the outer Uri.EscapeDataString(filter)
@@ -160,9 +209,7 @@ public class LineOfDutyCaseHttpService : IDataService
 
         if (matchingPayGrades.Count > 0)
         {
-            var rankClauses = string.Join(" or ",
-                matchingPayGrades.Select(pg => $"Rank eq '{pg}'"));
-            filter += $" or {rankClauses}";
+            filter += $" or {string.Join(" or ", matchingPayGrades.Select(pg => $"Rank eq '{pg}'"))}";
         }
 
         // Match Component enum values by raw name or display name (e.g. "Reserve" → AirForceReserve)
@@ -178,15 +225,14 @@ public class LineOfDutyCaseHttpService : IDataService
 
         if (matchingComponents.Count > 0)
         {
-            var componentClauses = string.Join(" or ",
-                matchingComponents.Select(c => $"Component eq ECTSystem.Shared.Enums.ServiceComponent'{c}'"));
-            filter += $" or {componentClauses}";
+            filter += $" or {string.Join(" or ", matchingComponents.Select(c => $"Component eq ECTSystem.Shared.Enums.ServiceComponent'{c}'"))}";
         }
 
-        var url = $"odata/Members?$filter={Uri.EscapeDataString(filter)}&$top=25&$orderby=LastName,FirstName";
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         options.Converters.Add(new JsonStringEnumConverter());
-        var response = await _httpClient.GetFromJsonAsync<ODataResponse<Member>>(url, options, cancellationToken);
+
+        var response = await _httpClient.GetFromJsonAsync<ODataResponse<Member>>((string?)$"odata/Members?$filter={Uri.EscapeDataString(filter)}&$top=25&$orderby=LastName,FirstName", options, cancellationToken);
+
         return response?.Value ?? [];
     }
 
@@ -198,44 +244,14 @@ public class LineOfDutyCaseHttpService : IDataService
     private static Dictionary<string, object?> BuildScalarPatchBody(LineOfDutyCase lodCase)
     {
         var dict = new Dictionary<string, object?>(ScalarProperties.Length);
+
         foreach (var prop in ScalarProperties)
         {
             dict[prop.Name] = prop.GetValue(lodCase);
         }
+
         return dict;
     }
-
-    // Maps rank titles and abbreviations to pay grade strings stored in the DB.
-    // Multiple keys can map to the same pay grade (e.g., "Major" and "Maj" both → "O-4").
-    private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
-    {
-        // Enlisted
-        ["Airman Basic"] = "E-1",      ["AB"] = "E-1",
-        ["Airman"] = "E-2",            ["Amn"] = "E-2",
-        ["Airman First Class"] = "E-3",["A1C"] = "E-3",
-        ["Senior Airman"] = "E-4",     ["SrA"] = "E-4",
-        ["Staff Sergeant"] = "E-5",    ["SSgt"] = "E-5",
-        ["Technical Sergeant"] = "E-6",["TSgt"] = "E-6",
-        ["Master Sergeant"] = "E-7",   ["MSgt"] = "E-7",
-        ["Senior Master Sergeant"] = "E-8", ["SMSgt"] = "E-8",
-        ["Chief Master Sergeant"] = "E-9",  ["CMSgt"] = "E-9",
-        // Officer
-        ["Second Lieutenant"] = "O-1", ["2d Lt"] = "O-1", ["SecondLt"] = "O-1",
-        ["First Lieutenant"] = "O-2",  ["1st Lt"] = "O-2",["FirstLt"] = "O-2",
-        ["Captain"] = "O-3",           ["Capt"] = "O-3",
-        ["Major"] = "O-4",             ["Maj"] = "O-4",
-        ["Lieutenant Colonel"] = "O-5",["Lt Col"] = "O-5",["LtCol"] = "O-5",
-        ["Colonel"] = "O-6",           ["Col"] = "O-6",
-        ["Brigadier General"] = "O-7", ["Brig Gen"] = "O-7", ["BrigGen"] = "O-7",
-        ["Major General"] = "O-8",     ["Maj Gen"] = "O-8",  ["MajGen"] = "O-8",
-        ["Lieutenant General"] = "O-9",["Lt Gen"] = "O-9",   ["LtGen"] = "O-9",
-        ["General"] = "O-10",          ["Gen"] = "O-10",
-    };
-
-    private static readonly JsonSerializerOptions ODataJsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new JsonStringEnumConverter() }
-    };
 
     // ──────────────────────────── Bookmark Operations ────────────────────────────
 
@@ -274,8 +290,8 @@ public class LineOfDutyCaseHttpService : IDataService
         var url = parts.Count > 0
             ? $"odata/Cases/Bookmarked?{string.Join("&", parts)}"
             : "odata/Cases/Bookmarked";
-        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(
-            url, ODataJsonOptions, cancellationToken);
+
+        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>( url, ODataJsonOptions, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
@@ -286,63 +302,96 @@ public class LineOfDutyCaseHttpService : IDataService
 
     public async Task AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
-        var payload = new { LineOfDutyCaseId = caseId };
-        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks", payload, cancellationToken);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks", new { LineOfDutyCaseId = caseId }, cancellationToken);
+
         response.EnsureSuccessStatusCode();
     }
 
     public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
         var response = await _httpClient.DeleteAsync($"odata/CaseBookmarks/DeleteByCaseId?caseId={caseId}", cancellationToken);
+
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
         var response = await _httpClient.GetFromJsonAsync<IsBookmarkedResponse>(
             $"odata/CaseBookmarks/IsBookmarked(caseId={caseId})", ODataJsonOptions, cancellationToken);
+
         return response?.Value ?? false;
     }
 
     public async Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, byte[] content, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentNullException.ThrowIfNull(content);
+
         using var form = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(content);
+
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+
         form.Add(fileContent, "file", fileName);
         form.Add(new StringContent(string.Empty), "documentType");
         form.Add(new StringContent(string.Empty), "description");
 
         var response = await _httpClient.PostAsync($"api/cases/{caseId}/documents", form, cancellationToken);
+
         response.EnsureSuccessStatusCode();
+
         return (await response.Content.ReadFromJsonAsync<LineOfDutyDocument>(ODataJsonOptions, cancellationToken))!;
     }
 
     public async Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentId);
+
         var response = await _httpClient.DeleteAsync($"api/cases/{caseId}/documents/{documentId}", cancellationToken);
+
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<TimelineStep> SignTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepId);
+
         var response = await _httpClient.PostAsync($"odata/TimelineSteps({stepId})/Sign", null, cancellationToken);
+
         response.EnsureSuccessStatusCode();
+
         return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
     }
 
     public async Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepId);
+
         var response = await _httpClient.PostAsync($"odata/TimelineSteps({stepId})/Start", null, cancellationToken);
+
         response.EnsureSuccessStatusCode();
+
         return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
     }
 
-    public async Task<WorkflowStepHistory> AddHistoryEntryAsync(WorkflowStepHistory entry, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistory entry, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("odata/WorkflowStepHistories", entry, ODataJsonOptions, cancellationToken);
+        ArgumentNullException.ThrowIfNull(entry);
+
+        var response = await _httpClient.PostAsJsonAsync("odata/WorkflowStateHistories", entry, ODataJsonOptions, cancellationToken);
+
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<WorkflowStepHistory>(ODataJsonOptions, cancellationToken))!;
+
+        return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(ODataJsonOptions, cancellationToken))!;
     }
 
     private class IsBookmarkedResponse

@@ -18,6 +18,10 @@ public partial class EditCase
 
     private CancellationTokenSource _searchCts = new();
 
+    private bool _memberSearchPopupOpen;
+
+    private IList<Member> _memberSearchSelection = [];
+
     private RadzenTextBox _memberSearchTextBox;
 
     private Popup _memberSearchPopup;
@@ -27,17 +31,18 @@ public partial class EditCase
     private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
     {
         var items = _memberSearch.Results;
-        var popupOpened = await JSRuntime.InvokeAsync<bool>("Radzen.popupOpened", "member-search-popup");
         var key = args.Code ?? args.Key;
 
         if (!args.AltKey && (key == "ArrowDown" || key == "ArrowUp"))
         {
             var result = await JSRuntime.InvokeAsync<int[]>("Radzen.focusTableRow", "member-search-grid", key, _memberSearch.SelectedIndex, null, false);
             _memberSearch.SelectedIndex = result.First();
+            var highlighted = _memberSearch.Results.ElementAtOrDefault(_memberSearch.SelectedIndex);
+            _memberSearchSelection = highlighted is not null ? [highlighted] : [];
         }
         else if (args.AltKey && key == "ArrowDown" || key == "Enter" || key == "NumpadEnter")
         {
-            if (popupOpened && (key == "Enter" || key == "NumpadEnter"))
+            if (_memberSearchPopupOpen && (key == "Enter" || key == "NumpadEnter"))
             {
                 var selected = items.ElementAtOrDefault(_memberSearch.SelectedIndex);
                 if (selected != null)
@@ -48,10 +53,15 @@ public partial class EditCase
             }
 
             await _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element);
+            _memberSearchPopupOpen = !_memberSearchPopupOpen;
         }
         else if (key == "Escape" || key == "Tab")
         {
-            await _memberSearchPopup.CloseAsync();
+            if (_memberSearchPopupOpen)
+            {
+                await _memberSearchPopup.CloseAsync();
+                _memberSearchPopupOpen = false;
+            }
         }
     }
 
@@ -67,8 +77,19 @@ public partial class EditCase
         if (string.IsNullOrWhiteSpace(_memberSearch.Text))
         {
             _memberSearch.Results = [];
+            if (_memberSearchPopupOpen)
+            {
+                await _memberSearchPopup.CloseAsync();
+                _memberSearchPopupOpen = false;
+            }
             StateHasChanged();
             return;
+        }
+
+        if (!_memberSearchPopupOpen)
+        {
+            await _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element);
+            _memberSearchPopupOpen = true;
         }
 
         var token = _searchCts.Token;
@@ -88,6 +109,8 @@ public partial class EditCase
         try
         {
             _memberSearch.Results = await CaseService.SearchMembersAsync(_memberSearch.Text, token);
+            var first = _memberSearch.Results.FirstOrDefault();
+            _memberSearchSelection = first is not null ? [first] : [];
         }
         catch (OperationCanceledException)
         {
@@ -109,6 +132,7 @@ public partial class EditCase
     {
         _memberSearch.Text = string.Empty;
         await _memberSearchPopup.CloseAsync();
+        _memberSearchPopupOpen = false;
 
         _selectedMemberId = member.Id;
 

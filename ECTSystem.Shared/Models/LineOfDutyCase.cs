@@ -12,7 +12,7 @@ public class LineOfDutyCase : AuditableEntity
     // Basic Case Information
     public string CaseId { get; set; } = string.Empty;
     public LineOfDutyProcessType ProcessType { get; set; } // Informal or Formal
-    public LineOfDutyWorkflowState WorkflowState { get; set; } = LineOfDutyWorkflowState.MemberInformationEntry;
+    public WorkflowState WorkflowState { get; set; } = WorkflowState.MemberInformationEntry;
     public ServiceComponent Component { get; set; } // RegAF, AFR, etc.
     public string MemberName { get; set; } = string.Empty;
     public string MemberRank { get; set; } = string.Empty;
@@ -102,7 +102,7 @@ public class LineOfDutyCase : AuditableEntity
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
     public List<TimelineStep> TimelineSteps { get; set; } = [];
     public List<LineOfDutyAuthority> Authorities { get; set; } = [];
-    public List<WorkflowStepHistory> WorkflowStepHistories { get; set; } = [];
+    public List<WorkflowStateHistory> WorkflowStateHistories { get; set; } = [];
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }

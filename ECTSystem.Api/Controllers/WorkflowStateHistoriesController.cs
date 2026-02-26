@@ -7,22 +7,22 @@ using ECTSystem.Shared.Models;
 namespace ECTSystem.Api.Controllers;
 
 /// <summary>
-/// OData-enabled controller for persisting workflow step history snapshot entries.
-/// Convention routing maps POST /odata/WorkflowStepHistories to this action.
+/// OData-enabled controller for persisting workflow state history snapshot entries.
+/// Convention routing maps POST /odata/WorkflowStateHistories to this action.
 /// Uses [FromBody] so ASP.NET's System.Text.Json formatter handles deserialization
 /// (same pattern as CasesController.Post).
 /// </summary>
 [Authorize]
-public class WorkflowStepHistoriesController : ODataController
+public class WorkflowStateHistoriesController : ODataController
 {
-    private readonly IWorkflowStepHistoryService _historyService;
+    private readonly IWorkflowStateHistoryService _historyService;
 
-    public WorkflowStepHistoriesController(IWorkflowStepHistoryService historyService)
+    public WorkflowStateHistoriesController(IWorkflowStateHistoryService historyService)
     {
         _historyService = historyService;
     }
 
-    public async Task<IActionResult> Post([FromBody] WorkflowStepHistory entry, CancellationToken ct)
+    public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {

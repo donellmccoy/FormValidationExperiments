@@ -25,8 +25,10 @@ public class EctDbContext : DbContext
     public DbSet<TimelineStep> TimelineSteps { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<CaseBookmark> CaseBookmarks { get; set; }
-    public DbSet<LineOfDutyWorkflowStateLookup> WorkflowStates { get; set; }
-    public DbSet<WorkflowStepHistory> WorkflowStepHistories { get; set; }
+    public DbSet<WorkflowStateLookup> WorkflowStates { get; set; }
+    public DbSet<WorkflowStateHistory> WorkflowStateHistories { get; set; }
+    public DbSet<WorkflowType> WorkflowTypes { get; set; }
+    public DbSet<WorkflowModule> WorkflowModules { get; set; }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -37,6 +39,8 @@ public class EctDbContext : DbContext
                 case EntityState.Added:
                     entry.Entity.CreatedDate = DateTime.UtcNow;
                     entry.Entity.CreatedBy = CurrentUserId;
+                    entry.Entity.ModifiedDate = DateTime.UtcNow;
+                    entry.Entity.ModifiedBy = CurrentUserId;
                     break;
                 case EntityState.Modified:
                     entry.Entity.ModifiedDate = DateTime.UtcNow;

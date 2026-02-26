@@ -18,6 +18,10 @@
         box-shadow: var(--rz-panel-shadow);
         border-radius: var(--rz-border-radius);
     }
+
+    #member-search-grid tbody tr {
+        cursor: pointer;
+    }
 </style>
 
 <PageTitle>@(IsNewCase ? "New Case" : "Edit Case") - LOD Case Management</PageTitle>
@@ -173,7 +177,7 @@ else
                                                                 <RadzenTextBox @ref="_memberSearchTextBox" Value="@_memberSearch.Text"
                                                                                Placeholder="Search by name, rank, unit, or service number..."
                                                                                @oninput="@OnMemberSearchInput"
-                                                                               @onclick="@(args => _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element))"
+                                                                               @onclick="@(async args => { await _memberSearchPopup.ToggleAsync(_memberSearchTextBox.Element); _memberSearchPopupOpen = !_memberSearchPopupOpen; })"
                                                                                @onkeydown="@OnMemberSearchKeyDown"
                                                                                aria-label="Search members" />
                                                             </RadzenFormField>
@@ -183,6 +187,8 @@ else
                                                                                 TItem="ECTSystem.Shared.Models.Member"
                                                                                 Data="@_memberSearch.Results"
                                                                                 IsLoading="@_memberSearch.IsSearching"
+                                                                                SelectionMode="DataGridSelectionMode.Single"
+                                                                                Value="@_memberSearchSelection"
                                                                                 RowSelect="@OnMemberSelected"
                                                                                 AllowSorting="false"
                                                                                 AllowFiltering="false"
@@ -221,41 +227,41 @@ else
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12" SizeMD="2">
                                                         <RadzenFormField Text="SSN" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.SSN" ReadOnly="true" MaxLength="11" Placeholder="___-__-____" />
+                                                            <RadzenTextBox Value="@_viewModel.SSN" ReadOnly="true" Disabled="@(!IsNewCase)" MaxLength="11" Placeholder="___-__-____" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="12" SizeMD="7">
                                                         <RadzenFormField Text="Full Name" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.MemberFullName" ReadOnly="true" />
+                                                            <RadzenTextBox Value="@_viewModel.MemberFullName" ReadOnly="true" Disabled="@(!IsNewCase)" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="12" SizeMD="3">
                                                         <RadzenFormField Text="Date of Birth" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@(_viewModel.DateOfBirth?.ToString("MM/dd/yyyy") ?? "")" ReadOnly="true" />
+                                                            <RadzenTextBox Value="@(_viewModel.DateOfBirth?.ToString("MM/dd/yyyy") ?? "")" ReadOnly="true" Disabled="@(!IsNewCase)" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="12" SizeMD="4">
                                                         <RadzenFormField Text="Component" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.Component" ReadOnly="true" />
+                                                            <RadzenTextBox Value="@_viewModel.Component" ReadOnly="true" Disabled="@(!IsNewCase)" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="12" SizeMD="5">
                                                         <RadzenFormField Text="Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.Rank" ReadOnly="true" />
+                                                            <RadzenTextBox Value="@_viewModel.Rank" ReadOnly="true" Disabled="@(!IsNewCase)" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="12" SizeMD="2">
                                                         <RadzenFormField Text="Grade" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.Grade" ReadOnly="true" />
+                                                            <RadzenTextBox Value="@_viewModel.Grade" ReadOnly="true" Disabled="@(!IsNewCase)" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="9">
                                                         <RadzenFormField Text="Unit" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.OrganizationUnit" ReadOnly="true" />
+                                                            <RadzenTextBox Value="@_viewModel.OrganizationUnit" ReadOnly="true" Disabled="@(!IsNewCase)" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                 </RadzenRow>
@@ -309,29 +315,13 @@ else
                                             </RadzenStack>
                                         </RadzenFieldset>
 
-                                        @* ═══ Form Actions ═══ *@
-                                        <div class="form-actions rz-mt-2">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
-                                                <RadzenSplitButton Click="@OnSplitButtonClick" Text="Apply Changes" Icon="save"
-                                                                   Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
-                                                                   Disabled="true">
-                                                    <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
-                                                    </ChildContent>
-                                                </RadzenSplitButton>
-                                            </RadzenStack>
-                                        </div>
-
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined"/>
-                                                <RadzenSplitButton Click="@OnMemberForwardClick" Text="Forward to Medical Technician" Icon="send"
-                                                                   ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
-                                                    <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
-                                                    </ChildContent>
-                                                </RadzenSplitButton>
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenButton Text="Start Line Of Duty" Icon="send"
+                                                              ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
+                                                              Disabled="@(_lodCase?.WorkflowState > WorkflowState.MemberInformationEntry)"
+                                                              Click="@(() => OnMemberForwardClick(null))" />
                                             </RadzenStack>
                                         </RadzenFieldset>
 

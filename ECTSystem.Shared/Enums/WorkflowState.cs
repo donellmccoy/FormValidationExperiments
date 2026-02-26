@@ -4,7 +4,7 @@ namespace ECTSystem.Shared.Enums;
 /// Represents the current workflow state of a Line of Duty case as it progresses
 /// through the review and determination process per DAFI 36-2910.
 /// </summary>
-public enum LineOfDutyWorkflowState
+public enum WorkflowState
 {
     /// <summary>Initial state — member information and incident details are being entered.</summary>
     MemberInformationEntry = 1,

@@ -4,6 +4,7 @@ using ECTSystem.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECTSystem.Persistence.Migrations
 {
     [DbContext(typeof(EctDbContext))]
-    partial class EctDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260226043542_AddWorkflowTypeIdToWorkflowStates")]
+    partial class AddWorkflowTypeIdToWorkflowStates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -878,123 +881,6 @@ namespace ECTSystem.Persistence.Migrations
                     b.ToTable("TimelineSteps");
                 });
 
-            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowModule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ModifiedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("WorkflowModules", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedBy = "",
-                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Air Force Reserve Command workflow module.",
-                            ModifiedBy = "",
-                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "AFRC"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedBy = "",
-                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Air National Guard workflow module.",
-                            ModifiedBy = "",
-                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "ANG"
-                        });
-                });
-
-            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Action")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("LineOfDutyCaseId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PerformedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SignedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("SignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkflowState")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LineOfDutyCaseId", "WorkflowState");
-
-                    b.ToTable("WorkflowStateHistories");
-                });
-
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>
                 {
                     b.Property<int>("Id")
@@ -1334,6 +1220,60 @@ namespace ECTSystem.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStepHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LineOfDutyCaseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PerformedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SignedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkflowState")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LineOfDutyCaseId", "WorkflowState");
+
+                    b.ToTable("WorkflowStepHistories");
+                });
+
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowType", b =>
                 {
                     b.Property<int>("Id")
@@ -1367,14 +1307,9 @@ namespace ECTSystem.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("WorkflowModuleId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkflowModuleId");
-
-                    b.HasIndex("Name", "WorkflowModuleId")
+                    b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("WorkflowTypes", (string)null);
@@ -1388,8 +1323,7 @@ namespace ECTSystem.Persistence.Migrations
                             Description = "Informal LOD determination process.",
                             ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Informal",
-                            WorkflowModuleId = 1
+                            Name = "Informal"
                         },
                         new
                         {
@@ -1399,8 +1333,7 @@ namespace ECTSystem.Persistence.Migrations
                             Description = "Formal LOD determination process.",
                             ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Formal",
-                            WorkflowModuleId = 1
+                            Name = "Formal"
                         });
                 });
 
@@ -1498,17 +1431,6 @@ namespace ECTSystem.Persistence.Migrations
                     b.Navigation("ResponsibleAuthority");
                 });
 
-            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateHistory", b =>
-                {
-                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
-                        .WithMany("WorkflowStateHistories")
-                        .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("LineOfDutyCase");
-                });
-
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>
                 {
                     b.HasOne("ECTSystem.Shared.Models.WorkflowType", "WorkflowType")
@@ -1520,15 +1442,15 @@ namespace ECTSystem.Persistence.Migrations
                     b.Navigation("WorkflowType");
                 });
 
-            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowType", b =>
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStepHistory", b =>
                 {
-                    b.HasOne("ECTSystem.Shared.Models.WorkflowModule", "WorkflowModule")
-                        .WithMany("WorkflowTypes")
-                        .HasForeignKey("WorkflowModuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
+                        .WithMany("WorkflowStepHistories")
+                        .HasForeignKey("LineOfDutyCaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("WorkflowModule");
+                    b.Navigation("LineOfDutyCase");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyCase", b =>
@@ -1543,12 +1465,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.Navigation("TimelineSteps");
 
-                    b.Navigation("WorkflowStateHistories");
-                });
-
-            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowModule", b =>
-                {
-                    b.Navigation("WorkflowTypes");
+                    b.Navigation("WorkflowStepHistories");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowType", b =>

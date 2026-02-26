@@ -79,5 +79,5 @@ public interface IDataService
     /// <summary>
     /// Appends a workflow step history snapshot entry for a LOD case.
     /// </summary>
-    Task<WorkflowStepHistory> AddHistoryEntryAsync(WorkflowStepHistory entry, CancellationToken cancellationToken = default);
+    Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistory entry, CancellationToken cancellationToken = default);
 }

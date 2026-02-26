@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Models;
 /// <summary>
 /// Represents a user's bookmark on an LOD case.
 /// </summary>
-public class CaseBookmark
+public class CaseBookmark : AuditableEntity
 {
     public int Id { get; set; }
     public string UserId { get; set; } = string.Empty;
