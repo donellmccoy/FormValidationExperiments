@@ -114,7 +114,7 @@ public class MembersController : ODataController
     /// Partially updates an existing Member.
     /// OData route: PATCH /odata/Members({key})
     /// </summary>
-    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] Delta<Member> delta)
+    public async Task<IActionResult> Patch([FromRoute] int key, Delta<Member> delta)
     {
         if (!ModelState.IsValid)
         {
@@ -158,5 +158,19 @@ public class MembersController : ODataController
 
         _log.MemberDeleted(key);
         return NoContent();
+    }
+
+    // ── Collection navigation properties ────────────────────────────────
+
+    /// <summary>
+    /// Returns LOD cases associated with a specific member.
+    /// OData route: GET /odata/Members({key})/LineOfDutyCases
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetLineOfDutyCases([FromRoute] int key)
+    {
+        _log.QueryingMemberNavigation(key, nameof(Member.LineOfDutyCases));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Cases.AsNoTracking().Where(c => c.MemberId == key));
     }
 }

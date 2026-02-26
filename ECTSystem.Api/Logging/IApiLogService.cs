@@ -42,4 +42,17 @@ public interface IApiLogService
     void UploadFailed(int caseId, Exception ex);
     void DeletingDocument(int documentId, int caseId);
     void DocumentDeleted(int documentId, int caseId);
+
+    // Bookmarks
+    void QueryingBookmarks();
+    void BookmarkCreated(int caseId);
+    void BookmarkAlreadyExists(int caseId);
+    void DeletingBookmark(int caseId);
+    void BookmarkDeleted(int caseId);
+    void BookmarkNotFound(int caseId);
+    void CheckingBookmark(int caseId);
+
+    // Navigation Properties
+    void QueryingCaseNavigation(int caseId, string navigationProperty);
+    void QueryingMemberNavigation(int memberId, string navigationProperty);
 }

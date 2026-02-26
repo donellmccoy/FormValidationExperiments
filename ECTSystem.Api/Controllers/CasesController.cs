@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
+using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -21,17 +23,18 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class CasesController : ODataController
 {
-    private readonly IDataService _dataService;
     private readonly IApiLogService _log;
-    private readonly ICaseBookmarkService _bookmarkService;
     private readonly IEdmModel _edmModel;
+    private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    public CasesController(IDataService dataService, IApiLogService log, ICaseBookmarkService bookmarkService, IEdmModel edmModel)
+    public CasesController(
+        IApiLogService log,
+        IEdmModel edmModel,
+        IDbContextFactory<EctDbContext> contextFactory)
     {
-        _dataService = dataService;
         _log = log;
-        _bookmarkService = bookmarkService;
         _edmModel = edmModel;
+        _contextFactory = contextFactory;
     }
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User is not authenticated.");
@@ -45,7 +48,8 @@ public class CasesController : ODataController
     public IActionResult Get()
     {
         _log.QueryingCases();
-        return Ok(_dataService.GetCasesQueryable());
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Cases.AsNoTracking());
     }
 
     /// <summary>
@@ -64,11 +68,14 @@ public class CasesController : ODataController
 
         try
         {
-            var (items, totalCount) = await _bookmarkService.GetBookmarkedCasesAsync(
-                UserId,
-                q => (IQueryable<LineOfDutyCase>)options.ApplyTo(q, new ODataQuerySettings { EnsureStableOrdering = true }),
-                countRequested,
-                ct);
+            await using var context = await _contextFactory.CreateDbContextAsync(ct);
+            var query = context.Cases
+                .AsNoTracking()
+                .Where(c => context.CaseBookmarks.Any(b => b.UserId == UserId && b.LineOfDutyCaseId == c.Id));
+
+            int? totalCount = countRequested ? await query.CountAsync(ct) : null;
+            var items = await ((IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true }))
+                .ToListAsync(ct);
 
             return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
         }
@@ -96,7 +103,10 @@ public class CasesController : ODataController
     public async Task<IActionResult> Get([FromRoute] int key)
     {
         _log.RetrievingCase(key);
-        var lodCase = await _dataService.GetCaseByKeyAsync(key);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var lodCase = await CaseWithIncludes(context)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == key);
 
         if (lodCase is null)
         {
@@ -119,10 +129,12 @@ public class CasesController : ODataController
             return BadRequest(ModelState);
         }
 
-        var created = await _dataService.CreateCaseAsync(lodCase);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Cases.Add(lodCase);
+        await context.SaveChangesAsync();
 
-        _log.CaseCreated(created.Id);
-        return Created(created);
+        _log.CaseCreated(lodCase.Id);
+        return Created(lodCase);
     }
 
     /// <summary>
@@ -144,15 +156,19 @@ public class CasesController : ODataController
         }
 
         _log.PatchingCase(key);
-        var updated = await _dataService.PatchCaseAsync(key, delta);
-        if (updated is null)
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existing = await context.Cases.FindAsync(key);
+        if (existing is null)
         {
             _log.CaseNotFound(key);
             return NotFound();
         }
 
+        delta.Patch(existing);
+        await context.SaveChangesAsync();
+
         _log.CasePatched(key);
-        return Updated(updated);
+        return Updated(existing);
     }
 
     /// <summary>
@@ -162,14 +178,167 @@ public class CasesController : ODataController
     public async Task<IActionResult> Delete([FromRoute] int key)
     {
         _log.DeletingCase(key);
-        var deleted = await _dataService.DeleteCaseAsync(key);
-        if (!deleted)
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var lodCase = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key);
+        if (lodCase is null)
         {
             _log.CaseNotFound(key);
             return NotFound();
         }
 
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
+        // ClientCascade handles tracked child collections automatically
+        context.Cases.Remove(lodCase);
+        await context.SaveChangesAsync();
+
+        // MEDCON/INCAP FK is on the case side — clean up orphaned records
+        await context.MEDCONDetails.Where(m => m.Id == lodCase.MEDCONId).ExecuteDeleteAsync();
+        await context.INCAPDetails.Where(i => i.Id == lodCase.INCAPId).ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+
         _log.CaseDeleted(key);
         return NoContent();
+    }
+
+    // ── Collection navigation properties ────────────────────────────────
+    // Convention routing: GET /odata/Cases({key})/{NavigationProperty}
+    // Returns IQueryable so OData middleware can apply $filter, $orderby, $top, $skip, $count.
+
+    /// <summary>
+    /// Returns documents for a specific case.
+    /// OData route: GET /odata/Cases({key})/Documents
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetDocuments([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Documents.AsNoTracking().Where(d => d.LineOfDutyCaseId == key));
+    }
+
+    /// <summary>
+    /// Returns timeline steps for a specific case.
+    /// OData route: GET /odata/Cases({key})/TimelineSteps
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetTimelineSteps([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.TimelineSteps));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.TimelineSteps.AsNoTracking().Where(t => t.LineOfDutyCaseId == key));
+    }
+
+    /// <summary>
+    /// Returns authorities for a specific case.
+    /// OData route: GET /odata/Cases({key})/Authorities
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetAuthorities([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Authorities));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Authorities.AsNoTracking().Where(a => a.LineOfDutyCaseId == key));
+    }
+
+    /// <summary>
+    /// Returns appeals for a specific case.
+    /// OData route: GET /odata/Cases({key})/Appeals
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetAppeals([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Appeals));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Appeals.AsNoTracking().Where(a => a.LineOfDutyCaseId == key));
+    }
+
+    /// <summary>
+    /// Returns notifications for a specific case.
+    /// OData route: GET /odata/Cases({key})/Notifications
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetNotifications([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Notifications.AsNoTracking().Where(n => n.LineOfDutyCaseId == key));
+    }
+
+    /// <summary>
+    /// Returns workflow state histories for a specific case.
+    /// OData route: GET /odata/Cases({key})/WorkflowStateHistories
+    /// </summary>
+    [EnableQuery]
+    public IActionResult GetWorkflowStateHistories([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.WorkflowStateHistories.AsNoTracking().Where(h => h.LineOfDutyCaseId == key));
+    }
+
+    // ── Single-valued navigation properties ─────────────────────────────
+
+    /// <summary>
+    /// Returns the member associated with a specific case.
+    /// OData route: GET /odata/Cases({key})/Member
+    /// </summary>
+    [EnableQuery]
+    public SingleResult<Member> GetMember([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Member));
+        var context = _contextFactory.CreateDbContext();
+        return SingleResult.Create(
+            context.Cases.AsNoTracking()
+                .Where(c => c.Id == key)
+                .Select(c => c.Member));
+    }
+
+    /// <summary>
+    /// Returns the MEDCON detail for a specific case.
+    /// OData route: GET /odata/Cases({key})/MEDCON
+    /// </summary>
+    [EnableQuery]
+    public SingleResult<MEDCONDetail> GetMEDCON([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.MEDCON));
+        var context = _contextFactory.CreateDbContext();
+        return SingleResult.Create(
+            context.Cases.AsNoTracking()
+                .Where(c => c.Id == key)
+                .Select(c => c.MEDCON));
+    }
+
+    /// <summary>
+    /// Returns the INCAP detail for a specific case.
+    /// OData route: GET /odata/Cases({key})/INCAP
+    /// </summary>
+    [EnableQuery]
+    public SingleResult<INCAPDetails> GetINCAP([FromRoute] int key)
+    {
+        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.INCAP));
+        var context = _contextFactory.CreateDbContext();
+        return SingleResult.Create(
+            context.Cases.AsNoTracking()
+                .Where(c => c.Id == key)
+                .Select(c => c.INCAP));
+    }
+
+    // ── Private helpers ─────────────────────────────────────────────────
+
+    private static IQueryable<LineOfDutyCase> CaseWithIncludes(EctDbContext context)
+    {
+        return context.Cases
+            .AsSplitQuery()
+            .Include(c => c.Documents)
+            .Include(c => c.Authorities)
+            .Include(c => c.TimelineSteps).ThenInclude(t => t.ResponsibleAuthority)
+            .Include(c => c.Appeals).ThenInclude(a => a.AppellateAuthority)
+            .Include(c => c.Member)
+            .Include(c => c.MEDCON)
+            .Include(c => c.INCAP)
+            .Include(c => c.Notifications)
+            .Include(c => c.WorkflowStateHistories);
     }
 }

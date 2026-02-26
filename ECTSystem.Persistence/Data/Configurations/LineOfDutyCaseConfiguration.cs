@@ -22,27 +22,27 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
         builder.HasMany(e => e.Documents)
                .WithOne(d => d.LineOfDutyCase)
                .HasForeignKey(d => d.LineOfDutyCaseId)
-               .OnDelete(DeleteBehavior.NoAction);
+               .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Appeals)
                .WithOne(a => a.LineOfDutyCase)
                .HasForeignKey(a => a.LineOfDutyCaseId)
-               .OnDelete(DeleteBehavior.NoAction);
+               .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Authorities)
                .WithOne(a => a.LineOfDutyCase)
                .HasForeignKey(a => a.LineOfDutyCaseId)
-               .OnDelete(DeleteBehavior.NoAction);
+               .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.TimelineSteps)
                .WithOne(t => t.LineOfDutyCase)
                .HasForeignKey(t => t.LineOfDutyCaseId)
-               .OnDelete(DeleteBehavior.NoAction);
+               .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Notifications)
                .WithOne(n => n.LineOfDutyCase)
                .HasForeignKey(n => n.LineOfDutyCaseId)
-               .OnDelete(DeleteBehavior.NoAction);
+               .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasOne(e => e.MEDCON)
                .WithOne()

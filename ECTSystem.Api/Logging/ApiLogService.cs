@@ -114,4 +114,35 @@ public partial class ApiLogService(ILogger<ApiLogService> logger) : IApiLogServi
 
     [LoggerMessage(EventId = 310, Level = LogLevel.Information, Message = "Document {DocumentId} deleted for case {CaseId}")]
     public partial void DocumentDeleted(int documentId, int caseId);
+
+    // Bookmarks (EventId 500–506)
+
+    [LoggerMessage(EventId = 500, Level = LogLevel.Information, Message = "Querying bookmarks")]
+    public partial void QueryingBookmarks();
+
+    [LoggerMessage(EventId = 501, Level = LogLevel.Information, Message = "Bookmark created for case {CaseId}")]
+    public partial void BookmarkCreated(int caseId);
+
+    [LoggerMessage(EventId = 502, Level = LogLevel.Information, Message = "Bookmark already exists for case {CaseId}")]
+    public partial void BookmarkAlreadyExists(int caseId);
+
+    [LoggerMessage(EventId = 503, Level = LogLevel.Information, Message = "Deleting bookmark for case {CaseId}")]
+    public partial void DeletingBookmark(int caseId);
+
+    [LoggerMessage(EventId = 504, Level = LogLevel.Information, Message = "Bookmark deleted for case {CaseId}")]
+    public partial void BookmarkDeleted(int caseId);
+
+    [LoggerMessage(EventId = 505, Level = LogLevel.Warning, Message = "Bookmark not found for case {CaseId}")]
+    public partial void BookmarkNotFound(int caseId);
+
+    [LoggerMessage(EventId = 506, Level = LogLevel.Information, Message = "Checking bookmark status for case {CaseId}")]
+    public partial void CheckingBookmark(int caseId);
+
+    // Navigation Properties (EventId 400–401)
+
+    [LoggerMessage(EventId = 400, Level = LogLevel.Information, Message = "Querying {NavigationProperty} for case {CaseId}")]
+    public partial void QueryingCaseNavigation(int caseId, string navigationProperty);
+
+    [LoggerMessage(EventId = 401, Level = LogLevel.Information, Message = "Querying {NavigationProperty} for member {MemberId}")]
+    public partial void QueryingMemberNavigation(int memberId, string navigationProperty);
 }

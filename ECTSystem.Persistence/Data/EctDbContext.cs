@@ -56,5 +56,6 @@ public class EctDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EctDbContext).Assembly);
+        modelBuilder.DisableDatabaseCascadeDelete();
     }
 }

@@ -10,5 +10,5 @@ public class WorkflowType : AuditableEntity
     public string Description { get; set; } = string.Empty;
     public int WorkflowModuleId { get; set; }
     public WorkflowModule WorkflowModule { get; set; } = null!;
-    public ICollection<WorkflowStateLookup> WorkflowStates { get; set; } = [];
+    public ICollection<WorkflowStateLookup> WorkflowStates { get; set; } = new HashSet<WorkflowStateLookup>();
 }
