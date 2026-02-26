@@ -7,6 +7,7 @@ public class LineOfDutyAuthority : AuditableEntity
 {
     public int Id { get; set; }
     public int? LineOfDutyCaseId { get; set; }
+    public LineOfDutyCase LineOfDutyCase { get; set; }
     public string Role { get; set; } = string.Empty; // e.g., Immediate Commander, Appointing Authority, etc.
     public string Name { get; set; } = string.Empty;
     public string Rank { get; set; } = string.Empty; // e.g., "Col", "Lt Col", "Maj"

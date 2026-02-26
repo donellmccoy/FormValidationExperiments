@@ -9,6 +9,7 @@ public class TimelineStep : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }
+    public LineOfDutyCase LineOfDutyCase { get; set; }
     public string StepDescription { get; set; } = string.Empty; // e.g., "Member Reports", "Medical Provider Review"
     public int TimelineDays { get; set; } // e.g., 5 calendar days
     public DateTime? StartDate { get; set; }

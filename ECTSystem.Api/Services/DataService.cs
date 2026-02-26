@@ -156,9 +156,9 @@ public class DataService :
     private static void SyncAuthorities(
         EctDbContext context,
         LineOfDutyCase existing,
-        List<LineOfDutyAuthority> incoming)
+        ICollection<LineOfDutyAuthority> incoming)
     {
-        incoming ??= [];
+        incoming ??= new HashSet<LineOfDutyAuthority>();
 
         var incomingIds = incoming.Where(a => a.Id != 0).Select(a => a.Id).ToHashSet();
         var toRemove = existing.Authorities.Where(a => !incomingIds.Contains(a.Id)).ToList();

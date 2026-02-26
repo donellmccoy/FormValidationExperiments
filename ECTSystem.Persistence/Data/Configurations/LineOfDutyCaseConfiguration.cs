@@ -20,27 +20,27 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
                .Metadata.SetValueComparer(StringListConversion.Comparer);
 
         builder.HasMany(e => e.Documents)
-               .WithOne()
+               .WithOne(d => d.LineOfDutyCase)
                .HasForeignKey(d => d.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasMany(e => e.Appeals)
-               .WithOne()
+               .WithOne(a => a.LineOfDutyCase)
                .HasForeignKey(a => a.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasMany(e => e.Authorities)
-               .WithOne()
+               .WithOne(a => a.LineOfDutyCase)
                .HasForeignKey(a => a.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasMany(e => e.TimelineSteps)
-               .WithOne()
+               .WithOne(t => t.LineOfDutyCase)
                .HasForeignKey(t => t.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasMany(e => e.Notifications)
-               .WithOne()
+               .WithOne(n => n.LineOfDutyCase)
                .HasForeignKey(n => n.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.NoAction);
 
@@ -54,9 +54,9 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
                .HasForeignKey<LineOfDutyCase>(e => e.INCAPId)
                .OnDelete(DeleteBehavior.NoAction);
 
-        //builder.HasOne(e => e.Member)
-        //       .WithMany(m => m.LineOfDutyCases)
-        //       .HasForeignKey(e => e.MemberId)
-        //       .OnDelete(DeleteBehavior.NoAction);
+        builder.HasOne(e => e.Member)
+               .WithMany(m => m.LineOfDutyCases)
+               .HasForeignKey(e => e.MemberId)
+               .OnDelete(DeleteBehavior.NoAction);
     }
 }

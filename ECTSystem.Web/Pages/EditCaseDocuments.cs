@@ -38,7 +38,7 @@ public partial class EditCase
             return;
         }
 
-        _lodCase.Documents ??= [];
+        _lodCase.Documents ??= new HashSet<LineOfDutyDocument>();
 
         var contentType = GetContentType(_documents.UploadedFileName);
 

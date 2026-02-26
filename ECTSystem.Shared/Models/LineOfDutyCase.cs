@@ -100,9 +100,9 @@ public class LineOfDutyCase : AuditableEntity
     public int TotalTimelineDays { get; set; } // e.g., 90 for Informal, 160 for Formal
     public bool IsInterimLOD { get; set; }
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
-    public List<TimelineStep> TimelineSteps { get; set; } = [];
-    public List<LineOfDutyAuthority> Authorities { get; set; } = [];
-    public List<WorkflowStateHistory> WorkflowStateHistories { get; set; } = [];
+    public ICollection<TimelineStep> TimelineSteps { get; set; } = new HashSet<TimelineStep>();
+    public ICollection<LineOfDutyAuthority> Authorities { get; set; } = new HashSet<LineOfDutyAuthority>();
+    public ICollection<WorkflowStateHistory> WorkflowStateHistories { get; set; } = new HashSet<WorkflowStateHistory>();
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }
@@ -165,15 +165,15 @@ public class LineOfDutyCase : AuditableEntity
     public string SARCCoordination { get; set; } = string.Empty; // Sexual Assault Response Coordinator
 
     // Documents and Evidence
-    public List<LineOfDutyDocument> Documents { get; set; } = [];
+    public ICollection<LineOfDutyDocument> Documents { get; set; } = new HashSet<LineOfDutyDocument>();
     public List<string> WitnessStatements { get; set; } = [];
     public string ToxicologyReport { get; set; } = string.Empty;
 
     // Appeals
-    public List<LineOfDutyAppeal> Appeals { get; set; } = [];
+    public ICollection<LineOfDutyAppeal> Appeals { get; set; } = new HashSet<LineOfDutyAppeal>();
 
     // Notifications
-    public List<Notification> Notifications { get; set; } = [];
+    public ICollection<Notification> Notifications { get; set; } = new HashSet<Notification>();
 
     // Member
     public int MemberId { get; set; }

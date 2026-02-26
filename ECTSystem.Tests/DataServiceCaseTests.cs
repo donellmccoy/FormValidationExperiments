@@ -106,7 +106,7 @@ public class DataServiceCaseTests : DataServiceTestBase
         var result = await Sut.GetCaseByKeyAsync(1);
 
         Assert.Single(result.Authorities);
-        Assert.Equal("Col Smith", result.Authorities[0].Name);
+        Assert.Equal("Col Smith", result.Authorities.First().Name);
     }
 
     // ──────────────────────────── CreateCaseAsync ────────────────────────────

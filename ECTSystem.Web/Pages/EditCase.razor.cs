@@ -611,7 +611,7 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var timelineStep = timelineSteps[_currentStepIndex];
+        var timelineStep = timelineSteps.ElementAt(_currentStepIndex);
 
         await SetBusyAsync("Applying digital signature...");
 
@@ -636,7 +636,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 PerformedBy      = string.Empty
             }, _cts.Token);
 
-            _lodCase.WorkflowStateHistories ??= [];
+            _lodCase.WorkflowStateHistories ??= new HashSet<WorkflowStateHistory>();
             _lodCase.WorkflowStateHistories.Add(historyEntry);
 
             ApplyWorkflowState(_lodCase.WorkflowState);

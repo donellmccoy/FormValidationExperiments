@@ -9,6 +9,7 @@ public class LineOfDutyAppeal : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }
+    public LineOfDutyCase LineOfDutyCase { get; set; }
     public DateTime AppealDate { get; set; }
     public string Appellant { get; set; } = string.Empty; // Member or Next of Kin
     public List<string> NewEvidence { get; set; } = new List<string>();
