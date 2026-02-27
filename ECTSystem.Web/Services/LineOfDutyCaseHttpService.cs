@@ -313,7 +313,7 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.DeleteAsync($"odata/CaseBookmarks/DeleteByCaseId?caseId={caseId}", cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks/DeleteByCaseId", new { caseId }, cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -415,3 +415,30 @@ public class LineOfDutyCaseHttpService : IDataService
         public List<T> Value { get; set; } = [];
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -43,7 +44,7 @@ public class MembersController : ODataController
     /// OData route: GET /odata/Members({key})
     /// </summary>
     [EnableQuery]
-    public async Task<IActionResult> Get([FromRoute] int key)
+    public async Task<IActionResult> Get([FromODataUri] int key)
     {
         _log.RetrievingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -65,7 +66,7 @@ public class MembersController : ODataController
     /// Creates a new Member.
     /// OData route: POST /odata/Members
     /// </summary>
-    public async Task<IActionResult> Post([FromBody] Member member)
+    public async Task<IActionResult> Post(Member member)
     {
         if (!ModelState.IsValid)
         {
@@ -85,7 +86,7 @@ public class MembersController : ODataController
     /// Fully replaces an existing Member.
     /// OData route: PUT /odata/Members({key})
     /// </summary>
-    public async Task<IActionResult> Put([FromRoute] int key, [FromBody] Member update)
+    public async Task<IActionResult> Put([FromODataUri] int key, Member update)
     {
         if (!ModelState.IsValid)
         {

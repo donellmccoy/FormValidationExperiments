@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
@@ -57,8 +58,8 @@ public class CasesController : ODataController
     /// Route: GET /odata/Cases/Bookmarked
     /// Uses ODataQueryOptions to apply $filter/$orderby/$top/$skip/$count against the query.
     /// </summary>
-    [HttpGet("odata/Cases/Bookmarked")]
-    public async Task<IActionResult> GetBookmarked(CancellationToken ct = default)
+    [HttpGet]
+    public async Task<IActionResult> Bookmarked(CancellationToken ct = default)
     {
         _log.QueryingCases();
 
@@ -100,7 +101,7 @@ public class CasesController : ODataController
     /// OData route: GET /odata/Cases({key})
     /// </summary>
     [EnableQuery]
-    public async Task<IActionResult> Get([FromRoute] int key)
+    public async Task<IActionResult> Get([FromODataUri] int key)
     {
         _log.RetrievingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -121,7 +122,7 @@ public class CasesController : ODataController
     /// Creates a new LOD case.
     /// OData route: POST /odata/Cases
     /// </summary>
-    public async Task<IActionResult> Post([FromBody] LineOfDutyCase lodCase)
+    public async Task<IActionResult> Post(LineOfDutyCase lodCase)
     {
         if (!ModelState.IsValid)
         {
@@ -147,7 +148,7 @@ public class CasesController : ODataController
     /// deserialization. [FromBody] would route through SystemTextJsonInputFormatter
     /// which cannot construct a Delta instance.
     /// </remarks>
-    public async Task<IActionResult> Patch([FromRoute] int key, Delta<LineOfDutyCase> delta)
+    public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyCase> delta)
     {
         if (delta is null || !ModelState.IsValid)
         {
@@ -175,7 +176,7 @@ public class CasesController : ODataController
     /// Deletes an LOD case and its related entities.
     /// OData route: DELETE /odata/Cases({key})
     /// </summary>
-    public async Task<IActionResult> Delete([FromRoute] int key)
+    public async Task<IActionResult> Delete([FromODataUri] int key)
     {
         _log.DeletingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -193,8 +194,17 @@ public class CasesController : ODataController
         await context.SaveChangesAsync();
 
         // MEDCON/INCAP FK is on the case side — clean up orphaned records
-        await context.MEDCONDetails.Where(m => m.Id == lodCase.MEDCONId).ExecuteDeleteAsync();
-        await context.INCAPDetails.Where(i => i.Id == lodCase.INCAPId).ExecuteDeleteAsync();
+        if (lodCase.MEDCONId > 0)
+        {
+            var medcon = await context.MEDCONDetails.FindAsync(lodCase.MEDCONId);
+            if (medcon != null) context.MEDCONDetails.Remove(medcon);
+        }
+        if (lodCase.INCAPId > 0)
+        {
+            var incap = await context.INCAPDetails.FindAsync(lodCase.INCAPId);
+            if (incap != null) context.INCAPDetails.Remove(incap);
+        }
+        await context.SaveChangesAsync();
 
         await transaction.CommitAsync();
 

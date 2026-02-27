@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -8,9 +11,7 @@ using ECTSystem.Shared.Models;
 namespace ECTSystem.Api.Controllers;
 
 [Authorize]
-[ApiController]
-[Route("api/cases/{caseId:int}/documents")]
-public class DocumentsController : ControllerBase
+public class DocumentsController : ODataController
 {
     private const long MaxDocumentSize = 10 * 1024 * 1024; // 10 MB
 
@@ -23,102 +24,74 @@ public class DocumentsController : ControllerBase
         _log = log;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetByCaseId(int caseId, CancellationToken ct = default)
+    // GET /odata/Documents
+    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    public IActionResult Get()
     {
-        _log.QueryingDocuments(caseId);
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var documents = await context.Documents
-            .AsNoTracking()
-            .Where(d => d.LineOfDutyCaseId == caseId)
-            .Select(d => new LineOfDutyDocument
-            {
-                Id = d.Id,
-                LineOfDutyCaseId = d.LineOfDutyCaseId,
-                DocumentType = d.DocumentType,
-                FileName = d.FileName,
-                ContentType = d.ContentType,
-                FileSize = d.FileSize,
-                UploadDate = d.UploadDate,
-                Description = d.Description
-                // Content intentionally excluded
-            })
-            .ToListAsync(ct);
-        return Ok(documents);
+        _log.QueryingDocuments();
+        var context = _contextFactory.CreateDbContext();
+        return Ok(context.Documents.AsNoTracking());
     }
 
-    [HttpGet("{documentId:int}")]
-    public async Task<IActionResult> GetById(int caseId, int documentId, CancellationToken ct = default)
+    // GET /odata/Documents(1)
+    [EnableQuery]
+    public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.RetrievingDocument(documentId, caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var document = await context.Documents
             .AsNoTracking()
-            .Where(d => d.Id == documentId)
-            .Select(d => new LineOfDutyDocument
-            {
-                Id = d.Id,
-                LineOfDutyCaseId = d.LineOfDutyCaseId,
-                DocumentType = d.DocumentType,
-                FileName = d.FileName,
-                ContentType = d.ContentType,
-                FileSize = d.FileSize,
-                UploadDate = d.UploadDate,
-                Description = d.Description
-            })
-            .FirstOrDefaultAsync(ct);
+            .FirstOrDefaultAsync(d => d.Id == key, ct);
 
-        if (document is null || document.LineOfDutyCaseId != caseId)
+        if (document is null)
         {
-            _log.DocumentNotFound(documentId, caseId);
+            _log.DocumentNotFound(key, 0);
             return NotFound();
         }
 
+        _log.RetrievingDocument(key, document.LineOfDutyCaseId);
         return Ok(document);
     }
 
-    [HttpGet("{documentId:int}/download")]
-    public async Task<IActionResult> Download(int caseId, int documentId, CancellationToken ct = default)
+    // GET /api/cases/{caseId}/documents/{key}/download — download binary content
+    [HttpGet("api/cases/{caseId}/documents/{key}/download")]
+    [HttpGet("odata/Documents({key})/$value")]
+    public async Task<IActionResult> GetMediaResource([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.DownloadingDocument(documentId, caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var document = await context.Documents
+        var meta = await context.Documents
             .AsNoTracking()
-            .Where(d => d.Id == documentId)
-            .Select(d => new LineOfDutyDocument
-            {
-                Id = d.Id,
-                LineOfDutyCaseId = d.LineOfDutyCaseId,
-                FileName = d.FileName,
-                ContentType = d.ContentType
-            })
+            .Where(d => d.Id == key)
+            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId })
             .FirstOrDefaultAsync(ct);
 
-        if (document is null || document.LineOfDutyCaseId != caseId)
+        if (meta is null)
         {
-            _log.DocumentNotFound(documentId, caseId);
+            _log.DocumentNotFound(key, 0);
             return NotFound();
         }
+
+        _log.DownloadingDocument(key, meta.LineOfDutyCaseId);
 
         var content = await context.Documents
             .AsNoTracking()
-            .Where(d => d.Id == documentId)
+            .Where(d => d.Id == key)
             .Select(d => d.Content)
             .FirstOrDefaultAsync(ct);
 
-        if (content is null)
+        if (content is null || content.Length == 0)
         {
-            _log.DocumentContentNotFound(documentId);
+            _log.DocumentContentNotFound(key);
             return NotFound();
         }
 
-        return File(content, document.ContentType, document.FileName);
+        return File(content, meta.ContentType, meta.FileName);
     }
 
-    [HttpPost]
+    // POST /api/cases/{caseId}/documents — multipart file upload
+    [HttpPost("api/cases/{caseId}/documents")]
     [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB
     public async Task<IActionResult> Upload(
-        int caseId,
+        [FromRoute] int caseId,
         IFormFile file,
         [FromForm] string documentType,
         [FromForm] string description = "",
@@ -159,9 +132,9 @@ public class DocumentsController : ControllerBase
             context.Documents.Add(document);
             await context.SaveChangesAsync(ct);
 
-            document.Content = null!; // Don't return content in response
+            document.Content = null!;
             _log.DocumentUploaded(document.Id, caseId);
-            return CreatedAtAction(nameof(GetById), new { caseId, documentId = document.Id }, document);
+            return Created(document);
         }
         catch (ArgumentException ex)
         {
@@ -170,22 +143,23 @@ public class DocumentsController : ControllerBase
         }
     }
 
-    [HttpDelete("{documentId:int}")]
-    public async Task<IActionResult> Delete(int caseId, int documentId, CancellationToken ct = default)
+    // DELETE /api/cases/{caseId}/documents/{key}
+    [HttpDelete("api/cases/{caseId}/documents/{key}")]
+    public async Task<IActionResult> Delete([FromRoute] int key, CancellationToken ct = default)
     {
-        _log.DeletingDocument(documentId, caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var document = await context.Documents.FindAsync([documentId], ct);
+        var document = await context.Documents.FindAsync([key], ct);
 
-        if (document is null || document.LineOfDutyCaseId != caseId)
+        if (document is null)
         {
-            _log.DocumentNotFound(documentId, caseId);
+            _log.DocumentNotFound(key, 0);
             return NotFound();
         }
 
+        _log.DeletingDocument(key, document.LineOfDutyCaseId);
         context.Documents.Remove(document);
         await context.SaveChangesAsync(ct);
-        _log.DocumentDeleted(documentId, caseId);
+        _log.DocumentDeleted(key, document.LineOfDutyCaseId);
         return NoContent();
     }
 }

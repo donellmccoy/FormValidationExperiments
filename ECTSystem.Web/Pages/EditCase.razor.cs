@@ -456,7 +456,9 @@ public partial class EditCase : ComponentBase, IDisposable
                     SignedDate       = isForward ? now : outgoingStep.SignedDate,
                     SignedBy         = isForward ? string.Empty : (string.IsNullOrEmpty(outgoingStep.SignedBy) ? null : outgoingStep.SignedBy),
                     OccurredAt       = now,
-                    PerformedBy      = string.Empty
+                    PerformedBy      = string.Empty,
+                    CreatedDate      = now,
+                    ModifiedDate     = now
                 }, _cts.Token);
             }
 
@@ -469,7 +471,9 @@ public partial class EditCase : ComponentBase, IDisposable
                 Status           = WorkflowStepStatus.InProgress,
                 StartDate        = now,
                 OccurredAt       = now,
-                PerformedBy      = string.Empty
+                PerformedBy      = string.Empty,
+                CreatedDate      = now,
+                ModifiedDate     = now
             }, _cts.Token);
 
             // Start the incoming (new current) timeline step
@@ -544,7 +548,9 @@ public partial class EditCase : ComponentBase, IDisposable
                     MemberId = _selectedMemberId,
                     InitiationDate = DateTime.UtcNow,
                     IncidentDate = DateTime.UtcNow,
-                    WorkflowState = WorkflowState.MemberInformationEntry
+                    WorkflowState = WorkflowState.MemberInformationEntry,
+                    CreatedDate = DateTime.UtcNow,
+                    ModifiedDate = DateTime.UtcNow
                 };
 
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
@@ -633,7 +639,9 @@ public partial class EditCase : ComponentBase, IDisposable
                 SignedDate       = signed.SignedDate,
                 SignedBy         = signed.SignedBy,
                 OccurredAt       = DateTime.UtcNow,
-                PerformedBy      = string.Empty
+                PerformedBy      = string.Empty,
+                CreatedDate      = DateTime.UtcNow,
+                ModifiedDate     = DateTime.UtcNow
             }, _cts.Token);
 
             _lodCase.WorkflowStateHistories ??= new HashSet<WorkflowStateHistory>();
@@ -1036,7 +1044,9 @@ public partial class EditCase : ComponentBase, IDisposable
                 MemberId = _selectedMemberId,
                 WorkflowState = WorkflowState.MemberInformationEntry,
                 InitiationDate = DateTime.UtcNow,
-                IncidentDate = DateTime.UtcNow
+                IncidentDate = DateTime.UtcNow,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
             };
 
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
@@ -1058,7 +1068,9 @@ public partial class EditCase : ComponentBase, IDisposable
                 StartDate        = saved.CreatedDate,
                 SignedDate       = startNow,
                 OccurredAt       = startNow,
-                PerformedBy      = string.Empty
+                PerformedBy      = string.Empty,
+                CreatedDate      = startNow,
+                ModifiedDate     = startNow
             }, _cts.Token);
 
             await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
@@ -1069,7 +1081,9 @@ public partial class EditCase : ComponentBase, IDisposable
                 Status           = WorkflowStepStatus.InProgress,
                 StartDate        = startNow,
                 OccurredAt       = startNow,
-                PerformedBy      = string.Empty
+                PerformedBy      = string.Empty,
+                CreatedDate      = startNow,
+                ModifiedDate     = startNow
             }, _cts.Token);
 
             _lodCase = saved;

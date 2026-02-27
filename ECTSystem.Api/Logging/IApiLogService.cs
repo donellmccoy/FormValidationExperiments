@@ -31,6 +31,7 @@ public interface IApiLogService
     void MemberDeleted(int memberId);
 
     // Documents
+    void QueryingDocuments();
     void QueryingDocuments(int caseId);
     void RetrievingDocument(int documentId, int caseId);
     void DocumentNotFound(int documentId, int caseId);

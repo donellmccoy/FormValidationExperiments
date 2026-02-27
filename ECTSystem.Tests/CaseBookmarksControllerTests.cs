@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -99,7 +100,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             ctx.SaveChanges();
         }
 
-        var result = await _sut.DeleteByCaseId(1);
+        var result = await _sut.DeleteByCaseId(new ODataActionParameters { { "caseId", 1 } });
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -107,7 +108,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
     [Fact]
     public async Task DeleteByCaseId_WhenBookmarkNotFound_ReturnsNotFound()
     {
-        var result = await _sut.DeleteByCaseId(999);
+        var result = await _sut.DeleteByCaseId(new ODataActionParameters { { "caseId", 999 } });
 
         Assert.IsType<NotFoundResult>(result);
     }

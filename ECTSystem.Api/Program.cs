@@ -65,7 +65,9 @@ public class Program
         odataBuilder.EntitySet<Member>("Members");
         odataBuilder.EntitySet<Notification>("Notifications");
         odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
-        odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
+        var documentsEntitySet = odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
+        odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
+        odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
         var timelineStepsEntitySet = odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
         timelineStepsEntitySet.EntityType.Action("Sign")
             .ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
@@ -75,7 +77,8 @@ public class Program
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
         odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
         var caseBookmarksEntitySet = odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
-        caseBookmarksEntitySet.EntityType.Collection.Action("DeleteByCaseId");
+        caseBookmarksEntitySet.EntityType.Collection.Action("DeleteByCaseId")
+            .Parameter<int>("caseId");
         caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked")
             .Returns<bool>()
             .Parameter<int>("caseId");
@@ -145,7 +148,8 @@ public class Program
             app.MapOpenApi();
         }
 
-        app.UseHttpsRedirection();
+        app.UseMiddleware<ECTSystem.Api.Middleware.RequestLoggingMiddleware>();
+app.UseHttpsRedirection();
         app.UseCors("BlazorClient");
 
         app.UseAuthentication();

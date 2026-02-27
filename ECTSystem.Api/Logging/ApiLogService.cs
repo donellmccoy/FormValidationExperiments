@@ -80,7 +80,10 @@ public partial class ApiLogService(ILogger<ApiLogService> logger) : IApiLogServi
     [LoggerMessage(EventId = 210, Level = LogLevel.Information, Message = "Member {MemberId} deleted")]
     public partial void MemberDeleted(int memberId);
 
-    // Documents (EventId 300–310)
+    // Documents (EventId 300–311)
+
+    [LoggerMessage(EventId = 311, Level = LogLevel.Information, Message = "Querying documents")]
+    public partial void QueryingDocuments();
 
     [LoggerMessage(EventId = 300, Level = LogLevel.Information, Message = "Querying documents for case {CaseId}")]
     public partial void QueryingDocuments(int caseId);

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using ECTSystem.Api.Services;
@@ -28,8 +29,8 @@ public class TimelineStepsController : ODataController
     /// Digitally signs a timeline step, recording the current user and UTC timestamp.
     /// OData action route: POST /odata/TimelineSteps({key})/Sign
     /// </summary>
-    [HttpPost("odata/TimelineSteps({key})/Sign")]
-    public async Task<IActionResult> Sign([FromRoute] int key, CancellationToken ct)
+    [HttpPost]
+    public async Task<IActionResult> Sign([FromODataUri] int key, CancellationToken ct)
     {
         try
         {
@@ -46,8 +47,8 @@ public class TimelineStepsController : ODataController
     /// Sets the StartDate on a timeline step to UTC now.
     /// OData action route: POST /odata/TimelineSteps({key})/Start
     /// </summary>
-    [HttpPost("odata/TimelineSteps({key})/Start")]
-    public async Task<IActionResult> Start([FromRoute] int key, CancellationToken ct)
+    [HttpPost]
+    public async Task<IActionResult> Start([FromODataUri] int key, CancellationToken ct)
     {
         try
         {

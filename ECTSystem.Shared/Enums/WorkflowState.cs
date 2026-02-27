@@ -6,6 +6,8 @@ namespace ECTSystem.Shared.Enums;
 /// </summary>
 public enum WorkflowState
 {
+    None = 0,
+
     /// <summary>Initial state — member information and incident details are being entered.</summary>
     MemberInformationEntry = 1,
 

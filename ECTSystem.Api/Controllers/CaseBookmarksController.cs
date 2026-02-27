@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -37,7 +38,7 @@ public class CaseBookmarksController : ODataController
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark)
+    public async Task<IActionResult> Post(CaseBookmark bookmark)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -63,9 +64,14 @@ public class CaseBookmarksController : ODataController
         return Created(newBookmark);
     }
 
-    [HttpDelete("odata/CaseBookmarks/DeleteByCaseId")]
-    public async Task<IActionResult> DeleteByCaseId([FromQuery] int caseId)
+    [HttpPost]
+    public async Task<IActionResult> DeleteByCaseId(ODataActionParameters parameters)
     {
+        if (!parameters.TryGetValue("caseId", out var caseIdObj) || caseIdObj is not int caseId)
+        {
+            return BadRequest("caseId is required.");
+        }
+
         _log.DeletingBookmark(caseId);
         await using var context = await _contextFactory.CreateDbContextAsync();
         var bookmark = await context.CaseBookmarks
@@ -83,8 +89,8 @@ public class CaseBookmarksController : ODataController
         return NoContent();
     }
 
-    [HttpGet("odata/CaseBookmarks/IsBookmarked(caseId={caseId})")]
-    public async Task<IActionResult> IsBookmarked([FromRoute] int caseId)
+    [HttpGet]
+    public async Task<IActionResult> IsBookmarked([FromODataUri] int caseId)
     {
         _log.CheckingBookmark(caseId);
         await using var context = await _contextFactory.CreateDbContextAsync();

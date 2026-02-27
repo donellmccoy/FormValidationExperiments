@@ -24,6 +24,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         // Seed a default Member so that FK references are valid for Include queries

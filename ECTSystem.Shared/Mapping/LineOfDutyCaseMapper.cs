@@ -234,7 +234,7 @@ public static partial class LineOfDutyCaseMapper
         var authority = FindAuthority(source, role);
         if (authority is null)
         {
-            authority = new LineOfDutyAuthority { Role = role };
+            authority = new LineOfDutyAuthority { Role = role, CreatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow };
             source.Authorities ??= [];
             source.Authorities.Add(authority);
         }
