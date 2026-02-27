@@ -1,0 +1,12 @@
+.dashboard-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--rz-shadow-6) !important;
+}
+
+::deep .rz-tabview-panels {
+    background: transparent !important;
+}

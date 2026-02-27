@@ -1,4 +1,4 @@
-@page "/"
+@page "/cases"
 @attribute [Authorize]
 
 <PageTitle>Cases - Electronic Case Tracking System</PageTitle>
@@ -70,7 +70,14 @@ else
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" Width="120px" Filterable="false" Sortable="false">
             <Template Context="lodCase">
-                @($"***-**-{lodCase.ServiceNumber[^4..]}")
+                @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
+                {
+                    @($"***-**-{lodCase.ServiceNumber[^4..]}")
+                }
+                else
+                {
+                    @lodCase.ServiceNumber
+                }
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />

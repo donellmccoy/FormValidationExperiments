@@ -2,37 +2,31 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.ModelBuilder;
+using Microsoft.OData.Edm;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
 using ECTSystem.Api.Logging;
 using ECTSystem.Shared.Models;
-using Microsoft.OData.Edm;
 
-namespace ECTSystem.Api;
+namespace ECTSystem.Api.Extensions;
 
-// OData is the primary API surface — convention routing, Delta<T>.Patch(), and bound actions
-// are used throughout. The client excludes navigation/collection/FK properties from PATCH
-// bodies via a JsonTypeInfoResolver modifier, so no separate DTO is needed.
-
-public class Program
+public static class ServiceCollectionExtensions
 {
-    public static async Task Main(string[] args)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var builder = WebApplication.CreateBuilder(args);
-
         // Entity Framework Core — SQL Server
-        var connectionString = builder.Configuration.GetConnectionString("EctDatabase");
+        var connectionString = configuration.GetConnectionString("EctDatabase");
 
-        builder.Services.AddDbContextFactory<EctDbContext>(options =>
+        services.AddDbContextFactory<EctDbContext>(options =>
             options.UseSqlServer(connectionString));
 
         // Dedicated Identity DbContext — shares the same database but keeps Identity
         // concerns separate from the application domain model.
-        builder.Services.AddDbContext<EctIdentityDbContext>(options =>
+        services.AddDbContext<EctIdentityDbContext>(options =>
             options.UseSqlServer(connectionString));
 
         // ASP.NET Core Identity with Bearer token authentication
-        builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
+        services.AddIdentityApiEndpoints<ApplicationUser>(options =>
         {
             options.SignIn.RequireConfirmedAccount = false;
             options.Password.RequireDigit = false;
@@ -42,12 +36,11 @@ public class Program
         })
         .AddEntityFrameworkStores<EctIdentityDbContext>();
 
-        builder.Services.AddAuthorization();
+        services.AddAuthorization();
 
         // Logging
-        builder.Services.AddSingleton<IApiLogService, ApiLogService>();
+        services.AddSingleton<IApiLogService, ApiLogService>();
 
-        // Application services
         // OData Entity Data Model
         var odataBuilder = new ODataConventionModelBuilder();
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
@@ -74,12 +67,12 @@ public class Program
             .Parameter<int>("caseId");
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
         var edmModel = odataBuilder.GetEdmModel();
-        builder.Services.AddSingleton<IEdmModel>(edmModel);
+        services.AddSingleton<IEdmModel>(edmModel);
 
         // Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
 
         // Controllers + OData
-        builder.Services.AddControllers()
+        services.AddControllers()
             .AddOData(options =>
             {
                 options.RouteOptions.EnableUnqualifiedOperationCall = true;
@@ -98,7 +91,7 @@ public class Program
             });
 
         // CORS — allow the Blazor WASM client
-        builder.Services.AddCors(options =>
+        services.AddCors(options =>
         {
             options.AddPolicy("BlazorClient", policy =>
             {
@@ -109,53 +102,8 @@ public class Program
             });
         });
 
-        builder.Services.AddOpenApi();
+        services.AddOpenApi();
 
-        var app = builder.Build();
-
-        // Apply migrations and seed data
-        using (var scope = app.Services.CreateScope())
-        {
-            var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<EctDbContext>>();
-            await using var context = await contextFactory.CreateDbContextAsync();
-            await context.Database.MigrateAsync();
-
-            var identityContext = scope.ServiceProvider.GetRequiredService<EctIdentityDbContext>();
-            await identityContext.Database.MigrateAsync();
-
-            await EctDbSeeder.SeedAsync(contextFactory);
-
-            // Seed a default dev user so the app works immediately after a database reset
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            if (await userManager.FindByEmailAsync("admin@ect.mil") is null)
-            {
-                var devUser = new ApplicationUser { UserName = "admin@ect.mil", Email = "admin@ect.mil", EmailConfirmed = true };
-                await userManager.CreateAsync(devUser, "Pass123");
-            }
-        }
-
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapOpenApi();
-        }
-
-        app.UseMiddleware<ECTSystem.Api.Middleware.RequestLoggingMiddleware>();
-app.UseHttpsRedirection();
-        app.UseCors("BlazorClient");
-
-        app.UseAuthentication();
-        app.UseAuthorization();
-
-        // Identity API endpoints: /register, /login, /refresh, /confirmEmail, etc.
-        app.MapIdentityApi<ApplicationUser>();
-
-        // Lightweight user-info endpoint for the Blazor WASM client
-        app.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) =>
-            Results.Ok(new { user.Identity!.Name }))
-            .RequireAuthorization();
-
-        app.MapControllers();
-
-        await app.RunAsync();
+        return services;
     }
 }

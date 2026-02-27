@@ -287,8 +287,8 @@ public class LineOfDutyCaseHttpService : IDataService
         }
 
         var url = parts.Count > 0
-            ? $"odata/Cases/Bookmarked?{string.Join("&", parts)}"
-            : "odata/Cases/Bookmarked";
+            ? $"odata/Cases/Bookmarked()?{string.Join("&", parts)}"
+            : "odata/Cases/Bookmarked()";
 
         var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>( url, ODataJsonOptions, cancellationToken);
 

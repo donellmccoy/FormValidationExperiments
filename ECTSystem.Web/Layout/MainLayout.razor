@@ -12,8 +12,9 @@
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@_sidebarExpanded" Style="width: max-content">
         <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="/" />
             <RadzenPanelMenuItem Text="Line Of Duty Cases" Icon="folder_open" Expanded="true">
-                <RadzenPanelMenuItem Text="All Cases" Icon="list" Path="/" />
+                <RadzenPanelMenuItem Text="All Cases" Icon="list" Path="/cases" />
                 <RadzenPanelMenuItem Icon="bookmarks" Path="/bookmarks">
                     <Template>
                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"

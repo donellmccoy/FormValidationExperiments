@@ -32,17 +32,6 @@ else
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
 
-@if (!_hasBookmarks && _bookmarks != null && !_bookmarks.Any())
-{
-    <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" Style="padding: 3rem 0;">
-        <span class="material-symbols-outlined" style="font-size: 48px; color: rgba(255, 255, 255, 0.3);">bookmarks</span>
-        <RadzenText TextStyle="TextStyle.Body1" Style="color: rgba(255, 255, 255, 0.5);">
-            No bookmarked cases yet. Open a case and click the bookmark icon to save it here.
-        </RadzenText>
-    </RadzenStack>
-}
-else
-{
 <RadzenDataGrid @ref="_grid" TItem="LineOfDutyCase"
                 Data="@_bookmarks"
                 Count="@_count"
@@ -62,6 +51,14 @@ else
                 PagerHorizontalAlign="HorizontalAlign.Center"
                 GridLines="DataGridGridLines.Both"
                 Style="border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+    <EmptyTemplate>
+        <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" Style="padding: 3rem 0;">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: rgba(255, 255, 255, 0.3);">bookmarks</span>
+            <RadzenText TextStyle="TextStyle.Body1" Style="color: rgba(255, 255, 255, 0.5);">
+                No bookmarked cases yet. Open a case and click the bookmark icon to save it here.
+            </RadzenText>
+        </RadzenStack>
+    </EmptyTemplate>
     <Columns>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="220px">
             <Template Context="lodCase">
@@ -90,7 +87,6 @@ else
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
-}
 
 }
 </div>
