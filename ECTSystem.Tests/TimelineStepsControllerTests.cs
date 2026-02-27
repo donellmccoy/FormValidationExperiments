@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using ECTSystem.Api.Controllers;
-using ECTSystem.Api.Services;
+using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
 
@@ -9,14 +10,36 @@ namespace ECTSystem.Tests;
 
 public class TimelineStepsControllerTests : ControllerTestBase
 {
-    private readonly Mock<ILineOfDutyTimelineService> _mockTimelineService;
+    private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
+    private readonly DbContextOptions<EctDbContext>        _dbOptions;
     private readonly TimelineStepsController          _sut;
 
     public TimelineStepsControllerTests()
     {
-        _mockTimelineService = new Mock<ILineOfDutyTimelineService>();
-        _sut = new TimelineStepsController(_mockTimelineService.Object);
+        _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+
+        _mockContextFactory = new Mock<IDbContextFactory<EctDbContext>>();
+
+        _mockContextFactory
+            .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new EctDbContext(_dbOptions));
+
+        _mockContextFactory
+            .Setup(f => f.CreateDbContext())
+            .Returns(() => new EctDbContext(_dbOptions));
+
+        _sut = new TimelineStepsController(_mockContextFactory.Object);
         _sut.ControllerContext = CreateControllerContext();
+    }
+
+    private void SeedStep(TimelineStep step)
+    {
+        using var ctx = new EctDbContext(_dbOptions);
+        ctx.TimelineSteps.Add(step);
+        ctx.SaveChanges();
     }
 
     // ─────────────────────────────── Sign ────────────────────────────────────
@@ -24,22 +47,20 @@ public class TimelineStepsControllerTests : ControllerTestBase
     [Fact]
     public async Task Sign_WhenStepExists_ReturnsOkWithSignedStep()
     {
-        var step = new TimelineStep { Id = 1, LineOfDutyCaseId = 1, SignedBy = TestUserId, SignedDate = DateTime.UtcNow };
-        _mockTimelineService.Setup(s => s.SignTimelineStepAsync(1, TestUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(step);
+        var step = new TimelineStep { Id = 1, LineOfDutyCaseId = 1 };
+        SeedStep(step);
 
         var result = await _sut.Sign(1, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(step, ok.Value);
+        var returned = Assert.IsType<TimelineStep>(ok.Value);
+        Assert.Equal(TestUserId, returned.SignedBy);
+        Assert.NotNull(returned.SignedDate);
     }
 
     [Fact]
     public async Task Sign_WhenStepNotFound_ReturnsNotFound()
     {
-        _mockTimelineService.Setup(s => s.SignTimelineStepAsync(999, TestUserId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("TimelineStep with Id 999 not found."));
-
         var result = await _sut.Sign(999, CancellationToken.None);
 
         Assert.IsType<NotFoundResult>(result);
@@ -48,13 +69,14 @@ public class TimelineStepsControllerTests : ControllerTestBase
     [Fact]
     public async Task Sign_PassesCurrentUserIdToService()
     {
-        var step = new TimelineStep { Id = 3, LineOfDutyCaseId = 1, SignedBy = TestUserId };
-        _mockTimelineService.Setup(s => s.SignTimelineStepAsync(3, TestUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(step);
+        var step = new TimelineStep { Id = 3, LineOfDutyCaseId = 1 };
+        SeedStep(step);
 
         await _sut.Sign(3, CancellationToken.None);
 
-        _mockTimelineService.Verify(s => s.SignTimelineStepAsync(3, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
+        using var ctx = new EctDbContext(_dbOptions);
+        var updated = await ctx.TimelineSteps.FindAsync(3);
+        Assert.Equal(TestUserId, updated.SignedBy);
     }
 
     // ─────────────────────────────── Start ───────────────────────────────────
@@ -62,22 +84,19 @@ public class TimelineStepsControllerTests : ControllerTestBase
     [Fact]
     public async Task Start_WhenStepExists_ReturnsOkWithStep()
     {
-        var step = new TimelineStep { Id = 2, LineOfDutyCaseId = 1, StartDate = DateTime.UtcNow };
-        _mockTimelineService.Setup(s => s.StartTimelineStepAsync(2, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(step);
+        var step = new TimelineStep { Id = 2, LineOfDutyCaseId = 1 };
+        SeedStep(step);
 
         var result = await _sut.Start(2, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(step, ok.Value);
+        var returned = Assert.IsType<TimelineStep>(ok.Value);
+        Assert.NotNull(returned.StartDate);
     }
 
     [Fact]
     public async Task Start_WhenStepNotFound_ReturnsNotFound()
     {
-        _mockTimelineService.Setup(s => s.StartTimelineStepAsync(999, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("TimelineStep with Id 999 not found."));
-
         var result = await _sut.Start(999, CancellationToken.None);
 
         Assert.IsType<NotFoundResult>(result);

@@ -5,7 +5,6 @@ using Microsoft.OData.ModelBuilder;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
 using ECTSystem.Api.Logging;
-using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
 using Microsoft.OData.Edm;
 
@@ -49,15 +48,6 @@ public class Program
         builder.Services.AddSingleton<IApiLogService, ApiLogService>();
 
         // Application services
-        builder.Services.AddScoped<DataService>();
-        builder.Services.AddScoped<IDataService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<ILineOfDutyAppealService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<ILineOfDutyAuthorityService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<ILineOfDutyTimelineService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<ILineOfDutyNotificationService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<ICaseBookmarkService>(sp => sp.GetRequiredService<DataService>());
-        builder.Services.AddScoped<IWorkflowStateHistoryService>(sp => sp.GetRequiredService<DataService>());
-
         // OData Entity Data Model
         var odataBuilder = new ODataConventionModelBuilder();
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");

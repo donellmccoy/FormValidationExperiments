@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using ECTSystem.Api.Services;
+using Microsoft.EntityFrameworkCore;
+using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -15,11 +16,11 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class WorkflowStateHistoriesController : ODataController
 {
-    private readonly IWorkflowStateHistoryService _historyService;
+    private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    public WorkflowStateHistoriesController(IWorkflowStateHistoryService historyService)
+    public WorkflowStateHistoriesController(IDbContextFactory<EctDbContext> contextFactory)
     {
-        _historyService = historyService;
+        _contextFactory = contextFactory;
     }
 
     public async Task<IActionResult> Post(WorkflowStateHistory entry, CancellationToken ct)
@@ -29,6 +30,11 @@ public class WorkflowStateHistoriesController : ODataController
             return BadRequest(ModelState);
         }
 
-        return Created(await _historyService.AddHistoryEntryAsync(entry, ct));
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
+        context.WorkflowStateHistories.Add(entry);
+        await context.SaveChangesAsync(ct);
+
+        return Created(entry);
     }
 }

@@ -60,9 +60,10 @@ builder.Services.AddScoped(sp =>
     {
         BaseUrl = odataBaseAddress.ToString(),
         HttpClient = factory.CreateClient("OData"),
-        JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        JsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = null,
             Converters =
             {
                 new JsonStringEnumConverter(),

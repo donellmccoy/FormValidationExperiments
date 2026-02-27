@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Results;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using ECTSystem.Api.Controllers;
-using ECTSystem.Api.Services;
+using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Xunit;
@@ -11,13 +12,28 @@ namespace ECTSystem.Tests;
 
 public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 {
-    private readonly Mock<IWorkflowStateHistoryService>  _mockService;
+    private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
+    private readonly DbContextOptions<EctDbContext>        _dbOptions;
     private readonly WorkflowStateHistoriesController    _sut;
 
     public WorkflowStateHistoriesControllerTests()
     {
-        _mockService = new Mock<IWorkflowStateHistoryService>();
-        _sut         = new WorkflowStateHistoriesController(_mockService.Object);
+        _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+
+        _mockContextFactory = new Mock<IDbContextFactory<EctDbContext>>();
+
+        _mockContextFactory
+            .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new EctDbContext(_dbOptions));
+
+        _mockContextFactory
+            .Setup(f => f.CreateDbContext())
+            .Returns(() => new EctDbContext(_dbOptions));
+
+        _sut = new WorkflowStateHistoriesController(_mockContextFactory.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 
@@ -27,8 +43,6 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     public async Task Post_WhenModelValid_ReturnsCreatedWithEntry()
     {
         var entry = BuildEntry();
-        _mockService.Setup(s => s.AddHistoryEntryAsync(entry, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(entry);
 
         var result = await _sut.Post(entry, CancellationToken.None);
 
@@ -50,12 +64,13 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     public async Task Post_WhenModelValid_InvokesServiceWithEntry()
     {
         var entry = BuildEntry();
-        _mockService.Setup(s => s.AddHistoryEntryAsync(entry, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(entry);
 
         await _sut.Post(entry, CancellationToken.None);
 
-        _mockService.Verify(s => s.AddHistoryEntryAsync(entry, It.IsAny<CancellationToken>()), Times.Once);
+        using var ctx = new EctDbContext(_dbOptions);
+        var saved = await ctx.WorkflowStateHistories.FirstOrDefaultAsync();
+        Assert.NotNull(saved);
+        Assert.Equal(entry.LineOfDutyCaseId, saved.LineOfDutyCaseId);
     }
 
     [Fact]
@@ -65,7 +80,9 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 
         await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
 
-        _mockService.Verify(s => s.AddHistoryEntryAsync(It.IsAny<WorkflowStateHistory>(), It.IsAny<CancellationToken>()), Times.Never);
+        using var ctx = new EctDbContext(_dbOptions);
+        var count = await ctx.WorkflowStateHistories.CountAsync();
+        Assert.Equal(0, count);
     }
 
     // ─────────────────────────────── Helpers ─────────────────────────────────

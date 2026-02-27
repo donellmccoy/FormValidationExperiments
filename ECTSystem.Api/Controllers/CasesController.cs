@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
-using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 
@@ -124,6 +123,7 @@ public class CasesController : ODataController
     /// </summary>
     public async Task<IActionResult> Post(LineOfDutyCase lodCase)
     {
+        Console.WriteLine($"POST Cases: MemberId={lodCase.MemberId}");
         if (!ModelState.IsValid)
         {
             _log.InvalidModelState("Post");

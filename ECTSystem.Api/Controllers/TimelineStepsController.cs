@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using ECTSystem.Api.Services;
+using Microsoft.EntityFrameworkCore;
+using ECTSystem.Persistence.Data;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -15,11 +16,11 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class TimelineStepsController : ODataController
 {
-    private readonly ILineOfDutyTimelineService _timelineService;
+    private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    public TimelineStepsController(ILineOfDutyTimelineService timelineService)
+    public TimelineStepsController(IDbContextFactory<EctDbContext> contextFactory)
     {
-        _timelineService = timelineService;
+        _contextFactory = contextFactory;
     }
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -32,15 +33,19 @@ public class TimelineStepsController : ODataController
     [HttpPost]
     public async Task<IActionResult> Sign([FromODataUri] int key, CancellationToken ct)
     {
-        try
-        {
-            var step = await _timelineService.SignTimelineStepAsync(key, UserId, ct);
-            return Ok(step);
-        }
-        catch (InvalidOperationException)
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var step = await context.TimelineSteps.FindAsync(new object[] { key }, ct);
+
+        if (step is null)
         {
             return NotFound();
         }
+
+        step.SignedDate = DateTime.UtcNow;
+        step.SignedBy = UserId;
+        await context.SaveChangesAsync(ct);
+
+        return Ok(step);
     }
 
     /// <summary>
@@ -50,14 +55,17 @@ public class TimelineStepsController : ODataController
     [HttpPost]
     public async Task<IActionResult> Start([FromODataUri] int key, CancellationToken ct)
     {
-        try
-        {
-            var step = await _timelineService.StartTimelineStepAsync(key, ct);
-            return Ok(step);
-        }
-        catch (InvalidOperationException)
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var step = await context.TimelineSteps.FindAsync(new object[] { key }, ct);
+
+        if (step is null)
         {
             return NotFound();
         }
+
+        step.StartDate = DateTime.UtcNow;
+        await context.SaveChangesAsync(ct);
+
+        return Ok(step);
     }
 }

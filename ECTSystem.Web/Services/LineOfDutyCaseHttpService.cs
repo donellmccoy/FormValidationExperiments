@@ -24,8 +24,10 @@ public class LineOfDutyCaseHttpService : IDataService
 
     private readonly HttpClient _httpClient;
 
-    private static readonly JsonSerializerOptions ODataJsonOptions = new(JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions ODataJsonOptions = new()
     {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = null,
         Converters = { new JsonStringEnumConverter() }
     };
 
@@ -228,10 +230,7 @@ public class LineOfDutyCaseHttpService : IDataService
             filter += $" or {string.Join(" or ", matchingComponents.Select(c => $"Component eq ECTSystem.Shared.Enums.ServiceComponent'{c}'"))}";
         }
 
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        options.Converters.Add(new JsonStringEnumConverter());
-
-        var response = await _httpClient.GetFromJsonAsync<ODataResponse<Member>>((string?)$"odata/Members?$filter={Uri.EscapeDataString(filter)}&$top=25&$orderby=LastName,FirstName", options, cancellationToken);
+        var response = await _httpClient.GetFromJsonAsync<ODataResponse<Member>>((string?)$"odata/Members?$filter={Uri.EscapeDataString(filter)}&$top=25&$orderby=LastName,FirstName", ODataJsonOptions, cancellationToken);
 
         return response?.Value ?? [];
     }
@@ -304,7 +303,7 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks", new { LineOfDutyCaseId = caseId }, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks", new { LineOfDutyCaseId = caseId }, ODataJsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -313,7 +312,7 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks/DeleteByCaseId", new { caseId }, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks/DeleteByCaseId", new { caseId }, ODataJsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
