@@ -23,7 +23,7 @@ public class WorkflowStateHistoriesController : ODataController
         _contextFactory = contextFactory;
     }
 
-    public async Task<IActionResult> Post(WorkflowStateHistory entry, CancellationToken ct)
+    public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {

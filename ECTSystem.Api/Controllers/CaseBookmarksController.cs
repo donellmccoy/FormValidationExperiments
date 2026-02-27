@@ -38,7 +38,7 @@ public class CaseBookmarksController : ODataController
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post(CaseBookmark bookmark)
+    public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 

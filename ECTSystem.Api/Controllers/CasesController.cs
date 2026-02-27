@@ -121,9 +121,8 @@ public class CasesController : ODataController
     /// Creates a new LOD case.
     /// OData route: POST /odata/Cases
     /// </summary>
-    public async Task<IActionResult> Post(LineOfDutyCase lodCase)
+    public async Task<IActionResult> Post([FromBody] LineOfDutyCase lodCase)
     {
-        Console.WriteLine($"POST Cases: MemberId={lodCase.MemberId}");
         if (!ModelState.IsValid)
         {
             _log.InvalidModelState("Post");

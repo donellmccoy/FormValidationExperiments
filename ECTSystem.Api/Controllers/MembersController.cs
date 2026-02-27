@@ -66,7 +66,7 @@ public class MembersController : ODataController
     /// Creates a new Member.
     /// OData route: POST /odata/Members
     /// </summary>
-    public async Task<IActionResult> Post(Member member)
+    public async Task<IActionResult> Post([FromBody] Member member)
     {
         if (!ModelState.IsValid)
         {
@@ -86,7 +86,7 @@ public class MembersController : ODataController
     /// Fully replaces an existing Member.
     /// OData route: PUT /odata/Members({key})
     /// </summary>
-    public async Task<IActionResult> Put([FromODataUri] int key, Member update)
+    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] Member update)
     {
         if (!ModelState.IsValid)
         {
