@@ -24,5 +24,6 @@ public enum LodTrigger
 
     Cancel,
     Complete,
-
+    Close,
+    Reopen
 }
