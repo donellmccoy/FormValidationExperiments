@@ -11,6 +11,7 @@ using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
+using System.Text.Json.Serialization;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -64,7 +65,7 @@ public class CasesController : ODataController
 
         var odataContext = new ODataQueryContext(_edmModel, typeof(LineOfDutyCase), new Microsoft.OData.UriParser.ODataPath());
         var options = new ODataQueryOptions<LineOfDutyCase>(odataContext, Request);
-        bool countRequested = options.Count?.Value == true;
+        var countRequested = options.Count?.Value == true;
 
         try
         {
@@ -88,10 +89,10 @@ public class CasesController : ODataController
 
     private sealed class BookmarkedCasesResponse
     {
-        [System.Text.Json.Serialization.JsonPropertyName("value")]
+        [JsonPropertyName("value")]
         public List<LineOfDutyCase> Value { get; init; } = [];
 
-        [System.Text.Json.Serialization.JsonPropertyName("@odata.count")]
+        [JsonPropertyName("@odata.count")]
         public int? Count { get; init; }
     }
 

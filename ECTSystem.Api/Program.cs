@@ -59,9 +59,8 @@ public class Program
         app.MapIdentityApi<ApplicationUser>();
 
         // Lightweight user-info endpoint for the Blazor WASM client
-        app.MapGet("/me", (ClaimsPrincipal user) =>
-            Results.Ok(new { user.Identity!.Name }))
-            .RequireAuthorization();
+        app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { user.Identity!.Name }))
+           .RequireAuthorization();
 
         app.MapControllers();
 
