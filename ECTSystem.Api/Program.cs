@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OData.ModelBuilder;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
-using ECTSystem.Api.Logging;
-using ECTSystem.Shared.Models;
-using Microsoft.OData.Edm;
+using ECTSystem.Api.Extensions;
+using ECTSystem.Api.Middleware;
+using System.Security.Claims;
 
 namespace ECTSystem.Api;
 
@@ -20,96 +18,7 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Entity Framework Core — SQL Server
-        var connectionString = builder.Configuration.GetConnectionString("EctDatabase");
-
-        builder.Services.AddDbContextFactory<EctDbContext>(options =>
-            options.UseSqlServer(connectionString));
-
-        // Dedicated Identity DbContext — shares the same database but keeps Identity
-        // concerns separate from the application domain model.
-        builder.Services.AddDbContext<EctIdentityDbContext>(options =>
-            options.UseSqlServer(connectionString));
-
-        // ASP.NET Core Identity with Bearer token authentication
-        builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
-        {
-            options.SignIn.RequireConfirmedAccount = false;
-            options.Password.RequireDigit = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequiredLength = 6;
-        })
-        .AddEntityFrameworkStores<EctIdentityDbContext>();
-
-        builder.Services.AddAuthorization();
-
-        // Logging
-        builder.Services.AddSingleton<IApiLogService, ApiLogService>();
-
-        // Application services
-        // OData Entity Data Model
-        var odataBuilder = new ODataConventionModelBuilder();
-        var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
-        casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
-        odataBuilder.EntitySet<Member>("Members");
-        odataBuilder.EntitySet<Notification>("Notifications");
-        odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
-        var documentsEntitySet = odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
-        odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
-        odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
-        var timelineStepsEntitySet = odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
-        timelineStepsEntitySet.EntityType.Action("Sign")
-            .ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
-        timelineStepsEntitySet.EntityType.Action("Start")
-            .ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
-        odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
-        odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
-        odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
-        var caseBookmarksEntitySet = odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
-        caseBookmarksEntitySet.EntityType.Collection.Action("DeleteByCaseId")
-            .Parameter<int>("caseId");
-        caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked")
-            .Returns<bool>()
-            .Parameter<int>("caseId");
-        odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
-        var edmModel = odataBuilder.GetEdmModel();
-        builder.Services.AddSingleton<IEdmModel>(edmModel);
-
-        // Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
-
-        // Controllers + OData
-        builder.Services.AddControllers()
-            .AddOData(options =>
-            {
-                options.RouteOptions.EnableUnqualifiedOperationCall = true;
-                options.AddRouteComponents("odata", edmModel)
-                       .Select()
-                       .Filter()
-                       .Expand()
-                       .OrderBy()
-                       .SetMaxTop(100)
-                       .Count();
-            })
-            .AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-            });
-
-        // CORS — allow the Blazor WASM client
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("BlazorClient", policy =>
-            {
-                policy.WithOrigins("https://localhost:7240", "http://localhost:5101")
-                      .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
-            });
-        });
-
-        builder.Services.AddOpenApi();
+        builder.Services.AddApplicationServices(builder.Configuration);
 
         var app = builder.Build();
 
@@ -139,8 +48,8 @@ public class Program
             app.MapOpenApi();
         }
 
-        app.UseMiddleware<ECTSystem.Api.Middleware.RequestLoggingMiddleware>();
-app.UseHttpsRedirection();
+        app.UseMiddleware<RequestLoggingMiddleware>();
+        app.UseHttpsRedirection();
         app.UseCors("BlazorClient");
 
         app.UseAuthentication();
@@ -150,7 +59,7 @@ app.UseHttpsRedirection();
         app.MapIdentityApi<ApplicationUser>();
 
         // Lightweight user-info endpoint for the Blazor WASM client
-        app.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) =>
+        app.MapGet("/me", (ClaimsPrincipal user) =>
             Results.Ok(new { user.Identity!.Name }))
             .RequireAuthorization();
 

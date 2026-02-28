@@ -14,24 +14,44 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        var apiBase = configuration["ApiBaseAddress"]
+            ?? throw new InvalidOperationException("ApiBaseAddress is not configured in appsettings.json");
+        var apiBaseAddress = new Uri(apiBase);
+        var odataBaseAddress = new Uri(apiBaseAddress, "odata/");
+
+        services.AddJsonSerializerOptions()
+                .AddAuthenticationServices()
+                .AddHttpClients(apiBaseAddress, odataBaseAddress)
+                .AddODataClient(odataBaseAddress)
+                .AddDomainServices();
+
+        return services;
+    }
+
+    private static IServiceCollection AddJsonSerializerOptions(this IServiceCollection services)
+    {
         // Shared JSON options — used for view model dirty tracking (snapshots)
         var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         jsonOptions.Converters.Add(new JsonStringEnumConverter());
         jsonOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         services.AddSingleton(jsonOptions);
 
-        // Authentication & authorization
+        return services;
+    }
+
+    private static IServiceCollection AddAuthenticationServices(this IServiceCollection services)
+    {
         services.AddBlazoredLocalStorage();
         services.AddAuthorizationCore();
         services.AddScoped<JwtAuthStateProvider>();
         services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
         services.AddScoped<IAuthService, AuthService>();
 
-        // API base addresses (from wwwroot/appsettings.json)
-        var apiBase = configuration["ApiBaseAddress"]
-            ?? throw new InvalidOperationException("ApiBaseAddress is not configured in appsettings.json");
-        var apiBaseAddress = new Uri(apiBase);
-        var odataBaseAddress = new Uri(apiBaseAddress, "odata/");
+        return services;
+    }
+
+    private static IServiceCollection AddHttpClients(this IServiceCollection services, Uri apiBaseAddress, Uri odataBaseAddress)
+    {
         services.AddSingleton(new ApiEndpoints(apiBaseAddress));
         services.AddTransient<AuthorizationMessageHandler>();
 
@@ -48,10 +68,12 @@ public static class ServiceCollectionExtensions
         // Default HttpClient resolves to the "Api" named client
         services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api"));
 
-        services.AddRadzenComponents();
-        services.AddScoped<BookmarkCountService>();
+        return services;
+    }
 
-        // PanoramicData OData client — uses the "OData" named HttpClient
+    private static IServiceCollection AddODataClient(this IServiceCollection services, Uri odataBaseAddress)
+    {
+        // PanoramicData OData client — uses the "OData" named HttpClient (WASM-safe)
         services.AddScoped(sp =>
         {
             var factory = sp.GetRequiredService<IHttpClientFactory>();
@@ -75,7 +97,13 @@ public static class ServiceCollectionExtensions
             });
         });
 
-        // LOD case service — uses PanoramicData.OData.Client (HttpClient-based, WASM-safe)
+        return services;
+    }
+
+    private static IServiceCollection AddDomainServices(this IServiceCollection services)
+    {
+        services.AddRadzenComponents();
+        services.AddScoped<BookmarkCountService>();
         services.AddScoped<IDataService, LineOfDutyCaseHttpService>();
 
         return services;

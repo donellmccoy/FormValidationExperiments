@@ -14,18 +14,31 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Entity Framework Core — SQL Server
+        services.AddDatabase(configuration)
+                .AddIdentity()
+                .AddApiLogging()
+                .AddODataControllers()
+                .AddCorsPolicy()
+                .AddOpenApi();
+
+        return services;
+    }
+
+    private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
         var connectionString = configuration.GetConnectionString("EctDatabase");
 
-        services.AddDbContextFactory<EctDbContext>(options =>
-            options.UseSqlServer(connectionString));
+        services.AddDbContextFactory<EctDbContext>(options => options.UseSqlServer(connectionString));
 
         // Dedicated Identity DbContext — shares the same database but keeps Identity
         // concerns separate from the application domain model.
-        services.AddDbContext<EctIdentityDbContext>(options =>
-            options.UseSqlServer(connectionString));
+        services.AddDbContext<EctIdentityDbContext>(options => options.UseSqlServer(connectionString));
 
-        // ASP.NET Core Identity with Bearer token authentication
+        return services;
+    }
+
+    private static IServiceCollection AddIdentity(this IServiceCollection services)
+    {
         services.AddIdentityApiEndpoints<ApplicationUser>(options =>
         {
             options.SignIn.RequireConfirmedAccount = false;
@@ -38,40 +51,23 @@ public static class ServiceCollectionExtensions
 
         services.AddAuthorization();
 
-        // Logging
+        return services;
+    }
+
+    private static IServiceCollection AddApiLogging(this IServiceCollection services)
+    {
         services.AddSingleton<IApiLogService, ApiLogService>();
 
-        // OData Entity Data Model
-        var odataBuilder = new ODataConventionModelBuilder();
-        var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
-        casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
-        odataBuilder.EntitySet<Member>("Members");
-        odataBuilder.EntitySet<Notification>("Notifications");
-        odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
-        var documentsEntitySet = odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
-        odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
-        odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
-        var timelineStepsEntitySet = odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
-        timelineStepsEntitySet.EntityType.Action("Sign")
-            .ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
-        timelineStepsEntitySet.EntityType.Action("Start")
-            .ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
-        odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
-        odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
-        odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
-        var caseBookmarksEntitySet = odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
-        caseBookmarksEntitySet.EntityType.Collection.Action("DeleteByCaseId")
-            .Parameter<int>("caseId");
-        caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked")
-            .Returns<bool>()
-            .Parameter<int>("caseId");
-        odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
-        var edmModel = odataBuilder.GetEdmModel();
-        services.AddSingleton<IEdmModel>(edmModel);
+        return services;
+    }
+
+    private static IServiceCollection AddODataControllers(this IServiceCollection services)
+    {
+        var edmModel = BuildEdmModel();
+
+        services.AddSingleton(edmModel);
 
         // Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
-
-        // Controllers + OData
         services.AddControllers()
             .AddOData(options =>
             {
@@ -90,7 +86,11 @@ public static class ServiceCollectionExtensions
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             });
 
-        // CORS — allow the Blazor WASM client
+        return services;
+    }
+
+    private static IServiceCollection AddCorsPolicy(this IServiceCollection services)
+    {
         services.AddCors(options =>
         {
             options.AddPolicy("BlazorClient", policy =>
@@ -102,8 +102,38 @@ public static class ServiceCollectionExtensions
             });
         });
 
-        services.AddOpenApi();
-
         return services;
+    }
+
+    private static IEdmModel BuildEdmModel()
+    {
+        var odataBuilder = new ODataConventionModelBuilder();
+
+        var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
+        casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
+
+        odataBuilder.EntitySet<Member>("Members");
+        odataBuilder.EntitySet<Notification>("Notifications");
+        odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
+
+        odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
+        odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
+        odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
+
+        var timelineStepsEntitySet = odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
+        timelineStepsEntitySet.EntityType.Action("Sign").ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
+        timelineStepsEntitySet.EntityType.Action("Start").ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
+
+        odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
+        odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
+        odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
+
+        var caseBookmarksEntitySet = odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
+        caseBookmarksEntitySet.EntityType.Collection.Action("DeleteByCaseId").Parameter<int>("caseId");
+        caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked").Returns<bool>().Parameter<int>("caseId");
+
+        odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
+
+        return odataBuilder.GetEdmModel();
     }
 }
