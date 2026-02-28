@@ -93,7 +93,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Legal reviewer."),
 
         ["board-admin"] = new(
-            WorkflowState.BoardAdminReview,
+            WorkflowState.BoardAdministratorReview,
             "Are you sure you want to forward this case to the Board Admin reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Admin...",
@@ -180,14 +180,14 @@ public partial class EditCase
             "Case has been forwarded to the Board Legal reviewer."),
 
         [(WorkflowState.BoardLegalReview, "default")] = new(
-            WorkflowState.BoardAdminReview,
+            WorkflowState.BoardAdministratorReview,
             "Are you sure you want to forward this case to the Board Admin reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Admin...",
             NotificationSeverity.Success, "Forwarded to Board Admin",
             "Case has been forwarded to the Board Admin reviewer."),
 
-        [(WorkflowState.BoardAdminReview, "default")] = new(
+        [(WorkflowState.BoardAdministratorReview, "default")] = new(
             WorkflowState.Completed,
             "Are you sure you want to complete the Board review?",
             "Confirm Complete", "Complete",

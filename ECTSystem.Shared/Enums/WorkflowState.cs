@@ -39,7 +39,7 @@ public enum WorkflowState
     BoardLegalReview = 10,
 
     /// <summary>Case is under administrative review by the board for final package preparation.</summary>
-    BoardAdminReview = 11,
+    BoardAdministratorReview = 11,
 
     /// <summary>LOD determination has been finalized and the case is closed.</summary>
     Completed = 12,

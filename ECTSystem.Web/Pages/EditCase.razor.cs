@@ -46,7 +46,7 @@ public partial class EditCase : ComponentBase, IDisposable
         (TabNames.BoardTechnicianReview, WorkflowState.BoardTechnicianReview),     // 7
         (TabNames.BoardMedicalReview,    WorkflowState.BoardMedicalReview),        // 8
         (TabNames.BoardLegalReview,      WorkflowState.BoardLegalReview),          // 9
-        (TabNames.BoardAdminReview,      WorkflowState.BoardAdminReview),          // 10
+        (TabNames.BoardAdminReview,      WorkflowState.BoardAdministratorReview),          // 10
     ];
 
     [Inject]
@@ -180,7 +180,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardAdminReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardAdministratorReview, item);
     }
 
     private Task OnBoardCompleteClick(RadzenSplitButtonItem item)
@@ -913,7 +913,7 @@ public partial class EditCase : ComponentBase, IDisposable
             new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
             new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
             new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
-            new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardAdminReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
+            new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardAdministratorReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
             new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
         ];
 
