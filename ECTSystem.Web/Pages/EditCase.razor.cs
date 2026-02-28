@@ -43,8 +43,8 @@ public partial class EditCase : ComponentBase, IDisposable
         (TabNames.WingJudgeAdvocate,     WorkflowState.WingJudgeAdvocateReview),   // 4
         (TabNames.WingCommander,         WorkflowState.WingCommanderReview),       // 5
         (TabNames.AppointingAuthority,   WorkflowState.AppointingAuthorityReview), // 6
-        (TabNames.BoardTechnicianReview, WorkflowState.BoardTechnicianReview),     // 7
-        (TabNames.BoardMedicalReview,    WorkflowState.BoardMedicalReview),        // 8
+        (TabNames.BoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview),     // 7
+        (TabNames.BoardMedicalReview,    WorkflowState.BoardMedicalOfficerReview),        // 8
         (TabNames.BoardLegalReview,      WorkflowState.BoardLegalReview),          // 9
         (TabNames.BoardAdminReview,      WorkflowState.BoardAdministratorReview),          // 10
     ];
@@ -165,12 +165,12 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private Task OnBoardTechForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardTechnicianReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardMedicalTechnicianReview, item);
     }
 
     private Task OnBoardMedForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardMedicalReview, item);
+        return HandleWorkflowActionAsync(WorkflowState.BoardMedicalOfficerReview, item);
     }
 
     private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item)
@@ -264,12 +264,12 @@ public partial class EditCase : ComponentBase, IDisposable
     }
 
     private async Task ConfirmAndNotifyAsync(
-        string confirmMessage, 
-        string confirmTitle, 
+        string confirmMessage,
+        string confirmTitle,
         string okButtonText,
-        string busyMessage, 
+        string busyMessage,
         NotificationSeverity severity,
-        string notifySummary, 
+        string notifySummary,
         string notifyDetail,
         string cancelButtonText = "Cancel")
     {
@@ -322,13 +322,13 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             if (historyByState.TryGetValue(step.WorkflowState, out var history))
             {
-                step.Status         = history.Status;
-                step.StartDate      = history.StartDate;
-                step.SignedDate     = history.SignedDate;
-                step.SignedBy       = history.SignedBy ?? string.Empty;
-                step.CompletedBy    = history.PerformedBy;
-                step.StatusText     = history.Status == WorkflowStepStatus.Completed ? "Completed" : string.Empty;
-                step.CompletedDate  = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt : null;
+                step.Status = history.Status;
+                step.StartDate = history.StartDate;
+                step.SignedDate = history.SignedDate;
+                step.SignedBy = history.SignedBy ?? string.Empty;
+                step.CompletedBy = history.PerformedBy;
+                step.StatusText = history.Status == WorkflowStepStatus.Completed ? "Completed" : string.Empty;
+                step.CompletedDate = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt : null;
                 step.CompletionDate = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt.ToString("MM/dd/yyyy h:mm tt") : string.Empty;
             }
             else
@@ -358,11 +358,11 @@ public partial class EditCase : ComponentBase, IDisposable
                     step.CompletionDate = string.Empty;
                 }
 
-                step.StartDate      = timeline?.StartDate;
-                step.SignedDate     = timeline?.SignedDate;
-                step.SignedBy       = timeline?.SignedBy ?? string.Empty;
-                step.CompletedDate  = timeline?.CompletionDate;
-                step.CompletedBy    = timeline?.ModifiedBy ?? string.Empty;
+                step.StartDate = timeline?.StartDate;
+                step.SignedDate = timeline?.SignedDate;
+                step.SignedBy = timeline?.SignedBy ?? string.Empty;
+                step.CompletedDate = timeline?.CompletionDate;
+                step.CompletedBy = timeline?.ModifiedBy ?? string.Empty;
             }
         }
     }
@@ -435,9 +435,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            var sourceState  = _lodCase.WorkflowState;
-            var isForward    = (int)targetState > (int)sourceState;
-            var now          = DateTime.UtcNow;
+            var sourceState = _lodCase.WorkflowState;
+            var isForward = (int)targetState > (int)sourceState;
+            var now = DateTime.UtcNow;
             var outgoingStep = _workflowSteps.FirstOrDefault(s => s.WorkflowState == sourceState);
 
             _lodCase.WorkflowState = targetState;
@@ -449,16 +449,16 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
                 {
                     LineOfDutyCaseId = _lodCase.Id,
-                    WorkflowState    = sourceState,
-                    Action           = isForward ? TransitionAction.Completed : TransitionAction.Returned,
-                    Status           = isForward ? WorkflowStepStatus.Completed : WorkflowStepStatus.Pending,
-                    StartDate        = outgoingStep.StartDate,
-                    SignedDate       = isForward ? now : outgoingStep.SignedDate,
-                    SignedBy         = isForward ? string.Empty : (string.IsNullOrEmpty(outgoingStep.SignedBy) ? null : outgoingStep.SignedBy),
-                    OccurredAt       = now,
-                    PerformedBy      = string.Empty,
-                    CreatedDate      = now,
-                    ModifiedDate     = now
+                    WorkflowState = sourceState,
+                    Action = isForward ? TransitionAction.Completed : TransitionAction.Returned,
+                    Status = isForward ? WorkflowStepStatus.Completed : WorkflowStepStatus.Pending,
+                    StartDate = outgoingStep.StartDate,
+                    SignedDate = isForward ? now : outgoingStep.SignedDate,
+                    SignedBy = isForward ? string.Empty : (string.IsNullOrEmpty(outgoingStep.SignedBy) ? null : outgoingStep.SignedBy),
+                    OccurredAt = now,
+                    PerformedBy = string.Empty,
+                    CreatedDate = now,
+                    ModifiedDate = now
                 }, _cts.Token);
             }
 
@@ -466,14 +466,14 @@ public partial class EditCase : ComponentBase, IDisposable
             await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = _lodCase.Id,
-                WorkflowState    = targetState,
-                Action           = TransitionAction.Entered,
-                Status           = WorkflowStepStatus.InProgress,
-                StartDate        = now,
-                OccurredAt       = now,
-                PerformedBy      = string.Empty,
-                CreatedDate      = now,
-                ModifiedDate     = now
+                WorkflowState = targetState,
+                Action = TransitionAction.Entered,
+                Status = WorkflowStepStatus.InProgress,
+                StartDate = now,
+                OccurredAt = now,
+                PerformedBy = string.Empty,
+                CreatedDate = now,
+                ModifiedDate = now
             }, _cts.Token);
 
             // Start the incoming (new current) timeline step
@@ -507,12 +507,12 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         return ConfirmAndNotifyAsync(
             "Are you sure you want to cancel this investigation?",
-            "Confirm Cancellation", 
+            "Confirm Cancellation",
             "Yes, Cancel",
             "Cancelling investigation...",
-            NotificationSeverity.Warning, 
+            NotificationSeverity.Warning,
             "Investigation Cancelled",
-            "The LOD investigation has been cancelled.", 
+            "The LOD investigation has been cancelled.",
             "No");
     }
 
@@ -561,16 +561,16 @@ public partial class EditCase : ComponentBase, IDisposable
                 var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
                 {
                     LineOfDutyCaseId = saved.Id,
-                    WorkflowState    = WorkflowState.MemberInformationEntry,
-                    Action           = TransitionAction.Entered,
-                    Status           = WorkflowStepStatus.InProgress,
-                    StartDate        = saved.CreatedDate,
-                    OccurredAt       = saved.CreatedDate, 
-                    CreatedBy        = saved.CreatedBy,
-                    CreatedDate      = saved.CreatedDate,
-                    ModifiedBy       = saved.ModifiedBy,
-                    ModifiedDate     = saved.ModifiedDate,
-                    PerformedBy      = string.Empty
+                    WorkflowState = WorkflowState.MemberInformationEntry,
+                    Action = TransitionAction.Entered,
+                    Status = WorkflowStepStatus.InProgress,
+                    StartDate = saved.CreatedDate,
+                    OccurredAt = saved.CreatedDate,
+                    CreatedBy = saved.CreatedBy,
+                    CreatedDate = saved.CreatedDate,
+                    ModifiedBy = saved.ModifiedBy,
+                    ModifiedDate = saved.ModifiedDate,
+                    PerformedBy = string.Empty
                 }, _cts.Token);
 
                 _lodCase = saved;
@@ -588,7 +588,7 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 NotificationService.Notify(NotificationSeverity.Error, "Creation Failed", ex.Message);
             }
-            finally            
+            finally
             {
                 await SetBusyAsync(isBusy: false);
             }
@@ -610,7 +610,7 @@ public partial class EditCase : ComponentBase, IDisposable
         if (_currentStepIndex >= timelineSteps.Count)
         {
             NotificationService.Notify(
-                NotificationSeverity.Warning, 
+                NotificationSeverity.Warning,
                 "No Timeline Step",
                 "No timeline step found for the current workflow step.");
 
@@ -626,22 +626,22 @@ public partial class EditCase : ComponentBase, IDisposable
             var signed = await CaseService.SignTimelineStepAsync(timelineStep.Id, _cts.Token);
 
             timelineStep.SignedDate = signed.SignedDate;
-            timelineStep.SignedBy   = signed.SignedBy;
+            timelineStep.SignedBy = signed.SignedBy;
 
             // Record signed history entry so the sidebar shows the SignedDate immediately
             var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = _lodCase.Id,
-                WorkflowState    = _lodCase.WorkflowState,
-                Action           = TransitionAction.Signed,
-                Status           = WorkflowStepStatus.InProgress,
-                StartDate        = CurrentStep?.StartDate,
-                SignedDate       = signed.SignedDate,
-                SignedBy         = signed.SignedBy,
-                OccurredAt       = DateTime.UtcNow,
-                PerformedBy      = string.Empty,
-                CreatedDate      = DateTime.UtcNow,
-                ModifiedDate     = DateTime.UtcNow
+                WorkflowState = _lodCase.WorkflowState,
+                Action = TransitionAction.Signed,
+                Status = WorkflowStepStatus.InProgress,
+                StartDate = CurrentStep?.StartDate,
+                SignedDate = signed.SignedDate,
+                SignedBy = signed.SignedBy,
+                OccurredAt = DateTime.UtcNow,
+                PerformedBy = string.Empty,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
             }, _cts.Token);
 
             _lodCase.WorkflowStateHistories ??= new HashSet<WorkflowStateHistory>();
@@ -910,8 +910,8 @@ public partial class EditCase : ComponentBase, IDisposable
             new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingJudgeAdvocateReview,   Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
             new() { Number = 6,  Name = "Appointing Authority",      Icon = "verified_user",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.AppointingAuthorityReview, Description = "Appointing authority reviews the case and issues a formal LOD determination." },
             new() { Number = 7,  Name = "Wing CC Review",            Icon = "stars",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingCommanderReview,       Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
-            new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
-            new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
+            new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
+            new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalOfficerReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
             new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
             new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardAdministratorReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
             new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
@@ -1062,28 +1062,28 @@ public partial class EditCase : ComponentBase, IDisposable
             await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = saved.Id,
-                WorkflowState    = WorkflowState.MemberInformationEntry,
-                Action           = TransitionAction.Completed,
-                Status           = WorkflowStepStatus.Completed,
-                StartDate        = saved.CreatedDate,
-                SignedDate       = startNow,
-                OccurredAt       = startNow,
-                PerformedBy      = string.Empty,
-                CreatedDate      = startNow,
-                ModifiedDate     = startNow
+                WorkflowState = WorkflowState.MemberInformationEntry,
+                Action = TransitionAction.Completed,
+                Status = WorkflowStepStatus.Completed,
+                StartDate = saved.CreatedDate,
+                SignedDate = startNow,
+                OccurredAt = startNow,
+                PerformedBy = string.Empty,
+                CreatedDate = startNow,
+                ModifiedDate = startNow
             }, _cts.Token);
 
             await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
             {
                 LineOfDutyCaseId = saved.Id,
-                WorkflowState    = WorkflowState.MedicalTechnicianReview,
-                Action           = TransitionAction.Entered,
-                Status           = WorkflowStepStatus.InProgress,
-                StartDate        = startNow,
-                OccurredAt       = startNow,
-                PerformedBy      = string.Empty,
-                CreatedDate      = startNow,
-                ModifiedDate     = startNow
+                WorkflowState = WorkflowState.MedicalTechnicianReview,
+                Action = TransitionAction.Entered,
+                Status = WorkflowStepStatus.InProgress,
+                StartDate = startNow,
+                OccurredAt = startNow,
+                PerformedBy = string.Empty,
+                CreatedDate = startNow,
+                ModifiedDate = startNow
             }, _cts.Token);
 
             _lodCase = saved;

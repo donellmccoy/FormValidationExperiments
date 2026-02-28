@@ -69,7 +69,7 @@ public partial class EditCase
             "Case has been returned to the Appointing Authority for review."),
 
         ["board-tech"] = new(
-            WorkflowState.BoardTechnicianReview,
+            WorkflowState.BoardMedicalTechnicianReview,
             "Are you sure you want to forward this case to the Board Technician?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Technician...",
@@ -77,7 +77,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Technician."),
 
         ["board-med"] = new(
-            WorkflowState.BoardMedicalReview,
+            WorkflowState.BoardMedicalOfficerReview,
             "Are you sure you want to forward this case to the Board Medical reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Medical...",
@@ -156,22 +156,22 @@ public partial class EditCase
             "Case has been forwarded to the Appointing Authority for review."),
 
         [(WorkflowState.AppointingAuthorityReview, "default")] = new(
-            WorkflowState.BoardTechnicianReview,
+            WorkflowState.BoardMedicalTechnicianReview,
             "Are you sure you want to forward this case to the Board for review?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Review...",
             NotificationSeverity.Success, "Forwarded to Board Review",
             "Case has been forwarded to the Board for review."),
 
-        [(WorkflowState.BoardTechnicianReview, "default")] = new(
-            WorkflowState.BoardMedicalReview,
+        [(WorkflowState.BoardMedicalTechnicianReview, "default")] = new(
+            WorkflowState.BoardMedicalOfficerReview,
             "Are you sure you want to forward this case to the Board Medical reviewer?",
             "Confirm Forward", "Forward",
             "Forwarding to Board Medical...",
             NotificationSeverity.Success, "Forwarded to Board Medical",
             "Case has been forwarded to the Board Medical reviewer."),
 
-        [(WorkflowState.BoardMedicalReview, "default")] = new(
+        [(WorkflowState.BoardMedicalOfficerReview, "default")] = new(
             WorkflowState.BoardLegalReview,
             "Are you sure you want to forward this case to the Board Legal reviewer?",
             "Confirm Forward", "Forward",

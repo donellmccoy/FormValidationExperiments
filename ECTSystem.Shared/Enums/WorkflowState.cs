@@ -30,10 +30,10 @@ public enum WorkflowState
     WingCommanderReview = 7,
 
     /// <summary>Case is under review by the board medical technician.</summary>
-    BoardTechnicianReview = 8,
+    BoardMedicalTechnicianReview = 8,
 
     /// <summary>Case is under review by the board medical officer.</summary>
-    BoardMedicalReview = 9,
+    BoardMedicalOfficerReview = 9,
 
     /// <summary>Case is under review by board legal counsel.</summary>
     BoardLegalReview = 10,
