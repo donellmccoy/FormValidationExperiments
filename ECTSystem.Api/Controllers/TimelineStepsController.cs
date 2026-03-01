@@ -56,6 +56,12 @@ public class TimelineStepsController : ODataController
             return NotFound();
         }
 
+        if (step.SignedDate is not null)
+        {
+            _loggingService.TimelineStepAlreadySigned(key);
+            return Ok(step);
+        }
+
         step.SignedDate = DateTime.UtcNow;
         step.SignedBy = UserId;
         await context.SaveChangesAsync(ct);
@@ -79,6 +85,12 @@ public class TimelineStepsController : ODataController
         {
             _loggingService.TimelineStepNotFound(key);
             return NotFound();
+        }
+
+        if (step.StartDate is not null)
+        {
+            _loggingService.TimelineStepAlreadyStarted(key);
+            return Ok(step);
         }
 
         step.StartDate = DateTime.UtcNow;

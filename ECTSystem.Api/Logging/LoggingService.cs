@@ -169,6 +169,12 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 604, Level = LogLevel.Warning, Message = "Timeline step {StepId} not found")]
     public partial void TimelineStepNotFound(int stepId);
 
+    [LoggerMessage(EventId = 605, Level = LogLevel.Warning, Message = "Timeline step {StepId} is already signed")]
+    public partial void TimelineStepAlreadySigned(int stepId);
+
+    [LoggerMessage(EventId = 606, Level = LogLevel.Warning, Message = "Timeline step {StepId} is already started")]
+    public partial void TimelineStepAlreadyStarted(int stepId);
+
     // Workflow State Histories (EventId 700–703)
 
     [LoggerMessage(EventId = 700, Level = LogLevel.Information, Message = "Creating workflow state history entry for case {CaseId}")]

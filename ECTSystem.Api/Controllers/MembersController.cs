@@ -56,7 +56,6 @@ public class MembersController : ODataController
         _loggingService.RetrievingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var member = await context.Members
-            //.Include(m => m.LineOfDutyCases)
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == key, ct);
 

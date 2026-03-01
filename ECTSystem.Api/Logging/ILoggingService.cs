@@ -61,8 +61,10 @@ public interface ILoggingService
     // Timeline Steps
     void SigningTimelineStep(int stepId);
     void TimelineStepSigned(int stepId);
+    void TimelineStepAlreadySigned(int stepId);
     void StartingTimelineStep(int stepId);
     void TimelineStepStarted(int stepId);
+    void TimelineStepAlreadyStarted(int stepId);
     void TimelineStepNotFound(int stepId);
 
     // Workflow State Histories
