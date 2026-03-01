@@ -314,10 +314,13 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Start Line Of Duty" Icon="send"
-                                                                ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
-                                                                Disabled="@(_lodCase?.WorkflowState > WorkflowState.MemberInformationEntry)"
-                                                                Click="@(() => OnMemberForwardClick(null))" />
+                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(LodTrigger.ForwardToMedicalTechnician, item))" Text="Start Line Of Duty" Icon="send"
+                                                                    ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
+                                                                    Disabled="@(_stateMachine is not null && !_stateMachine.CanFire(LodTrigger.ForwardToMedicalTechnician))">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
                                             </RadzenStack>
                                         </RadzenFieldset>
 
