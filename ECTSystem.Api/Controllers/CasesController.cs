@@ -24,21 +24,36 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class CasesController : ODataController
 {
-    private readonly IApiLogService _log;
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
+    /// <summary>
+    /// Pre-built OData query context for <see cref="LineOfDutyCase"/> used by the <see cref="Bookmarked"/> action
+    /// to manually apply <see cref="ODataQueryOptions{T}"/> without relying on <c>[EnableQuery]</c>.
+    /// </summary>
     private readonly ODataQueryContext _bookmarkedQueryContext;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="CasesController"/>.
+    /// </summary>
+    /// <param name="loggingService">The structured logging service.</param>
+    /// <param name="edmModel">The OData EDM model; used to construct the bookmarked query context.</param>
+    /// <param name="contextFactory">The EF Core context factory.</param>
     public CasesController(
-        IApiLogService log,
+        ILoggingService loggingService,
         IEdmModel edmModel,
         IDbContextFactory<EctDbContext> contextFactory)
     {
-        _log = log;
+        _loggingService = loggingService;
         _contextFactory = contextFactory;
         _bookmarkedQueryContext = new ODataQueryContext(edmModel, typeof(LineOfDutyCase), new Microsoft.OData.UriParser.ODataPath());
     }
 
+    /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
+    /// <exception cref="InvalidOperationException">Thrown when the user is not authenticated.</exception>
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User is not authenticated.");
 
     /// <summary>
@@ -49,7 +64,7 @@ public class CasesController : ODataController
     [EnableQuery(MaxTop = 100, PageSize = 50)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        _log.QueryingCases();
+        _loggingService.QueryingCases();
         var context = await CreateContextAsync(ct);
         return Ok(context.Cases.AsNoTracking());
     }
@@ -62,7 +77,7 @@ public class CasesController : ODataController
     [HttpGet]
     public async Task<IActionResult> Bookmarked(CancellationToken ct = default)
     {
-        _log.QueryingBookmarkedCases();
+        _loggingService.QueryingBookmarkedCases();
 
         var options = new ODataQueryOptions<LineOfDutyCase>(_bookmarkedQueryContext, Request);
         var countRequested = options.Count?.Value == true;
@@ -89,11 +104,17 @@ public class CasesController : ODataController
         }
     }
 
+    /// <summary>
+    /// OData-shaped response envelope for the <see cref="Bookmarked"/> action.
+    /// Serializes to <c>{ "value": [...], "@odata.count": N }</c>.
+    /// </summary>
     private sealed class BookmarkedCasesResponse
     {
+        /// <summary>Gets the list of bookmarked LOD cases.</summary>
         [JsonPropertyName("value")]
         public List<LineOfDutyCase> Value { get; init; } = [];
 
+        /// <summary>Gets the total count of matching cases when <c>$count=true</c> is requested.</summary>
         [JsonPropertyName("@odata.count")]
         public int? Count { get; init; }
     }
@@ -104,7 +125,7 @@ public class CasesController : ODataController
     /// </summary>
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.RetrievingCase(key);
+        _loggingService.RetrievingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var lodCase = await CaseWithIncludes(context)
             .AsNoTracking()
@@ -112,7 +133,7 @@ public class CasesController : ODataController
 
         if (lodCase is null)
         {
-            _log.CaseNotFound(key);
+            _loggingService.CaseNotFound(key);
             return NotFound();
         }
 
@@ -127,7 +148,7 @@ public class CasesController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            _log.InvalidModelState("Post");
+            _loggingService.InvalidModelState("Post");
             return BadRequest(ModelState);
         }
 
@@ -135,7 +156,7 @@ public class CasesController : ODataController
         context.Cases.Add(lodCase);
         await context.SaveChangesAsync(ct);
 
-        _log.CaseCreated(lodCase.Id);
+        _loggingService.CaseCreated(lodCase.Id);
         return Created(lodCase);
     }
 
@@ -153,23 +174,23 @@ public class CasesController : ODataController
     {
         if (delta is null || !ModelState.IsValid)
         {
-            _log.InvalidModelState("Patch");
+            _loggingService.InvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
-        _log.PatchingCase(key);
+        _loggingService.PatchingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var existing = await context.Cases.FindAsync([key], ct);
         if (existing is null)
         {
-            _log.CaseNotFound(key);
+            _loggingService.CaseNotFound(key);
             return NotFound();
         }
 
         delta.Patch(existing);
         await context.SaveChangesAsync(ct);
 
-        _log.CasePatched(key);
+        _loggingService.CasePatched(key);
         return Updated(existing);
     }
 
@@ -179,12 +200,12 @@ public class CasesController : ODataController
     /// </summary>
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.DeletingCase(key);
+        _loggingService.DeletingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var lodCase = await CaseWithIncludes(context).FirstOrDefaultAsync(c => c.Id == key, ct);
         if (lodCase is null)
         {
-            _log.CaseNotFound(key);
+            _loggingService.CaseNotFound(key);
             return NotFound();
         }
 
@@ -199,7 +220,7 @@ public class CasesController : ODataController
 
         await context.SaveChangesAsync(ct);
 
-        _log.CaseDeleted(key);
+        _loggingService.CaseDeleted(key);
         return NoContent();
     }
 
@@ -214,7 +235,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetDocuments([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
         var context = await CreateContextAsync(ct);
         return Ok(context.Documents.AsNoTracking().Where(d => d.LineOfDutyCaseId == key));
     }
@@ -226,7 +247,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetTimelineSteps([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.TimelineSteps));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.TimelineSteps));
         var context = await CreateContextAsync(ct);
         return Ok(context.TimelineSteps.AsNoTracking().Where(t => t.LineOfDutyCaseId == key));
     }
@@ -238,7 +259,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetAuthorities([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Authorities));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Authorities));
         var context = await CreateContextAsync(ct);
         return Ok(context.Authorities.AsNoTracking().Where(a => a.LineOfDutyCaseId == key));
     }
@@ -250,7 +271,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetAppeals([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Appeals));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Appeals));
         var context = await CreateContextAsync(ct);
         return Ok(context.Appeals.AsNoTracking().Where(a => a.LineOfDutyCaseId == key));
     }
@@ -262,7 +283,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetNotifications([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
         var context = await CreateContextAsync(ct);
         return Ok(context.Notifications.AsNoTracking().Where(n => n.LineOfDutyCaseId == key));
     }
@@ -274,7 +295,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetWorkflowStateHistories([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));
         var context = await CreateContextAsync(ct);
         return Ok(context.WorkflowStateHistories.AsNoTracking().Where(h => h.LineOfDutyCaseId == key));
     }
@@ -288,7 +309,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<SingleResult<Member>> GetMember([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Member));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Member));
         var context = await CreateContextAsync(ct);
         return SingleResult.Create(
             context.Cases.AsNoTracking()
@@ -303,7 +324,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<SingleResult<MEDCONDetail>> GetMEDCON([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.MEDCON));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.MEDCON));
         var context = await CreateContextAsync(ct);
         return SingleResult.Create(
             context.Cases.AsNoTracking()
@@ -318,7 +339,7 @@ public class CasesController : ODataController
     [EnableQuery]
     public async Task<SingleResult<INCAPDetails>> GetINCAP([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingCaseNavigation(key, nameof(LineOfDutyCase.INCAP));
+        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.INCAP));
         var context = await CreateContextAsync(ct);
         return SingleResult.Create(
             context.Cases.AsNoTracking()
@@ -328,6 +349,12 @@ public class CasesController : ODataController
 
     // ── Private helpers ─────────────────────────────────────────────────
 
+    /// <summary>
+    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
+    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
     private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
     {
         var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -335,6 +362,12 @@ public class CasesController : ODataController
         return context;
     }
 
+    /// <summary>
+    /// Returns a queryable for <see cref="LineOfDutyCase"/> with all navigation properties eagerly loaded.
+    /// Uses <c>AsSplitQuery</c> to avoid cartesian-product SQL when multiple collections are included.
+    /// </summary>
+    /// <param name="context">The EF Core context to query against.</param>
+    /// <returns>An <see cref="IQueryable{T}"/> with full includes applied.</returns>
     private static IQueryable<LineOfDutyCase> CaseWithIncludes(EctDbContext context)
     {
         return context.Cases

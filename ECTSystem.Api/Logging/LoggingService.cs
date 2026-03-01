@@ -1,6 +1,6 @@
 namespace ECTSystem.Api.Logging;
 
-public partial class ApiLogService(ILogger<ApiLogService> logger) : IApiLogService
+public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingService
 {
     private readonly ILogger _logger = logger;
 

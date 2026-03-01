@@ -1,6 +1,6 @@
 namespace ECTSystem.Api.Logging;
 
-public interface IApiLogService
+public interface ILoggingService
 {
     // Cases
     void QueryingCases();

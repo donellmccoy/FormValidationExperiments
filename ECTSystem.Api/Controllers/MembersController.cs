@@ -18,13 +18,21 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class MembersController : ODataController
 {
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
-    private readonly IApiLogService _log;
 
-    public MembersController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="MembersController"/>.
+    /// </summary>
+    /// <param name="contextFactory">The EF Core context factory.</param>
+    /// <param name="loggingService">The structured logging service.</param>
+    public MembersController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
     {
         _contextFactory = contextFactory;
-        _log = log;
+        _loggingService = loggingService;
     }
 
     /// <summary>
@@ -34,7 +42,7 @@ public class MembersController : ODataController
     [EnableQuery(MaxTop = 100, PageSize = 50)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        _log.QueryingMembers();
+        _loggingService.QueryingMembers();
         var context = await CreateContextAsync(ct);
         return Ok(context.Members.AsNoTracking());
     }
@@ -45,7 +53,7 @@ public class MembersController : ODataController
     /// </summary>
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.RetrievingMember(key);
+        _loggingService.RetrievingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var member = await context.Members
             //.Include(m => m.LineOfDutyCases)
@@ -54,7 +62,7 @@ public class MembersController : ODataController
 
         if (member is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
@@ -69,7 +77,7 @@ public class MembersController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            _log.MemberInvalidModelState("Post");
+            _loggingService.MemberInvalidModelState("Post");
             return BadRequest(ModelState);
         }
 
@@ -77,7 +85,7 @@ public class MembersController : ODataController
         context.Members.Add(member);
         await context.SaveChangesAsync(ct);
 
-        _log.MemberCreated(member.Id);
+        _loggingService.MemberCreated(member.Id);
         return Created(member);
     }
 
@@ -89,16 +97,16 @@ public class MembersController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            _log.MemberInvalidModelState("Put");
+            _loggingService.MemberInvalidModelState("Put");
             return BadRequest(ModelState);
         }
 
-        _log.UpdatingMember(key);
+        _loggingService.UpdatingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var existing = await context.Members.FindAsync([key], ct);
         if (existing is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
@@ -106,7 +114,7 @@ public class MembersController : ODataController
         context.Entry(existing).CurrentValues.SetValues(update);
         await context.SaveChangesAsync(ct);
 
-        _log.MemberUpdated(key);
+        _loggingService.MemberUpdated(key);
         return Updated(existing);
     }
 
@@ -118,23 +126,23 @@ public class MembersController : ODataController
     {
         if (!ModelState.IsValid)
         {
-            _log.MemberInvalidModelState("Patch");
+            _loggingService.MemberInvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
-        _log.PatchingMember(key);
+        _loggingService.PatchingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var existing = await context.Members.FindAsync([key], ct);
         if (existing is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
         delta.Patch(existing);
         await context.SaveChangesAsync(ct);
 
-        _log.MemberPatched(key);
+        _loggingService.MemberPatched(key);
         return Updated(existing);
     }
 
@@ -144,19 +152,19 @@ public class MembersController : ODataController
     /// </summary>
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.DeletingMember(key);
+        _loggingService.DeletingMember(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var member = await context.Members.FindAsync([key], ct);
         if (member is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
         context.Members.Remove(member);
         await context.SaveChangesAsync(ct);
 
-        _log.MemberDeleted(key);
+        _loggingService.MemberDeleted(key);
         return NoContent();
     }
 
@@ -169,11 +177,17 @@ public class MembersController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetLineOfDutyCases([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.QueryingMemberNavigation(key, nameof(Member.LineOfDutyCases));
+        _loggingService.QueryingMemberNavigation(key, nameof(Member.LineOfDutyCases));
         var context = await CreateContextAsync(ct);
         return Ok(context.Cases.AsNoTracking().Where(c => c.MemberId == key));
     }
 
+    /// <summary>
+    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
+    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
     private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
     {
         var context = await _contextFactory.CreateDbContextAsync(ct);

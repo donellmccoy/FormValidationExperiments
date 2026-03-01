@@ -17,36 +17,50 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class WorkflowStateHistoriesController : ODataController
 {
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
-    private readonly IApiLogService _log;
 
-    public WorkflowStateHistoriesController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="WorkflowStateHistoriesController"/>.
+    /// </summary>
+    /// <param name="contextFactory">The EF Core context factory.</param>
+    /// <param name="loggingService">The structured logging service.</param>
+    public WorkflowStateHistoriesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
     {
         _contextFactory = contextFactory;
-        _log = log;
+        _loggingService = loggingService;
     }
 
+    /// <summary>
+    /// Creates a new workflow state history entry for the specified case.
+    /// OData route: POST /odata/WorkflowStateHistories
+    /// </summary>
+    /// <param name="entry">The workflow state history entry to persist.</param>
+    /// <param name="ct">Cancellation token.</param>
     public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
-            _log.WorkflowStateHistoryInvalidModelState();
+            _loggingService.WorkflowStateHistoryInvalidModelState();
             return BadRequest(ModelState);
         }
 
         if (entry.LineOfDutyCaseId <= 0)
         {
-            _log.WorkflowStateHistoryInvalidCaseId(entry.LineOfDutyCaseId);
+            _loggingService.WorkflowStateHistoryInvalidCaseId(entry.LineOfDutyCaseId);
             return BadRequest("LineOfDutyCaseId is required.");
         }
 
-        _log.CreatingWorkflowStateHistory(entry.LineOfDutyCaseId);
+        _loggingService.CreatingWorkflowStateHistory(entry.LineOfDutyCaseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
         context.WorkflowStateHistories.Add(entry);
         await context.SaveChangesAsync(ct);
 
-        _log.WorkflowStateHistoryCreated(entry.Id, entry.LineOfDutyCaseId);
+        _loggingService.WorkflowStateHistoryCreated(entry.Id, entry.LineOfDutyCaseId);
         return Created(entry);
     }
 }

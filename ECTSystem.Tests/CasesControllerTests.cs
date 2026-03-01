@@ -14,7 +14,7 @@ namespace ECTSystem.Tests;
 
 public class CasesControllerTests : ControllerTestBase
 {
-    private readonly Mock<IApiLogService>       _mockLog;
+    private readonly Mock<ILoggingService>       _mockLog;
     private readonly Mock<IEdmModel>            _mockEdmModel;
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
     private readonly DbContextOptions<EctDbContext>        _dbOptions;
@@ -38,7 +38,7 @@ public class CasesControllerTests : ControllerTestBase
             seedCtx.SaveChanges();
         }
 
-        _mockLog             = new Mock<IApiLogService>();
+        _mockLog             = new Mock<ILoggingService>();
         _mockEdmModel        = new Mock<IEdmModel>();
         _mockContextFactory  = new Mock<IDbContextFactory<EctDbContext>>();
 

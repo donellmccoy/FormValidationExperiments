@@ -15,7 +15,7 @@ public class DocumentsControllerTests : ControllerTestBase
 {
     private readonly DbContextOptions<EctDbContext> _dbOptions;
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
-    private readonly Mock<IApiLogService> _mockLog;
+    private readonly Mock<ILoggingService> _mockLog;
     private readonly DocumentsController _sut;
 
     public DocumentsControllerTests()
@@ -32,7 +32,7 @@ public class DocumentsControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _mockLog = new Mock<IApiLogService>();
+        _mockLog = new Mock<ILoggingService>();
 
         _sut = new DocumentsController(_mockContextFactory.Object, _mockLog.Object);
         _sut.ControllerContext = CreateControllerContext();

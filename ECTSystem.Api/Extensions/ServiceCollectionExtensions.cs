@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddApiLogging(this IServiceCollection services)
     {
-        services.AddSingleton<IApiLogService, ApiLogService>();
+        services.AddSingleton<ILoggingService, LoggingService>();
 
         return services;
     }

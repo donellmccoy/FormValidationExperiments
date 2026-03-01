@@ -17,15 +17,25 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class TimelineStepsController : ODataController
 {
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
-    private readonly IApiLogService _log;
 
-    public TimelineStepsController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="TimelineStepsController"/>.
+    /// </summary>
+    /// <param name="contextFactory">The EF Core context factory.</param>
+    /// <param name="loggingService">The structured logging service.</param>
+    public TimelineStepsController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
     {
         _contextFactory = contextFactory;
-        _log = log;
+        _loggingService = loggingService;
     }
 
+    /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
+    /// <exception cref="InvalidOperationException">Thrown when the user is not authenticated.</exception>
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? throw new InvalidOperationException("User is not authenticated.");
 
@@ -36,13 +46,13 @@ public class TimelineStepsController : ODataController
     [HttpPost]
     public async Task<IActionResult> Sign([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.SigningTimelineStep(key);
+        _loggingService.SigningTimelineStep(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var step = await context.TimelineSteps.FindAsync([key], ct);
 
         if (step is null)
         {
-            _log.TimelineStepNotFound(key);
+            _loggingService.TimelineStepNotFound(key);
             return NotFound();
         }
 
@@ -50,7 +60,7 @@ public class TimelineStepsController : ODataController
         step.SignedBy = UserId;
         await context.SaveChangesAsync(ct);
 
-        _log.TimelineStepSigned(key);
+        _loggingService.TimelineStepSigned(key);
         return Ok(step);
     }
 
@@ -61,20 +71,20 @@ public class TimelineStepsController : ODataController
     [HttpPost]
     public async Task<IActionResult> Start([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.StartingTimelineStep(key);
+        _loggingService.StartingTimelineStep(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var step = await context.TimelineSteps.FindAsync([key], ct);
 
         if (step is null)
         {
-            _log.TimelineStepNotFound(key);
+            _loggingService.TimelineStepNotFound(key);
             return NotFound();
         }
 
         step.StartDate = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
 
-        _log.TimelineStepStarted(key);
+        _loggingService.TimelineStepStarted(key);
         return Ok(step);
     }
 }

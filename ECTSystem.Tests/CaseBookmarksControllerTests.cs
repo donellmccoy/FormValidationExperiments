@@ -14,7 +14,7 @@ namespace ECTSystem.Tests;
 public class CaseBookmarksControllerTests : ControllerTestBase
 {
     private readonly DbContextOptions<EctDbContext> _dbOptions;
-    private readonly Mock<IApiLogService> _mockLog;
+    private readonly Mock<ILoggingService> _mockLog;
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
     private readonly CaseBookmarksController _sut;
 
@@ -24,7 +24,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        _mockLog = new Mock<IApiLogService>();
+        _mockLog = new Mock<ILoggingService>();
         _mockContextFactory = new Mock<IDbContextFactory<EctDbContext>>();
         _mockContextFactory
             .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
