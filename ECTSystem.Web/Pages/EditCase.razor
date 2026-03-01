@@ -65,7 +65,7 @@ else
         </RadzenBreadCrumb>
         <RadzenStack Orientation="Orientation.Horizontal" class="assessment-layout">
             @* ═══════════ Workflow Sidebar ═══════════ *@
-            <WorkflowSidebar Steps="@_workflowSteps" CurrentStepIndex="@_currentStepIndex" OnStepClicked="@OnStepSelected" />
+            <WorkflowSidebar Steps="@_workflowSteps" CurrentStepIndex="@_currentStepIndex" />
             @* ═══════════ Main Content ═══════════ *@
             <RadzenStack Gap="0.75rem" Orientation="Orientation.Vertical">
                 @* ─── Case Info Card ─── *@

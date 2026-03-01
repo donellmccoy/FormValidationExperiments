@@ -20,6 +20,14 @@ public class DocumentFilesController : ControllerBase
     /// <summary>Maximum permitted document upload size (10 MB).</summary>
     private const long MaxDocumentSize = 10 * 1024 * 1024; // 10 MB
 
+    /// <summary>Permitted file extensions for document uploads.</summary>
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx",
+        ".jpg", ".jpeg", ".png", ".gif", ".tif", ".tiff",
+        ".txt", ".rtf"
+    };
+
     /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
@@ -104,6 +112,13 @@ public class DocumentFilesController : ControllerBase
         {
             _loggingService.InvalidUpload(caseId);
             return BadRequest("documentType is required.");
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!AllowedExtensions.Contains(extension))
+        {
+            _loggingService.InvalidUpload(caseId);
+            return BadRequest($"File type '{extension}' is not permitted.");
         }
 
         if (file.Length > MaxDocumentSize)

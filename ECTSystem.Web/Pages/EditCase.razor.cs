@@ -50,9 +50,7 @@ public partial class EditCase : ComponentBase, IDisposable
         (TabNames.BoardAdminReview,      WorkflowState.BoardAdministratorReview),          // 10
     ];
 
-    private static readonly object[] _dutyStatusOptions = Enum.GetValues<DutyStatus>()
-        .Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })
-        .ToArray();
+    private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
 
     [Inject]
     private IDataService CaseService { get; set; }
@@ -87,21 +85,9 @@ public partial class EditCase : ComponentBase, IDisposable
     [SupplyParameterFromQuery(Name = "from")]
     public string FromPage { get; set; }
 
-    private bool IsNewCase
-    {
-        get
-        {
-            return string.IsNullOrEmpty(CaseId);
-        }
-    }
+    private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
-    private bool IsFromBookmarks
-    {
-        get
-        {
-            return string.Equals(FromPage, "bookmarks", StringComparison.OrdinalIgnoreCase);
-        }
-    }
+    private bool IsFromBookmarks => string.Equals(FromPage, "bookmarks", StringComparison.OrdinalIgnoreCase);
 
     private readonly PageOperationState _page = new();
 
@@ -123,17 +109,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private int _selectedMemberId;
 
-    private LineOfDutyViewModel _viewModel = new()
-    {
-        CaseNumber = "Pending...",
-        MemberName = "Pending...",
-        Component = "Pending...",
-        Rank = "Pending...",
-        Grade = "Pending...",
-        Unit = "Pending...",
-        DateOfInjury = "Pending...",
-        Status = "New"
-    };
+    private LineOfDutyViewModel _viewModel = new();
 
     private RadzenTemplateForm<LineOfDutyViewModel> _medicalForm;
 
@@ -316,10 +292,6 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Maps a <see cref="WorkflowState"/> to its 0-based tab index in the RadzenTabs control.
-    /// Tab order: Member(0) · Med Tech(1) · Med Officer(2) · Unit CC(3) · Wing JA(4) · Wing CC(5) · Appointing Auth(6) · Board Tech(7) · Board Med(8) · Board Legal(9) · Board Admin(10)
-    /// </summary>
     private static int GetTabIndexForState(WorkflowState state)
     {
         for (var i = 0; i < _workflowTabMap.Length; i++)
@@ -336,11 +308,6 @@ public partial class EditCase : ComponentBase, IDisposable
             : 0;
     }
 
-    /// <summary>
-    /// Returns true if the tab at <paramref name="tabIndex"/> should be disabled.
-    /// Workflow tabs (0–10): enabled for the current state and all prior states; disabled for future states.
-    /// Always-on tabs (11+): Case Dialogue, Notifications, and Documents — never disabled.
-    /// </summary>
     private bool IsTabDisabled(int tabIndex)
     {
         if (tabIndex >= 11)
@@ -352,12 +319,6 @@ public partial class EditCase : ComponentBase, IDisposable
         return tabIndex > GetTabIndexForState(state);
     }
 
-    /// <summary>
-    /// Confirms with the user, advances the LOD <see cref="LineOfDutyCase.WorkflowState"/> to
-    /// <summary>
-    /// UI shell: confirms with user, fires the state machine trigger (which handles all DB
-    /// persistence via callbacks), re-fetches the case, rebuilds the SM, and updates the UI.
-    /// </summary>
     private async Task ChangeWorkflowStateAsync(
         LodTrigger trigger,
         WorkflowState targetState,
@@ -897,12 +858,6 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         // TODO: Implement file attachment dialog/upload
         await Task.CompletedTask;
-    }
-
-    private void OnStepSelected(WorkflowStep step)
-    {
-        _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, step.WorkflowState, _lodCase);
-        _selectedTabIndex = GetTabIndexForState(step.WorkflowState);
     }
 
     private async Task OnStartLod()

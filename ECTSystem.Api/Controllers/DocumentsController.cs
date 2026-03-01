@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -44,7 +45,20 @@ public class DocumentsController : ODataController
     {
         _loggingService.QueryingDocuments();
         var context = await CreateContextAsync(ct);
-        return Ok(context.Documents.AsNoTracking());
+        return Ok(context.Documents
+            .AsNoTracking()
+            .Select(d => new LineOfDutyDocument
+            {
+                Id = d.Id,
+                LineOfDutyCaseId = d.LineOfDutyCaseId,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                ContentType = d.ContentType,
+                FileSize = d.FileSize,
+                UploadDate = d.UploadDate,
+                Description = d.Description
+                // Content intentionally omitted — use the download endpoint for file bytes
+            }));
     }
 
     /// <summary>
@@ -58,7 +72,20 @@ public class DocumentsController : ODataController
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var document = await context.Documents
             .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.Id == key, ct);
+            .Where(d => d.Id == key)
+            .Select(d => new LineOfDutyDocument
+            {
+                Id = d.Id,
+                LineOfDutyCaseId = d.LineOfDutyCaseId,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                ContentType = d.ContentType,
+                FileSize = d.FileSize,
+                UploadDate = d.UploadDate,
+                Description = d.Description
+                // Content intentionally omitted — use the download endpoint for file bytes
+            })
+            .FirstOrDefaultAsync(ct);
 
         if (document is null)
         {

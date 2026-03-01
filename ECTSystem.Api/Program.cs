@@ -49,6 +49,7 @@ public class Program
         }
 
         app.UseMiddleware<RequestLoggingMiddleware>();
+        app.UseMiddleware<OperationCancelledMiddleware>();
         app.UseHttpsRedirection();
         app.UseCors("BlazorClient");
 

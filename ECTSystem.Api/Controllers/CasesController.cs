@@ -82,26 +82,18 @@ public class CasesController : ODataController
         var options = new ODataQueryOptions<LineOfDutyCase>(_bookmarkedQueryContext, Request);
         var countRequested = options.Count?.Value == true;
 
-        try
-        {
-            await using var context = await _contextFactory.CreateDbContextAsync(ct);
-            var query = context.Cases
-                .AsNoTracking()
-                .Where(c => context.CaseBookmarks.Any(b => b.UserId == UserId && b.LineOfDutyCaseId == c.Id));
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var query = context.Cases
+            .AsNoTracking()
+            .Where(c => context.CaseBookmarks.Any(b => b.UserId == UserId && b.LineOfDutyCaseId == c.Id));
 
-            // Apply $filter first so @odata.count reflects filtered total (before $top/$skip)
-            var filteredQuery = options.Filter?.ApplyTo(query, new ODataQuerySettings()) as IQueryable<LineOfDutyCase> ?? query;
-            int? totalCount = countRequested ? await filteredQuery.CountAsync(ct) : null;
-            var items = await ((IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true }))
-                .ToListAsync(ct);
+        // Apply $filter first so @odata.count reflects filtered total (before $top/$skip)
+        var filteredQuery = options.Filter?.ApplyTo(query, new ODataQuerySettings()) as IQueryable<LineOfDutyCase> ?? query;
+        int? totalCount = countRequested ? await filteredQuery.CountAsync(ct) : null;
+        var items = await ((IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true }))
+            .ToListAsync(ct);
 
-            return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            // Client disconnected — return 499 (nginx convention) or just empty 200 to avoid 500 noise
-            return StatusCode(499);
-        }
+        return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
     }
 
     /// <summary>
@@ -214,9 +206,14 @@ public class CasesController : ODataController
 
         // MEDCON/INCAP are already loaded by CaseWithIncludes — remove directly from the tracked entities
         if (lodCase.MEDCON is not null)
+        {
             context.MEDCONDetails.Remove(lodCase.MEDCON);
+        }
+
         if (lodCase.INCAP is not null)
+        {
             context.INCAPDetails.Remove(lodCase.INCAP);
+        }
 
         await context.SaveChangesAsync(ct);
 
