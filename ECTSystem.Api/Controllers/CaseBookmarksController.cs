@@ -30,20 +30,20 @@ public class CaseBookmarksController : ODataController
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User is not authenticated.");
 
     [EnableQuery(MaxTop = 100, PageSize = 50)]
-    public IActionResult Get()
+    public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         _log.QueryingBookmarks();
-        var context = _contextFactory.CreateDbContext();
+        var context = await CreateContextAsync(ct);
         return Ok(context.CaseBookmarks.AsNoTracking().Where(b => b.UserId == UserId));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark)
+    public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark, CancellationToken ct = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
         var existing = await context.CaseBookmarks
-            .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId);
+            .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
 
         if (existing is not null)
         {
@@ -59,13 +59,13 @@ public class CaseBookmarksController : ODataController
         };
 
         context.CaseBookmarks.Add(newBookmark);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         _log.BookmarkCreated(bookmark.LineOfDutyCaseId);
         return Created(newBookmark);
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeleteByCaseId(ODataActionParameters parameters)
+    public async Task<IActionResult> DeleteByCaseId(ODataActionParameters parameters, CancellationToken ct = default)
     {
         if (!parameters.TryGetValue("caseId", out var caseIdObj) || caseIdObj is not int caseId)
         {
@@ -73,9 +73,9 @@ public class CaseBookmarksController : ODataController
         }
 
         _log.DeletingBookmark(caseId);
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var bookmark = await context.CaseBookmarks
-            .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId);
+            .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
 
         if (bookmark is null)
         {
@@ -84,18 +84,25 @@ public class CaseBookmarksController : ODataController
         }
 
         context.CaseBookmarks.Remove(bookmark);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         _log.BookmarkDeleted(caseId);
         return NoContent();
     }
 
     [HttpGet]
-    public async Task<IActionResult> IsBookmarked([FromODataUri] int caseId)
+    public async Task<IActionResult> IsBookmarked([FromODataUri] int caseId, CancellationToken ct = default)
     {
         _log.CheckingBookmark(caseId);
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var isBookmarked = await context.CaseBookmarks
-            .AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId);
+            .AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
         return Ok(new { Value = isBookmarked });
+    }
+
+    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
+    {
+        var context = await _contextFactory.CreateDbContextAsync(ct);
+        HttpContext.Response.RegisterForDispose(context);
+        return context;
     }
 }

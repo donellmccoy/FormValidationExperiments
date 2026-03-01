@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
+using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 
 namespace ECTSystem.Api.Controllers;
@@ -17,10 +18,12 @@ namespace ECTSystem.Api.Controllers;
 public class TimelineStepsController : ODataController
 {
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
+    private readonly IApiLogService _log;
 
-    public TimelineStepsController(IDbContextFactory<EctDbContext> contextFactory)
+    public TimelineStepsController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
     {
         _contextFactory = contextFactory;
+        _log = log;
     }
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -31,13 +34,15 @@ public class TimelineStepsController : ODataController
     /// OData action route: POST /odata/TimelineSteps({key})/Sign
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Sign([FromODataUri] int key, CancellationToken ct)
+    public async Task<IActionResult> Sign([FromODataUri] int key, CancellationToken ct = default)
     {
+        _log.SigningTimelineStep(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var step = await context.TimelineSteps.FindAsync(new object[] { key }, ct);
+        var step = await context.TimelineSteps.FindAsync([key], ct);
 
         if (step is null)
         {
+            _log.TimelineStepNotFound(key);
             return NotFound();
         }
 
@@ -45,6 +50,7 @@ public class TimelineStepsController : ODataController
         step.SignedBy = UserId;
         await context.SaveChangesAsync(ct);
 
+        _log.TimelineStepSigned(key);
         return Ok(step);
     }
 
@@ -53,19 +59,22 @@ public class TimelineStepsController : ODataController
     /// OData action route: POST /odata/TimelineSteps({key})/Start
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Start([FromODataUri] int key, CancellationToken ct)
+    public async Task<IActionResult> Start([FromODataUri] int key, CancellationToken ct = default)
     {
+        _log.StartingTimelineStep(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var step = await context.TimelineSteps.FindAsync(new object[] { key }, ct);
+        var step = await context.TimelineSteps.FindAsync([key], ct);
 
         if (step is null)
         {
+            _log.TimelineStepNotFound(key);
             return NotFound();
         }
 
         step.StartDate = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
 
+        _log.TimelineStepStarted(key);
         return Ok(step);
     }
 }

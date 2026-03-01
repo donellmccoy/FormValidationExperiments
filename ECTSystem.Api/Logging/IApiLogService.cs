@@ -4,6 +4,7 @@ public interface IApiLogService
 {
     // Cases
     void QueryingCases();
+    void QueryingBookmarkedCases();
     void RetrievingCase(int caseId);
     void CaseNotFound(int caseId);
     void InvalidModelState(string action);
@@ -56,4 +57,17 @@ public interface IApiLogService
     // Navigation Properties
     void QueryingCaseNavigation(int caseId, string navigationProperty);
     void QueryingMemberNavigation(int memberId, string navigationProperty);
+
+    // Timeline Steps
+    void SigningTimelineStep(int stepId);
+    void TimelineStepSigned(int stepId);
+    void StartingTimelineStep(int stepId);
+    void TimelineStepStarted(int stepId);
+    void TimelineStepNotFound(int stepId);
+
+    // Workflow State Histories
+    void CreatingWorkflowStateHistory(int caseId);
+    void WorkflowStateHistoryCreated(int entryId, int caseId);
+    void WorkflowStateHistoryInvalidModelState();
+    void WorkflowStateHistoryInvalidCaseId(int caseId);
 }

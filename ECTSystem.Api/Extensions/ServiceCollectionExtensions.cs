@@ -28,11 +28,9 @@ public static class ServiceCollectionExtensions
     {
         var connectionString = configuration.GetConnectionString("EctDatabase");
 
-        services.AddDbContextFactory<EctDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddPooledDbContextFactory<EctDbContext>(options => options.UseSqlServer(connectionString), poolSize: 32);
 
-        // Dedicated Identity DbContext — shares the same database but keeps Identity
-        // concerns separate from the application domain model.
-        services.AddDbContext<EctIdentityDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddPooledDbContextFactory<EctIdentityDbContext>(options => options.UseSqlServer(connectionString), poolSize: 32);
 
         return services;
     }

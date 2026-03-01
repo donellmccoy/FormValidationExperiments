@@ -1,19 +1,19 @@
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
-
+using ECTSystem.Shared.ViewModels;
+using ECTSystem.Web.Services;
+using ECTSystem.Web.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using ECTSystem.Web.Services;
-using ECTSystem.Shared.ViewModels;
-using ECTSystem.Web.Shared;
 using Radzen;
 using Radzen.Blazor;
 using Radzen.Blazor.Rendering;
+using Stateless.Graph;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace ECTSystem.Web.Pages;
 
@@ -930,16 +930,43 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             var newCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
 
+            newCase.WorkflowState = WorkflowState.MedicalTechnicianReview;
+
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
 
+            var now = DateTime.UtcNow;
+
+            newCase.AddHistoryEntry(new WorkflowStateHistory
+            {
+                LineOfDutyCaseId = 0,
+                WorkflowState = WorkflowState.MedicalTechnicianReview,
+                Action = TransitionAction.Completed,
+                Status = WorkflowStepStatus.Completed,
+                StartDate = now,
+                SignedDate = now,
+                SignedBy = "System",
+                OccurredAt = now,
+                PerformedBy = "System",
+                CreatedDate = now,
+                ModifiedDate = now
+            });
+
+            newCase.AddHistoryEntry(new WorkflowStateHistory
+            {
+                LineOfDutyCaseId = 0,
+                WorkflowState = WorkflowState.MedicalOfficerReview,
+                Action = TransitionAction.Entered,
+                Status = WorkflowStepStatus.InProgress,
+                StartDate = now,
+                SignedDate = now,
+                SignedBy = "System",
+                OccurredAt = now,
+                PerformedBy = "System",
+                CreatedDate = now,
+                ModifiedDate = now
+            });
+
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
-
-            saved.WorkflowState = WorkflowState.MedicalTechnicianReview;
-
-            saved.AddHistoryEntry(WorkflowStateHistoryFactory.CreateCompleted(saved.Id, WorkflowState.MemberInformationEntry, saved.CreatedDate));
-            saved.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(saved.Id, WorkflowState.MedicalTechnicianReview));
-
-            await CaseService.SaveCaseAsync(saved, _cts.Token);
 
             NotificationService.Notify(NotificationSeverity.Success, "LOD Started", $"Case {saved.CaseId} created for {saved.MemberName}.");
 

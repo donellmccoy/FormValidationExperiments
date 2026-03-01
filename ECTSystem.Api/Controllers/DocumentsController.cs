@@ -26,15 +26,14 @@ public class DocumentsController : ODataController
 
     // GET /odata/Documents
     [EnableQuery(MaxTop = 100, PageSize = 50)]
-    public IActionResult Get()
+    public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         _log.QueryingDocuments();
-        var context = _contextFactory.CreateDbContext();
+        var context = await CreateContextAsync(ct);
         return Ok(context.Documents.AsNoTracking());
     }
 
     // GET /odata/Documents(1)
-    [EnableQuery]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -58,33 +57,26 @@ public class DocumentsController : ODataController
     public async Task<IActionResult> GetMediaResource([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var meta = await context.Documents
+        var doc = await context.Documents
             .AsNoTracking()
             .Where(d => d.Id == key)
-            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId })
+            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId, d.Content })
             .FirstOrDefaultAsync(ct);
 
-        if (meta is null)
+        if (doc is null)
         {
             _log.DocumentNotFound(key, 0);
             return NotFound();
         }
 
-        _log.DownloadingDocument(key, meta.LineOfDutyCaseId);
-
-        var content = await context.Documents
-            .AsNoTracking()
-            .Where(d => d.Id == key)
-            .Select(d => d.Content)
-            .FirstOrDefaultAsync(ct);
-
-        if (content is null || content.Length == 0)
+        if (doc.Content is null || doc.Content.Length == 0)
         {
             _log.DocumentContentNotFound(key);
             return NotFound();
         }
 
-        return File(content, meta.ContentType, meta.FileName);
+        _log.DownloadingDocument(key, doc.LineOfDutyCaseId);
+        return File(doc.Content, doc.ContentType, doc.FileName);
     }
 
     // POST /api/cases/{caseId}/documents — multipart file upload
@@ -103,44 +95,37 @@ public class DocumentsController : ODataController
             return BadRequest("No file provided.");
         }
 
+        if (file.Length > MaxDocumentSize)
+        {
+            _log.InvalidUpload(caseId);
+            return BadRequest($"File size exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
+        }
+
         _log.UploadingDocument(caseId);
-        try
+        using var ms = new MemoryStream();
+        await using var stream = file.OpenReadStream();
+        await stream.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
+
+        var document = new LineOfDutyDocument
         {
-            using var ms = new MemoryStream();
-            await using var stream = file.OpenReadStream();
-            await stream.CopyToAsync(ms, ct);
-            var bytes = ms.ToArray();
+            LineOfDutyCaseId = caseId,
+            FileName = file.FileName,
+            ContentType = file.ContentType,
+            DocumentType = documentType,
+            Description = description,
+            Content = bytes,
+            FileSize = bytes.Length,
+            UploadDate = DateTime.UtcNow
+        };
 
-            if (bytes.Length > MaxDocumentSize)
-            {
-                throw new ArgumentException($"File size exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
-            }
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        context.Documents.Add(document);
+        await context.SaveChangesAsync(ct);
 
-            var document = new LineOfDutyDocument
-            {
-                LineOfDutyCaseId = caseId,
-                FileName = file.FileName,
-                ContentType = file.ContentType,
-                DocumentType = documentType,
-                Description = description,
-                Content = bytes,
-                FileSize = bytes.Length,
-                UploadDate = DateTime.UtcNow
-            };
-
-            await using var context = await _contextFactory.CreateDbContextAsync(ct);
-            context.Documents.Add(document);
-            await context.SaveChangesAsync(ct);
-
-            document.Content = null!;
-            _log.DocumentUploaded(document.Id, caseId);
-            return Created(document);
-        }
-        catch (ArgumentException ex)
-        {
-            _log.UploadFailed(caseId, ex);
-            return BadRequest(ex.Message);
-        }
+        document.Content = null!;
+        _log.DocumentUploaded(document.Id, caseId);
+        return Created(document);
     }
 
     // DELETE /api/cases/{caseId}/documents/{key}
@@ -161,5 +146,12 @@ public class DocumentsController : ODataController
         await context.SaveChangesAsync(ct);
         _log.DocumentDeleted(key, document.LineOfDutyCaseId);
         return NoContent();
+    }
+
+    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
+    {
+        var context = await _contextFactory.CreateDbContextAsync(ct);
+        HttpContext.Response.RegisterForDispose(context);
+        return context;
     }
 }
