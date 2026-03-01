@@ -28,7 +28,7 @@ internal class LodStateMachine
     /// <see cref="LineOfDutyCase.WorkflowStateHistories"/> and
     /// <see cref="LineOfDutyCase.TimelineSteps"/>.
     /// </summary>
-    private readonly LineOfDutyCase _lineOfDutyCase;
+    private LineOfDutyCase _lineOfDutyCase;
 
     /// <summary>
     /// The data service used to persist all transition side-effects, including
@@ -49,6 +49,14 @@ internal class LodStateMachine
     /// </summary>
     /// <returns>An enumerable of permitted triggers for the current state.</returns>
     public async Task<IEnumerable<LodTrigger>> GetPermittedTriggersAsync() => await _sm.GetPermittedTriggersAsync();
+
+    /// <summary>
+    /// Replaces the internal <see cref="LineOfDutyCase"/> reference with a freshly
+    /// fetched instance after a re-fetch, allowing the state machine to be reused
+    /// without re-running <see cref="Configure"/>.
+    /// </summary>
+    /// <param name="lineOfDutyCase">The re-fetched LOD case whose state matches the current SM state.</param>
+    public void UpdateCase(LineOfDutyCase lineOfDutyCase) => _lineOfDutyCase = lineOfDutyCase;
 
     /// <summary>
     /// Initializes a new <see cref="LodStateMachine"/> for the specified LOD case.
@@ -109,20 +117,13 @@ internal class LodStateMachine
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefault();
 
-            await _dataService.AddHistoryEntryAsync(new WorkflowStateHistory
-            {
-                LineOfDutyCaseId = _lineOfDutyCase.Id,
-                WorkflowState = transition.Source,
-                Action = isForward ? TransitionAction.Completed : TransitionAction.Returned,
-                Status = isForward ? WorkflowStepStatus.Completed : WorkflowStepStatus.Pending,
-                StartDate = latestHistory?.StartDate,
-                SignedDate = isForward ? now : latestHistory?.SignedDate,
-                SignedBy = isForward ? string.Empty : (latestHistory?.SignedBy ?? string.Empty),
-                OccurredAt = now,
-                PerformedBy = string.Empty,
-                CreatedDate = now,
-                ModifiedDate = now
-            });
+            var exitHistory = isForward
+                ? WorkflowStateHistoryFactory.CreateCompleted(
+                    _lineOfDutyCase.Id, transition.Source, latestHistory?.StartDate, now, string.Empty)
+                : WorkflowStateHistoryFactory.CreateReturned(
+                    _lineOfDutyCase.Id, transition.Source, latestHistory?.StartDate,
+                    latestHistory?.SignedDate, latestHistory?.SignedBy ?? string.Empty);
+            await _dataService.AddHistoryEntryAsync(exitHistory);
         }
 
         // Persist the new workflow state on the case
@@ -130,18 +131,8 @@ internal class LodStateMachine
         await _dataService.SaveCaseAsync(_lineOfDutyCase);
 
         // Record entry history for the destination state
-        await _dataService.AddHistoryEntryAsync(new WorkflowStateHistory
-        {
-            LineOfDutyCaseId = _lineOfDutyCase.Id,
-            WorkflowState = transition.Destination,
-            Action = TransitionAction.Entered,
-            Status = WorkflowStepStatus.InProgress,
-            StartDate = now,
-            OccurredAt = now,
-            PerformedBy = string.Empty,
-            CreatedDate = now,
-            ModifiedDate = now
-        });
+        await _dataService.AddHistoryEntryAsync(
+            WorkflowStateHistoryFactory.CreateInitialHistory(_lineOfDutyCase.Id, transition.Destination, now));
 
         // Start the timeline step for the target state (terminal states don't have timeline steps)
         if (transition.Destination is not (WorkflowState.Completed or WorkflowState.Cancelled))

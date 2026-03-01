@@ -28,8 +28,8 @@ public class WorkflowStep
                 return null;
             }
 
-            var end = EndDate ?? DateTime.Now;
-            return (int)(end.Date - StartDate.Value.Date).TotalDays;
+            var end = EndDate?.ToLocalTime() ?? DateTime.Now;
+            return (int)(end.Date - StartDate.Value.ToLocalTime().Date).TotalDays;
         }
     }
 }

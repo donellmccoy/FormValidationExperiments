@@ -182,42 +182,15 @@ public static class EctDbSeeder
                         Comments = new List<string> { "Package reviewed and found legally sufficient." }
                     }
                 },
-                Documents =
-                [
-                    new()
-                    {
-                        DocumentType = "AF Form 348",
-                        FileName = $"AF348_{lastName}_{incidentDate:yyyyMMdd}-{(i + 1):D3}.pdf",
-                        UploadDate = initiationDate.AddDays(rng.Next(3, 10)),
-                        Description = "Line of Duty Determination form"
-                    }
-                ],
-                TimelineSteps = new List<TimelineStep>
+                Documents =[],
+                TimelineSteps = TimelineStep.CreateDefaultSteps().Select((step, i) =>
                 {
-                    new()
-                    {
-                        StepDescription = "Member Reports Injury/Illness",
-                        TimelineDays = rng.Next(1, 3),
-                        StartDate = incidentDate,
-                        CompletionDate = null,
-                        IsOptional = false
-                    },
-                    new()
-                    {
-                        StepDescription = "Medical Provider Review",
-                        TimelineDays = rng.Next(3, 7),
-                        StartDate = null,
-                        CompletionDate = null,
-                        IsOptional = false
-                    },
-                    new()
-                    {
-                        StepDescription = "Commander Review and Endorsement",
-                        TimelineDays = rng.Next(7, 21),
-                        StartDate = null,
-                        CompletionDate = null,
-                        IsOptional = false
-                    }
+                    if (i == 0) step.StartDate = incidentDate;
+                    return step;
+                }).ToList(),
+                WorkflowStateHistories = new List<WorkflowStateHistory>
+                {
+                    WorkflowStateHistoryFactory.CreateInitialHistory(0, WorkflowState.MemberInformationEntry, initiationDate)
                 },
                 Appeals = [],
                 Notifications = []//GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)

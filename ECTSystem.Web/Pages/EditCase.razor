@@ -747,16 +747,15 @@ else
                                         @* ═══ Fieldset B: Item 17 — Duty Status at Time of Incident ═══ *@
                                         <RadzenFieldset Text="Duty Status at Time of Incident" class="rz-mt-4">
                                             <RadzenStack Gap="0.75rem">
-                                                <RadzenLabel Text="Select the member's duty status at the time of the injury / disease / death:" />
-                                                <RadzenRadioButtonList @bind-Value="_viewModel.DutyStatusAtTime" TValue="DutyStatus?"
-                                                                        Orientation="Orientation.Vertical" class="radio-list-styled">
-                                                    <Items>
-                                                        @foreach (var status in Enum.GetValues<DutyStatus>())
-                                                        {
-                                                            <RadzenRadioButtonListItem Text="@status.ToDisplayString()" Value="@((DutyStatus?)status)" />
-                                                        }
-                                                    </Items>
-                                                </RadzenRadioButtonList>
+                                                <RadzenFormField Text="Select the member's duty status at the time of the injury / disease / death:" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenDropDown @bind-Value="_viewModel.DutyStatusAtTime" TValue="DutyStatus?"
+                                                                    Data="@_dutyStatusOptions"
+                                                                    TextProperty="Text"
+                                                                    ValueProperty="Value"
+                                                                    Placeholder="Select duty status..."
+                                                                    AllowClear="true"
+                                                                    class="rz-w-100" />
+                                                </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
 

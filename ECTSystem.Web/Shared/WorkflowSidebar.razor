@@ -25,7 +25,7 @@
                 <div class="step-info">
                     <div class="step-name-row">
                         <span class="step-name">@step.Name</span>
-                        @if (step.Status == WorkflowStepStatus.InProgress)
+                        @if (@step.Status == WorkflowStepStatus.InProgress)
                         {
                             <span class="material-symbols-outlined step-action-icon active">edit</span>
                         }
@@ -34,34 +34,21 @@
                             <span class="material-symbols-outlined step-action-icon">info</span>
                         }
                     </div>
-                    @if (step.Number == CurrentStepIndex + 1)
+                    @if (@step.Number == CurrentStepIndex + 1 || step.Status == WorkflowStepStatus.InProgress)
                     {
-                        @* Current/Incoming step: show SignedDate (if any) and StartDate *@
-                        @if (step.SignedDate.HasValue)
-                        {
-                            <span class="step-date">Signed Date &mdash; @step.SignedDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
-                        }
-                        @if (step.StartDate.HasValue)
-                        {
-                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
-                        }
-                    }
-                    else if (step.Status == WorkflowStepStatus.Completed)
-                    {
-                        @* Completed/Outgoing steps: show status and StartDate, but NOT SignedDate *@
-                        @if (step.StartDate.HasValue)
-                        {
-                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
-                        }
-                    }
-                    else if (step.Status == WorkflowStepStatus.InProgress)
-                    {
-                        @* In Progress but not current (shouldn't happen normally) *@
                         <span class="step-status in-progress">In Progress</span>
-                        @if (step.StartDate.HasValue)
-                        {
-                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
-                        }
+                    }
+                    @if (@step.StartDate.HasValue)
+                    {
+                        <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
+                    }
+                    @if (@step.SignedDate.HasValue)
+                    {
+                        <span class="step-date">Signed Date &mdash; @step.SignedDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
+                    }
+                    @if (@step.DaysInProcess.HasValue)
+                    {
+                        <span class="step-detail">Days in Process &mdash; @step.DaysInProcess.Value</span>
                     }
                 </div>
             </div>

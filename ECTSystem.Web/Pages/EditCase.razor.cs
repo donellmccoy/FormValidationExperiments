@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
 
@@ -48,6 +49,10 @@ public partial class EditCase : ComponentBase, IDisposable
         (TabNames.BoardLegalReview,      WorkflowState.BoardLegalReview),          // 9
         (TabNames.BoardAdminReview,      WorkflowState.BoardAdministratorReview),          // 10
     ];
+
+    private static readonly object[] _dutyStatusOptions = Enum.GetValues<DutyStatus>()
+        .Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })
+        .ToArray();
 
     [Inject]
     private IDataService CaseService { get; set; }
@@ -389,7 +394,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             if (_lodCase is not null)
             {
-                _stateMachine = new LodStateMachine(_lodCase, CaseService);
+                _stateMachine.UpdateCase(_lodCase);
                 await RefreshPermittedTriggersAsync();
             }
 
@@ -405,7 +410,7 @@ public partial class EditCase : ComponentBase, IDisposable
             _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
             if (_lodCase is not null)
             {
-                _stateMachine = new LodStateMachine(_lodCase, CaseService);
+                _stateMachine = LodStateMachineFactory.Create(_lodCase, CaseService);
                 await RefreshPermittedTriggersAsync();
             }
         }
@@ -456,44 +461,27 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                var newCase = new LineOfDutyCase
-                {
-                    CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
-                    MemberId = _selectedMemberId,
-                    InitiationDate = DateTime.UtcNow,
-                    IncidentDate = DateTime.UtcNow,
-                    WorkflowState = WorkflowState.MemberInformationEntry,
-                    CreatedDate = DateTime.UtcNow,
-                    ModifiedDate = DateTime.UtcNow
-                };
+                var newCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
 
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
+
+                newCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(0, WorkflowState.MemberInformationEntry));
 
                 var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 
                 // Record workflow history entry
-                var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
-                {
-                    LineOfDutyCaseId = saved.Id,
-                    WorkflowState = WorkflowState.MemberInformationEntry,
-                    Action = TransitionAction.Entered,
-                    Status = WorkflowStepStatus.InProgress,
-                    StartDate = saved.CreatedDate,
-                    OccurredAt = saved.CreatedDate,
-                    CreatedBy = saved.CreatedBy,
-                    CreatedDate = saved.CreatedDate,
-                    ModifiedBy = saved.ModifiedBy,
-                    ModifiedDate = saved.ModifiedDate,
-                    PerformedBy = string.Empty
-                }, _cts.Token);
+                //await CaseService.AddHistoryEntryAsync(WorkflowStateHistoryFactory.CreateInitialHistory(saved.Id, WorkflowState.MemberInformationEntry, saved.CreatedDate), _cts.Token);
 
-                _lodCase = saved;
                 CaseId = saved.CaseId;
 
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(saved);
+                // Reload the full case — the POST response omits navigation properties
+                // (TimelineSteps, WorkflowStateHistories, etc.)
+                _lodCase = await CaseService.GetCaseAsync(saved.CaseId, _cts.Token) ?? saved;
 
-                _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, saved.WorkflowState, _lodCase);
-                _selectedTabIndex = GetTabIndexForState(saved.WorkflowState);
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
+
+                _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, _lodCase.WorkflowState, _lodCase);
+                _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
 
                 TakeSnapshots();
 
@@ -544,23 +532,11 @@ public partial class EditCase : ComponentBase, IDisposable
             timelineStep.SignedBy = signed.SignedBy;
 
             // Record signed history entry so the sidebar shows the SignedDate immediately
-            var historyEntry = await CaseService.AddHistoryEntryAsync(new WorkflowStateHistory
-            {
-                LineOfDutyCaseId = _lodCase.Id,
-                WorkflowState = _lodCase.WorkflowState,
-                Action = TransitionAction.Signed,
-                Status = WorkflowStepStatus.InProgress,
-                StartDate = CurrentStep?.StartDate,
-                SignedDate = signed.SignedDate,
-                SignedBy = signed.SignedBy,
-                OccurredAt = DateTime.UtcNow,
-                PerformedBy = string.Empty,
-                CreatedDate = DateTime.UtcNow,
-                ModifiedDate = DateTime.UtcNow
-            }, _cts.Token);
+            var historyEntry = await CaseService.AddHistoryEntryAsync(
+                WorkflowStateHistoryFactory.CreateSigned(_lodCase.Id, _lodCase.WorkflowState, CurrentStep?.StartDate, signed.SignedDate, signed.SignedBy),
+                _cts.Token);
 
-            _lodCase.WorkflowStateHistories ??= new HashSet<WorkflowStateHistory>();
-            _lodCase.WorkflowStateHistories.Add(historyEntry);
+            _lodCase.AddHistoryEntry(historyEntry);
 
             _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, _lodCase.WorkflowState, _lodCase);
             _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
@@ -748,7 +724,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             if (_lodCase is not null)
             {
-                _stateMachine = new LodStateMachine(_lodCase, CaseService);
+                _stateMachine = LodStateMachineFactory.Create(_lodCase, CaseService);
                 await RefreshPermittedTriggersAsync();
             }
         }
@@ -952,38 +928,20 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            var newCase = new LineOfDutyCase
-            {
-                CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
-                MemberId = _selectedMemberId,
-                WorkflowState = WorkflowState.MemberInformationEntry,
-                InitiationDate = DateTime.UtcNow,
-                IncidentDate = DateTime.UtcNow,
-                CreatedDate = DateTime.UtcNow,
-                ModifiedDate = DateTime.UtcNow
-            };
+            var newCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
 
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
 
             var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
 
-            // Advance to MedicalTechnicianReview via state machine (handles history + timeline)
-            _lodCase = saved;
-            _stateMachine = new LodStateMachine(_lodCase, CaseService);
-            await _stateMachine.FireAsync(LodTrigger.ForwardToMedicalTechnician);
+            saved.WorkflowState = WorkflowState.MedicalTechnicianReview;
 
-            // Re-fetch the full case with updated state and history
-            _lodCase = await CaseService.GetCaseAsync(saved.CaseId, _cts.Token);
-            _stateMachine = new LodStateMachine(_lodCase, CaseService);
-            await RefreshPermittedTriggersAsync();
-            CaseId = _lodCase.CaseId;
-            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
-            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, _lodCase.WorkflowState, _lodCase);
-            _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
+            saved.AddHistoryEntry(WorkflowStateHistoryFactory.CreateCompleted(saved.Id, WorkflowState.MemberInformationEntry, saved.CreatedDate));
+            saved.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(saved.Id, WorkflowState.MedicalTechnicianReview));
 
-            TakeSnapshots();
+            await CaseService.SaveCaseAsync(saved, _cts.Token);
 
-            NotificationService.Notify(NotificationSeverity.Success, "LOD Started", $"Case {_lodCase.CaseId} created for {_lodCase.MemberName}.");
+            NotificationService.Notify(NotificationSeverity.Success, "LOD Started", $"Case {saved.CaseId} created for {saved.MemberName}.");
 
             Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
         }
