@@ -29,7 +29,6 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private IList<LineOfDutyCase> _selectedBookmarks = [];
     private int _count;
     private bool _isLoading;
-    private bool _hasBookmarks;
     private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
 
@@ -56,11 +55,6 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             _bookmarks = result.Value.AsODataEnumerable();
             _count = result.Count;
-
-            if (_count > 0)
-            {
-                _hasBookmarks = true;
-            }
         }
         catch (OperationCanceledException)
         {
@@ -95,11 +89,6 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             await CaseService.RemoveBookmarkAsync(lodCase.Id);
             await BookmarkCountService.RefreshAsync();
             await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
-
-            if (_count == 0)
-            {
-                _hasBookmarks = false;
-            }
 
             StateHasChanged();
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
