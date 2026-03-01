@@ -60,6 +60,12 @@ public class DocumentFilesController : ControllerBase
             return NotFound();
         }
 
+        if (doc.LineOfDutyCaseId != caseId)
+        {
+            _loggingService.DocumentNotFound(key, caseId);
+            return NotFound();
+        }
+
         if (doc.Content is null || doc.Content.Length == 0)
         {
             _loggingService.DocumentContentNotFound(key);
@@ -92,6 +98,12 @@ public class DocumentFilesController : ControllerBase
         {
             _loggingService.InvalidUpload(caseId);
             return BadRequest("No file provided.");
+        }
+
+        if (string.IsNullOrWhiteSpace(documentType))
+        {
+            _loggingService.InvalidUpload(caseId);
+            return BadRequest("documentType is required.");
         }
 
         if (file.Length > MaxDocumentSize)
@@ -141,6 +153,12 @@ public class DocumentFilesController : ControllerBase
         var document = await context.Documents.FindAsync([key], ct);
 
         if (document is null)
+        {
+            _loggingService.DocumentNotFound(key, caseId);
+            return NotFound();
+        }
+
+        if (document.LineOfDutyCaseId != caseId)
         {
             _loggingService.DocumentNotFound(key, caseId);
             return NotFound();
