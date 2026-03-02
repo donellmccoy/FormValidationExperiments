@@ -1,9 +1,12 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using ECTSystem.Api.Services;
+using Microsoft.EntityFrameworkCore;
+using ECTSystem.Api.Logging;
+using ECTSystem.Persistence.Data;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -14,13 +17,25 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class TimelineStepsController : ODataController
 {
-    private readonly ILineOfDutyTimelineService _timelineService;
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
+    private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    public TimelineStepsController(ILineOfDutyTimelineService timelineService)
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="TimelineStepsController"/>.
+    /// </summary>
+    /// <param name="contextFactory">The EF Core context factory.</param>
+    /// <param name="loggingService">The structured logging service.</param>
+    public TimelineStepsController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
     {
-        _timelineService = timelineService;
+        _contextFactory = contextFactory;
+        _loggingService = loggingService;
     }
 
+    /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
+    /// <exception cref="InvalidOperationException">Thrown when the user is not authenticated.</exception>
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? throw new InvalidOperationException("User is not authenticated.");
 
@@ -28,35 +43,60 @@ public class TimelineStepsController : ODataController
     /// Digitally signs a timeline step, recording the current user and UTC timestamp.
     /// OData action route: POST /odata/TimelineSteps({key})/Sign
     /// </summary>
-    [HttpPost("odata/TimelineSteps({key})/Sign")]
-    public async Task<IActionResult> Sign([FromRoute] int key, CancellationToken ct)
+    [HttpPost]
+    public async Task<IActionResult> Sign([FromODataUri] int key, CancellationToken ct = default)
     {
-        try
+        _loggingService.SigningTimelineStep(key);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var step = await context.TimelineSteps.FindAsync([key], ct);
+
+        if (step is null)
         {
-            var step = await _timelineService.SignTimelineStepAsync(key, UserId, ct);
-            return Ok(step);
-        }
-        catch (InvalidOperationException)
-        {
+            _loggingService.TimelineStepNotFound(key);
             return NotFound();
         }
+
+        if (step.SignedDate is not null)
+        {
+            _loggingService.TimelineStepAlreadySigned(key);
+            return Ok(step);
+        }
+
+        step.SignedDate = DateTime.UtcNow;
+        step.SignedBy = UserId;
+        await context.SaveChangesAsync(ct);
+
+        _loggingService.TimelineStepSigned(key);
+        return Ok(step);
     }
 
     /// <summary>
     /// Sets the StartDate on a timeline step to UTC now.
     /// OData action route: POST /odata/TimelineSteps({key})/Start
     /// </summary>
-    [HttpPost("odata/TimelineSteps({key})/Start")]
-    public async Task<IActionResult> Start([FromRoute] int key, CancellationToken ct)
+    [HttpPost]
+    public async Task<IActionResult> Start([FromODataUri] int key, CancellationToken ct = default)
     {
-        try
+        _loggingService.StartingTimelineStep(key);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var step = await context.TimelineSteps.FindAsync([key], ct);
+
+        if (step is null)
         {
-            var step = await _timelineService.StartTimelineStepAsync(key, ct);
-            return Ok(step);
-        }
-        catch (InvalidOperationException)
-        {
+            _loggingService.TimelineStepNotFound(key);
             return NotFound();
         }
+
+        if (step.StartDate is not null)
+        {
+            _loggingService.TimelineStepAlreadyStarted(key);
+            return Ok(step);
+        }
+
+        step.StartDate = DateTime.UtcNow;
+        await context.SaveChangesAsync(ct);
+
+        _loggingService.TimelineStepStarted(key);
+        return Ok(step);
     }
 }

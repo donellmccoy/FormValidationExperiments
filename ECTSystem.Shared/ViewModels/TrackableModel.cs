@@ -28,6 +28,42 @@ public abstract class TrackableModel
         && _jsonOptions is not null
         && JsonSerializer.Serialize(this, GetType(), _jsonOptions) != _snapshot;
 
+    [JsonIgnore]
+    public bool HasSnapshot => !string.IsNullOrEmpty(_snapshot);
+
+    /// <summary>
+    /// Gets whether any property in the named section has changed since the last snapshot.
+    /// </summary>
+    public bool IsDirtySection(string sectionName)
+    {
+        if (string.IsNullOrWhiteSpace(sectionName) || _snapshot is null || _jsonOptions is null)
+        {
+            return false;
+        }
+
+        var snapshotObj = JsonSerializer.Deserialize(_snapshot, GetType(), _jsonOptions);
+        if (snapshotObj is null)
+        {
+            return false;
+        }
+
+        var sectionProperties = GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.GetCustomAttributes<FormSectionAttribute>().Any(a => a.SectionName == sectionName));
+
+        foreach (var property in sectionProperties)
+        {
+            var currentValue = property.GetValue(this);
+            var snapshotValue = property.GetValue(snapshotObj);
+            if (!Equals(currentValue, snapshotValue))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Captures the current state as the clean baseline.
     /// </summary>

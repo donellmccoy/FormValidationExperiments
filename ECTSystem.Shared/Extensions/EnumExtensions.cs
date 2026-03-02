@@ -16,3 +16,6 @@ public static class EnumExtensions
         return value.ToString().Humanize(LetterCasing.Title);
     }
 }
+//{
+//    public static bool Has
+//}

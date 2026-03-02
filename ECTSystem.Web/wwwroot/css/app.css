@@ -47,6 +47,10 @@
     --rz-danger: #f44336;
 }
 
+.rzi {
+    font-family: 'Material Symbols Outlined' !important;
+}
+
 h1:focus {
     outline: none;
 }

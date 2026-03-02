@@ -5,7 +5,7 @@ namespace ECTSystem.Web.Shared;
 public class WorkflowStep
 {
     public int Number { get; set; }
-    public LineOfDutyWorkflowState WorkflowState { get; set; }
+    public WorkflowState WorkflowState { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
     public WorkflowStepStatus Status { get; set; }
@@ -23,9 +23,13 @@ public class WorkflowStep
     {
         get
         {
-            if (StartDate is null) return null;
-            var end = EndDate ?? DateTime.Now;
-            return (int)(end.Date - StartDate.Value.Date).TotalDays;
+            if (StartDate is null)
+            {
+                return null;
+            }
+
+            var end = EndDate?.ToLocalTime() ?? DateTime.Now;
+            return (int)(end.Date - StartDate.Value.ToLocalTime().Date).TotalDays;
         }
     }
 }

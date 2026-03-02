@@ -1,0 +1,261 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>ECT Login: Air Force Reserve Personnel Background</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&amp;family=Orbitron:wght@600;700;800;900&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+      :root {
+        --custom-gray: #333333;
+      }
+    </style>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#3b82f6",
+              "background-light": "#f5f6f8",
+              "background-dark": "#101322",
+              "navy-deep": "#0a1128",
+              "custom-gray": "#333333",
+            },
+            fontFamily: {
+              display: ["Space Grotesk", "Noto Sans", "sans-serif"],
+              military: ["Orbitron", "sans-serif"],
+              tech: ["Chakra Petch", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body
+    class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden"
+  >
+    <div class="flex-1 flex flex-col lg:flex-row min-h-screen w-full">
+      <div
+        class="relative w-full lg:w-[70%] h-64 lg:h-auto bg-black overflow-hidden group"
+      >
+        <div
+          class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105"
+          data-alt="Air Force Reserve personnel in action"
+          style="background-image: url('{{DATA:IMAGE:IMAGE_24}}');"
+        >
+          <div class="absolute inset-0 bg-black/30"></div>
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"
+          ></div>
+        </div>
+        <div class="absolute inset-0 z-10 flex items-center justify-center">
+          <div
+            class="size-20 lg:size-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse"
+          >
+            <div
+              class="size-16 lg:size-20 rounded-full bg-primary/40 flex items-center justify-center"
+            >
+              <button
+                class="flex shrink-0 items-center justify-center rounded-full size-14 lg:size-16 bg-primary text-white shadow-lg shadow-primary/50 hover:scale-110 transition-transform cursor-pointer"
+              >
+                <span class="material-symbols-outlined text-[32px] ml-1"
+                  >play_arrow</span
+                >
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="absolute bottom-6 left-6 lg:bottom-10 lg:left-10 z-20 flex gap-4"
+        >
+          <button
+            class="flex items-center justify-center rounded-full size-10 lg:size-12 bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition-colors border border-white/20"
+          >
+            <span class="material-symbols-outlined text-[20px] lg:text-[24px]"
+              >pause</span
+            >
+          </button>
+          <button
+            class="flex items-center justify-center rounded-full size-10 lg:size-12 bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition-colors border border-white/20"
+          >
+            <span class="material-symbols-outlined text-[20px] lg:text-[24px]"
+              >volume_off</span
+            >
+          </button>
+        </div>
+        <div
+          class="absolute bottom-6 right-6 lg:bottom-10 lg:right-10 z-20 hidden lg:block"
+        >
+          <p class="text-white/60 text-xs font-mono tracking-widest uppercase">
+            Mission Critical • Personnel Only
+          </p>
+        </div>
+        <button
+          class="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center rounded-full size-10 lg:size-12 bg-black/20 text-white backdrop-blur-sm hover:bg-black/40 transition-colors border border-white/10"
+        >
+          <span class="material-symbols-outlined text-[24px]"
+            >chevron_left</span
+          ></button
+        ><button
+          class="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center rounded-full size-10 lg:size-12 bg-black/20 text-white backdrop-blur-sm hover:bg-black/40 transition-colors border border-white/10"
+        >
+          <span class="material-symbols-outlined text-[24px]"
+            >chevron_right</span
+          >
+        </button>
+        <div
+          class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-2 hidden"
+        >
+          <div class="size-2 rounded-full bg-white"></div>
+          <div class="size-2 rounded-full bg-white/40"></div>
+          <div class="size-2 rounded-full bg-white/40"></div>
+          <div class="size-2 rounded-full bg-white/40"></div>
+        </div>
+      </div>
+      <div
+        class="w-full lg:w-[30%] bg-[var(--custom-gray)] flex items-center justify-center p-6 lg:p-8 relative text-white"
+      >
+        <div class="w-full max-w-sm space-y-6">
+          <div class="text-center lg:text-left">
+            <div
+              class="inline-flex size-12 rounded-xl bg-white/10 text-primary items-center justify-center mb-6 ring-1 ring-white/10"
+            >
+              <span class="material-symbols-outlined text-[28px] text-white"
+                >flight_takeoff</span
+              >
+            </div>
+            <h1
+              class="text-white text-3xl lg:text-4xl font-military font-black tracking-wider uppercase mb-2"
+            >
+              ECT System
+            </h1>
+            <p class="text-gray-300 text-sm leading-snug">
+              Electronic Case Tracking System for the Department of Air Force.
+              Identify yourself to proceed.
+            </p>
+          </div>
+          <form class="space-y-5" onsubmit="event.preventDefault()">
+            <div class="space-y-1.5">
+              <label
+                class="block text-sm font-military font-bold uppercase tracking-wide text-gray-200"
+                for="username"
+                >Username</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <span
+                    class="material-symbols-outlined text-gray-400 text-[18px]"
+                    >person</span
+                  >
+                </div>
+                <input
+                  class="block w-full pl-9 pr-3 py-2.5 border border-gray-600 rounded-lg bg-[#444444] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all font-military tracking-wide"
+                  id="username"
+                  placeholder="SERVICE ID"
+                  type="text"
+                />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label
+                class="block text-sm font-military font-bold uppercase tracking-wide text-gray-200"
+                for="password"
+                >Password</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <span
+                    class="material-symbols-outlined text-gray-400 text-[18px]"
+                    >lock</span
+                  >
+                </div>
+                <input
+                  class="block w-full pl-9 pr-9 py-2.5 border border-gray-600 rounded-lg bg-[#444444] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all font-military tracking-wide"
+                  id="password"
+                  placeholder="••••••••"
+                  type="password"
+                />
+                <button
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                  type="button"
+                >
+                  <span class="material-symbols-outlined text-[18px]"
+                    >visibility_off</span
+                  >
+                </button>
+              </div>
+            </div>
+            <div
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm gap-2"
+            >
+              <label class="flex items-center space-x-2 cursor-pointer group">
+                <input
+                  class="rounded border-gray-600 bg-[#444444] text-primary focus:ring-primary/50 focus:ring-offset-0 h-4 w-4"
+                  type="checkbox"
+                />
+                <span
+                  class="text-gray-300 group-hover:text-white transition-colors"
+                  >Remember me</span
+                >
+              </label>
+              <a
+                class="text-primary hover:text-blue-400 font-medium transition-colors"
+                href="#"
+                >Forgot password?</a
+              >
+            </div>
+            <button
+              class="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-md hover:shadow-lg text-sm font-bold font-military tracking-wide uppercase text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-[#333333] transition-all duration-200"
+              type="submit"
+            >
+              Secure Login
+              <span class="material-symbols-outlined ml-2 text-[18px]"
+                >arrow_forward</span
+              >
+            </button>
+          </form>
+          <div class="pt-6 border-t border-gray-600 text-center">
+            <p class="text-sm text-gray-400">
+              No account?
+              <a
+                class="font-medium text-primary hover:text-blue-400 transition-colors"
+                href="#"
+                >Sign up</a
+              >
+            </p>
+            <p class="mt-6 text-[10px] leading-relaxed text-gray-500">
+              By accessing this system, you agree to the
+              <a class="underline hover:text-gray-300" href="#"
+                >Terms of Service</a
+              >
+              and
+              <a class="underline hover:text-gray-300" href="#"
+                >Privacy Policy</a
+              >.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

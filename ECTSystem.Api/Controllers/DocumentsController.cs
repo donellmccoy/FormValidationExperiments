@@ -1,118 +1,112 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Routing.Controllers;
+using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
-using ECTSystem.Api.Services;
+using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
 
+/// <summary>
+/// OData-enabled controller for querying document metadata.
+/// Binary content operations (upload, download, delete) are handled by <see cref="DocumentFilesController"/>.
+/// Named "DocumentsController" to match the OData entity set "Documents" (convention routing).
+/// </summary>
 [Authorize]
-[ApiController]
-[Route("api/cases/{caseId:int}/documents")]
-public class DocumentsController : ControllerBase
+public class DocumentsController : ODataController
 {
-    private readonly ILineOfDutyDocumentService _documentService;
-    private readonly IApiLogService _log;
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
+    private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    public DocumentsController(ILineOfDutyDocumentService documentService, IApiLogService log)
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="DocumentsController"/>.
+    /// </summary>
+    /// <param name="contextFactory">The EF Core context factory.</param>
+    /// <param name="loggingService">The structured logging service.</param>
+    public DocumentsController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
     {
-        _documentService = documentService;
-        _log = log;
+        _contextFactory = contextFactory;
+        _loggingService = loggingService;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetByCaseId(int caseId, CancellationToken ct = default)
+    /// <summary>
+    /// Returns an IQueryable of documents for OData query composition.
+    /// OData route: GET /odata/Documents
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        _log.QueryingDocuments(caseId);
-        var documents = await _documentService.GetDocumentsByCaseIdAsync(caseId, ct);
-        return Ok(documents);
+        _loggingService.QueryingDocuments();
+        var context = await CreateContextAsync(ct);
+        return Ok(context.Documents
+            .AsNoTracking()
+            .Select(d => new LineOfDutyDocument
+            {
+                Id = d.Id,
+                LineOfDutyCaseId = d.LineOfDutyCaseId,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                ContentType = d.ContentType,
+                FileSize = d.FileSize,
+                UploadDate = d.UploadDate,
+                Description = d.Description
+                // Content intentionally omitted — use the download endpoint for file bytes
+            }));
     }
 
-    [HttpGet("{documentId:int}")]
-    public async Task<IActionResult> GetById(int caseId, int documentId, CancellationToken ct = default)
+    /// <summary>
+    /// Returns a single document by key.
+    /// OData route: GET /odata/Documents({key})
+    /// </summary>
+    /// <param name="key">The document identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.RetrievingDocument(documentId, caseId);
-        var document = await _documentService.GetDocumentByIdAsync(documentId, ct);
-        if (document is null || document.LineOfDutyCaseId != caseId)
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var document = await context.Documents
+            .AsNoTracking()
+            .Where(d => d.Id == key)
+            .Select(d => new LineOfDutyDocument
+            {
+                Id = d.Id,
+                LineOfDutyCaseId = d.LineOfDutyCaseId,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                ContentType = d.ContentType,
+                FileSize = d.FileSize,
+                UploadDate = d.UploadDate,
+                Description = d.Description
+                // Content intentionally omitted — use the download endpoint for file bytes
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (document is null)
         {
-            _log.DocumentNotFound(documentId, caseId);
+            _loggingService.DocumentNotFound(key, 0);
             return NotFound();
         }
 
+        _loggingService.RetrievingDocument(key, document.LineOfDutyCaseId);
         return Ok(document);
     }
 
-    [HttpGet("{documentId:int}/download")]
-    public async Task<IActionResult> Download(int caseId, int documentId, CancellationToken ct = default)
+    /// <summary>
+    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
+    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
+    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
     {
-        _log.DownloadingDocument(documentId, caseId);
-        var document = await _documentService.GetDocumentByIdAsync(documentId, ct);
-        if (document is null || document.LineOfDutyCaseId != caseId)
-        {
-            _log.DocumentNotFound(documentId, caseId);
-            return NotFound();
-        }
-
-        var content = await _documentService.GetDocumentContentAsync(documentId, ct);
-        if (content is null)
-        {
-            _log.DocumentContentNotFound(documentId);
-            return NotFound();
-        }
-
-        return File(content, document.ContentType, document.FileName);
-    }
-
-    [HttpPost]
-    [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB
-    public async Task<IActionResult> Upload(
-        int caseId,
-        IFormFile file,
-        [FromForm] string documentType,
-        [FromForm] string description = "",
-        CancellationToken ct = default)
-    {
-        if (file is null || file.Length == 0)
-        {
-            _log.InvalidUpload(caseId);
-            return BadRequest("No file provided.");
-        }
-
-        _log.UploadingDocument(caseId);
-        try
-        {
-            await using var stream = file.OpenReadStream();
-            var document = await _documentService.UploadDocumentAsync(
-                caseId,
-                file.FileName,
-                file.ContentType,
-                documentType,
-                description,
-                stream,
-                ct);
-
-            _log.DocumentUploaded(document.Id, caseId);
-            return CreatedAtAction(nameof(GetById), new { caseId, documentId = document.Id }, document);
-        }
-        catch (ArgumentException ex)
-        {
-            _log.UploadFailed(caseId, ex);
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [HttpDelete("{documentId:int}")]
-    public async Task<IActionResult> Delete(int caseId, int documentId, CancellationToken ct = default)
-    {
-        _log.DeletingDocument(documentId, caseId);
-        var document = await _documentService.GetDocumentByIdAsync(documentId, ct);
-        if (document is null || document.LineOfDutyCaseId != caseId)
-        {
-            _log.DocumentNotFound(documentId, caseId);
-            return NotFound();
-        }
-
-        await _documentService.DeleteDocumentAsync(documentId, ct);
-        _log.DocumentDeleted(documentId, caseId);
-        return NoContent();
+        var context = await _contextFactory.CreateDbContextAsync(ct);
+        HttpContext.Response.RegisterForDispose(context);
+        return context;
     }
 }

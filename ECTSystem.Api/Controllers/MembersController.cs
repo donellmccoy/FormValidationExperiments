@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +18,21 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class MembersController : ODataController
 {
+    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
-    private readonly IApiLogService _log;
 
-    public MembersController(IDbContextFactory<EctDbContext> contextFactory, IApiLogService log)
+    /// <summary>Service used for structured logging.</summary>
+    private readonly ILoggingService _loggingService;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="MembersController"/>.
+    /// </summary>
+    /// <param name="contextFactory">The EF Core context factory.</param>
+    /// <param name="loggingService">The structured logging service.</param>
+    public MembersController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
     {
         _contextFactory = contextFactory;
-        _log = log;
+        _loggingService = loggingService;
     }
 
     /// <summary>
@@ -31,10 +40,10 @@ public class MembersController : ODataController
     /// OData route: GET /odata/Members
     /// </summary>
     [EnableQuery(MaxTop = 100, PageSize = 50)]
-    public IActionResult Get()
+    public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        _log.QueryingMembers();
-        var context = _contextFactory.CreateDbContext();
+        _loggingService.QueryingMembers();
+        var context = await CreateContextAsync(ct);
         return Ok(context.Members.AsNoTracking());
     }
 
@@ -42,19 +51,17 @@ public class MembersController : ODataController
     /// Returns a single Member by key with navigation properties.
     /// OData route: GET /odata/Members({key})
     /// </summary>
-    [EnableQuery]
-    public async Task<IActionResult> Get([FromRoute] int key)
+    public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.RetrievingMember(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        _loggingService.RetrievingMember(key);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var member = await context.Members
-            //.Include(m => m.LineOfDutyCases)
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == key);
+            .FirstOrDefaultAsync(m => m.Id == key, ct);
 
         if (member is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
@@ -65,19 +72,19 @@ public class MembersController : ODataController
     /// Creates a new Member.
     /// OData route: POST /odata/Members
     /// </summary>
-    public async Task<IActionResult> Post([FromBody] Member member)
+    public async Task<IActionResult> Post([FromBody] Member member, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
-            _log.MemberInvalidModelState("Post");
+            _loggingService.MemberInvalidModelState("Post");
             return BadRequest(ModelState);
         }
 
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
         context.Members.Add(member);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
-        _log.MemberCreated(member.Id);
+        _loggingService.MemberCreated(member.Id);
         return Created(member);
     }
 
@@ -85,28 +92,28 @@ public class MembersController : ODataController
     /// Fully replaces an existing Member.
     /// OData route: PUT /odata/Members({key})
     /// </summary>
-    public async Task<IActionResult> Put([FromRoute] int key, [FromBody] Member update)
+    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] Member update, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
-            _log.MemberInvalidModelState("Put");
+            _loggingService.MemberInvalidModelState("Put");
             return BadRequest(ModelState);
         }
 
-        _log.UpdatingMember(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var existing = await context.Members.FindAsync(key);
+        _loggingService.UpdatingMember(key);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var existing = await context.Members.FindAsync([key], ct);
         if (existing is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
         update.Id = key;
         context.Entry(existing).CurrentValues.SetValues(update);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
-        _log.MemberUpdated(key);
+        _loggingService.MemberUpdated(key);
         return Updated(existing);
     }
 
@@ -114,27 +121,27 @@ public class MembersController : ODataController
     /// Partially updates an existing Member.
     /// OData route: PATCH /odata/Members({key})
     /// </summary>
-    public async Task<IActionResult> Patch([FromRoute] int key, [FromBody] Delta<Member> delta)
+    public async Task<IActionResult> Patch([FromODataUri] int key, Delta<Member> delta, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
-            _log.MemberInvalidModelState("Patch");
+            _loggingService.MemberInvalidModelState("Patch");
             return BadRequest(ModelState);
         }
 
-        _log.PatchingMember(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var existing = await context.Members.FindAsync(key);
+        _loggingService.PatchingMember(key);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var existing = await context.Members.FindAsync([key], ct);
         if (existing is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
         delta.Patch(existing);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
-        _log.MemberPatched(key);
+        _loggingService.MemberPatched(key);
         return Updated(existing);
     }
 
@@ -142,21 +149,48 @@ public class MembersController : ODataController
     /// Deletes a Member.
     /// OData route: DELETE /odata/Members({key})
     /// </summary>
-    public async Task<IActionResult> Delete([FromRoute] int key)
+    public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        _log.DeletingMember(key);
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var member = await context.Members.FindAsync(key);
+        _loggingService.DeletingMember(key);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var member = await context.Members.FindAsync([key], ct);
         if (member is null)
         {
-            _log.MemberNotFound(key);
+            _loggingService.MemberNotFound(key);
             return NotFound();
         }
 
         context.Members.Remove(member);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
-        _log.MemberDeleted(key);
+        _loggingService.MemberDeleted(key);
         return NoContent();
+    }
+
+    // ── Collection navigation properties ────────────────────────────────
+
+    /// <summary>
+    /// Returns LOD cases associated with a specific member.
+    /// OData route: GET /odata/Members({key})/LineOfDutyCases
+    /// </summary>
+    [EnableQuery]
+    public async Task<IActionResult> GetLineOfDutyCases([FromODataUri] int key, CancellationToken ct = default)
+    {
+        _loggingService.QueryingMemberNavigation(key, nameof(Member.LineOfDutyCases));
+        var context = await CreateContextAsync(ct);
+        return Ok(context.Cases.AsNoTracking().Where(c => c.MemberId == key));
+    }
+
+    /// <summary>
+    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
+    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
+    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
+    {
+        var context = await _contextFactory.CreateDbContextAsync(ct);
+        HttpContext.Response.RegisterForDispose(context);
+        return context;
     }
 }

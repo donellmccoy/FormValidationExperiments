@@ -12,7 +12,7 @@ public class LineOfDutyCase : AuditableEntity
     // Basic Case Information
     public string CaseId { get; set; } = string.Empty;
     public LineOfDutyProcessType ProcessType { get; set; } // Informal or Formal
-    public LineOfDutyWorkflowState WorkflowState { get; set; } = LineOfDutyWorkflowState.MemberInformationEntry;
+    public WorkflowState WorkflowState { get; set; } = WorkflowState.MemberInformationEntry;
     public ServiceComponent Component { get; set; } // RegAF, AFR, etc.
     public string MemberName { get; set; } = string.Empty;
     public string MemberRank { get; set; } = string.Empty;
@@ -100,8 +100,9 @@ public class LineOfDutyCase : AuditableEntity
     public int TotalTimelineDays { get; set; } // e.g., 90 for Informal, 160 for Formal
     public bool IsInterimLOD { get; set; }
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
-    public List<TimelineStep> TimelineSteps { get; set; } = new List<TimelineStep>();
-    public List<LineOfDutyAuthority> Authorities { get; set; } = new List<LineOfDutyAuthority>();
+    public ICollection<TimelineStep> TimelineSteps { get; set; } = new HashSet<TimelineStep>();
+    public ICollection<LineOfDutyAuthority> Authorities { get; set; } = new HashSet<LineOfDutyAuthority>();
+    public ICollection<WorkflowStateHistory> WorkflowStateHistories { get; set; } = new HashSet<WorkflowStateHistory>();
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }
@@ -164,15 +165,15 @@ public class LineOfDutyCase : AuditableEntity
     public string SARCCoordination { get; set; } = string.Empty; // Sexual Assault Response Coordinator
 
     // Documents and Evidence
-    public List<LineOfDutyDocument> Documents { get; set; } = new List<LineOfDutyDocument>();
-    public List<string> WitnessStatements { get; set; } = new List<string>();
+    public ICollection<LineOfDutyDocument> Documents { get; set; } = new HashSet<LineOfDutyDocument>();
+    public List<string> WitnessStatements { get; set; } = [];
     public string ToxicologyReport { get; set; } = string.Empty;
 
     // Appeals
-    public List<LineOfDutyAppeal> Appeals { get; set; } = new List<LineOfDutyAppeal>();
+    public ICollection<LineOfDutyAppeal> Appeals { get; set; } = new HashSet<LineOfDutyAppeal>();
 
     // Notifications
-    public List<Notification> Notifications { get; set; } = new List<Notification>();
+    public ICollection<Notification> Notifications { get; set; } = new HashSet<Notification>();
 
     // Member
     public int MemberId { get; set; }
@@ -187,6 +188,6 @@ public class LineOfDutyCase : AuditableEntity
 
     // Audit and Notes
     public bool IsAudited { get; set; }
-    public List<string> AuditComments { get; set; } = new List<string>();
+    public List<string> AuditComments { get; set; } = [];
     public string PointOfContact { get; set; } = string.Empty; // e.g., AF/A1PP email
 }

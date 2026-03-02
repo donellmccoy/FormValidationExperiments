@@ -76,7 +76,10 @@ public partial class CaseList : ComponentBase, IDisposable
     {
         bookmarkedCaseIds.Clear();
 
-        if (cases == null) return;
+        if (cases == null)
+        {
+            return;
+        }
 
         foreach (var lodCase in cases)
         {

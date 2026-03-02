@@ -69,7 +69,7 @@ public static class EctDbSeeder
             var finding = PickRandom(rng, LineOfDutyFinding.InLineOfDuty, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.ExistingPriorToServiceNotAggravated);
             var wasUnderInfluence = rng.Next(100) < 15;
             var isInterim = processType == LineOfDutyProcessType.Informal && rng.Next(100) < 40;
-            var workflowState = LineOfDutyWorkflowState.MemberInformationEntry;
+            var workflowState = WorkflowState.MemberInformationEntry;
             var rank = Ranks[rng.Next(Ranks.Length)];
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
             var memberName = $"{firstName} {MiddleInitials[rng.Next(MiddleInitials.Length)]}. {lastName}";
@@ -182,45 +182,22 @@ public static class EctDbSeeder
                         Comments = new List<string> { "Package reviewed and found legally sufficient." }
                     }
                 },
-                Documents = new List<LineOfDutyDocument>
+                Documents =[],
+                TimelineSteps = TimelineStep.CreateDefaultSteps().Select((step, i) =>
                 {
-                    new()
+                    if (i == 0)
                     {
-                        DocumentType = "AF Form 348",
-                        FileName = $"AF348_{lastName}_{incidentDate:yyyyMMdd}-{(i + 1):D3}.pdf",
-                        UploadDate = initiationDate.AddDays(rng.Next(3, 10)),
-                        Description = "Line of Duty Determination form"
+                        step.StartDate = incidentDate;
                     }
-                },
-                TimelineSteps = new List<TimelineStep>
+
+                    return step;
+                }).ToList(),
+                WorkflowStateHistories = new List<WorkflowStateHistory>
                 {
-                    new()
-                    {
-                        StepDescription = "Member Reports Injury/Illness",
-                        TimelineDays = rng.Next(1, 3),
-                        StartDate = incidentDate,
-                        CompletionDate = null,
-                        IsOptional = false
-                    },
-                    new()
-                    {
-                        StepDescription = "Medical Provider Review",
-                        TimelineDays = rng.Next(3, 7),
-                        StartDate = null,
-                        CompletionDate = null,
-                        IsOptional = false
-                    },
-                    new()
-                    {
-                        StepDescription = "Commander Review and Endorsement",
-                        TimelineDays = rng.Next(7, 21),
-                        StartDate = null,
-                        CompletionDate = null,
-                        IsOptional = false
-                    }
+                    WorkflowStateHistoryFactory.CreateInitialHistory(0, WorkflowState.MemberInformationEntry, initiationDate)
                 },
-                Appeals = new List<LineOfDutyAppeal>(),
-                Notifications = GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)
+                Appeals = [],
+                Notifications = []//GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)
             };
 
             cases.Add(lodCase);

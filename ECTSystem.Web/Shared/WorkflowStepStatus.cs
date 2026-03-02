@@ -1,11 +1,2 @@
-namespace ECTSystem.Web.Shared;
-
-public enum WorkflowStepStatus
-{
-    Completed,
-    InProgress,
-    Pending,
-    Cancelled,
-    OnHold,
-    Closed
-}
+// Moved to ECTSystem.Shared.Enums.WorkflowStepStatus
+// References in this namespace resolve via `using ECTSystem.Shared.Enums;` or _Imports.razor.

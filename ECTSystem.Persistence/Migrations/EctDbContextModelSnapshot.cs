@@ -33,8 +33,20 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<DateTime>("BookmarkedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("LineOfDutyCaseId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
                         .HasMaxLength(256)
@@ -81,7 +93,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("StartDate")
@@ -124,7 +136,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("NewEvidence")
@@ -171,7 +183,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
@@ -438,7 +450,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<bool?>("NotifiedMedicalUnitTimely")
@@ -648,7 +660,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UploadDate")
@@ -659,120 +671,6 @@ namespace ECTSystem.Persistence.Migrations
                     b.HasIndex("LineOfDutyCaseId");
 
                     b.ToTable("Documents");
-                });
-
-            modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyWorkflowStateLookup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("LineOfDutyWorkflowState", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Enter member identification and incident details to initiate the LOD case.",
-                            DisplayOrder = 1,
-                            Name = "Member Information Entry"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Medical technician reviews the injury/illness and documents clinical findings.",
-                            DisplayOrder = 2,
-                            Name = "Medical Technician Review"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Medical officer reviews the technician's findings and provides a clinical assessment.",
-                            DisplayOrder = 3,
-                            Name = "Medical Officer Review"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Unit commander reviews the case and submits a recommendation for the LOD determination.",
-                            DisplayOrder = 4,
-                            Name = "Unit CC Review"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance.",
-                            DisplayOrder = 5,
-                            Name = "Wing JA Review"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Description = "Appointing authority reviews the case and issues a formal LOD determination.",
-                            DisplayOrder = 6,
-                            Name = "Appointing Authority Review"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Description = "Wing commander reviews the case and renders a preliminary LOD determination.",
-                            DisplayOrder = 7,
-                            Name = "Wing CC Review"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Description = "Board medical technician reviews the case file for completeness and accuracy.",
-                            DisplayOrder = 8,
-                            Name = "Board Technician Review"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Description = "Board medical officer reviews all medical evidence and provides a formal assessment.",
-                            DisplayOrder = 9,
-                            Name = "Board Medical Review"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Description = "Board legal counsel reviews the case for legal sufficiency before final decision.",
-                            DisplayOrder = 10,
-                            Name = "Board Legal Review"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Description = "Board administrative officer finalizes the case package and prepares the formal determination.",
-                            DisplayOrder = 11,
-                            Name = "Board Admin Review"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Description = "LOD determination has been finalized and the case is closed.",
-                            DisplayOrder = 12,
-                            Name = "Completed"
-                        });
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.MEDCONDetail", b =>
@@ -801,7 +699,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("OutOfLocalAreaLeaveApproved")
@@ -856,7 +754,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Rank")
@@ -899,7 +797,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("NotificationType")
@@ -947,7 +845,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ModifiedDate")
+                    b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("ResponsibleAuthorityId")
@@ -968,6 +866,9 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("TimelineDays")
                         .HasColumnType("int");
 
+                    b.Property<int?>("WorkflowState")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("LineOfDutyCaseId");
@@ -977,12 +878,538 @@ namespace ECTSystem.Persistence.Migrations
                     b.ToTable("TimelineSteps");
                 });
 
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowModule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("WorkflowModules", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Air Force Reserve Command workflow module.",
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "AFRC"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Air National Guard workflow module.",
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "ANG"
+                        });
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LineOfDutyCaseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PerformedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SignedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkflowState")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LineOfDutyCaseId", "WorkflowState");
+
+                    b.ToTable("WorkflowStateHistories");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("WorkflowTypeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkflowTypeId");
+
+                    b.HasIndex("Name", "WorkflowTypeId")
+                        .IsUnique();
+
+                    b.ToTable("WorkflowStates", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Enter member identification and incident details to initiate the LOD case.",
+                            DisplayOrder = 1,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Member Information Entry",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Medical technician reviews the injury/illness and documents clinical findings.",
+                            DisplayOrder = 2,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Medical Technician Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Medical officer reviews the technician's findings and provides a clinical assessment.",
+                            DisplayOrder = 3,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Medical Officer Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Unit commander reviews the case and submits a recommendation for the LOD determination.",
+                            DisplayOrder = 4,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Unit CC Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance.",
+                            DisplayOrder = 5,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Wing JA Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Appointing authority reviews the case and issues a formal LOD determination.",
+                            DisplayOrder = 6,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Appointing Authority Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Wing commander reviews the case and renders a preliminary LOD determination.",
+                            DisplayOrder = 7,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Wing CC Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 8,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board medical technician reviews the case file for completeness and accuracy.",
+                            DisplayOrder = 8,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Technician Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 9,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board medical officer reviews all medical evidence and provides a formal assessment.",
+                            DisplayOrder = 9,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Medical Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 10,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board legal counsel reviews the case for legal sufficiency before final decision.",
+                            DisplayOrder = 10,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Legal Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 11,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board administrative officer finalizes the case package and prepares the formal determination.",
+                            DisplayOrder = 11,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Admin Review",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 12,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "LOD determination has been finalized and the case is closed.",
+                            DisplayOrder = 12,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Completed",
+                            WorkflowTypeId = 1
+                        },
+                        new
+                        {
+                            Id = 13,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Enter member identification and incident details to initiate the LOD case.",
+                            DisplayOrder = 1,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Member Information Entry",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 14,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Medical technician reviews the injury/illness and documents clinical findings.",
+                            DisplayOrder = 2,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Medical Technician Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 15,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Medical officer reviews the technician's findings and provides a clinical assessment.",
+                            DisplayOrder = 3,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Medical Officer Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 16,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Unit commander reviews the case and submits a recommendation for the LOD determination.",
+                            DisplayOrder = 4,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Unit CC Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 17,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance.",
+                            DisplayOrder = 5,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Wing JA Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 18,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Appointing authority reviews the case and issues a formal LOD determination.",
+                            DisplayOrder = 6,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Appointing Authority Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 19,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Wing commander reviews the case and renders a preliminary LOD determination.",
+                            DisplayOrder = 7,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Wing CC Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 20,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board medical technician reviews the case file for completeness and accuracy.",
+                            DisplayOrder = 8,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Technician Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 21,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board medical officer reviews all medical evidence and provides a formal assessment.",
+                            DisplayOrder = 9,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Medical Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 22,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board legal counsel reviews the case for legal sufficiency before final decision.",
+                            DisplayOrder = 10,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Legal Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 23,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Board administrative officer finalizes the case package and prepares the formal determination.",
+                            DisplayOrder = 11,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Board Admin Review",
+                            WorkflowTypeId = 2
+                        },
+                        new
+                        {
+                            Id = 24,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "LOD determination has been finalized and the case is closed.",
+                            DisplayOrder = 12,
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Completed",
+                            WorkflowTypeId = 2
+                        });
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("WorkflowModuleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkflowModuleId");
+
+                    b.HasIndex("Name", "WorkflowModuleId")
+                        .IsUnique();
+
+                    b.ToTable("WorkflowTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Informal LOD determination process.",
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Informal",
+                            WorkflowModuleId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedBy = "",
+                            CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Formal LOD determination process.",
+                            ModifiedBy = "",
+                            ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Formal",
+                            WorkflowModuleId = 1
+                        });
+                });
+
             modelBuilder.Entity("ECTSystem.Shared.Models.CaseBookmark", b =>
                 {
                     b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", null)
                         .WithMany()
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired();
                 });
 
@@ -993,21 +1420,25 @@ namespace ECTSystem.Persistence.Migrations
                         .HasForeignKey("AppellateAuthorityId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", null)
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
                         .WithMany("Appeals")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired();
 
                     b.Navigation("AppellateAuthority");
+
+                    b.Navigation("LineOfDutyCase");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyAuthority", b =>
                 {
-                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", null)
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
                         .WithMany("Authorities")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.Navigation("LineOfDutyCase");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyCase", b =>
@@ -1025,9 +1456,9 @@ namespace ECTSystem.Persistence.Migrations
                         .IsRequired();
 
                     b.HasOne("ECTSystem.Shared.Models.Member", "Member")
-                        .WithMany()
+                        .WithMany("LineOfDutyCases")
                         .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("INCAP");
@@ -1039,28 +1470,32 @@ namespace ECTSystem.Persistence.Migrations
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyDocument", b =>
                 {
-                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", null)
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
                         .WithMany("Documents")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired();
+
+                    b.Navigation("LineOfDutyCase");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.Notification", b =>
                 {
-                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", null)
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
                         .WithMany("Notifications")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired();
+
+                    b.Navigation("LineOfDutyCase");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.TimelineStep", b =>
                 {
-                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", null)
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
                         .WithMany("TimelineSteps")
                         .HasForeignKey("LineOfDutyCaseId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired();
 
                     b.HasOne("ECTSystem.Shared.Models.LineOfDutyAuthority", "ResponsibleAuthority")
@@ -1068,7 +1503,42 @@ namespace ECTSystem.Persistence.Migrations
                         .HasForeignKey("ResponsibleAuthorityId")
                         .OnDelete(DeleteBehavior.NoAction);
 
+                    b.Navigation("LineOfDutyCase");
+
                     b.Navigation("ResponsibleAuthority");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateHistory", b =>
+                {
+                    b.HasOne("ECTSystem.Shared.Models.LineOfDutyCase", "LineOfDutyCase")
+                        .WithMany("WorkflowStateHistories")
+                        .HasForeignKey("LineOfDutyCaseId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired();
+
+                    b.Navigation("LineOfDutyCase");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>
+                {
+                    b.HasOne("ECTSystem.Shared.Models.WorkflowType", "WorkflowType")
+                        .WithMany("WorkflowStates")
+                        .HasForeignKey("WorkflowTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("WorkflowType");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowType", b =>
+                {
+                    b.HasOne("ECTSystem.Shared.Models.WorkflowModule", "WorkflowModule")
+                        .WithMany("WorkflowTypes")
+                        .HasForeignKey("WorkflowModuleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("WorkflowModule");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyCase", b =>
@@ -1082,6 +1552,23 @@ namespace ECTSystem.Persistence.Migrations
                     b.Navigation("Notifications");
 
                     b.Navigation("TimelineSteps");
+
+                    b.Navigation("WorkflowStateHistories");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.Member", b =>
+                {
+                    b.Navigation("LineOfDutyCases");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowModule", b =>
+                {
+                    b.Navigation("WorkflowTypes");
+                });
+
+            modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowType", b =>
+                {
+                    b.Navigation("WorkflowStates");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,254 @@
+@page "/"
+@attribute [Authorize]
+
+<PageTitle>Dashboard - Electronic Case Tracking System</PageTitle>
+
+<div class="rz-p-0 rz-p-md-4">
+    <!-- Top Header -->
+    <RadzenRow AlignItems="AlignItems.Center" class="rz-mb-6">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText TextStyle="TextStyle.H4" class="rz-m-0 rz-color-white rz-font-weight-bold">
+                Dashboard
+            </RadzenText>
+            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0 rz-mt-1">
+                Welcome back, here's what's happening today.
+            </RadzenText>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.End" Wrap="FlexWrap.Wrap">
+                <RadzenTextBox Placeholder="Search Anything..." class="rz-border-radius-4" Style="width: 250px;" />
+                <RadzenButton Text="Invite" Icon="person_add" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="rz-border-radius-4" />
+                <RadzenButton Text="Add New" Icon="add" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@OnCreateCase" class="rz-border-radius-4" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Filters Row -->
+    <RadzenRow AlignItems="AlignItems.Center" class="rz-mb-6">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenSelectBar @bind-Value="selectedTimeframe" TValue="int" class="rz-border-radius-4">
+                <Items>
+                    <RadzenSelectBarItem Text="30 Days" Value="@(1)" />
+                    <RadzenSelectBarItem Text="3 Months" Value="@(2)" />
+                    <RadzenSelectBarItem Text="1 Year" Value="@(3)" />
+                </Items>
+            </RadzenSelectBar>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.End" Wrap="FlexWrap.Wrap">
+                <RadzenButton Text="Export" Icon="file_download" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="rz-border-radius-4" />
+                <RadzenDropDown Data="@newOptions" @bind-Value="selectedNewOption" class="rz-border-radius-4" Style="width: 120px;" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (isLoading)
+    {
+        <RadzenRow class="rz-mb-6">
+            @for (int i = 0; i < 4; i++)
+            {
+                <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+                    <RadzenSkeleton class="rz-w-100 rz-border-radius-4" Style="height: 140px;" Animation="SkeletonAnimation.Wave" />
+                </RadzenColumn>
+            }
+        </RadzenRow>
+        <RadzenRow class="rz-mb-6">
+            <RadzenColumn Size="12" SizeLG="8">
+                <RadzenSkeleton class="rz-w-100 rz-border-radius-4" Style="height: 350px;" Animation="SkeletonAnimation.Wave" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeLG="4">
+                <RadzenSkeleton class="rz-w-100 rz-border-radius-4" Style="height: 350px;" Animation="SkeletonAnimation.Wave" />
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow>
+            <RadzenColumn Size="12">
+                <RadzenSkeleton class="rz-w-100 rz-border-radius-4" Style="height: 400px;" Animation="SkeletonAnimation.Wave" />
+            </RadzenColumn>
+        </RadzenRow>
+    }
+    else
+    {
+        <!-- KPI Cards -->
+        <RadzenRow class="rz-mb-6">
+            <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-4 rz-w-100 dashboard-card">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start">
+                        <RadzenStack Gap="0">
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0 rz-mb-2">Awaiting Action</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" class="rz-color-white rz-font-weight-bold rz-m-0">@actionRequiredCount</RadzenText>
+                        </RadzenStack>
+                        <div class="rz-p-2 rz-border-radius-circle rz-display-flex rz-align-items-center rz-justify-content-center" style="background-color: rgba(var(--rz-warning-rgb), 0.15); width: 48px; height: 48px;">
+                            <RadzenIcon Icon="assignment_late" class="rz-color-warning rz-text-h5 rz-m-0" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Caption" class="rz-m-0 rz-mt-4 rz-display-flex rz-align-items-center">
+                        <RadzenIcon Icon="trending_up" class="rz-color-success rz-mr-1" Style="font-size: 16px;" />
+                        <span class="rz-color-success rz-font-weight-bold rz-mr-1">+2 (10%)</span>
+                        <span class="rz-color-on-base-lighter">Last 30 Days</span>
+                    </RadzenText>
+                </RadzenCard>
+            </RadzenColumn>
+            
+            <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-4 rz-w-100 dashboard-card">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start">
+                        <RadzenStack Gap="0">
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0 rz-mb-2">Bookmarked</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" class="rz-color-white rz-font-weight-bold rz-m-0">@bookmarkedCount</RadzenText>
+                        </RadzenStack>
+                        <div class="rz-p-2 rz-border-radius-circle rz-display-flex rz-align-items-center rz-justify-content-center" style="background-color: rgba(var(--rz-info-rgb), 0.15); width: 48px; height: 48px;">
+                            <RadzenIcon Icon="bookmarks" class="rz-color-info rz-text-h5 rz-m-0" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Caption" class="rz-m-0 rz-mt-4 rz-display-flex rz-align-items-center">
+                        <RadzenIcon Icon="trending_up" class="rz-color-success rz-mr-1" Style="font-size: 16px;" />
+                        <span class="rz-color-success rz-font-weight-bold rz-mr-1">+1 (5%)</span>
+                        <span class="rz-color-on-base-lighter">Last 30 Days</span>
+                    </RadzenText>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-4 rz-w-100 dashboard-card">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start">
+                        <RadzenStack Gap="0">
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0 rz-mb-2">My Active Cases</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" class="rz-color-white rz-font-weight-bold rz-m-0">@myActiveCasesCount</RadzenText>
+                        </RadzenStack>
+                        <div class="rz-p-2 rz-border-radius-circle rz-display-flex rz-align-items-center rz-justify-content-center" style="background-color: rgba(var(--rz-primary-rgb), 0.15); width: 48px; height: 48px;">
+                            <RadzenIcon Icon="person" class="rz-color-primary rz-text-h5 rz-m-0" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Caption" class="rz-m-0 rz-mt-4 rz-display-flex rz-align-items-center">
+                        <RadzenIcon Icon="trending_flat" class="rz-color-on-base-lighter rz-mr-1" Style="font-size: 16px;" />
+                        <span class="rz-color-on-base-lighter rz-font-weight-bold rz-mr-1">0 (0%)</span>
+                        <span class="rz-color-on-base-lighter">Last 30 Days</span>
+                    </RadzenText>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-4 rz-w-100 dashboard-card">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start">
+                        <RadzenStack Gap="0">
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0 rz-mb-2">Completed</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" class="rz-color-white rz-font-weight-bold rz-m-0">@completedCasesCount</RadzenText>
+                        </RadzenStack>
+                        <div class="rz-p-2 rz-border-radius-circle rz-display-flex rz-align-items-center rz-justify-content-center" style="background-color: rgba(var(--rz-success-rgb), 0.15); width: 48px; height: 48px;">
+                            <RadzenIcon Icon="check_circle" class="rz-color-success rz-text-h5 rz-m-0" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Caption" class="rz-m-0 rz-mt-4 rz-display-flex rz-align-items-center">
+                        <RadzenIcon Icon="trending_down" class="rz-color-danger rz-mr-1" Style="font-size: 16px;" />
+                        <span class="rz-color-danger rz-font-weight-bold rz-mr-1">-1 (2%)</span>
+                        <span class="rz-color-on-base-lighter">Last 30 Days</span>
+                    </RadzenText>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+
+        <!-- Charts Row -->
+        <RadzenRow class="rz-mb-6">
+            <RadzenColumn Size="12" SizeLG="8">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-4 dashboard-card rz-h-100">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start">
+                        <RadzenStack Gap="0">
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-color-white rz-m-0 rz-font-weight-medium">Case Flow</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0">Total cases over time</RadzenText>
+                        </RadzenStack>
+                        <RadzenButton Icon="more_horiz" ButtonStyle="ButtonStyle.Base" Variant="Variant.Text" Size="ButtonSize.Small" />
+                    </RadzenStack>
+                    <div class="rz-mt-4" style="height: 280px;">
+                        <RadzenChart>
+                            <RadzenLineSeries Smooth="true" Data="@casesOverTimeData" CategoryProperty="Date" Title="Cases" LineType="LineType.Solid" ValueProperty="Count">
+                                <RadzenMarkers MarkerType="MarkerType.Circle" />
+                                <RadzenSeriesDataLabels Visible="false" />
+                            </RadzenLineSeries>
+                            <RadzenCategoryAxis Padding="20" />
+                            <RadzenValueAxis>
+                                <RadzenGridLines Visible="true" />
+                                <RadzenAxisTitle Text="Cases" />
+                            </RadzenValueAxis>
+                            <RadzenLegend Visible="false" />
+                        </RadzenChart>
+                    </div>
+                </RadzenCard>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeLG="4">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-4 dashboard-card rz-h-100">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start" class="rz-mb-4">
+                        <RadzenText TextStyle="TextStyle.H6" class="rz-color-white rz-m-0 rz-font-weight-medium">Status Breakdown</RadzenText>
+                        <RadzenButton Icon="more_horiz" ButtonStyle="ButtonStyle.Base" Variant="Variant.Text" Size="ButtonSize.Small" />
+                    </RadzenStack>
+                    <div class="rz-display-flex rz-align-items-center rz-justify-content-center" style="height: 220px;">
+                        <RadzenChart Style="width: 100%; height: 100%;">
+                            <RadzenDonutSeries Data="@casesByStatusData" CategoryProperty="Status" ValueProperty="Count" Title="Cases" Fills="@(new [] { "var(--rz-primary)", "var(--rz-secondary)", "var(--rz-info)", "var(--rz-success)" })">
+                                <ChildContent>
+                                    <RadzenSeriesDataLabels Visible="false" />
+                                </ChildContent>
+                                <TitleTemplate>
+                                    <div class="rz-donut-content">
+                                        <div class="rz-text-h4 rz-color-white rz-font-weight-bold">45</div>
+                                        <div class="rz-text-caption rz-color-on-base-lighter">Total</div>
+                                    </div>
+                                </TitleTemplate>
+                            </RadzenDonutSeries>
+                            <RadzenLegend Position="LegendPosition.Bottom" />
+                        </RadzenChart>
+                    </div>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+
+        <!-- Data Grid -->
+        <RadzenRow>
+            <RadzenColumn Size="12">
+                <RadzenCard Variant="Variant.Flat" class="rz-shadow-3 rz-border-radius-4 rz-p-0 dashboard-card">
+                    <div class="rz-p-4 rz-border-bottom-base-300" style="border-bottom: 1px solid var(--rz-base-300);">
+                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Gap="1rem">
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.H6" class="rz-color-white rz-font-weight-medium rz-m-0">Action Required Cases</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2" class="rz-color-on-base-lighter rz-m-0">@actionRequiredCount cases need your attention</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                                <RadzenTextBox Placeholder="Search..." class="rz-border-radius-4" Style="width: 200px;" />
+                                <RadzenButton Text="Filter" Icon="filter_alt" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="rz-border-radius-4" />
+                            </RadzenStack>
+                        </RadzenStack>
+                    </div>
+
+                    <RadzenDataGrid TItem="LineOfDutyCase" Data="@actionRequiredCases" AllowSorting="true" AllowPaging="true" PageSize="5" AllowColumnResize="true" class="rz-border-radius-0 rz-shadow-0" GridLines="Radzen.DataGridGridLines.Horizontal">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="150px">
+                                <Template Context="lodCase">
+                                    <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" class="rz-color-primary rz-font-weight-medium" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member">
+                                <Template Context="lodCase">
+                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                        <RadzenIcon Icon="account_circle" class="rz-color-on-base-lighter" />
+                                        <span class="rz-color-white">@lodCase.MemberName</span>
+                                    </RadzenStack>
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" HeaderCssClass="rz-display-none rz-display-md-table-cell" CssClass="rz-display-none rz-display-md-table-cell" />
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="WorkflowState" Title="Status" Width="200px">
+                                <Template Context="lodCase">
+                                    <RadzenBadge BadgeStyle="GetBadgeStyle(lodCase.WorkflowState)" Text="@lodCase.WorkflowState.ToDisplayString()" class="rz-border-radius-4 rz-px-2 rz-py-1" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" Width="150px" HeaderCssClass="rz-display-none rz-display-sm-table-cell" CssClass="rz-display-none rz-display-sm-table-cell" />
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" Width="120px" HeaderCssClass="rz-display-none rz-display-lg-table-cell" CssClass="rz-display-none rz-display-lg-table-cell">
+                                <Template Context="lodCase">
+                                    <span class="rz-color-info">@lodCase.ProcessType.ToDisplayString()</span>
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    }
+</div>
