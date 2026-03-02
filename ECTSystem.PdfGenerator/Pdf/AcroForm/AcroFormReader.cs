@@ -151,7 +151,8 @@ public sealed class AcroFormReader
                     ObjectNumber = objectNumber,
                     Generation = generation,
                     CurrentValue = GetFieldValue(fieldDict),
-                    OnValue = onValue
+                    OnValue = onValue,
+                    FieldFlags = fieldDict.GetNumber("Ff")?.IntValue ?? 0
                 });
             }
             else
@@ -174,7 +175,8 @@ public sealed class AcroFormReader
                 ObjectNumber = objectNumber,
                 Generation = generation,
                 CurrentValue = GetFieldValue(fieldDict),
-                OnValue = onValue
+                OnValue = onValue,
+                FieldFlags = fieldDict.GetNumber("Ff")?.IntValue ?? 0
             });
         }
     }

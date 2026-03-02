@@ -17,4 +17,5 @@ public sealed class AcroFormField
     public required int Generation { get; init; }
     public string CurrentValue { get; init; }
     public string OnValue { get; init; }
+    public int FieldFlags { get; init; }
 }

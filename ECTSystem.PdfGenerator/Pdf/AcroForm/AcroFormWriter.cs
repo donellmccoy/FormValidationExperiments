@@ -19,6 +19,20 @@ public sealed class AcroFormWriter
     /// </summary>
     public byte[] FillFields(Dictionary<string, string> fieldValues)
     {
+        return WriteIncrementalUpdate(fieldValues, readOnly: false);
+    }
+
+    /// <summary>
+    /// Sets the ReadOnly flag (bit 1 of /Ff) on all form fields via an incremental update.
+    /// Existing field flags are preserved; only the ReadOnly bit is added.
+    /// </summary>
+    public byte[] SetFieldsReadOnly()
+    {
+        return WriteIncrementalUpdate(fieldValues: null, readOnly: true);
+    }
+
+    private byte[] WriteIncrementalUpdate(Dictionary<string, string>? fieldValues, bool readOnly)
+    {
         var parser = new PdfParser(_originalPdf);
         var reader = new AcroFormReader(parser);
         var fields = reader.ReadFields();
@@ -31,12 +45,29 @@ public sealed class AcroFormWriter
         }
 
         // Determine which fields to update
-        var updates = new List<(AcroFormField Field, string NewValue)>();
-        foreach (var (name, value) in fieldValues)
+        var updates = new List<(AcroFormField Field, string? NewValue)>();
+
+        if (fieldValues is not null)
         {
-            if (fieldsByName.TryGetValue(name, out var field) && field.ObjectNumber > 0)
+            foreach (var (name, value) in fieldValues)
             {
-                updates.Add((field, value));
+                if (fieldsByName.TryGetValue(name, out var field) && field.ObjectNumber > 0)
+                {
+                    updates.Add((field, value));
+                }
+            }
+        }
+
+        if (readOnly)
+        {
+            // Add all fields not already in the update list
+            var alreadyUpdating = new HashSet<int>(updates.Select(u => u.Field.ObjectNumber));
+            foreach (var field in fields)
+            {
+                if (field.ObjectNumber > 0 && alreadyUpdating.Add(field.ObjectNumber))
+                {
+                    updates.Add((field, null));
+                }
             }
         }
 
@@ -66,7 +97,7 @@ public sealed class AcroFormWriter
             var entry = parser.XRefTable.GetEntry(field.ObjectNumber);
             var gen = entry?.Generation ?? 0;
 
-            WriteModifiedFieldObject(ms, field, originalDict, newValue, gen, parser);
+            WriteModifiedFieldObject(ms, field, originalDict, newValue, gen, parser, readOnly);
             newXRefEntries.Add((field.ObjectNumber, gen, offset));
         }
 
@@ -96,28 +127,46 @@ public sealed class AcroFormWriter
         MemoryStream ms,
         AcroFormField field,
         PdfDictionary originalDict,
-        string newValue,
+        string? newValue,
         int generation,
-        PdfParser parser)
+        PdfParser parser,
+        bool readOnly)
     {
+        const int readOnlyBit = 1; // Bit 1 of /Ff = ReadOnly
+
         WriteAscii(ms, $"{field.ObjectNumber} {generation} obj\n");
         WriteAscii(ms, "<<\n");
 
-        // Write all original entries except /V, /AS, and /AP for text fields only.
+        // Write all original entries except /V, /AS, /Ff, and /AP for text fields only.
         // For checkboxes/radios, keep /AP so the existing appearance streams are preserved —
         // the /AS entry selects which appearance to display.
         // For text fields, clear /AP to force regeneration via /NeedAppearances.
         var isCheckboxOrRadio = field.FieldType is PdfFieldType.Checkbox or PdfFieldType.Radio;
+        var existingFf = 0;
+
         foreach (var (key, value) in originalDict.Entries)
         {
             if (key is "V" or "AS")
             {
+                if (newValue is null)
+                {
+                    // No new value — preserve the original
+                    WriteAscii(ms, $"/{key} ");
+                    WritePdfObject(ms, value);
+                    WriteAscii(ms, "\n");
+                }
                 continue;
             }
 
-            if (key is "AP" && !isCheckboxOrRadio)
+            if (key is "AP" && !isCheckboxOrRadio && newValue is not null)
             {
                 continue;
+            }
+
+            if (key is "Ff")
+            {
+                existingFf = value is PdfNumber num ? num.IntValue : 0;
+                continue; // will write updated /Ff below
             }
 
             WriteAscii(ms, $"/{key} ");
@@ -125,22 +174,35 @@ public sealed class AcroFormWriter
             WriteAscii(ms, "\n");
         }
 
-        // Write new value
-        if (field.FieldType is PdfFieldType.Checkbox or PdfFieldType.Radio)
+        // Write /Ff with ReadOnly bit set (preserving other flags)
+        if (readOnly)
         {
-            // Checkbox/Radio: value is a name (/Yes or /Off)
-            var isChecked = newValue is "Yes" or "yes" or "true" or "True" or "1";
-            var onValue = field.OnValue ?? "Yes";
-            var nameValue = isChecked ? onValue : "Off";
-
-            WriteAscii(ms, $"/V /{nameValue}\n");
-            WriteAscii(ms, $"/AS /{nameValue}\n");
+            WriteAscii(ms, $"/Ff {existingFf | readOnlyBit}\n");
         }
-        else
+        else if (existingFf != 0)
         {
-            // Text field: value is a hex string
-            var hexValue = ToHexString(newValue);
-            WriteAscii(ms, $"/V {hexValue}\n");
+            WriteAscii(ms, $"/Ff {existingFf}\n");
+        }
+
+        // Write new value if provided
+        if (newValue is not null)
+        {
+            if (field.FieldType is PdfFieldType.Checkbox or PdfFieldType.Radio)
+            {
+                // Checkbox/Radio: value is a name (/Yes or /Off)
+                var isChecked = newValue is "Yes" or "yes" or "true" or "True" or "1";
+                var onValue = field.OnValue ?? "Yes";
+                var nameValue = isChecked ? onValue : "Off";
+
+                WriteAscii(ms, $"/V /{nameValue}\n");
+                WriteAscii(ms, $"/AS /{nameValue}\n");
+            }
+            else
+            {
+                // Text field: value is a hex string
+                var hexValue = ToHexString(newValue);
+                WriteAscii(ms, $"/V {hexValue}\n");
+            }
         }
 
         WriteAscii(ms, ">>\n");

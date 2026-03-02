@@ -607,14 +607,8 @@ public class AcroFormFieldReadWriteTests : IDisposable
             }
         }
 
-        // Some fields may legitimately be null (e.g., psychiatric eval date when no eval)
-        // but verify most fields have values
-        var mappedCount = fieldMappings.Count;
-        var nullCount = nullFields.Count;
-        var filledCount = mappedCount - nullCount;
-
-        Assert.True(filledCount > mappedCount / 2,
-            $"Only {filledCount}/{mappedCount} mapped fields have values for sample case. Null fields:\n{string.Join("\n", nullFields)}");
+        Assert.True(nullFields.Count == 0,
+            $"{nullFields.Count} mapped field(s) returned null for sample case:\n{string.Join("\n", nullFields)}");
     }
 
     // ───────────────────────────────────────────────
@@ -823,8 +817,13 @@ public class AcroFormFieldReadWriteTests : IDisposable
             ClinicalDiagnosis = "Right knee medial meniscus tear, acute.",
             MedicalFindings = "Swelling and tenderness of right knee.",
             WasUnderInfluence = false,
+            SubstanceType = Shared.Enums.SubstanceType.Alcohol,
+            ToxicologyReport = "Blood alcohol content 0.00%, no substances detected",
             WasMentallyResponsible = true,
-            PsychiatricEvalCompleted = false,
+            PsychiatricEvalCompleted = true,
+            PsychiatricEvalDate = new DateTime(2025, 3, 16),
+            PsychiatricEvalResults = "No psychiatric conditions found. Member fully competent.",
+            OtherRelevantConditions = "No other relevant pre-existing conditions noted",
             OtherTestsDone = true,
             OtherTestDate = new DateTime(2025, 3, 16),
             OtherTestResults = "MRI right knee: Grade II medial meniscus tear confirmed.",
@@ -912,5 +911,126 @@ public class AcroFormFieldReadWriteTests : IDisposable
             ApprovingFinding = Shared.Enums.LineOfDutyFinding.InLineOfDuty,
             ApprovingReferForFormal = false,
         };
+    }
+
+    // ───────────────────────────────────────────────
+    //  Read-Only Tests
+    // ───────────────────────────────────────────────
+
+    [Fact]
+    public void SetFieldsReadOnly_AllFieldsHaveReadOnlyFlag()
+    {
+        var writer = new AcroFormWriter(_templateBytes);
+        var readOnlyPdf = writer.SetFieldsReadOnly();
+
+        var parser = new PdfParser(readOnlyPdf);
+        var reader = new AcroFormReader(parser);
+        var fields = reader.ReadFields();
+
+        foreach (var field in fields)
+        {
+            Assert.True((field.FieldFlags & 1) != 0,
+                $"Field '{field.FullyQualifiedName}' is missing ReadOnly flag (Ff = {field.FieldFlags})");
+        }
+    }
+
+    [Fact]
+    public void SetFieldsReadOnly_PreservesExistingFieldValues()
+    {
+        // First fill fields with values
+        var sampleCase = CreateSampleCase();
+        var fieldMappings = Pdf.Af348FieldMap.CreateFieldMappings();
+        var fieldValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (pdfFieldName, valueExtractor) in fieldMappings)
+        {
+            var value = valueExtractor(sampleCase);
+            if (value is not null)
+            {
+                fieldValues[pdfFieldName] = value;
+            }
+        }
+
+        var fillWriter = new AcroFormWriter(_templateBytes);
+        var filledPdf = fillWriter.FillFields(fieldValues);
+
+        // Then make read-only
+        var readOnlyWriter = new AcroFormWriter(filledPdf);
+        var readOnlyPdf = readOnlyWriter.SetFieldsReadOnly();
+
+        var parser = new PdfParser(readOnlyPdf);
+        var reader = new AcroFormReader(parser);
+        var fields = reader.ReadFields();
+
+        // Verify values are preserved
+        foreach (var kvp in fieldValues)
+        {
+            var field = fields.FirstOrDefault(f =>
+                string.Equals(f.FullyQualifiedName, kvp.Key, StringComparison.OrdinalIgnoreCase));
+            Assert.NotNull(field);
+            Assert.NotNull(field.CurrentValue);
+        }
+    }
+
+    [Fact]
+    public void SetFieldsReadOnly_PreservesExistingFfBits()
+    {
+        // Read original Ff values
+        var originalFields = _templateFields;
+
+        var writer = new AcroFormWriter(_templateBytes);
+        var readOnlyPdf = writer.SetFieldsReadOnly();
+
+        var parser = new PdfParser(readOnlyPdf);
+        var reader = new AcroFormReader(parser);
+        var readOnlyFields = reader.ReadFields();
+
+        foreach (var original in originalFields)
+        {
+            var readOnly = readOnlyFields.First(f =>
+                string.Equals(f.FullyQualifiedName, original.FullyQualifiedName, StringComparison.OrdinalIgnoreCase));
+
+            // All original bits should still be set, plus the ReadOnly bit
+            var expectedFf = original.FieldFlags | 1;
+            Assert.Equal(expectedFf, readOnly.FieldFlags);
+        }
+    }
+
+    [Fact]
+    public void FillFields_DoesNotSetReadOnlyFlag()
+    {
+        var sampleCase = CreateSampleCase();
+        var fieldMappings = Pdf.Af348FieldMap.CreateFieldMappings();
+        var fieldValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (pdfFieldName, valueExtractor) in fieldMappings)
+        {
+            var value = valueExtractor(sampleCase);
+            if (value is not null)
+            {
+                fieldValues[pdfFieldName] = value;
+            }
+        }
+
+        var writer = new AcroFormWriter(_templateBytes);
+        var filledPdf = writer.FillFields(fieldValues);
+
+        var parser = new PdfParser(filledPdf);
+        var reader = new AcroFormReader(parser);
+        var fields = reader.ReadFields();
+
+        // Fields that were filled should NOT have the ReadOnly flag set
+        // (unless they already had it in the template)
+        var templateReadOnlyFields = _templateFields
+            .Where(f => (f.FieldFlags & 1) != 0)
+            .Select(f => f.FullyQualifiedName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var field in fields)
+        {
+            if (!templateReadOnlyFields.Contains(field.FullyQualifiedName))
+            {
+                Assert.True((field.FieldFlags & 1) == 0,
+                    $"Field '{field.FullyQualifiedName}' gained ReadOnly flag unexpectedly (Ff = {field.FieldFlags})");
+            }
+        }
     }
 }

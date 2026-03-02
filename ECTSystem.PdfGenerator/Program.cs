@@ -94,9 +94,13 @@ static void FillWithSampleData(byte[] templateBytes, string outputPath)
     var writer = new AcroFormWriter(templateBytes);
     var filledPdf = writer.FillFields(fieldValues);
 
-    File.WriteAllBytes(outputPath, filledPdf);
+    // Make all fields read-only
+    var readOnlyWriter = new AcroFormWriter(filledPdf);
+    var readOnlyPdf = readOnlyWriter.SetFieldsReadOnly();
+
+    File.WriteAllBytes(outputPath, readOnlyPdf);
     Console.WriteLine($"Filled PDF written to: {Path.GetFullPath(outputPath)}");
-    Console.WriteLine($"Output size: {filledPdf.Length:N0} bytes");
+    Console.WriteLine($"Output size: {readOnlyPdf.Length:N0} bytes (read-only)");
 }
 
 static LineOfDutyCase CreateSampleCase()
@@ -140,8 +144,13 @@ static LineOfDutyCase CreateSampleCase()
         ClinicalDiagnosis = "Right knee medial meniscus tear, acute. MRI confirmed Grade II tear.",
         MedicalFindings = "Swelling and tenderness of right knee, limited range of motion.",
         WasUnderInfluence = false,
+        SubstanceType = SubstanceType.Alcohol,
+        ToxicologyReport = "Blood alcohol content 0.00%, no substances detected",
         WasMentallyResponsible = true,
-        PsychiatricEvalCompleted = false,
+        PsychiatricEvalCompleted = true,
+        PsychiatricEvalDate = new DateTime(2025, 3, 16),
+        PsychiatricEvalResults = "No psychiatric conditions found. Member fully competent.",
+        OtherRelevantConditions = "No other relevant pre-existing conditions noted",
         OtherTestsDone = true,
         OtherTestDate = new DateTime(2025, 3, 16),
         OtherTestResults = "MRI right knee: Grade II medial meniscus tear confirmed.",
