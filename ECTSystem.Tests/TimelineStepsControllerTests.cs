@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using ECTSystem.Api.Controllers;
+using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
@@ -12,7 +13,8 @@ public class TimelineStepsControllerTests : ControllerTestBase
 {
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
     private readonly DbContextOptions<EctDbContext>        _dbOptions;
-    private readonly TimelineStepsController          _sut;
+    private readonly Mock<ILoggingService>                  _mockLog;
+    private readonly TimelineStepsController                _sut;
 
     public TimelineStepsControllerTests()
     {
@@ -31,7 +33,9 @@ public class TimelineStepsControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _sut = new TimelineStepsController(_mockContextFactory.Object);
+        _mockLog = new Mock<ILoggingService>();
+
+        _sut = new TimelineStepsController(_mockContextFactory.Object, _mockLog.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 

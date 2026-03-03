@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using ECTSystem.Api.Controllers;
+using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
@@ -14,7 +15,8 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 {
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
     private readonly DbContextOptions<EctDbContext>        _dbOptions;
-    private readonly WorkflowStateHistoriesController    _sut;
+    private readonly Mock<ILoggingService>                  _mockLog;
+    private readonly WorkflowStateHistoriesController       _sut;
 
     public WorkflowStateHistoriesControllerTests()
     {
@@ -33,7 +35,9 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _sut = new WorkflowStateHistoriesController(_mockContextFactory.Object);
+        _mockLog = new Mock<ILoggingService>();
+
+        _sut = new WorkflowStateHistoriesController(_mockContextFactory.Object, _mockLog.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 
