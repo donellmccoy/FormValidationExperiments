@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
 
@@ -24,15 +25,24 @@ public partial class CaseList : ComponentBase, IDisposable
     [Inject]
     private NotificationService NotificationService { get; set; }
 
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    private RadzenDataGrid<LineOfDutyCase> _grid;
     private ODataEnumerable<LineOfDutyCase> cases;
     private IList<LineOfDutyCase> _selectedCases = [];
     private HashSet<int> bookmarkedCaseIds = [];
     private int count;
     private bool isLoading;
+    private string searchText = string.Empty;
+    private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
+    private CancellationTokenSource _searchCts = new();
 
     private async Task LoadData(LoadDataArgs args)
     {
+        _lastArgs = args;
+
         // Cancel any previous in-flight request
         await _loadCts.CancelAsync();
         _loadCts.Dispose();
@@ -43,8 +53,10 @@ public partial class CaseList : ComponentBase, IDisposable
 
         try
         {
+            var filter = CombineFilters(args.Filter, BuildSearchFilter(searchText));
+
             var result = await CaseService.GetCasesAsync(
-                filter: args.Filter,
+                filter: filter,
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
@@ -111,17 +123,101 @@ public partial class CaseList : ComponentBase, IDisposable
         await BookmarkCountService.RefreshAsync();
     }
 
+    private async Task OnSearchInput(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+
+        await _searchCts.CancelAsync();
+        _searchCts.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await _grid.FirstPage(true);
+    }
+
+    private static string BuildSearchFilter(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var escaped = text.Replace("'", "''");
+        string[] columns =
+        [
+            // Case / Member identification
+            "CaseId", "MemberName", "MemberRank", "ServiceNumber", "Unit",
+            "FromLine", "IncidentDescription", "PointOfContact",
+
+            // Medical assessment
+            "TreatmentFacilityName", "ClinicalDiagnosis", "MedicalFindings",
+            "PsychiatricEvalResults", "OtherRelevantConditions", "OtherTestResults",
+            "MedicalRecommendation",
+
+            // Commander review
+            "OtherSourcesDescription", "MisconductExplanation",
+            "CommanderToLine", "CommanderFromLine",
+            "WitnessNameAddress1", "WitnessNameAddress2", "WitnessNameAddress3",
+            "WitnessNameAddress4", "WitnessNameAddress5",
+
+            // Findings
+            "ProximateCause", "PSCDocumentation",
+
+            // Signatures / name-ranks
+            "ProviderNameRank", "ProviderSignature",
+            "CommanderNameRank", "CommanderSignature",
+            "SjaNameRank",
+            "WingCcSignature",
+            "AppointingAuthorityNameRank", "AppointingAuthoritySignature",
+
+            // Board review
+            "MedicalReviewText", "MedicalReviewerNameRank", "MedicalReviewerSignature",
+            "LegalReviewText", "LegalReviewerNameRank", "LegalReviewerSignature",
+            "LodBoardChairNameRank", "LodBoardChairSignature",
+
+            // Approving authority
+            "ApprovingAuthorityNameRank", "ApprovingAuthoritySignature",
+
+            // Special handling / evidence
+            "SARCCoordination", "ToxicologyReport"
+        ];
+        return string.Join(" or ", columns.Select(c => $"contains({c},'{escaped}')"));
+    }
+
+    private static string CombineFilters(string columnFilter, string searchFilter)
+    {
+        var hasColumn = !string.IsNullOrEmpty(columnFilter);
+        var hasSearch = !string.IsNullOrEmpty(searchFilter);
+
+        return (hasColumn, hasSearch) switch
+        {
+            (true, true) => $"({columnFilter}) and ({searchFilter})",
+            (true, false) => columnFilter,
+            (false, true) => searchFilter,
+            _ => null
+        };
+    }
+
     private void OnCreateCase()
     {
         Navigation.NavigateTo("/case/new");
     }
 
-    private void OnRowContextMenu(DataGridRowMouseEventArgs<LineOfDutyCase> args)
+    private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
     {
         _ = ShowContextMenuAsync(args);
     }
 
-    private async Task ShowContextMenuAsync(DataGridRowMouseEventArgs<LineOfDutyCase> args)
+    private async Task ShowContextMenuAsync(DataGridCellMouseEventArgs<LineOfDutyCase> args)
     {
         var lodCase = args.Data;
         var isBookmarked = await CaseService.IsBookmarkedAsync(lodCase.Id);
@@ -130,24 +226,42 @@ public partial class CaseList : ComponentBase, IDisposable
             [
                 new ContextMenuItem
                 {
+                    Text = "Open Case",
+                    Icon = "open_in_new",
+                    Value = "open"
+                },
+                new ContextMenuItem
+                {
                     Text = isBookmarked ? "Remove Bookmark" : "Add Bookmark",
-                    Icon = isBookmarked ? "bookmark_remove" : "bookmark_add"
+                    Icon = isBookmarked ? "bookmark_remove" : "bookmark_add",
+                    Value = "bookmark"
+                },
+                new ContextMenuItem
+                {
+                    Text = "Copy Case ID",
+                    Icon = "content_copy",
+                    Value = "copy"
                 }
             ],
-            async _ =>
+            async menuItem =>
             {
-                if (isBookmarked)
-                {
-                    await CaseService.RemoveBookmarkAsync(lodCase.Id);
-                    NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
-                }
-                else
-                {
-                    await CaseService.AddBookmarkAsync(lodCase.Id);
-                    NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
-                }
+                ContextMenuService.Close();
 
-                await BookmarkCountService.RefreshAsync();
+                switch (menuItem.Value?.ToString())
+                {
+                    case "open":
+                        Navigation.NavigateTo($"/case/{lodCase.CaseId}");
+                        break;
+
+                    case "bookmark":
+                        await ToggleBookmark(lodCase);
+                        break;
+
+                    case "copy":
+                        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", lodCase.CaseId);
+                        NotificationService.Notify(NotificationSeverity.Info, "Copied", $"Case ID {lodCase.CaseId} copied to clipboard.", closeOnClick: true);
+                        break;
+                }
             });
     }
 
@@ -155,5 +269,7 @@ public partial class CaseList : ComponentBase, IDisposable
     {
         _loadCts.Cancel();
         _loadCts.Dispose();
+        _searchCts.Cancel();
+        _searchCts.Dispose();
     }
 }

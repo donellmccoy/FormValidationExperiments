@@ -61,7 +61,7 @@ public class CasesController : ODataController
     /// The [EnableQuery] attribute lets the OData middleware apply $filter, $orderby,
     /// $top, $skip, and $count automatically against the IQueryable.
     /// </summary>
-    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxNodeCount = 200)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         _loggingService.QueryingCases();

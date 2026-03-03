@@ -359,7 +359,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 await RefreshPermittedTriggersAsync();
             }
 
-            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, targetState, _lodCase);
+            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
             _selectedTabIndex = GetTabIndexForState(targetState);
             NotificationService.Notify(severity, notifySummary, notifyDetail);
         }
@@ -441,7 +441,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
 
-                _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, _lodCase.WorkflowState, _lodCase);
+                _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
                 _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
 
                 TakeSnapshots();
@@ -499,7 +499,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _lodCase.AddHistoryEntry(historyEntry);
 
-            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_workflowSteps, _lodCase.WorkflowState, _lodCase);
+            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
             _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
 
             NotificationService.Notify(new NotificationMessage

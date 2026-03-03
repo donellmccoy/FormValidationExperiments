@@ -3,19 +3,19 @@
 
 <PageTitle>My Bookmarks - Electronic Case Tracking System</PageTitle>
 
-<div>
+<div class="rz-p-0 rz-p-md-4">
 @if (_isLoading && _bookmarks == null)
 {
     <RadzenStack Gap="1rem">
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
-                      Style="margin-bottom: 1rem;">
+                      class="rz-mb-4">
             <RadzenSkeleton Style="width: 240px; height: 32px;" Animation="SkeletonAnimation.Wave" />
         </RadzenStack>
-        <RadzenStack Gap="0" Style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 1rem;">
-            <RadzenSkeleton Style="width: 100%; height: 40px; margin-bottom: 0.75rem;" Animation="SkeletonAnimation.Wave" />
+        <RadzenStack Gap="0.5rem" class="rz-border-radius-2 rz-p-4">
+            <RadzenSkeleton Style="width: 100%; height: 40px;" Animation="SkeletonAnimation.Wave" />
             @for (var i = 0; i < 5; i++)
             {
-                <RadzenSkeleton Style="width: 100%; height: 36px; margin-bottom: 0.5rem;" Animation="SkeletonAnimation.Wave" />
+                <RadzenSkeleton Style="width: 100%; height: 36px;" Animation="SkeletonAnimation.Wave" />
             }
         </RadzenStack>
     </RadzenStack>
@@ -24,8 +24,8 @@ else
 {
 
 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
-              Style="margin-bottom: 1rem;">
-    <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 700; color: rgba(255, 255, 255, 0.87); margin: 0;">
+              class="rz-mb-4">
+    <RadzenText TextStyle="TextStyle.H5" class="rz-m-0" Style="font-weight: 700; color: var(--rz-text-color);">
         My Bookmarks
     </RadzenText>
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
@@ -50,17 +50,17 @@ else
                 PageSizeOptions="@(new[] { 5, 10, 25, 50 })"
                 PagerHorizontalAlign="HorizontalAlign.Center"
                 GridLines="DataGridGridLines.Both"
-                Style="border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+                class="rz-border-radius-2">
     <EmptyTemplate>
-        <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" Style="padding: 3rem 0;">
-            <span class="material-symbols-outlined" style="font-size: 48px; color: rgba(255, 255, 255, 0.3);">bookmarks</span>
-            <RadzenText TextStyle="TextStyle.Body1" Style="color: rgba(255, 255, 255, 0.5);">
+        <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" class="rz-py-12">
+            <RadzenIcon Icon="bookmarks" Style="font-size: 48px; color: var(--rz-text-disabled-color);" />
+            <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
                 No bookmarked cases yet. Open a case and click the bookmark icon to save it here.
             </RadzenText>
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="220px">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
             <Template Context="lodCase">
                 <div class="case-id-cell">
                     <RadzenLink Path="@($"case/{lodCase.CaseId}?from=bookmarks")" Text="@lodCase.CaseId" />
@@ -69,6 +69,18 @@ else
                                   title="Remove bookmark"
                                   Click="@(() => OnRemoveBookmark(lodCase))" />
                 </div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" Width="120px">
+            <Template Context="lodCase">
+                @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
+                {
+                    @($"***-**-{lodCase.ServiceNumber[^4..]}")
+                }
+                else
+                {
+                    @lodCase.ServiceNumber
+                }
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />

@@ -18,7 +18,7 @@ public partial class WorkflowSidebar : ComponentBase
     /// Medical Technician Review, Board Admin Review, Completed).
     /// </summary>
     [Parameter]
-    public List<WorkflowStep> Steps { get; set; } = new();
+    public List<WorkflowStep> Steps { get; set; } = [];
 
     /// <summary>
     /// The 0-based index of the currently active workflow step within <see cref="Steps"/>.
@@ -35,24 +35,40 @@ public partial class WorkflowSidebar : ComponentBase
     [Parameter]
     public EventCallback<WorkflowStep> OnStepClicked { get; set; }
 
+    private static List<WorkflowStep> _steps =
+    [
+        new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MemberInformationEntry,    Description = "Enter member identification and incident details to initiate the LOD case." },
+        new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalTechnicianReview,   Description = "Medical technician reviews the injury/illness and documents clinical findings." },
+        new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalOfficerReview,      Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
+        new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.UnitCommanderReview,       Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
+        new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingJudgeAdvocateReview,   Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
+        new() { Number = 6,  Name = "Appointing Authority",      Icon = "verified_user",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.AppointingAuthorityReview, Description = "Appointing authority reviews the case and issues a formal LOD determination." },
+        new() { Number = 7,  Name = "Wing CC Review",            Icon = "stars",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingCommanderReview,       Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
+        new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
+        new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalOfficerReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
+        new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
+        new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardAdministratorReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
+        new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
+    ];
+
     /// <summary>
     /// Synchronizes the workflow sidebar step statuses and computes the current step index
     /// to match <paramref name="state"/>. Uses <see cref="WorkflowStateHistory"/> entries
     /// as the primary source for step status, dates, and signatures; falls back to positional
     /// <see cref="TimelineStep"/> data for cases that predate the history feature.
     /// </summary>
-    /// <param name="steps">The list of workflow steps to update in place.</param>
-    /// <param name="state">The target <see cref="WorkflowState"/> to synchronize to.</param>
     /// <param name="lodCase">
     /// The LOD case whose <see cref="LineOfDutyCase.WorkflowStateHistories"/> and
     /// <see cref="LineOfDutyCase.TimelineSteps"/> are used to populate step metadata.
     /// May be <c>null</c> for new cases.
     /// </param>
+    /// 
+    /// 
     /// <returns>The 0-based index of the current step corresponding to <paramref name="state"/>.</returns>
-    public static int ApplyWorkflowState(List<WorkflowStep> steps, WorkflowState state, LineOfDutyCase lodCase)
+    public static int ApplyWorkflowState(LineOfDutyCase lodCase)
     {
         // Clamp to valid range — DB rows that predate the WorkflowState migration have int value 0
-        var stateInt = (int)state < 1 ? 1 : (int)state > steps.Count ? steps.Count : (int)state;
+        var stateInt = (int)lodCase.WorkflowState < 1 ? 1 : (int)lodCase.WorkflowState > _steps.Count ? _steps.Count : (int)lodCase.WorkflowState;
 
         // Primary source: latest history entry per WorkflowState (highest Id = most recent)
         var historyByState = lodCase?.WorkflowStateHistories?
@@ -66,7 +82,7 @@ public partial class WorkflowSidebar : ComponentBase
             .ToDictionary(x => x.Index, x => x.Step)
             ?? [];
 
-        foreach (var step in steps)
+        foreach (var step in _steps)
         {
             if (historyByState.TryGetValue(step.WorkflowState, out var history))
             {
@@ -133,24 +149,9 @@ public partial class WorkflowSidebar : ComponentBase
     /// </returns>
     public static (List<WorkflowStep> Steps, int CurrentStepIndex) InitializeSteps(LineOfDutyCase lodCase)
     {
-        var steps = new List<WorkflowStep>
-        {
-            new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MemberInformationEntry,    Description = "Enter member identification and incident details to initiate the LOD case." },
-            new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalTechnicianReview,   Description = "Medical technician reviews the injury/illness and documents clinical findings." },
-            new() { Number = 3,  Name = "Medical Officer Review",    Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalOfficerReview,      Description = "Medical officer reviews the technician's findings and provides a clinical assessment." },
-            new() { Number = 4,  Name = "Unit CC Review",            Icon = "edit_document",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.UnitCommanderReview,       Description = "Unit commander reviews the case and submits a recommendation for the LOD determination." },
-            new() { Number = 5,  Name = "Wing JA Review",            Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingJudgeAdvocateReview,   Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance." },
-            new() { Number = 6,  Name = "Appointing Authority",      Icon = "verified_user",        Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.AppointingAuthorityReview, Description = "Appointing authority reviews the case and issues a formal LOD determination." },
-            new() { Number = 7,  Name = "Wing CC Review",            Icon = "stars",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.WingCommanderReview,       Description = "Wing commander reviews the case and renders a preliminary LOD determination." },
-            new() { Number = 8,  Name = "Board Technician Review",   Icon = "rate_review",          Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalTechnicianReview,     Description = "Board medical technician reviews the case file for completeness and accuracy." },
-            new() { Number = 9,  Name = "Board Medical Review",      Icon = "medical_services",     Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardMedicalOfficerReview,        Description = "Board medical officer reviews all medical evidence and provides a formal assessment." },
-            new() { Number = 10, Name = "Board Legal Review",        Icon = "gavel",                Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardLegalReview,          Description = "Board legal counsel reviews the case for legal sufficiency before final decision." },
-            new() { Number = 11, Name = "Board Admin Review",        Icon = "admin_panel_settings", Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.BoardAdministratorReview,          Description = "Board administrative officer finalizes the case package and prepares the formal determination." },
-            new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
-        };
+        var currentStepIndex = ApplyWorkflowState(lodCase);
 
-        var currentStepIndex = ApplyWorkflowState(steps, lodCase?.WorkflowState ?? WorkflowState.MemberInformationEntry, lodCase);
-        return (steps, currentStepIndex);
+        return (_steps, currentStepIndex);
     }
 
     /// <summary>
