@@ -101,8 +101,7 @@ public class CaseBookmarksController : ODataController
 
         _loggingService.DeletingBookmark(caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var bookmark = await context.CaseBookmarks
-            .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
+        var bookmark = await context.CaseBookmarks.FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
 
         if (bookmark is null)
         {
@@ -127,8 +126,7 @@ public class CaseBookmarksController : ODataController
     {
         _loggingService.CheckingBookmark(caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var isBookmarked = await context.CaseBookmarks
-            .AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
+        var isBookmarked = await context.CaseBookmarks.AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
         return Ok(new { Value = isBookmarked });
     }
 

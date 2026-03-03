@@ -83,15 +83,12 @@ public class CasesController : ODataController
         var countRequested = options.Count?.Value == true;
 
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var query = context.Cases
-            .AsNoTracking()
-            .Where(c => context.CaseBookmarks.Any(b => b.UserId == UserId && b.LineOfDutyCaseId == c.Id));
+        var query = context.Cases.AsNoTracking().Where(c => context.CaseBookmarks.Any(b => b.UserId == UserId && b.LineOfDutyCaseId == c.Id));
 
         // Apply $filter first so @odata.count reflects filtered total (before $top/$skip)
         var filteredQuery = options.Filter?.ApplyTo(query, new ODataQuerySettings()) as IQueryable<LineOfDutyCase> ?? query;
         int? totalCount = countRequested ? await filteredQuery.CountAsync(ct) : null;
-        var items = await ((IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true }))
-            .ToListAsync(ct);
+        var items = await ((IQueryable<LineOfDutyCase>)options.ApplyTo(query, new ODataQuerySettings { EnsureStableOrdering = true })).ToListAsync(ct);
 
         return Ok(new BookmarkedCasesResponse { Value = items, Count = totalCount });
     }
@@ -119,9 +116,7 @@ public class CasesController : ODataController
     {
         _loggingService.RetrievingCase(key);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var lodCase = await CaseWithIncludes(context)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == key, ct);
+        var lodCase = await CaseWithIncludes(context).AsNoTracking() .FirstOrDefaultAsync(c => c.Id == key, ct);
 
         if (lodCase is null)
         {
@@ -308,10 +303,7 @@ public class CasesController : ODataController
     {
         _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Member));
         var context = await CreateContextAsync(ct);
-        return SingleResult.Create(
-            context.Cases.AsNoTracking()
-                .Where(c => c.Id == key)
-                .Select(c => c.Member));
+        return SingleResult.Create(context.Cases.AsNoTracking().Where(c => c.Id == key).Select(c => c.Member));
     }
 
     /// <summary>
@@ -323,10 +315,7 @@ public class CasesController : ODataController
     {
         _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.MEDCON));
         var context = await CreateContextAsync(ct);
-        return SingleResult.Create(
-            context.Cases.AsNoTracking()
-                .Where(c => c.Id == key)
-                .Select(c => c.MEDCON));
+        return SingleResult.Create(context.Cases.AsNoTracking().Where(c => c.Id == key).Select(c => c.MEDCON));
     }
 
     /// <summary>
@@ -338,10 +327,7 @@ public class CasesController : ODataController
     {
         _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.INCAP));
         var context = await CreateContextAsync(ct);
-        return SingleResult.Create(
-            context.Cases.AsNoTracking()
-                .Where(c => c.Id == key)
-                .Select(c => c.INCAP));
+        return SingleResult.Create(context.Cases.AsNoTracking().Where(c => c.Id == key).Select(c => c.INCAP));
     }
 
     // ── Private helpers ─────────────────────────────────────────────────
