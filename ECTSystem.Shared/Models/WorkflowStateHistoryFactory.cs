@@ -11,10 +11,9 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Action = TransitionAction.Entered,
+            Action = TransitionAction.Enter,
             Status = WorkflowStepStatus.InProgress,
             StartDate = now,
-            OccurredAt = now,
             PerformedBy = string.Empty,
             CreatedDate = now,
             ModifiedDate = now
@@ -33,12 +32,10 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Action = TransitionAction.Signed,
             Status = WorkflowStepStatus.InProgress,
             StartDate = stepStartDate,
             SignedDate = signedDate,
             SignedBy = signedBy,
-            OccurredAt = now,
             PerformedBy = string.Empty,
             CreatedDate = now,
             ModifiedDate = now
@@ -57,12 +54,10 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Action = TransitionAction.Completed,
             Status = WorkflowStepStatus.Completed,
             StartDate = stepStartDate,
             SignedDate = signedDate ?? now,
             SignedBy = signedBy ?? string.Empty,
-            OccurredAt = now,
             PerformedBy = string.Empty,
             CreatedDate = now,
             ModifiedDate = now
@@ -81,12 +76,10 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Action = TransitionAction.Returned,
             Status = WorkflowStepStatus.Pending,
             StartDate = stepStartDate,
             SignedDate = signedDate,
             SignedBy = signedBy ?? string.Empty,
-            OccurredAt = now,
             PerformedBy = string.Empty,
             CreatedDate = now,
             ModifiedDate = now

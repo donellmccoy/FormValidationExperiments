@@ -9,14 +9,23 @@ namespace ECTSystem.Shared.Models;
 public class WorkflowStateHistory : AuditableEntity
 {
     public int Id { get; set; }
+
     public int LineOfDutyCaseId { get; set; }
+
     public WorkflowState WorkflowState { get; set; }
+
     public TransitionAction Action { get; set; }
+
     public WorkflowStepStatus Status { get; set; }
+
     public DateTime? StartDate { get; set; }
+
+    public DateTime? EndDate { get; set; }
+
     public DateTime? SignedDate { get; set; }
+
     public string SignedBy { get; set; } = string.Empty;
-    public DateTime OccurredAt { get; set; }
+
     public string PerformedBy { get; set; } = string.Empty;
 
     public LineOfDutyCase LineOfDutyCase { get; set; }

@@ -20,7 +20,7 @@ public static class LineOfDutyExtensions
     }
 
     /// <summary>
-    /// Creates and adds an <see cref="Enums.TransitionAction.Entered"/> history entry
+    /// Creates and adds an <see cref="Enums.TransitionAction.Enter"/> history entry
     /// for the case's current <see cref="LineOfDutyCase.WorkflowState"/>.
     /// </summary>
     /// <param name="lodCase">The LOD case to add the history entry to.</param>

@@ -61,8 +61,10 @@ public static class ServiceCollectionExtensions
             .AddStandardResilienceHandler();
 
         // Named HttpClient for OData calls (with auth + resilience)
+        services.AddTransient<ODataLoggingHandler>();
         services.AddHttpClient("OData", client => client.BaseAddress = odataBaseAddress)
             .AddHttpMessageHandler<AuthorizationMessageHandler>()
+            .AddHttpMessageHandler<ODataLoggingHandler>()
             .AddStandardResilienceHandler();
 
         // Default HttpClient resolves to the "Api" named client

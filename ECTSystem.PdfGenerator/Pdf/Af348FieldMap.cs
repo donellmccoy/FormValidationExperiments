@@ -205,7 +205,7 @@ public static class Af348FieldMap
                 c.FinalFinding is LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct
                     or LineOfDutyFinding.ExistingPriorToServiceNotAggravated ? "1" : "Off",
             ["form1[0].Page2[0].part3Check22FLOD[0]"] = c =>
-                c.ProcessType == LineOfDutyProcessType.Formal ? "1" : "Off",
+                c.ProcessType == ProcessType.Formal ? "1" : "Off",
 
             // Part II Provider signature block (Item 15, Page 2)
             ["form1[0].Page2[0].part2ProviderNameRank[0]"] = c => c.ProviderNameRank,
@@ -234,7 +234,7 @@ public static class Af348FieldMap
                 c.FinalFinding is LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct
                     or LineOfDutyFinding.ExistingPriorToServiceNotAggravated ? "1" : "Off",
             ["form1[0].Page2[0].part5Check26FLOD[0]"] = c =>
-                c.ProcessType == LineOfDutyProcessType.Formal ? "1" : "Off",
+                c.ProcessType == ProcessType.Formal ? "1" : "Off",
             ["form1[0].Page2[0].WingSignature25[0]"] = c => c.WingCcSignature,
 
             // ── PART V: APPOINTING AUTHORITY (Page 3) ──

@@ -23,11 +23,8 @@
 else
 {
 
-<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center"
               class="rz-mb-4">
-    <RadzenText TextStyle="TextStyle.H5" class="rz-m-0" Style="font-weight: 700; color: var(--rz-text-color);">
-        My Bookmarks
-    </RadzenText>
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
@@ -42,6 +39,8 @@ else
                 @bind-Value="_selectedBookmarks"
                 AllowSorting="true"
                 AllowFiltering="true"
+                AllowGrouping="true" 
+                AllowColumnResize="true"
                 FilterMode="FilterMode.Simple"
                 PageSize="10"
                 AllowPaging="true"

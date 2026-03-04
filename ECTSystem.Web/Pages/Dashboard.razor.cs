@@ -125,7 +125,7 @@ public partial class Dashboard : ComponentBase
 
     private void OnCreateCase()
     {
-        Navigation.NavigateTo("case/new");
+        Navigation.NavigateTo("case/new?from=dashboard");
     }
 
     private BadgeStyle GetBadgeStyle(WorkflowState state)

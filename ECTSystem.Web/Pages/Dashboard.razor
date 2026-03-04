@@ -222,7 +222,7 @@
                         <Columns>
                             <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="150px">
                                 <Template Context="lodCase">
-                                    <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" class="rz-color-primary rz-font-weight-medium" />
+                                    <RadzenLink Path="@($"case/{lodCase.CaseId}?from=dashboard")" Text="@lodCase.CaseId" class="rz-color-primary rz-font-weight-medium" />
                                 </Template>
                             </RadzenDataGridColumn>
                             <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member">

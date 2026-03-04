@@ -53,14 +53,7 @@ else
 {
     <div class="case-page-root">
         <RadzenBreadCrumb class="rz-mb-3">
-            @if (IsFromBookmarks)
-            {
-                <RadzenBreadCrumbItem Path="/bookmarks" Text="My Bookmarks" />
-            }
-            else
-            {
-                <RadzenBreadCrumbItem Path="/" Text="All Cases" />
-            }
+            <RadzenBreadCrumbItem Path="@BreadcrumbPath" Text="@BreadcrumbText" />
             <RadzenBreadCrumbItem Text="@(IsNewCase ? "New Case" : _viewModel.CaseNumber)" />
         </RadzenBreadCrumb>
         <RadzenStack Orientation="Orientation.Horizontal" class="assessment-layout">
@@ -314,9 +307,9 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(LodTrigger.ForwardToMedicalTechnician, item))" Text="Start Line Of Duty" Icon="send"
+                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(LineOfDutyTrigger.ForwardToMedicalTechnician, item))" Text="Start Line Of Duty" Icon="send"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
-                                                                    Disabled="@(_stateMachine is not null && !_stateMachine.CanFire(LodTrigger.ForwardToMedicalTechnician))">
+                                                                    Disabled="@(_stateMachine is not null && !_stateMachine.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician))">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                     </ChildContent>

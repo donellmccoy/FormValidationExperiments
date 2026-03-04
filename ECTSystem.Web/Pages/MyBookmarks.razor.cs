@@ -102,7 +102,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
     private void OnCreateCase()
     {
-        Navigation.NavigateTo("/case/new");
+        Navigation.NavigateTo("/case/new?from=bookmarks");
     }
 
     public void Dispose()

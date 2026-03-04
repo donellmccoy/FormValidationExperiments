@@ -1,7 +1,7 @@
 namespace ECTSystem.Shared.Models;
 
 /// <summary>
-/// Lookup table entity for <see cref="ECTSystem.Shared.Enums.LineOfDutyProcessType"/> enum values.
+/// Lookup table entity for <see cref="ECTSystem.Shared.Enums.ProcessType"/> enum values.
 /// </summary>
 public class WorkflowType : AuditableEntity
 {

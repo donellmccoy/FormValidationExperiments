@@ -27,17 +27,12 @@ else
 
 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
               class="rz-mb-4">
-    <RadzenText TextStyle="TextStyle.H5" class="rz-m-0" Style="font-weight: 450; color: var(--rz-text-color);">
-        Search LOD Cases
-    </RadzenText>
+    <RadzenTextBox Value="@searchText"
+                   @oninput="@OnSearchInput"
+                   Placeholder="Search cases..." Style="width: 51%;" />
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
-
-<RadzenTextBox Value="@searchText"
-               @oninput="@OnSearchInput"
-               Placeholder="Search cases..." Style="width: 100%;"
-               class="rz-mb-4" />
 
 <RadzenDataGrid @ref="_grid" TItem="LineOfDutyCase"
                 Data="@cases"
@@ -73,7 +68,7 @@ else
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
             <Template Context="lodCase">
                 <div class="case-id-cell">
-                    <RadzenLink Path="@($"case/{lodCase.CaseId}")" Text="@lodCase.CaseId" />
+                    <RadzenLink Path="@($"case/{lodCase.CaseId}?from=cases")" Text="@lodCase.CaseId" />
                     <RadzenButton Icon="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")"
                                   ButtonStyle="ButtonStyle.Light"
                                   Variant="Variant.Text"
@@ -97,7 +92,7 @@ else
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center"/>
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="85px" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit"  />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">
             <Template Context="lodCase">

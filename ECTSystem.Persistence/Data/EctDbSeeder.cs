@@ -62,13 +62,13 @@ public static class EctDbSeeder
         {
             var incidentDate = new DateTime(2024, 1, 1).AddDays(rng.Next(0, 540));
             var initiationDate = incidentDate.AddDays(rng.Next(1, 5));
-            var processType = rng.Next(100) < 70 ? LineOfDutyProcessType.Informal : LineOfDutyProcessType.Formal;
+            var processType = rng.Next(100) < 70 ? ProcessType.Informal : ProcessType.Formal;
             var component = PickRandom(rng, ServiceComponent.RegularAirForce, ServiceComponent.AirForceReserve, ServiceComponent.AirNationalGuard, ServiceComponent.UnitedStatesSpaceForce);
             var incidentType = PickRandom(rng, IncidentType.Injury, IncidentType.Illness, IncidentType.Disease, IncidentType.Death);
             var dutyStatus = PickRandom(rng, DutyStatus.Title10ActiveDuty, DutyStatus.InactiveDutyTraining, DutyStatus.Title32ActiveDuty, DutyStatus.NotInDutyStatus, DutyStatus.TravelToFromDuty);
             var finding = PickRandom(rng, LineOfDutyFinding.InLineOfDuty, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.ExistingPriorToServiceNotAggravated);
             var wasUnderInfluence = rng.Next(100) < 15;
-            var isInterim = processType == LineOfDutyProcessType.Informal && rng.Next(100) < 40;
+            var isInterim = processType == ProcessType.Informal && rng.Next(100) < 40;
             var workflowState = WorkflowState.MemberInformationEntry;
             var rank = Ranks[rng.Next(Ranks.Length)];
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
@@ -122,7 +122,7 @@ public static class EctDbSeeder
 
                 InitiationDate = initiationDate,
                 CompletionDate = null,
-                TotalTimelineDays = processType == LineOfDutyProcessType.Informal ? 90 : 160,
+                TotalTimelineDays = processType == ProcessType.Informal ? 90 : 160,
                 IsInterimLOD = isInterim,
                 InterimLODExpiration = isInterim ? initiationDate.AddDays(90) : null,
                 FinalFinding = finding,

@@ -7,8 +7,6 @@ public static class LineOfDutyCaseFactory
     public static LineOfDutyCase Create(int memberId)
     {
         var now = DateTime.UtcNow;
-        var timelineSteps = TimelineStep.CreateDefaultSteps();
-        timelineSteps[0].StartDate = now;
 
         return new LineOfDutyCase
         {
@@ -16,13 +14,11 @@ public static class LineOfDutyCaseFactory
             MemberId = memberId,
             InitiationDate = now,
             IncidentDate = now,
-            WorkflowState = WorkflowState.MemberInformationEntry,
             CreatedDate = now,
             ModifiedDate = now,
-            TimelineSteps = timelineSteps
+            TimelineSteps = []
         };
     }
 
-    public static string GenerateCaseId(DateTime timestamp) =>
-        $"{timestamp:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
+    public static string GenerateCaseId(DateTime timestamp) => $"{timestamp:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
 }

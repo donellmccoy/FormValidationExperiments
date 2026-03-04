@@ -109,7 +109,7 @@ static LineOfDutyCase CreateSampleCase()
     {
         Id = 1,
         CaseId = "LOD-2025-00001",
-        ProcessType = LineOfDutyProcessType.Informal,
+        ProcessType = ProcessType.Informal,
         Component = ServiceComponent.AirForceReserve,
         MemberName = "Doe, John E.",
         MemberRank = "TSgt/E-6",

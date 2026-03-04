@@ -6,7 +6,7 @@ namespace ECTSystem.Shared.Enums;
 /// </summary>
 public enum WorkflowState
 {
-    None = 0,
+    Pending = 0,
 
     /// <summary>Initial state — member information and incident details are being entered.</summary>
     MemberInformationEntry = 1,
@@ -44,7 +44,9 @@ public enum WorkflowState
     /// <summary>LOD determination has been finalized and the case is closed.</summary>
     Completed = 12,
 
+    /// <summary>Case is closed without a formal LOD determination (e.g., withdrawn, duplicate).</summary>  
     Closed = 13,
 
+    /// <summary>Case is withdrawn from processing while in an active workflow state.</summary>
     Cancelled = 14
 }

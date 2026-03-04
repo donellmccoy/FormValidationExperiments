@@ -95,8 +95,7 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         LineOfDutyCaseId = 1,
         WorkflowState    = WorkflowState.MemberInformationEntry,
-        Action           = TransitionAction.Entered,
+        Action           = TransitionAction.Enter,
         Status           = WorkflowStepStatus.InProgress,
-        OccurredAt       = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
     };
 }

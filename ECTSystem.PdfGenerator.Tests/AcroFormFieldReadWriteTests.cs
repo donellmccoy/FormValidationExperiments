@@ -783,7 +783,7 @@ public class AcroFormFieldReadWriteTests : IDisposable
         {
             Id = 1,
             CaseId = "LOD-2025-00001",
-            ProcessType = Shared.Enums.LineOfDutyProcessType.Informal,
+            ProcessType = Shared.Enums.ProcessType.Informal,
             Component = Shared.Enums.ServiceComponent.AirForceReserve,
             MemberName = "Doe, John E.",
             MemberRank = "TSgt/E-6",

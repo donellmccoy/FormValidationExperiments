@@ -23,8 +23,8 @@ public class WorkflowTypeConfiguration : IEntityTypeConfiguration<WorkflowType>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasData(
-            new WorkflowType { Id = (int)LineOfDutyProcessType.Informal + 1, Name = "Informal", Description = "Informal LOD determination process.", WorkflowModuleId = 1 },
-            new WorkflowType { Id = (int)LineOfDutyProcessType.Formal + 1,   Name = "Formal",   Description = "Formal LOD determination process.",   WorkflowModuleId = 1 }
+            new WorkflowType { Id = (int)ProcessType.Informal + 1, Name = "Informal", Description = "Informal LOD determination process.", WorkflowModuleId = 1 },
+            new WorkflowType { Id = (int)ProcessType.Formal + 1,   Name = "Formal",   Description = "Formal LOD determination process.",   WorkflowModuleId = 1 }
         );
     }
 }

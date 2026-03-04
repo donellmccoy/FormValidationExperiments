@@ -68,7 +68,8 @@ public partial class WorkflowSidebar : ComponentBase
     public static int ApplyWorkflowState(LineOfDutyCase lodCase)
     {
         // Clamp to valid range — DB rows that predate the WorkflowState migration have int value 0
-        var stateInt = (int)lodCase.WorkflowState < 1 ? 1 : (int)lodCase.WorkflowState > _steps.Count ? _steps.Count : (int)lodCase.WorkflowState;
+        var rawState = lodCase is not null ? (int)lodCase.WorkflowState : 1;
+        var stateInt = rawState < 1 ? 1 : rawState > _steps.Count ? _steps.Count : rawState;
 
         // Primary source: latest history entry per WorkflowState (highest Id = most recent)
         var historyByState = lodCase?.WorkflowStateHistories?
@@ -92,8 +93,8 @@ public partial class WorkflowSidebar : ComponentBase
                 step.SignedBy = history.SignedBy ?? string.Empty;
                 step.CompletedBy = history.PerformedBy;
                 step.StatusText = history.Status == WorkflowStepStatus.Completed ? "Completed" : string.Empty;
-                step.CompletedDate = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt : null;
-                step.CompletionDate = history.Status == WorkflowStepStatus.Completed ? history.OccurredAt.ToString("MM/dd/yyyy h:mm tt") : string.Empty;
+                step.CompletedDate = history.Status == WorkflowStepStatus.Completed ? history.StartDate : null;
+                step.CompletionDate = history.Status == WorkflowStepStatus.Completed ? history.StartDate?.ToString("MM/dd/yyyy h:mm tt") : string.Empty;
             }
             else
             {

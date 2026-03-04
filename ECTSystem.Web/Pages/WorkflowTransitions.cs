@@ -6,7 +6,7 @@ namespace ECTSystem.Web.Pages;
 public partial class EditCase
 {
     internal record WorkflowTransition(
-        LodTrigger Trigger,
+        LineOfDutyTrigger Trigger,
         WorkflowState TargetState,
         string ConfirmMessage,
         string ConfirmTitle,
@@ -22,7 +22,7 @@ public partial class EditCase
     private static readonly Dictionary<string, WorkflowTransition> SharedTransitions = new()
     {
         ["return-med-tech"] = new(
-            LodTrigger.ReturnToMedicalTechnicianReview,
+            LineOfDutyTrigger.ReturnToMedicalTechnicianReview,
             WorkflowState.MedicalTechnicianReview,
             "Are you sure you want to return this case to the Medical Technician?",
             "Confirm Return", "Return",
@@ -31,7 +31,7 @@ public partial class EditCase
             "Case has been returned to the Medical Technician for review."),
 
         ["return-med-officer"] = new(
-            LodTrigger.ReturnToMedicalOfficerReview,
+            LineOfDutyTrigger.ReturnToMedicalOfficerReview,
             WorkflowState.MedicalOfficerReview,
             "Are you sure you want to return this case to the Medical Officer?",
             "Confirm Return", "Return",
@@ -40,7 +40,7 @@ public partial class EditCase
             "Case has been returned to the Medical Officer for review."),
 
         ["return-unit-cc"] = new(
-            LodTrigger.ReturnToUnitCommanderReview,
+            LineOfDutyTrigger.ReturnToUnitCommanderReview,
             WorkflowState.UnitCommanderReview,
             "Are you sure you want to return this case to the Unit Commander?",
             "Confirm Return", "Return",
@@ -49,7 +49,7 @@ public partial class EditCase
             "Case has been returned to the Unit Commander for review."),
 
         ["return-wing-ja"] = new(
-            LodTrigger.ReturnToWingJudgeAdvocateReview,
+            LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview,
             WorkflowState.WingJudgeAdvocateReview,
             "Are you sure you want to return this case to the Wing Judge Advocate?",
             "Confirm Return", "Return",
@@ -58,7 +58,7 @@ public partial class EditCase
             "Case has been returned to the Wing Judge Advocate for review."),
 
         ["return-wing-cc"] = new(
-            LodTrigger.ReturnToWingCommanderReview,
+            LineOfDutyTrigger.ReturnToWingCommanderReview,
             WorkflowState.WingCommanderReview,
             "Are you sure you want to return this case to the Wing Commander?",
             "Confirm Return", "Return",
@@ -67,7 +67,7 @@ public partial class EditCase
             "Case has been returned to the Wing Commander for review."),
 
         ["return-appointing-authority"] = new(
-            LodTrigger.ReturnToAppointingAuthorityReview,
+            LineOfDutyTrigger.ReturnToAppointingAuthorityReview,
             WorkflowState.AppointingAuthorityReview,
             "Are you sure you want to return this case to the Appointing Authority?",
             "Confirm Return", "Return",
@@ -76,7 +76,7 @@ public partial class EditCase
             "Case has been returned to the Appointing Authority for review."),
 
         ["board-tech"] = new(
-            LodTrigger.ForwardToBoardTechnicianReview,
+            LineOfDutyTrigger.ForwardToBoardTechnicianReview,
             WorkflowState.BoardMedicalTechnicianReview,
             "Are you sure you want to forward this case to the Board Technician?",
             "Confirm Forward", "Forward",
@@ -85,7 +85,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Technician."),
 
         ["board-med"] = new(
-            LodTrigger.ForwardToBoardMedicalReview,
+            LineOfDutyTrigger.ForwardToBoardMedicalReview,
             WorkflowState.BoardMedicalOfficerReview,
             "Are you sure you want to forward this case to the Board Medical reviewer?",
             "Confirm Forward", "Forward",
@@ -94,7 +94,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Medical reviewer."),
 
         ["board-legal"] = new(
-            LodTrigger.ForwardToBoardLegalReview,
+            LineOfDutyTrigger.ForwardToBoardLegalReview,
             WorkflowState.BoardLegalReview,
             "Are you sure you want to forward this case to the Board Legal reviewer?",
             "Confirm Forward", "Forward",
@@ -103,7 +103,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Legal reviewer."),
 
         ["board-admin"] = new(
-            LodTrigger.ForwardToBoardAdministratorReview,
+            LineOfDutyTrigger.ForwardToBoardAdministratorReview,
             WorkflowState.BoardAdministratorReview,
             "Are you sure you want to forward this case to the Board Admin reviewer?",
             "Confirm Forward", "Forward",
@@ -119,7 +119,7 @@ public partial class EditCase
     {
         // Default forward transitions (main button click, item?.Value is null)
         [(WorkflowState.MemberInformationEntry, "default")] = new(
-            LodTrigger.ForwardToMedicalTechnician,
+            LineOfDutyTrigger.ForwardToMedicalTechnician,
             WorkflowState.MedicalTechnicianReview,
             "Are you sure you want to forward this case to the Medical Technician?",
             "Confirm Forward", "Forward",
@@ -128,7 +128,7 @@ public partial class EditCase
             "Case has been forwarded to the Medical Technician for review."),
 
         [(WorkflowState.MedicalTechnicianReview, "default")] = new(
-            LodTrigger.ForwardToMedicalOfficerReview,
+            LineOfDutyTrigger.ForwardToMedicalOfficerReview,
             WorkflowState.MedicalOfficerReview,
             "Are you sure you want to forward this case to the Medical Officer?",
             "Confirm Forward", "Forward",
@@ -137,7 +137,7 @@ public partial class EditCase
             "Case has been forwarded to the Medical Officer for review."),
 
         [(WorkflowState.MedicalOfficerReview, "default")] = new(
-            LodTrigger.ForwardToUnitCommanderReview,
+            LineOfDutyTrigger.ForwardToUnitCommanderReview,
             WorkflowState.UnitCommanderReview,
             "Are you sure you want to forward this case to the Unit Commander?",
             "Confirm Forward", "Forward",
@@ -146,7 +146,7 @@ public partial class EditCase
             "Case has been forwarded to the Unit Commander."),
 
         [(WorkflowState.UnitCommanderReview, "default")] = new(
-            LodTrigger.ForwardToWingJudgeAdvocateReview,
+            LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview,
             WorkflowState.WingJudgeAdvocateReview,
             "Are you sure you want to forward this case to the Wing Judge Advocate?",
             "Confirm Forward", "Forward",
@@ -155,7 +155,7 @@ public partial class EditCase
             "Case has been forwarded to the Wing Judge Advocate."),
 
         [(WorkflowState.WingJudgeAdvocateReview, "default")] = new(
-            LodTrigger.ForwardToWingCommanderReview,
+            LineOfDutyTrigger.ForwardToWingCommanderReview,
             WorkflowState.WingCommanderReview,
             "Are you sure you want to forward this case to the Wing Commander?",
             "Confirm Forward", "Forward",
@@ -164,7 +164,7 @@ public partial class EditCase
             "Case has been forwarded to the Wing Commander."),
 
         [(WorkflowState.WingCommanderReview, "default")] = new(
-            LodTrigger.ForwardToAppointingAuthorityReview,
+            LineOfDutyTrigger.ForwardToAppointingAuthorityReview,
             WorkflowState.AppointingAuthorityReview,
             "Are you sure you want to forward this case to the Appointing Authority?",
             "Confirm Forward", "Forward",
@@ -173,7 +173,7 @@ public partial class EditCase
             "Case has been forwarded to the Appointing Authority for review."),
 
         [(WorkflowState.AppointingAuthorityReview, "default")] = new(
-            LodTrigger.ForwardToBoardTechnicianReview,
+            LineOfDutyTrigger.ForwardToBoardTechnicianReview,
             WorkflowState.BoardMedicalTechnicianReview,
             "Are you sure you want to forward this case to the Board for review?",
             "Confirm Forward", "Forward",
@@ -182,7 +182,7 @@ public partial class EditCase
             "Case has been forwarded to the Board for review."),
 
         [(WorkflowState.BoardMedicalTechnicianReview, "default")] = new(
-            LodTrigger.ForwardToBoardMedicalReview,
+            LineOfDutyTrigger.ForwardToBoardMedicalReview,
             WorkflowState.BoardMedicalOfficerReview,
             "Are you sure you want to forward this case to the Board Medical reviewer?",
             "Confirm Forward", "Forward",
@@ -191,7 +191,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Medical reviewer."),
 
         [(WorkflowState.BoardMedicalOfficerReview, "default")] = new(
-            LodTrigger.ForwardToBoardLegalReview,
+            LineOfDutyTrigger.ForwardToBoardLegalReview,
             WorkflowState.BoardLegalReview,
             "Are you sure you want to forward this case to the Board Legal reviewer?",
             "Confirm Forward", "Forward",
@@ -200,7 +200,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Legal reviewer."),
 
         [(WorkflowState.BoardLegalReview, "default")] = new(
-            LodTrigger.ForwardToBoardAdministratorReview,
+            LineOfDutyTrigger.ForwardToBoardAdministratorReview,
             WorkflowState.BoardAdministratorReview,
             "Are you sure you want to forward this case to the Board Admin reviewer?",
             "Confirm Forward", "Forward",
@@ -209,7 +209,7 @@ public partial class EditCase
             "Case has been forwarded to the Board Admin reviewer."),
 
         [(WorkflowState.BoardAdministratorReview, "default")] = new(
-            LodTrigger.Complete,
+            LineOfDutyTrigger.Complete,
             WorkflowState.Completed,
             "Are you sure you want to complete the Board review?",
             "Confirm Complete", "Complete",
@@ -218,7 +218,7 @@ public partial class EditCase
             "The Board review has been completed."),
 
         [(WorkflowState.Completed, "default")] = new(
-            LodTrigger.Complete,
+            LineOfDutyTrigger.Complete,
             WorkflowState.Completed,
             "Are you sure you want to complete the Board review?",
             "Confirm Complete", "Complete",
@@ -228,7 +228,7 @@ public partial class EditCase
 
         // Context-dependent "return" action (target varies by source state)
         [(WorkflowState.MedicalOfficerReview, "return")] = new(
-            LodTrigger.ReturnToMedicalTechnicianReview,
+            LineOfDutyTrigger.ReturnToMedicalTechnicianReview,
             WorkflowState.MedicalTechnicianReview,
             "Are you sure you want to return this case to the Medical Technician?",
             "Confirm Return", "Return",
@@ -237,7 +237,7 @@ public partial class EditCase
             "Case has been returned to the Medical Technician for review."),
 
         [(WorkflowState.WingCommanderReview, "return")] = new(
-            LodTrigger.ReturnToUnitCommanderReview,
+            LineOfDutyTrigger.ReturnToUnitCommanderReview,
             WorkflowState.UnitCommanderReview,
             "Are you sure you want to return this case to the Unit Commander?",
             "Confirm Return", "Return",

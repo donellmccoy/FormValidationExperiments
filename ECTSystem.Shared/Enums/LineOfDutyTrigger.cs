@@ -1,7 +1,9 @@
 namespace ECTSystem.Shared.Enums;
 
-public enum LodTrigger
+public enum LineOfDutyTrigger
 {
+    None,
+    ForwardToMemberInformationEntry,
     ForwardToMedicalTechnician,
     ForwardToMedicalOfficerReview,
     ForwardToUnitCommanderReview,

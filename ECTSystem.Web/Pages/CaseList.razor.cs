@@ -54,6 +54,7 @@ public partial class CaseList : ComponentBase, IDisposable
         try
         {
             var filter = CombineFilters(args.Filter, BuildSearchFilter(searchText));
+            Console.WriteLine($"[CaseList] Filter: {filter ?? "(none)"}");
 
             var result = await CaseService.GetCasesAsync(
                 filter: filter,
@@ -134,7 +135,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
         try
         {
-            await Task.Delay(300, token);
+            await Task.Delay(500, token);
         }
         catch (OperationCanceledException)
         {
@@ -158,6 +159,9 @@ public partial class CaseList : ComponentBase, IDisposable
             "CaseId", "MemberName", "MemberRank", "ServiceNumber", "Unit",
             "FromLine", "IncidentDescription", "PointOfContact",
 
+            // Orders / Duty Period
+            "MemberOrdersStartTime", "MemberOrdersEndTime",
+
             // Medical assessment
             "TreatmentFacilityName", "ClinicalDiagnosis", "MedicalFindings",
             "PsychiatricEvalResults", "OtherRelevantConditions", "OtherTestResults",
@@ -166,6 +170,8 @@ public partial class CaseList : ComponentBase, IDisposable
             // Commander review
             "OtherSourcesDescription", "MisconductExplanation",
             "CommanderToLine", "CommanderFromLine",
+            "AbsentWithoutLeaveDate1", "AbsentWithoutLeaveTime1",
+            "AbsentWithoutLeaveDate2", "AbsentWithoutLeaveTime2",
             "WitnessNameAddress1", "WitnessNameAddress2", "WitnessNameAddress3",
             "WitnessNameAddress4", "WitnessNameAddress5",
 
@@ -173,19 +179,19 @@ public partial class CaseList : ComponentBase, IDisposable
             "ProximateCause", "PSCDocumentation",
 
             // Signatures / name-ranks
-            "ProviderNameRank", "ProviderSignature",
-            "CommanderNameRank", "CommanderSignature",
-            "SjaNameRank",
+            "ProviderNameRank", "ProviderDate", "ProviderSignature",
+            "CommanderNameRank", "CommanderDate", "CommanderSignature",
+            "SjaNameRank", "SjaDate",
             "WingCcSignature",
-            "AppointingAuthorityNameRank", "AppointingAuthoritySignature",
+            "AppointingAuthorityNameRank", "AppointingAuthorityDate", "AppointingAuthoritySignature",
 
             // Board review
-            "MedicalReviewText", "MedicalReviewerNameRank", "MedicalReviewerSignature",
-            "LegalReviewText", "LegalReviewerNameRank", "LegalReviewerSignature",
-            "LodBoardChairNameRank", "LodBoardChairSignature",
+            "MedicalReviewText", "MedicalReviewerNameRank", "MedicalReviewDate", "MedicalReviewerSignature",
+            "LegalReviewText", "LegalReviewerNameRank", "LegalReviewDate", "LegalReviewerSignature",
+            "LodBoardChairNameRank", "LodBoardChairDate", "LodBoardChairSignature",
 
             // Approving authority
-            "ApprovingAuthorityNameRank", "ApprovingAuthoritySignature",
+            "ApprovingAuthorityNameRank", "ApprovingAuthorityDate", "ApprovingAuthoritySignature",
 
             // Special handling / evidence
             "SARCCoordination", "ToxicologyReport"
@@ -209,7 +215,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
     private void OnCreateCase()
     {
-        Navigation.NavigateTo("/case/new");
+        Navigation.NavigateTo("/case/new?from=cases");
     }
 
     private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
@@ -250,7 +256,7 @@ public partial class CaseList : ComponentBase, IDisposable
                 switch (menuItem.Value?.ToString())
                 {
                     case "open":
-                        Navigation.NavigateTo($"/case/{lodCase.CaseId}");
+                        Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases");
                         break;
 
                     case "bookmark":
