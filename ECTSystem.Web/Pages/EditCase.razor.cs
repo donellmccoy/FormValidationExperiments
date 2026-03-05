@@ -306,7 +306,8 @@ public partial class EditCase : ComponentBase, IDisposable
             "Are you sure you want to forward this case to the Medical Technician?",
             "Confirm Forward", "Forward",
             "Forwarding to Medical Technician...",
-            NotificationSeverity.Success, "Forwarded to Medical Technician",
+            NotificationSeverity.Success, 
+            "Forwarded to Medical Technician",
             "Case has been forwarded to the Medical Technician for review.");
     }
 

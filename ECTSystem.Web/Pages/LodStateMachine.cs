@@ -87,6 +87,7 @@ internal class LodStateMachine
         _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.WorkflowState, FiringMode.Queued);
 
         _sm.OnTransitionedAsync(HandleTransitionAsync);
+        _sm.OnTransitionCompletedAsync(OnTransitionCompletedAsync);
 
         Configure();
     }
@@ -127,6 +128,22 @@ internal class LodStateMachine
             ModifiedDate = now,
             ModifiedBy = string.Empty
         });
+    }
+
+    /// <summary>
+    /// Callback invoked after a state transition has fully completed, including all
+    /// entry/exit actions and <see cref="HandleTransitionAsync"/> persistence.
+    /// Use this to perform post-transition logic such as UI refresh notifications,
+    /// audit logging, or follow-up processing that should only occur once the state
+    /// machine has settled into its new <see cref="WorkflowState"/>.
+    /// </summary>
+    /// <param name="transition">
+    /// The Stateless transition descriptor containing the source state, destination state,
+    /// and trigger that caused the transition.
+    /// </param>
+    private Task OnTransitionCompletedAsync(StateMachine<WorkflowState, LineOfDutyTrigger>.Transition transition)
+    {
+        return Task.CompletedTask;
     }
 
     /// <summary>
