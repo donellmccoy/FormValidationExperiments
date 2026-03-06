@@ -53,12 +53,12 @@ else
 {
     <div class="case-page-root">
         <RadzenBreadCrumb class="rz-mb-3">
-            <RadzenBreadCrumbItem Path="@BreadcrumbPath" Text="@BreadcrumbText" />
+            <RadzenBreadCrumbItem Path="@NavigatedFromPath" Text="@BreadcrumbText" />
             <RadzenBreadCrumbItem Text="@(IsNewCase ? "New Case" : _viewModel.CaseNumber)" />
         </RadzenBreadCrumb>
         <RadzenStack Orientation="Orientation.Horizontal" class="assessment-layout">
             @* ═══════════ Workflow Sidebar ═══════════ *@
-            <WorkflowSidebar Steps="@_workflowSteps" CurrentStepIndex="@_currentStepIndex" />
+            <WorkflowSidebar @ref="_workflowSidebar" LineOfDutyCase="@_lineOfDutyCase" />
             @* ═══════════ Main Content ═══════════ *@
             <RadzenStack Gap="0.75rem" Orientation="Orientation.Vertical">
                 @* ─── Case Info Card ─── *@
@@ -121,18 +121,18 @@ else
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" AlignItems="AlignItems.Center">
                                 <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
                                               Click="@OnBookmarkClick"
-                                              Disabled="@(_lodCase is null || _lodCase.Id == 0)"
+                                              Disabled="@(_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)"
                                               class="toolbar-icon-btn"
-                                              title="@((_lodCase is null || _lodCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _bookmark.IsBookmarked ? "Remove bookmark" : "Add bookmark")">
+                                              title="@((_lineOfDutyCase is null || _lineOfDutyCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _bookmark.IsBookmarked ? "Remove bookmark" : "Add bookmark")">
                                     <ChildContent>
                                         <span class="material-symbols-outlined @(_bookmark.IsAnimating ? "bookmark-flash" : "")">@_bookmark.Icon</span>
                                     </ChildContent>
                                 </RadzenButton>
                                 <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
                                               Click="@OnAttachFileClick"
-                                              Disabled="@(_lodCase is null || _lodCase.Id == 0)"
+                                              Disabled="@(_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)"
                                               class="toolbar-icon-btn"
-                                              title="@((_lodCase is null || _lodCase.Id == 0) ? "Save the LOD first to enable attachments" : "Attach file")">
+                                              title="@((_lineOfDutyCase is null || _lineOfDutyCase.Id == 0) ? "Save the LOD first to enable attachments" : "Attach file")">
                                     <ChildContent>
                                         <span class="material-symbols-outlined">attach_file_add</span>
                                     </ChildContent>
@@ -307,9 +307,12 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(LineOfDutyTrigger.ForwardToMedicalTechnician, item))" Text="Start Line Of Duty" Icon="send"
-                                                                    ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
-                                                                    Disabled="@(_stateMachine is not null && !_stateMachine.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician))">
+                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(item))" 
+                                                                    Text="Start Line Of Duty Case" 
+                                                                    Icon="send" 
+                                                                    ButtonStyle="ButtonStyle.Primary" 
+                                                                    Variant="Variant.Outlined"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.StartLineOfDutyCase) == true)">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                     </ChildContent>
@@ -350,8 +353,12 @@ else
                                         <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                                 <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                <RadzenSplitButton Click="@OnMedTechForwardClick" Text="Forward to Medical Officer" Icon="send"
-                                                                    ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
+                                                <RadzenSplitButton Click="@OnMedicalTechnicianForwardClick" 
+                                                                    Text="Forward to Medical Officer" 
+                                                                    Icon="send"
+                                                                    ButtonStyle="ButtonStyle.Primary" 
+                                                                    Variant="Variant.Outlined"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToMedicalOfficerReview) == true)">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                     </ChildContent>

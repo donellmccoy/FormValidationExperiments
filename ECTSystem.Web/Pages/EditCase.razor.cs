@@ -10,10 +10,8 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
-using Radzen.Blazor.Rendering;
-using Stateless.Graph;
+using Stateless;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace ECTSystem.Web.Pages;
 
@@ -35,20 +33,7 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string Draft = "Draft";
     }
 
-    private static readonly (string TabName, WorkflowState State)[] _workflowTabMap =
-    [
-        (TabNames.MemberInformation,     WorkflowState.MemberInformationEntry),    // 0
-        (TabNames.MedicalTechnician,     WorkflowState.MedicalTechnicianReview),   // 1
-        (TabNames.MedicalOfficer,        WorkflowState.MedicalOfficerReview),      // 2
-        (TabNames.UnitCommander,         WorkflowState.UnitCommanderReview),       // 3
-        (TabNames.WingJudgeAdvocate,     WorkflowState.WingJudgeAdvocateReview),   // 4
-        (TabNames.WingCommander,         WorkflowState.WingCommanderReview),       // 5
-        (TabNames.AppointingAuthority,   WorkflowState.AppointingAuthorityReview), // 6
-        (TabNames.BoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview),     // 7
-        (TabNames.BoardMedicalReview,    WorkflowState.BoardMedicalOfficerReview),        // 8
-        (TabNames.BoardLegalReview,      WorkflowState.BoardLegalReview),          // 9
-        (TabNames.BoardAdminReview,      WorkflowState.BoardAdministratorReview),          // 10
-    ];
+
 
     private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
 
@@ -87,9 +72,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
-    private bool IsFromBookmarks => string.Equals(FromPage, "bookmarks", StringComparison.OrdinalIgnoreCase);
-
-    private string BreadcrumbPath => FromPage?.ToLowerInvariant() switch
+    private string NavigatedFromPath => FromPage?.ToLowerInvariant() switch
     {
         "cases" => "/cases",
         "bookmarks" => "/bookmarks",
@@ -111,15 +94,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private readonly CancellationTokenSource _cts = new();
 
-    private LineOfDutyCase _lodCase;
+    private LineOfDutyCase _lineOfDutyCase;
 
     private LodStateMachine _stateMachine;
 
-    private IEnumerable<LineOfDutyTrigger> _permittedTriggers = [];
-
     private int _selectedTabIndex;
 
-    private int _currentStepIndex;
+    private WorkflowSidebar _workflowSidebar;
 
     private int _selectedMemberId;
 
@@ -135,13 +116,6 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task RefreshPermittedTriggersAsync()
-    {
-        _permittedTriggers = _stateMachine is not null
-            ? await _stateMachine.GetPermittedTriggersAsync()
-            : [];
-    }
-
     private bool HasAnyChanges
     {
         get
@@ -154,19 +128,13 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         get
         {
-            return _lodCase?.Notifications?.Count ?? 0;
+            return _lineOfDutyCase?.Notifications?.Count ?? 0;
         }
     }
 
-    private List<WorkflowStep> _workflowSteps = [];
+    private int CurrentStepIndex => _workflowSidebar?.CurrentStepIndex ?? 0;
 
-    private WorkflowStep CurrentStep
-    {
-        get
-        {
-            return _workflowSteps.Count > 0 && _currentStepIndex >= 0 && _currentStepIndex < _workflowSteps.Count ? _workflowSteps[_currentStepIndex] : null;
-        }
-    }
+    private WorkflowStep CurrentStep => _workflowSidebar?.CurrentStep;
 
     private Task OnBoardTechForwardClick(RadzenSplitButtonItem item)
     {
@@ -203,81 +171,58 @@ public partial class EditCase : ComponentBase, IDisposable
 
         var action = item?.Value ?? "default";
 
-        if (!SourceTransitions.TryGetValue((sourceState, action), out var transition)
-            && !SharedTransitions.TryGetValue(action, out transition)
-            && !SourceTransitions.TryGetValue((sourceState, "default"), out transition))
+        var transition = LodStateMachine.ResolveTransition(sourceState, action);
+        if (transition is null)
         {
             return;
         }
 
-        await ChangeWorkflowStateAsync(
-            transition.Trigger,
-            transition.TargetState,
-            transition.ConfirmMessage,
-            transition.ConfirmTitle,
-            transition.OkButtonText,
-            transition.BusyMessage,
-            transition.Severity,
-            transition.NotifySummary,
-            transition.NotifyDetail);
+        await ChangeWorkflowStateAsync(transition);
     }
 
-    private async Task ChangeWorkflowStateAsync(
-        LineOfDutyTrigger trigger,
-        WorkflowState targetState,
-        string confirmMessage,
-        string confirmTitle,
-        string okButtonText,
-        string busyMessage,
-        NotificationSeverity severity,
-        string notifySummary,
-        string notifyDetail,
-        string cancelButtonText = "Cancel")
+    private async Task ChangeWorkflowStateAsync(WorkflowTransition transition)
     {
-        if (_lodCase is null)
+        if (_lineOfDutyCase is null)
         {
             return;
         }
 
         var confirmed = await DialogService.Confirm(
-            confirmMessage, 
-            confirmTitle,
-            new ConfirmOptions { OkButtonText = okButtonText, CancelButtonText = cancelButtonText });
+            transition.ConfirmMessage,
+            transition.ConfirmTitle,
+            new ConfirmOptions { OkButtonText = transition.OkButtonText, CancelButtonText = "Cancel" });
 
         if (confirmed != true)
         {
             return;
         }
 
-        await SetBusyAsync(busyMessage);
+        await SetBusyAsync(transition.BusyMessage);
 
         try
         {
-            await _stateMachine.FireAsync(trigger);
+            var result = await _stateMachine.TransitionAsync(transition.Trigger, transition.TargetState, _cts.Token);
 
-            // Re-fetch the full case including WorkflowStateHistories
-            _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
-
-            if (_lodCase is not null)
+            if (result.Success)
             {
-                _stateMachine.UpdateCase(_lodCase);
-                await RefreshPermittedTriggersAsync();
+                _lineOfDutyCase = result.Case;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                _workflowSidebar?.ApplyWorkflowState(_lineOfDutyCase);
+                _selectedTabIndex = result.TabIndex;
+
+                TakeSnapshots();
+
+                NotificationService.Notify(transition.Severity, transition.NotifySummary, transition.NotifyDetail);
             }
-
-            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
-            _selectedTabIndex = GetTabIndexForState(targetState);
-            NotificationService.Notify(severity, notifySummary, notifyDetail);
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "State Change Failed", ex.Message);
-
-            // Re-sync SM with persisted state to avoid SM/DB drift
-            _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
-            if (_lodCase is not null)
+            else
             {
-                _stateMachine = LodStateMachineFactory.Create(_lodCase, CaseService);
-                await RefreshPermittedTriggersAsync();
+                NotificationService.Notify(NotificationSeverity.Error, "State Change Failed", result.ErrorMessage);
+
+                // On failure, the SM already reset from persisted state — re-sync local references
+                _lineOfDutyCase = _stateMachine.Case;
+                _stateMachine = LineOfDutyStateMachineFactory.Create(_lineOfDutyCase, CaseService);
             }
         }
         finally
@@ -286,34 +231,121 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnMemberForwardClick(LineOfDutyTrigger trigger, RadzenSplitButtonItem item)
+    private async Task OnMemberForwardClick(RadzenSplitButtonItem item)
     {
+        bool? confirmed = null;
+
         if (item?.Value == "cancel")
         {
-            await CancelInvestigationAsync();
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
             return;
         }
 
-        if (_lodCase is null)
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to start this line of duty case?",
+            "Start Line of Duty Case",
+            new ConfirmOptions 
+            { 
+                OkButtonText = "Start", 
+                CancelButtonText = "Cancel" 
+            });
+
+        if (confirmed != true)
         {
-            await OnStartLod();
             return;
         }
 
-        await ChangeWorkflowStateAsync(
-            trigger,
-            WorkflowState.MedicalTechnicianReview,
-            "Are you sure you want to forward this case to the Medical Technician?",
-            "Confirm Forward", "Forward",
-            "Forwarding to Medical Technician...",
-            NotificationSeverity.Success, 
-            "Forwarded to Medical Technician",
-            "Case has been forwarded to the Medical Technician for review.");
+        await SetBusyAsync("Creating line of duty case...");
+
+        try
+        {
+            var lineOfDutyCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
+
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
+
+            _stateMachine = LineOfDutyStateMachineFactory.Create(CaseService);
+
+            _stateMachine.OnMemberInformationEntered = OnMemberInformationEntered;
+
+            await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create case: {CaseId}", CaseId);
+
+            NotificationService.Notify(
+                NotificationSeverity.Error, 
+                "Create Line of Duty Case Failed", 
+                ex.Message);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+
+        async Task OnMemberInformationEntered(LineOfDutyCase lodCase)
+        {
+            _lineOfDutyCase = lodCase;
+
+            CaseId = _lineOfDutyCase.CaseId;
+
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+            TakeSnapshots();
+
+            _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+            NotificationService.Notify(
+                NotificationSeverity.Success, 
+                "Line of Duty Case Started", 
+                $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
+        }
     }
 
-    private Task OnMedTechForwardClick(RadzenSplitButtonItem item)
+    private async Task OnMedicalTechnicianForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(WorkflowState.MedicalTechnicianReview, item);
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+        _stateMachine.OnMedicalTechnicianReviewEntered = OnMedicalTechnicianReviewEntered;
+
+        await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+    }
+
+    private async Task OnMedicalTechnicianReviewEntered(LineOfDutyCase @case)
+    {
+        throw new NotImplementedException();
     }
 
     private Task OnMedicalForwardClick(RadzenSplitButtonItem item)
@@ -341,83 +373,30 @@ public partial class EditCase : ComponentBase, IDisposable
         return HandleWorkflowActionAsync(WorkflowState.AppointingAuthorityReview, item);
     }
 
-    private async Task ConfirmAndNotifyAsync(
-        string confirmMessage,
-        string confirmTitle,
-        string okButtonText,
-        string busyMessage,
-        NotificationSeverity severity,
-        string notifySummary,
-        string notifyDetail,
-        string cancelButtonText = "Cancel")
-    {
-        var confirmed = await DialogService.Confirm(confirmMessage, confirmTitle,
-            new ConfirmOptions { OkButtonText = okButtonText, CancelButtonText = cancelButtonText });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync(busyMessage);
-
-        try
-        {
-            NotificationService.Notify(severity, notifySummary, notifyDetail);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    private static int GetTabIndexForState(WorkflowState state)
-    {
-        for (var i = 0; i < _workflowTabMap.Length; i++)
-        {
-            if (_workflowTabMap[i].State == state)
-            {
-                return i;
-            }
-        }
-
-        // Completed maps to the last workflow tab; unknown states default to first
-        return state == WorkflowState.Completed
-            ? _workflowTabMap.Length - 1
-            : 0;
-    }
-
     private bool IsTabDisabled(int tabIndex)
     {
-        if (tabIndex >= 11)
-        {
-            return false;
-        }
-
-        var state = _lodCase?.WorkflowState ?? WorkflowState.MemberInformationEntry;
-        return tabIndex > GetTabIndexForState(state);
+        return _stateMachine?.IsTabDisabled(tabIndex) ?? tabIndex > LodStateMachine.GetTabIndexForState(WorkflowState.Draft);
     }
-
 
     private Task CancelInvestigationAsync()
     {
         return ChangeWorkflowStateAsync(
-            LineOfDutyTrigger.Cancel,
-            WorkflowState.Cancelled,
-            "Are you sure you want to cancel this investigation?",
-            "Confirm Cancellation",
-            "Yes, Cancel",
-            "Cancelling investigation...",
-            NotificationSeverity.Warning,
-            "Investigation Cancelled",
-            "The LOD investigation has been cancelled.",
-            "No");
+            new WorkflowTransition(
+                LineOfDutyTrigger.Cancel,
+                WorkflowState.Cancelled,
+                "Are you sure you want to cancel this investigation?",
+                "Confirm Cancellation",
+                "Yes, Cancel",
+                "Cancelling investigation...",
+                NotificationSeverity.Warning,
+                "Investigation Cancelled",
+                "The LOD investigation has been cancelled."));
     }
 
     private async Task OnDigitallySign()
     {
         // If LOD case doesn't exist yet, create it first (without advancing workflow)
-        if (_lodCase is null)
+        if (_lineOfDutyCase is null)
         {
             if (_selectedMemberId <= 0)
             {
@@ -455,12 +434,12 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 // Reload the full case — the POST response omits navigation properties
                 // (TimelineSteps, WorkflowStateHistories, etc.)
-                _lodCase = await CaseService.GetCaseAsync(saved.CaseId, _cts.Token) ?? saved;
+                _lineOfDutyCase = await CaseService.GetCaseAsync(saved.CaseId, _cts.Token) ?? saved;
 
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
-                _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
-                _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
+                _workflowSidebar?.ApplyWorkflowState(_lineOfDutyCase);
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 TakeSnapshots();
 
@@ -487,46 +466,30 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var timelineSteps = _lodCase?.TimelineSteps;
-
-        if (_currentStepIndex >= timelineSteps.Count)
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Warning,
-                "No Timeline Step",
-                "No timeline step found for the current workflow step.");
-
-            return;
-        }
-
-        var timelineStep = timelineSteps.ElementAt(_currentStepIndex);
-
         await SetBusyAsync("Applying digital signature...");
 
         try
         {
-            var signed = await CaseService.SignTimelineStepAsync(timelineStep.Id, _cts.Token);
+            var result = await _stateMachine.SignTimelineStepAsync(CurrentStepIndex, CurrentStep?.StartDate, _cts.Token);
 
-            timelineStep.SignedDate = signed.SignedDate;
-            timelineStep.SignedBy = signed.SignedBy;
-
-            // Record signed history entry so the sidebar shows the SignedDate immediately
-            var historyEntry = await CaseService.AddHistoryEntryAsync(
-                WorkflowStateHistoryFactory.CreateSigned(_lodCase.Id, _lodCase.WorkflowState, CurrentStep?.StartDate, signed.SignedDate, signed.SignedBy),
-                _cts.Token);
-
-            _lodCase.AddHistoryEntry(historyEntry);
-
-            _currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
-            _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
-
-            NotificationService.Notify(new NotificationMessage
+            if (result.Success)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Digitally Signed",
-                Detail = "Section has been digitally signed.",
-                Duration = 3000
-            });
+                _lineOfDutyCase = result.Case;
+                _workflowSidebar?.ApplyWorkflowState(_lineOfDutyCase);
+                _selectedTabIndex = result.TabIndex;
+
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Digitally Signed",
+                    Detail = "Section has been digitally signed.",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Signing Failed", result.ErrorMessage);
+            }
         }
         catch (Exception ex)
         {
@@ -538,36 +501,45 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task SaveCurrentTabAsync(string source)
+    private void SetIsSaving(bool isSaving)
     {
-        if (_page.IsSaving)
+        _page.IsSaving = isSaving;
+    }
+
+    private async Task SaveCurrentTabAsync(string tabName)
+    {
+        if (_lineOfDutyCase is null)
         {
             return;
         }
 
         SetIsSaving(true);
-
-        await SetBusyAsync("Saving...");
+        await SetBusyAsync($"Saving {tabName}...");
 
         try
         {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lodCase);
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _stateMachine.Case);
 
-            // Save the entity
-            _lodCase = await CaseService.SaveCaseAsync(_lodCase, _cts.Token);
+            var result = await _stateMachine.SaveCaseAsync(_cts.Token);
 
-            // Refresh the view model from the saved entity and re-snapshot
-            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
-
-            TakeSnapshots();
-
-            NotificationService.Notify(new NotificationMessage
+            if (result.Success)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Saved",
-                Detail = $"{source} data saved successfully.",
-                Duration = 3000
-            });
+                _lineOfDutyCase = result.Case;
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+                TakeSnapshots();
+
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Saved",
+                    Detail = $"{tabName} saved successfully.",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Save Failed", result.ErrorMessage);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -586,14 +558,8 @@ public partial class EditCase : ComponentBase, IDisposable
         finally
         {
             SetIsSaving(false);
-
             await SetBusyAsync(isBusy: false);
         }
-    }
-
-    private void SetIsSaving(bool isSaving)
-    {
-        _page.IsSaving = isSaving;
     }
 
     private async Task SetBusyAsync(string message = "Working...", bool? isBusy = true)
@@ -693,19 +659,13 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (IsNewCase)
         {
-            (_workflowSteps, _currentStepIndex) = WorkflowSidebar.InitializeSteps(_lodCase);
-            _selectedTabIndex = GetTabIndexForState(_lodCase?.WorkflowState ?? WorkflowState.MemberInformationEntry);
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
+
             TakeSnapshots();
         }
         else
         {
             await LoadCaseAsync();
-
-            if (_lodCase is not null)
-            {
-                _stateMachine = LodStateMachineFactory.Create(_lodCase, CaseService);
-                await RefreshPermittedTriggersAsync();
-            }
         }
 
         _page.IsLoading = false;
@@ -725,33 +685,28 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            _lodCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+            _lineOfDutyCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
 
-            if (_lodCase is null)
+            if (_lineOfDutyCase is null)
             {
-                (_workflowSteps, _currentStepIndex) = WorkflowSidebar.InitializeSteps(_lodCase);
-                _selectedTabIndex = GetTabIndexForState(WorkflowState.MemberInformationEntry);
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(WorkflowState.Draft);
 
                 return;
             }
 
-            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
-            (_workflowSteps, _currentStepIndex) = WorkflowSidebar.InitializeSteps(_lodCase);
-            _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
-            TakeSnapshots();
-
-            // Check if this case is bookmarked
-            if (_lodCase.Id > 0)
+            if (_lineOfDutyCase.Id > 0)
             {
                 try
                 {
-                    _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lodCase.Id, _cts.Token);
+                    _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lodCase.Id);
+                    Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lineOfDutyCase.Id);
                 }
             }
         }
@@ -771,8 +726,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 Duration = 5000
             });
 
-            (_workflowSteps, _currentStepIndex) = WorkflowSidebar.InitializeSteps(_lodCase);
-            _selectedTabIndex = GetTabIndexForState(_lodCase?.WorkflowState ?? WorkflowState.MemberInformationEntry);
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
         }
         finally
         {
@@ -780,7 +734,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private void TakeSnapshots()
+    public void TakeSnapshots()
     {
         foreach (var model in AllFormModels)
         {
@@ -825,7 +779,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnBookmarkClick()
     {
-        if (_lodCase?.Id is null or 0)
+        if (_lineOfDutyCase?.Id is null or 0)
         {
             return;
         }
@@ -839,12 +793,12 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await CaseService.AddBookmarkAsync(_lodCase.Id, _cts.Token);
+                await CaseService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
                 await BookmarkCountService.RefreshAsync(_cts.Token);
             }
             catch (Exception ex)
             {
-                Logger.LogWarning(ex, "Failed to add bookmark for case {CaseId}", _lodCase.Id);
+                Logger.LogWarning(ex, "Failed to add bookmark for case {CaseId}", _lineOfDutyCase.Id);
                 _bookmark.IsBookmarked = false; // Revert on failure
             }
 
@@ -855,13 +809,13 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             try
             {
-                await CaseService.RemoveBookmarkAsync(_lodCase.Id, _cts.Token);
+                await CaseService.RemoveBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
                 await BookmarkCountService.RefreshAsync(_cts.Token);
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_viewModel?.CaseNumber} removed from bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)
             {
-                Logger.LogWarning(ex, "Failed to remove bookmark for case {CaseId}", _lodCase.Id);
+                Logger.LogWarning(ex, "Failed to remove bookmark for case {CaseId}", _lineOfDutyCase.Id);
                 _bookmark.IsBookmarked = true; // Revert on failure
             }
         }
@@ -871,75 +825,6 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         // TODO: Implement file attachment dialog/upload
         await Task.CompletedTask;
-    }
-
-    private async Task OnStartLod()
-    {
-        if (_selectedMemberId <= 0)
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Warning, 
-                "No Member Selected",
-                "Please search for and select a member before forwarding.");
-
-            return;
-        }
-
-        var confirmed = await DialogService.Confirm(
-            "Are you sure you want to start the LOD process?",
-            "Start LOD",
-            new ConfirmOptions { OkButtonText = "Start", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Creating LOD case...");
-
-        try
-        {
-            var newCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
-
-            newCase.WorkflowState = WorkflowState.MemberInformationEntry;
-
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
-
-            var now = DateTime.UtcNow;
-
-            var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
-
-            _stateMachine = LodStateMachineFactory.Create(saved, CaseService);
-
-            await _stateMachine.FireAsync(LineOfDutyTrigger.ForwardToMedicalTechnician);
-
-            CaseId = saved.CaseId;
-
-            // Reload the full case — the POST response omits navigation properties
-            _lodCase = await CaseService.GetCaseAsync(saved.CaseId, _cts.Token) ?? saved;
-
-            _stateMachine.UpdateCase(_lodCase);
-            await RefreshPermittedTriggersAsync();
-
-            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lodCase);
-
-            //_currentStepIndex = WorkflowSidebar.ApplyWorkflowState(_lodCase);
-            _selectedTabIndex = GetTabIndexForState(_lodCase.WorkflowState);
-
-            TakeSnapshots();
-
-            NotificationService.Notify(NotificationSeverity.Success, "LOD Started", $"Case {saved.CaseId} created for {saved.MemberName}.");
-
-            Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Create Failed", ex.Message);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
     }
 
     private async Task OnSplitButtonClick(RadzenSplitButtonItem item)

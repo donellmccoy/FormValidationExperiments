@@ -24,7 +24,7 @@ public abstract class TrackableModel
     /// </summary>
     [JsonIgnore]
     public bool IsDirty =>
-        _snapshot is not null
+        !string.IsNullOrWhiteSpace(_snapshot)
         && _jsonOptions is not null
         && JsonSerializer.Serialize(this, GetType(), _jsonOptions) != _snapshot;
 
@@ -36,7 +36,7 @@ public abstract class TrackableModel
     /// </summary>
     public bool IsDirtySection(string sectionName)
     {
-        if (string.IsNullOrWhiteSpace(sectionName) || _snapshot is null || _jsonOptions is null)
+        if (string.IsNullOrWhiteSpace(sectionName) || string.IsNullOrWhiteSpace(_snapshot) || _jsonOptions is null)
         {
             return false;
         }
@@ -78,7 +78,7 @@ public abstract class TrackableModel
     /// </summary>
     public void Revert()
     {
-        if (_snapshot is null || _jsonOptions is null)
+        if (string.IsNullOrWhiteSpace(_snapshot) || _jsonOptions is null)
         {
             return;
         }

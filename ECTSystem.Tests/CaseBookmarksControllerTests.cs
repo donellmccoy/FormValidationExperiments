@@ -40,9 +40,9 @@ public class CaseBookmarksControllerTests : ControllerTestBase
     // ─────────────────────────── Get (collection) ────────────────────────────
 
     [Fact]
-    public void Get_ReturnsOkWithBookmarksQueryable()
+    public async Task Get_ReturnsOkWithBookmarksQueryable()
     {
-        var result = _sut.Get();
+        var result = await _sut.Get();
 
         Assert.IsType<OkObjectResult>(result);
     }

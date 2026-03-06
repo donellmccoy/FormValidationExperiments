@@ -52,7 +52,6 @@ public class CasesControllerTests : ControllerTestBase
 
         _sut = new CasesController(
             _mockLog.Object,
-            _mockEdmModel.Object,
             _mockContextFactory.Object);
 
         _sut.ControllerContext = CreateControllerContext();
@@ -70,11 +69,11 @@ public class CasesControllerTests : ControllerTestBase
     // ─────────────────────────── Get (collection) ────────────────────────────
 
     [Fact]
-    public void Get_ReturnsOkContainingCasesQueryable()
+    public async Task Get_ReturnsOkContainingCasesQueryable()
     {
         SeedCase(BuildCase(1));
 
-        var result = _sut.Get();
+        var result = await _sut.Get();
 
         Assert.IsType<OkObjectResult>(result);
     }

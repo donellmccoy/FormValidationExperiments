@@ -7,7 +7,7 @@ namespace ECTSystem.Web.Pages;
 /// Factory for creating <see cref="LodStateMachine"/> instances from a
 /// <see cref="LineOfDutyCase"/> and an <see cref="IDataService"/>.
 /// </summary>
-internal static class LodStateMachineFactory
+internal static class LineOfDutyStateMachineFactory
 {
     /// <summary>
     /// Creates a new <see cref="LodStateMachine"/> initialized with the specified
@@ -20,5 +20,10 @@ internal static class LodStateMachineFactory
     public static LodStateMachine Create(LineOfDutyCase lineOfDutyCase, IDataService dataService)
     {
         return new LodStateMachine(lineOfDutyCase, dataService);
+    }
+
+    public static LodStateMachine Create(IDataService dataService)
+    {
+        return new LodStateMachine(dataService);
     }
 }

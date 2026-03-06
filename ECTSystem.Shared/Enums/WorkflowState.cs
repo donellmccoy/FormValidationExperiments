@@ -6,7 +6,8 @@ namespace ECTSystem.Shared.Enums;
 /// </summary>
 public enum WorkflowState
 {
-    Pending = 0,
+    /// <summary>Case has been created but not yet formally initiated into the LOD workflow.</summary>
+    Draft = 0,
 
     /// <summary>Initial state — member information and incident details are being entered.</summary>
     MemberInformationEntry = 1,

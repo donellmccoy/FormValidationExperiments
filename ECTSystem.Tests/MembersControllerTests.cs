@@ -55,9 +55,9 @@ public class MembersControllerTests : ControllerTestBase
     // ─────────────────────────── Get (collection) ────────────────────────────
 
     [Fact]
-    public void Get_ReturnsOkWithMembersQueryable()
+    public async Task Get_ReturnsOkWithMembersQueryable()
     {
-        var result = _sut.Get();
+        var result = await _sut.Get();
 
         Assert.IsType<OkObjectResult>(result);
     }

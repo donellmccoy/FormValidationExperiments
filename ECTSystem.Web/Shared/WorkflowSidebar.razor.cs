@@ -13,19 +13,11 @@ namespace ECTSystem.Web.Shared;
 public partial class WorkflowSidebar : ComponentBase
 {
     /// <summary>
-    /// The ordered list of <see cref="WorkflowStep"/> instances to display in the sidebar.
-    /// Each step represents a stage in the LOD determination workflow (e.g., Member Information,
-    /// Medical Technician Review, Board Admin Review, Completed).
+    /// The LOD case whose workflow state and history determine step statuses.
+    /// May be <c>null</c> for new cases (defaults to step 1).
     /// </summary>
     [Parameter]
-    public List<WorkflowStep> Steps { get; set; } = [];
-
-    /// <summary>
-    /// The 0-based index of the currently active workflow step within <see cref="Steps"/>.
-    /// Used to calculate the progress bar percentage and highlight the active step.
-    /// </summary>
-    [Parameter]
-    public int CurrentStepIndex { get; set; }
+    public LineOfDutyCase LineOfDutyCase { get; set; }
 
     /// <summary>
     /// Callback invoked when the user clicks a workflow step in the sidebar.
@@ -35,7 +27,11 @@ public partial class WorkflowSidebar : ComponentBase
     [Parameter]
     public EventCallback<WorkflowStep> OnStepClicked { get; set; }
 
-    private static List<WorkflowStep> _steps =
+    /// <summary>
+    /// The ordered list of workflow steps displayed in the sidebar.
+    /// Each step represents a stage in the LOD determination workflow.
+    /// </summary>
+    public List<WorkflowStep> Steps { get; } =
     [
         new() { Number = 1,  Name = "Enter Member Information",  Icon = "flag",                 Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MemberInformationEntry,    Description = "Enter member identification and incident details to initiate the LOD case." },
         new() { Number = 2,  Name = "Medical Technician Review", Icon = "person",               Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.MedicalTechnicianReview,   Description = "Medical technician reviews the injury/illness and documents clinical findings." },
@@ -52,24 +48,38 @@ public partial class WorkflowSidebar : ComponentBase
     ];
 
     /// <summary>
-    /// Synchronizes the workflow sidebar step statuses and computes the current step index
-    /// to match <paramref name="state"/>. Uses <see cref="WorkflowStateHistory"/> entries
-    /// as the primary source for step status, dates, and signatures; falls back to positional
-    /// <see cref="TimelineStep"/> data for cases that predate the history feature.
+    /// The 0-based index of the currently active workflow step.
+    /// </summary>
+    public int CurrentStepIndex { get; private set; }
+
+    /// <summary>
+    /// The currently active <see cref="WorkflowStep"/>, or <c>null</c> if no steps are available.
+    /// </summary>
+    public WorkflowStep CurrentStep =>
+        CurrentStepIndex >= 0 && CurrentStepIndex < Steps.Count ? Steps[CurrentStepIndex] : null;
+
+    protected override void OnParametersSet()
+    {
+        ApplyWorkflowState();
+    }
+
+    /// <summary>
+    /// Synchronizes step statuses and computes the current step index
+    /// from the specified LOD case (or the bound <see cref="LineOfDutyCase"/> parameter).
+    /// Uses <see cref="WorkflowStateHistory"/> entries as the primary source for step status,
+    /// dates, and signatures; falls back to positional <see cref="TimelineStep"/> data
+    /// for cases that predate the history feature.
     /// </summary>
     /// <param name="lodCase">
-    /// The LOD case whose <see cref="LineOfDutyCase.WorkflowStateHistories"/> and
-    /// <see cref="LineOfDutyCase.TimelineSteps"/> are used to populate step metadata.
-    /// May be <c>null</c> for new cases.
+    /// Optional LOD case override. When <c>null</c>, uses the bound <see cref="LineOfDutyCase"/> parameter.
     /// </param>
-    /// 
-    /// 
-    /// <returns>The 0-based index of the current step corresponding to <paramref name="state"/>.</returns>
-    public static int ApplyWorkflowState(LineOfDutyCase lodCase)
+    public void ApplyWorkflowState(LineOfDutyCase lodCase = null)
     {
+        lodCase ??= LineOfDutyCase;
+
         // Clamp to valid range — DB rows that predate the WorkflowState migration have int value 0
         var rawState = lodCase is not null ? (int)lodCase.WorkflowState : 1;
-        var stateInt = rawState < 1 ? 1 : rawState > _steps.Count ? _steps.Count : rawState;
+        var stateInt = rawState < 1 ? 1 : rawState > Steps.Count ? Steps.Count : rawState;
 
         // Primary source: latest history entry per WorkflowState (highest Id = most recent)
         var historyByState = lodCase?.WorkflowStateHistories?
@@ -83,7 +93,7 @@ public partial class WorkflowSidebar : ComponentBase
             .ToDictionary(x => x.Index, x => x.Step)
             ?? [];
 
-        foreach (var step in _steps)
+        foreach (var step in Steps)
         {
             if (historyByState.TryGetValue(step.WorkflowState, out var history))
             {
@@ -131,28 +141,7 @@ public partial class WorkflowSidebar : ComponentBase
             }
         }
 
-        return stateInt - 1;
-    }
-
-    /// <summary>
-    /// Creates the full list of 12 workflow steps (Member Information through Completed),
-    /// each initialized to <see cref="WorkflowStepStatus.Pending"/>, then applies
-    /// <see cref="ApplyWorkflowState"/> to synchronize step statuses with the case's
-    /// current <see cref="LineOfDutyCase.WorkflowState"/> and history data.
-    /// </summary>
-    /// <param name="lodCase">
-    /// The LOD case whose workflow state and history determine initial step statuses.
-    /// May be <c>null</c> for new cases (defaults to <see cref="WorkflowState.MemberInformationEntry"/>).
-    /// </param>
-    /// <returns>
-    /// A tuple containing the initialized <see cref="WorkflowStep"/> list and the 0-based
-    /// index of the current step.
-    /// </returns>
-    public static (List<WorkflowStep> Steps, int CurrentStepIndex) InitializeSteps(LineOfDutyCase lodCase)
-    {
-        var currentStepIndex = ApplyWorkflowState(lodCase);
-
-        return (_steps, currentStepIndex);
+        CurrentStepIndex = stateInt - 1;
     }
 
     /// <summary>

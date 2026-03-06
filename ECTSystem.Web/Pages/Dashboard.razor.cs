@@ -135,6 +135,7 @@ public partial class Dashboard : ComponentBase
             WorkflowState.Completed => BadgeStyle.Success,
             WorkflowState.Closed => BadgeStyle.Light,
             WorkflowState.Cancelled => BadgeStyle.Danger,
+            WorkflowState.Draft => BadgeStyle.Light,
             WorkflowState.MemberInformationEntry => BadgeStyle.Info,
             _ => BadgeStyle.Warning
         };

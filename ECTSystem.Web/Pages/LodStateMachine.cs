@@ -1,8 +1,10 @@
-using Stateless;
-using Stateless.Graph;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using ECTSystem.Web.Extensions;
 using ECTSystem.Web.Services;
+using Radzen;
+using Stateless;
+using Stateless.Graph;
 
 namespace ECTSystem.Web.Pages;
 
@@ -23,6 +25,25 @@ internal class LodStateMachine
     private readonly StateMachine<WorkflowState, LineOfDutyTrigger> _sm;
 
     /// <summary>
+    /// Parameterized trigger for <see cref="LineOfDutyTrigger.Return"/> that carries
+    /// the target <see cref="WorkflowState"/> to return to. Configured via
+    /// <see cref="StateMachine{TState,TTrigger}.SetTriggerParameters{TArg0}"/> and
+    /// used with <see cref="StateMachine{TState,TTrigger}.PermitDynamicIf{TArg0}"/>
+    /// so a single trigger replaces all <c>ReturnTo*</c> variants.
+    /// </summary>
+    private StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<WorkflowState> _returnTrigger;
+
+    /// <summary>
+    /// Parameterized trigger for <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> that carries
+    /// the <see cref="LineOfDutyCase"/> instance being initiated into the LOD workflow.
+    /// The case is passed through to <see cref="OnMemberInformationEntryAsync(LineOfDutyCase)"/>
+    /// via <see cref="StateMachine{TState,TTrigger}.TriggerWithParameters{TArg0}"/>.
+    /// </summary>
+    private StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<LineOfDutyCase> _trigger;
+
+
+
+    /// <summary>
     /// The LOD case whose <see cref="LineOfDutyCase.WorkflowState"/> is managed by this
     /// state machine. Updated in place during transitions and used to retrieve
     /// <see cref="LineOfDutyCase.WorkflowStateHistories"/> and
@@ -30,11 +51,24 @@ internal class LodStateMachine
     /// </summary>
     private LineOfDutyCase _lineOfDutyCase;
 
+    private EditCase _editCase;
+
     /// <summary>
     /// The data service used to persist all transition side-effects, including
     /// workflow state history entries, updated case state, and timeline step activation.
     /// </summary>
     private readonly IDataService _dataService;
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.MemberInformationEntry"/> from the
+    /// <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> trigger. Allows the UI layer
+    /// (e.g., <c>EditCase</c>) to react to case creation without the state machine
+    /// holding a reference to UI components.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnMemberInformationEntered { get; set; }
+
+    public Func<LineOfDutyCase, Task> OnMedicalTechnicianReviewEntered { get; set; }
 
     /// <summary>
     /// Gets the current <see cref="WorkflowState"/> of the underlying state machine.
@@ -65,6 +99,477 @@ internal class LodStateMachine
     }
 
     /// <summary>
+    /// Gets the current <see cref="LineOfDutyCase"/> managed by this state machine.
+    /// </summary>
+    public LineOfDutyCase Case => _lineOfDutyCase;
+
+    #region Tab/State Mapping
+
+    private static readonly (string TabName, WorkflowState State)[] WorkflowTabMap =
+    [
+        ("Member Information",       WorkflowState.MemberInformationEntry),        // 0
+        ("Medical Technician",       WorkflowState.MedicalTechnicianReview),       // 1
+        ("Medical Officer",          WorkflowState.MedicalOfficerReview),          // 2
+        ("Unit CC Review",           WorkflowState.UnitCommanderReview),           // 3
+        ("Wing JA Review",           WorkflowState.WingJudgeAdvocateReview),       // 4
+        ("Wing CC Review",           WorkflowState.WingCommanderReview),           // 5
+        ("Appointing Authority",     WorkflowState.AppointingAuthorityReview),     // 6
+        ("Board Technician Review",  WorkflowState.BoardMedicalTechnicianReview),  // 7
+        ("Board Medical Review",     WorkflowState.BoardMedicalOfficerReview),     // 8
+        ("Board Legal Review",       WorkflowState.BoardLegalReview),              // 9
+        ("Board Admin Review",       WorkflowState.BoardAdministratorReview),      // 10
+    ];
+
+    /// <summary>
+    /// Returns the tab index that corresponds to the given <see cref="WorkflowState"/>.
+    /// Terminal states (Completed, Cancelled) map to the last workflow tab; Draft maps to 0.
+    /// </summary>
+    public static int GetTabIndexForState(WorkflowState state)
+    {
+        for (var i = 0; i < WorkflowTabMap.Length; i++)
+        {
+            if (WorkflowTabMap[i].State == state)
+            {
+                return i;
+            }
+        }
+
+        return state switch
+        {
+            WorkflowState.Completed => WorkflowTabMap.Length - 1,
+            WorkflowState.Draft => 0,
+            _ => 0
+        };
+    }
+
+    /// <summary>
+    /// Determines whether a tab at the given index should be disabled based on the current workflow state.
+    /// Tabs beyond index 10 (e.g., Documents, Timeline) are always enabled.
+    /// </summary>
+    public bool IsTabDisabled(int tabIndex)
+    {
+        if (tabIndex >= 11)
+        {
+            return false;
+        }
+
+        var state = _lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft;
+        var maxEnabledIndex = GetTabIndexForState(state);
+
+        // In non-Draft states, also enable the next tab so the user can navigate forward
+        if (state != WorkflowState.Draft)
+        {
+            maxEnabledIndex++;
+        }
+
+        return tabIndex > maxEnabledIndex;
+    }
+
+    #endregion
+
+    #region Transition Metadata
+
+    /// <summary>
+    /// Workflow transitions shared across all source states (return-* and board-* actions).
+    /// </summary>
+    private static readonly Dictionary<string, WorkflowTransition> SharedTransitions = new()
+    {
+        ["return-med-tech"] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.MedicalTechnicianReview,
+            "Are you sure you want to return this case to the Medical Technician?",
+            "Confirm Return", "Return",
+            "Returning to Medical Technician...",
+            NotificationSeverity.Info, "Returned to Medical Technician",
+            "Case has been returned to the Medical Technician for review."),
+
+        ["return-med-officer"] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.MedicalOfficerReview,
+            "Are you sure you want to return this case to the Medical Officer?",
+            "Confirm Return", "Return",
+            "Returning to Medical Officer...",
+            NotificationSeverity.Info, "Returned to Medical Officer",
+            "Case has been returned to the Medical Officer for review."),
+
+        ["return-unit-cc"] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.UnitCommanderReview,
+            "Are you sure you want to return this case to the Unit Commander?",
+            "Confirm Return", "Return",
+            "Returning to Unit CC...",
+            NotificationSeverity.Info, "Returned to Unit CC",
+            "Case has been returned to the Unit Commander for review."),
+
+        ["return-wing-ja"] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.WingJudgeAdvocateReview,
+            "Are you sure you want to return this case to the Wing Judge Advocate?",
+            "Confirm Return", "Return",
+            "Returning to Wing JA...",
+            NotificationSeverity.Info, "Returned to Wing JA",
+            "Case has been returned to the Wing Judge Advocate for review."),
+
+        ["return-wing-cc"] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.WingCommanderReview,
+            "Are you sure you want to return this case to the Wing Commander?",
+            "Confirm Return", "Return",
+            "Returning to Wing CC...",
+            NotificationSeverity.Info, "Returned to Wing CC",
+            "Case has been returned to the Wing Commander for review."),
+
+        ["return-appointing-authority"] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.AppointingAuthorityReview,
+            "Are you sure you want to return this case to the Appointing Authority?",
+            "Confirm Return", "Return",
+            "Returning to Appointing Authority...",
+            NotificationSeverity.Info, "Returned to Appointing Authority",
+            "Case has been returned to the Appointing Authority for review."),
+
+        ["board-tech"] = new(
+            LineOfDutyTrigger.ForwardToBoardTechnicianReview,
+            WorkflowState.BoardMedicalTechnicianReview,
+            "Are you sure you want to forward this case to the Board Technician?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Technician...",
+            NotificationSeverity.Success, "Forwarded to Board Technician",
+            "Case has been forwarded to the Board Technician."),
+
+        ["board-med"] = new(
+            LineOfDutyTrigger.ForwardToBoardMedicalReview,
+            WorkflowState.BoardMedicalOfficerReview,
+            "Are you sure you want to forward this case to the Board Medical reviewer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Medical...",
+            NotificationSeverity.Success, "Forwarded to Board Medical",
+            "Case has been forwarded to the Board Medical reviewer."),
+
+        ["board-legal"] = new(
+            LineOfDutyTrigger.ForwardToBoardLegalReview,
+            WorkflowState.BoardLegalReview,
+            "Are you sure you want to forward this case to the Board Legal reviewer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Legal...",
+            NotificationSeverity.Success, "Forwarded to Board Legal",
+            "Case has been forwarded to the Board Legal reviewer."),
+
+        ["board-admin"] = new(
+            LineOfDutyTrigger.ForwardToBoardAdministratorReview,
+            WorkflowState.BoardAdministratorReview,
+            "Are you sure you want to forward this case to the Board Admin reviewer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Admin...",
+            NotificationSeverity.Success, "Forwarded to Board Admin",
+            "Case has been forwarded to the Board Admin reviewer."),
+    };
+
+    /// <summary>
+    /// Workflow transitions that depend on the source state: default forwards and context-dependent actions.
+    /// </summary>
+    private static readonly Dictionary<(WorkflowState Source, string Action), WorkflowTransition> SourceTransitions = new()
+    {
+        [(WorkflowState.Draft, "default")] = new(
+            LineOfDutyTrigger.StartLineOfDutyCase,
+            WorkflowState.MemberInformationEntry,
+            "Are you sure you want to start the LOD process?",
+            "Start LOD", "Start",
+            "Starting LOD case...",
+            NotificationSeverity.Success, "LOD Started",
+            "Case has been formally initiated into the LOD workflow."),
+
+        [(WorkflowState.MemberInformationEntry, "default")] = new(
+            LineOfDutyTrigger.ForwardToMedicalTechnician,
+            WorkflowState.MedicalTechnicianReview,
+            "Are you sure you want to forward this case to the Medical Technician?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Medical Technician...",
+            NotificationSeverity.Success, "Forwarded to Medical Technician",
+            "Case has been forwarded to the Medical Technician for review."),
+
+        [(WorkflowState.MedicalTechnicianReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToMedicalOfficerReview,
+            WorkflowState.MedicalOfficerReview,
+            "Are you sure you want to forward this case to the Medical Officer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Medical Officer...",
+            NotificationSeverity.Success, "Forwarded to Medical Officer",
+            "Case has been forwarded to the Medical Officer for review."),
+
+        [(WorkflowState.MedicalOfficerReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToUnitCommanderReview,
+            WorkflowState.UnitCommanderReview,
+            "Are you sure you want to forward this case to the Unit Commander?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Unit CC...",
+            NotificationSeverity.Success, "Forwarded to Unit CC",
+            "Case has been forwarded to the Unit Commander."),
+
+        [(WorkflowState.UnitCommanderReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview,
+            WorkflowState.WingJudgeAdvocateReview,
+            "Are you sure you want to forward this case to the Wing Judge Advocate?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Wing JA...",
+            NotificationSeverity.Success, "Forwarded to Wing JA",
+            "Case has been forwarded to the Wing Judge Advocate."),
+
+        [(WorkflowState.WingJudgeAdvocateReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToWingCommanderReview,
+            WorkflowState.WingCommanderReview,
+            "Are you sure you want to forward this case to the Wing Commander?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Wing CC...",
+            NotificationSeverity.Success, "Forwarded to Wing CC",
+            "Case has been forwarded to the Wing Commander."),
+
+        [(WorkflowState.WingCommanderReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToAppointingAuthorityReview,
+            WorkflowState.AppointingAuthorityReview,
+            "Are you sure you want to forward this case to the Appointing Authority?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Appointing Authority...",
+            NotificationSeverity.Success, "Forwarded to Appointing Authority",
+            "Case has been forwarded to the Appointing Authority for review."),
+
+        [(WorkflowState.AppointingAuthorityReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToBoardTechnicianReview,
+            WorkflowState.BoardMedicalTechnicianReview,
+            "Are you sure you want to forward this case to the Board for review?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Review...",
+            NotificationSeverity.Success, "Forwarded to Board Review",
+            "Case has been forwarded to the Board for review."),
+
+        [(WorkflowState.BoardMedicalTechnicianReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToBoardMedicalReview,
+            WorkflowState.BoardMedicalOfficerReview,
+            "Are you sure you want to forward this case to the Board Medical reviewer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Medical...",
+            NotificationSeverity.Success, "Forwarded to Board Medical",
+            "Case has been forwarded to the Board Medical reviewer."),
+
+        [(WorkflowState.BoardMedicalOfficerReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToBoardLegalReview,
+            WorkflowState.BoardLegalReview,
+            "Are you sure you want to forward this case to the Board Legal reviewer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Legal...",
+            NotificationSeverity.Success, "Forwarded to Board Legal",
+            "Case has been forwarded to the Board Legal reviewer."),
+
+        [(WorkflowState.BoardLegalReview, "default")] = new(
+            LineOfDutyTrigger.ForwardToBoardAdministratorReview,
+            WorkflowState.BoardAdministratorReview,
+            "Are you sure you want to forward this case to the Board Admin reviewer?",
+            "Confirm Forward", "Forward",
+            "Forwarding to Board Admin...",
+            NotificationSeverity.Success, "Forwarded to Board Admin",
+            "Case has been forwarded to the Board Admin reviewer."),
+
+        [(WorkflowState.BoardAdministratorReview, "default")] = new(
+            LineOfDutyTrigger.Complete,
+            WorkflowState.Completed,
+            "Are you sure you want to complete the Board review?",
+            "Confirm Complete", "Complete",
+            "Completing Board review...",
+            NotificationSeverity.Success, "Review Completed",
+            "The Board review has been completed."),
+
+        [(WorkflowState.Completed, "default")] = new(
+            LineOfDutyTrigger.Complete,
+            WorkflowState.Completed,
+            "Are you sure you want to complete the Board review?",
+            "Confirm Complete", "Complete",
+            "Completing Board review...",
+            NotificationSeverity.Success, "Review Completed",
+            "The Board review has been completed."),
+
+        [(WorkflowState.MedicalOfficerReview, "return")] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.MedicalTechnicianReview,
+            "Are you sure you want to return this case to the Medical Technician?",
+            "Confirm Return", "Return",
+            "Returning to Med Tech...",
+            NotificationSeverity.Info, "Returned to Med Tech",
+            "Case has been returned to the Medical Technician for review."),
+
+        [(WorkflowState.WingCommanderReview, "return")] = new(
+            LineOfDutyTrigger.Return,
+            WorkflowState.UnitCommanderReview,
+            "Are you sure you want to return this case to the Unit Commander?",
+            "Confirm Return", "Return",
+            "Returning to Unit CC...",
+            NotificationSeverity.Info, "Returned to Unit CC",
+            "Case has been returned to the Unit Commander for review."),
+    };
+
+    /// <summary>
+    /// Resolves the <see cref="WorkflowTransition"/> metadata for a given source state and action string.
+    /// Checks source-specific transitions first, then shared transitions, then falls back to the
+    /// source state's default transition.
+    /// </summary>
+    /// <returns>The matching transition, or <c>null</c> if no transition is configured.</returns>
+    public static WorkflowTransition ResolveTransition(WorkflowState sourceState, string action)
+    {
+        if (SourceTransitions.TryGetValue((sourceState, action), out var transition))
+        {
+            return transition;
+        }
+
+        if (SharedTransitions.TryGetValue(action, out transition))
+        {
+            return transition;
+        }
+
+        SourceTransitions.TryGetValue((sourceState, "default"), out transition);
+        return transition;
+    }
+
+    #endregion
+
+    #region High-Level Operations
+
+    /// <summary>
+    /// Fires the specified trigger, persists the state change, re-fetches the case from
+    /// the API, and returns a <see cref="StateMachineResult"/> with the updated case and
+    /// computed tab index. On failure, resets the SM from persisted state.
+    /// </summary>
+    public async Task<StateMachineResult> TransitionAsync(LineOfDutyTrigger trigger, WorkflowState targetState, CancellationToken ct = default)
+    {
+        try
+        {
+            if (trigger == LineOfDutyTrigger.Return)
+            {
+                await _sm.FireAsync(_returnTrigger, targetState);
+            }
+            else
+            {
+                await _sm.FireAsync(trigger);
+            }
+
+            _lineOfDutyCase = await _dataService.GetCaseAsync(_lineOfDutyCase.CaseId, ct);
+
+            var tabIndex = GetTabIndexForState(targetState);
+            return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
+        }
+        catch (Exception ex)
+        {
+            await ResetFromPersistedStateAsync(ct);
+            return StateMachineResult.Fail(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Persists the current case entity via the data service and returns the saved entity
+    /// with its current tab index.
+    /// </summary>
+    public async Task<StateMachineResult> SaveCaseAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _lineOfDutyCase = await _dataService.SaveCaseAsync(_lineOfDutyCase, ct);
+            var tabIndex = GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
+        }
+        catch (Exception ex)
+        {
+            return StateMachineResult.Fail(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Creates a new LOD case by saving it to the API, reinitializing the state machine,
+    /// firing <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/>, and re-fetching the persisted case.
+    /// </summary>
+    public async Task<StateMachineResult> CreateCaseAsync(LineOfDutyCase newCase, CancellationToken ct = default)
+    {
+        try
+        {
+            var saved = await _dataService.SaveCaseAsync(newCase, ct);
+
+            await _sm.FireAsync(_trigger, saved);
+
+            // Re-fetch to get full navigation properties
+            _lineOfDutyCase = await _dataService.GetCaseAsync(saved.CaseId, ct) ?? saved;
+
+            var tabIndex = GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
+        }
+        catch (Exception ex)
+        {
+            return StateMachineResult.Fail(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Signs the timeline step at the given index using the data service, records a
+    /// signed history entry, and returns the updated case.
+    /// </summary>
+    public async Task<StateMachineResult> SignTimelineStepAsync(int stepIndex, DateTime? stepStartDate, CancellationToken ct = default)
+    {
+        try
+        {
+            var timelineSteps = _lineOfDutyCase.TimelineSteps;
+
+            if (stepIndex >= timelineSteps.Count)
+            {
+                return StateMachineResult.Fail("No timeline step found for the current workflow step.");
+            }
+
+            var timelineStep = timelineSteps.ElementAt(stepIndex);
+
+            var signed = await _dataService.SignTimelineStepAsync(timelineStep.Id, ct);
+
+            timelineStep.SignedDate = signed.SignedDate;
+            timelineStep.SignedBy = signed.SignedBy;
+
+            var historyEntry = await _dataService.AddHistoryEntryAsync(
+                WorkflowStateHistoryFactory.CreateSigned(
+                    _lineOfDutyCase.Id,
+                    _lineOfDutyCase.WorkflowState,
+                    stepStartDate,
+                    signed.SignedDate,
+                    signed.SignedBy),
+                ct);
+
+            _lineOfDutyCase.WorkflowStateHistories.Add(historyEntry);
+
+            var tabIndex = GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
+        }
+        catch (Exception ex)
+        {
+            return StateMachineResult.Fail(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Re-syncs the state machine with the persisted case state after an error,
+    /// preventing SM/DB state drift.
+    /// </summary>
+    private async Task ResetFromPersistedStateAsync(CancellationToken ct)
+    {
+        try
+        {
+            var persisted = await _dataService.GetCaseAsync(_lineOfDutyCase.CaseId, ct);
+            if (persisted is not null)
+            {
+                _lineOfDutyCase = persisted;
+            }
+        }
+        catch
+        {
+            // Best-effort recovery — if re-fetch fails, the SM is stale but
+            // the UI will show an error and the user can refresh.
+        }
+    }
+
+    #endregion
+
+    /// <summary>
     /// Initializes a new <see cref="LodStateMachine"/> for the specified LOD case.
     /// The state machine starts in <paramref name="lineOfDutyCase"/>'s current
     /// <see cref="LineOfDutyCase.WorkflowState"/>, registers
@@ -85,9 +590,25 @@ internal class LodStateMachine
         _dataService = dataService;
 
         _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.WorkflowState, FiringMode.Queued);
+        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
+        _trigger = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.StartLineOfDutyCase);
 
-        _sm.OnTransitionedAsync(HandleTransitionAsync);
-        _sm.OnTransitionCompletedAsync(OnTransitionCompletedAsync);
+        //_sm.OnTransitionedAsync(HandleTransitionAsync);
+        //_sm.OnTransitionCompletedAsync(OnTransitionCompletedAsync);
+
+        Configure();
+    }
+
+    public LodStateMachine(IDataService dataService)
+    {
+        _dataService = dataService;
+
+        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(WorkflowState.Draft, FiringMode.Queued);
+        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
+        _trigger = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.StartLineOfDutyCase);
+
+        //_sm.OnTransitionedAsync(HandleTransitionAsync);
+        //_sm.OnTransitionCompletedAsync(OnTransitionCompletedAsync);
 
         Configure();
     }
@@ -114,6 +635,10 @@ internal class LodStateMachine
     /// </param>
     private async Task HandleTransitionAsync(StateMachine<WorkflowState, LineOfDutyTrigger>.Transition transition)
     {
+        _lineOfDutyCase.WorkflowState = transition.Destination;
+
+        await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
         var now = DateTime.UtcNow;
 
         await _dataService.AddHistoryEntryAsync(new WorkflowStateHistory
@@ -149,8 +674,9 @@ internal class LodStateMachine
     /// <summary>
     /// Configures all permitted state transitions on the underlying
     /// <see cref="StateMachine{TState,TTrigger}"/>. Each <see cref="WorkflowState"/> is
-    /// configured with its valid forward (<c>ForwardTo*</c>) and return (<c>ReturnTo*</c>)
-    /// triggers, plus <see cref="LineOfDutyTrigger.Cancel"/> to move to
+    /// configured with its valid forward (<c>ForwardTo*</c>) triggers and a single
+    /// parameterized <see cref="LineOfDutyTrigger.Return"/> trigger for returning to
+    /// earlier stages, plus <see cref="LineOfDutyTrigger.Cancel"/> to move to
     /// <see cref="WorkflowState.Cancelled"/>. Board-level states allow lateral
     /// routing between technician, medical, legal, and administrator reviews.
     /// Terminal states (<see cref="WorkflowState.Completed"/>,
@@ -158,16 +684,22 @@ internal class LodStateMachine
     /// </summary>
     private void Configure()
     {
+        // Step 0: Draft — case created but not yet initiated into the LOD workflow
+        _sm.Configure(WorkflowState.Draft)
+            .PermitIf(LineOfDutyTrigger.StartLineOfDutyCase, WorkflowState.MemberInformationEntry, CanStartLodAsync)
+            .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
+            .OnExitAsync(OnDraftExitAsync);
+
         // Step 1: Member Information Entry — initial state; forward-only to Med Tech or cancel
         _sm.Configure(WorkflowState.MemberInformationEntry)
-            .OnEntryAsync(OnMemberInformationEntryAsync) 
+            .OnEntryFromAsync(_trigger, OnMemberInformationEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToMedicalTechnician, WorkflowState.MedicalTechnicianReview, CanForwardToMedicalTechnicianAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
-            .OnExitAsync(OnMemberInformationExitAsync); 
+            .OnExitAsync(OnMemberInformationExitAsync);
 
         // Step 2: Medical Technician Review — forward-only to Med Officer or cancel
         _sm.Configure(WorkflowState.MedicalTechnicianReview)
-            .OnEntryAsync(OnMedicalTechnicianReviewEntryAsync)
+            .OnEntryFromAsync(_trigger, OnMedicalTechnicianReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanForwardToMedicalOfficerReviewAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMedicalTechnicianReviewExitAsync);
@@ -176,109 +708,80 @@ internal class LodStateMachine
         _sm.Configure(WorkflowState.MedicalOfficerReview)
             .OnEntryAsync(OnMedicalOfficerReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanForwardToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMedicalOfficerReviewExitAsync);
 
-        // Step 4: Unit Commander Review — can forward to Wing JA or return to Med Tech / Med Officer
+        // Step 4: Unit Commander Review — can forward to Wing JA or return to earlier stages
         _sm.Configure(WorkflowState.UnitCommanderReview)
             .OnEntryAsync(OnUnitCommanderReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanForwardToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnUnitCommanderReviewExitAsync);
 
-        // Step 5: Wing Judge Advocate Review — can forward to Wing CC or return to Med Tech / Med Officer / Unit CC
+        // Step 5: Wing Judge Advocate Review — can forward to Wing CC or return to earlier stages
         _sm.Configure(WorkflowState.WingJudgeAdvocateReview)
             .OnEntryAsync(OnWingJudgeAdvocateReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, CanForwardToWingCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnWingJudgeAdvocateReviewExitAsync);
 
-        // Step 6 (mapped as step 7 in sidebar): Wing Commander Review — can forward to Appointing Authority or return to earlier stages
+        // Step 6: Wing Commander Review — can forward to Appointing Authority or return to earlier stages
         _sm.Configure(WorkflowState.WingCommanderReview)
             .OnEntryAsync(OnWingCommanderReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanForwardToAppointingAuthorityReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanReturnToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnWingCommanderReviewExitAsync);
 
-        // Step 6 (mapped as sidebar step 6): Appointing Authority — gateway to board-level review; can return to any prior stage
+        // Step 7: Appointing Authority Review — can forward to Board Tech or return to earlier stages
         _sm.Configure(WorkflowState.AppointingAuthorityReview)
             .OnEntryAsync(OnAppointingAuthorityReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanReturnToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingCommanderReview, WorkflowState.WingCommanderReview, CanReturnToWingCommanderReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnAppointingAuthorityReviewExitAsync);
 
-        // Step 8: Board Medical Technician — lateral routing to Board Med/Legal/Admin; can return to any earlier stage
+        // Step 8: Board Medical Technician Review — lateral routing to Board Med/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalTechnicianReview)
             .OnEntryAsync(OnBoardMedicalTechnicianReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanReturnToAppointingAuthorityReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingCommanderReview, WorkflowState.WingCommanderReview, CanReturnToWingCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanReturnToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardMedicalTechnicianReviewExitAsync);
 
         // Step 9: Board Medical Officer — lateral routing to Board Tech/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalOfficerReview)
             .OnEntryAsync(OnBoardMedicalOfficerReviewEntryAsync)
-            .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
+            .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanReturnToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingCommanderReview, WorkflowState.WingCommanderReview, CanReturnToWingCommanderReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardMedicalOfficerReviewExitAsync);
 
-        // Step 10: Board Legal Review — lateral routing to Board Tech/Med/Admin; can return to any earlier stage including Appointing Authority
+        // Step 10: Board Legal Review — lateral routing to Board Tech/Med/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardLegalReview)
             .OnEntryAsync(OnBoardLegalReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanReturnToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingCommanderReview, WorkflowState.WingCommanderReview, CanReturnToWingCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanReturnToAppointingAuthorityReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardLegalReviewExitAsync);
 
         // Step 11: Board Administrator Review — final review stage; can complete the case, route laterally, or return to any earlier stage
         _sm.Configure(WorkflowState.BoardAdministratorReview)
             .OnEntryAsync(OnBoardAdministratorReviewEntryAsync)
+            .PermitIf(LineOfDutyTrigger.Complete, WorkflowState.Completed, CanCompleteAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanReturnToWingJudgeAdvocateReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToWingCommanderReview, WorkflowState.WingCommanderReview, CanReturnToWingCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanReturnToUnitCommanderReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalTechnicianReview, WorkflowState.MedicalTechnicianReview, CanReturnToMedicalTechnicianReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanReturnToMedicalOfficerReviewAsync)
-            .PermitIf(LineOfDutyTrigger.ReturnToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanReturnToAppointingAuthorityReviewAsync)
-            .PermitIf(LineOfDutyTrigger.Complete, WorkflowState.Completed, CanCompleteAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardAdministratorReviewExitAsync);
 
@@ -293,17 +796,55 @@ internal class LodStateMachine
             .Ignore(LineOfDutyTrigger.Cancel);
     }
 
+    #region Step 0: Draft
+
+    /// <summary>
+    /// Guard that determines whether the <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/>
+    /// trigger may be fired from <see cref="WorkflowState.Draft"/>.
+    /// Validates that the case satisfies all preconditions to begin the LOD workflow.
+    /// </summary>
+    /// <returns>
+    /// <c>true</c> if the case may be initiated into the LOD workflow;
+    /// otherwise <c>false</c>.
+    /// </returns>
+    private bool CanStartLodAsync()
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// Called when the state machine exits <see cref="WorkflowState.Draft"/>.
+    /// Persists the case to the API for the first time, transitioning it from
+    /// an unsaved draft to a tracked LOD case in the system.
+    /// </summary>
+    /// <returns>A completed task. Override with actual logic when exit side-effects are needed.</returns>
+    private Task OnDraftExitAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    #endregion
+    
     #region Step 1: Member Information Entry
 
     /// <summary>
-    /// Called when the state machine enters <see cref="WorkflowState.MemberInformationEntry"/>.
-    /// Executes any initialization logic required when a case begins or returns to the
-    /// member information entry step (e.g., loading member data, resetting form state).
+    /// Called when the state machine enters <see cref="WorkflowState.MemberInformationEntry"/>
+    /// from the <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> trigger. Receives the newly saved
+    /// <see cref="LineOfDutyCase"/> passed through the parameterized trigger and sets it as
+    /// the active case managed by this state machine.
     /// </summary>
-    /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnMemberInformationEntryAsync()
+    /// <param name="lineOfDutyCase">The persisted LOD case being initiated into the workflow.</param>
+    private async Task OnMemberInformationEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.MemberInformationEntry);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.MemberInformationEntry);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnMemberInformationEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -342,9 +883,17 @@ internal class LodStateMachine
     /// medical technician review step (e.g., loading clinical assessment forms).
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnMedicalTechnicianReviewEntryAsync()
+    private async Task OnMedicalTechnicianReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.MedicalTechnicianReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.MedicalTechnicianReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnMedicalTechnicianReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -811,88 +1360,15 @@ internal class LodStateMachine
     }
 
     /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ReturnToMedicalTechnicianReview"/>
-    /// trigger may be fired. Used by Steps 3–11 to gate returning the case to the
-    /// medical technician for correction or additional clinical documentation.
+    /// Guard that determines whether the parameterized <see cref="LineOfDutyTrigger.Return"/>
+    /// trigger may be fired from the current state. Used by all states that support
+    /// returning the case to an earlier workflow step for correction or revision.
     /// </summary>
     /// <returns>
-    /// <c>true</c> if the case may be returned to
-    /// <see cref="WorkflowState.MedicalTechnicianReview"/>; otherwise <c>false</c>.
+    /// <c>true</c> if the case may be returned to the requested destination state;
+    /// otherwise <c>false</c>.
     /// </returns>
-    private bool CanReturnToMedicalTechnicianReviewAsync()
-    {
-        return true;
-    }
-
-    /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ReturnToMedicalOfficerReview"/>
-    /// trigger may be fired. Used by Steps 4–11 to gate returning the case to the
-    /// medical officer for correction or revision of the medical assessment.
-    /// </summary>
-    /// <returns>
-    /// <c>true</c> if the case may be returned to
-    /// <see cref="WorkflowState.MedicalOfficerReview"/>; otherwise <c>false</c>.
-    /// </returns>
-    private bool CanReturnToMedicalOfficerReviewAsync()
-    {
-        return true;
-    }
-
-    /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ReturnToUnitCommanderReview"/>
-    /// trigger may be fired. Used by Steps 5–11 to gate returning the case to the
-    /// unit commander for correction or revision of the endorsement.
-    /// </summary>
-    /// <returns>
-    /// <c>true</c> if the case may be returned to
-    /// <see cref="WorkflowState.UnitCommanderReview"/>; otherwise <c>false</c>.
-    /// </returns>
-    private bool CanReturnToUnitCommanderReviewAsync()
-    {
-        return true;
-    }
-
-    /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ReturnToWingJudgeAdvocateReview"/>
-    /// trigger may be fired. Used by Steps 6–11 to gate returning the case to the
-    /// Wing Judge Advocate for additional legal review or correction.
-    /// </summary>
-    /// <returns>
-    /// <c>true</c> if the case may be returned to
-    /// <see cref="WorkflowState.WingJudgeAdvocateReview"/>; otherwise <c>false</c>.
-    /// </returns>
-    private bool CanReturnToWingJudgeAdvocateReviewAsync()
-    {
-        return true;
-    }
-
-    /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ReturnToWingCommanderReview"/>
-    /// trigger may be fired. Used by Steps 7–11 to gate returning the case to the
-    /// Wing Commander for further review or revised determination.
-    /// </summary>
-    /// <returns>
-    /// <c>true</c> if the case may be returned to
-    /// <see cref="WorkflowState.WingCommanderReview"/>; otherwise <c>false</c>.
-    /// </returns>
-    private bool CanReturnToWingCommanderReviewAsync()
-    {
-        return true;
-    }
-
-    /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ReturnToAppointingAuthorityReview"/>
-    /// trigger may be fired. Used by board-level states
-    /// (<see cref="WorkflowState.BoardMedicalTechnicianReview"/>,
-    /// <see cref="WorkflowState.BoardLegalReview"/>, and
-    /// <see cref="WorkflowState.BoardAdministratorReview"/>)
-    /// to gate returning the case to the appointing authority.
-    /// </summary>
-    /// <returns>
-    /// <c>true</c> if the case may be returned to
-    /// <see cref="WorkflowState.AppointingAuthorityReview"/>; otherwise <c>false</c>.
-    /// </returns>
-    private bool CanReturnToAppointingAuthorityReviewAsync()
+    private bool CanReturnAsync()
     {
         return true;
     }
@@ -900,50 +1376,33 @@ internal class LodStateMachine
     #endregion
 
     /// <summary>
-    /// Determines whether the specified <paramref name="trigger"/> can be legally fired
-    /// from the current <see cref="State"/>.
+    /// Fires the specified line of duty workflow trigger asynchronously.
     /// </summary>
-    /// <param name="trigger">The trigger to test.</param>
-    /// <returns>
-    /// <c>true</c> if <paramref name="trigger"/> is permitted in the current state;
-    /// otherwise <c>false</c>.
-    /// </returns>
-    public bool CanFire(LineOfDutyTrigger trigger)
-    {
-        return _sm.CanFire(trigger);
-    }
-
-    /// <summary>
-    /// Synchronously fires the specified <paramref name="trigger"/>, transitioning
-    /// the state machine to the corresponding destination state. Throws
-    /// <see cref="InvalidOperationException"/> if the trigger is not permitted.
-    /// </summary>
-    /// <param name="trigger">The trigger to fire.</param>
-    public void Fire(LineOfDutyTrigger trigger)
-    {
-        _sm.Fire(trigger);
-    }
-
-    /// <summary>
-    /// Asynchronously fires the specified <paramref name="trigger"/>, transitioning
-    /// the state machine to the corresponding destination state and executing
-    /// <see cref="HandleTransitionAsync"/> to persist all side-effects. Throws
-    /// <see cref="InvalidOperationException"/> if the trigger is not permitted.
-    /// </summary>
-    /// <param name="trigger">The trigger to fire.</param>
-    /// <returns>A task that completes when the transition and all persistence operations finish.</returns>
+    /// <remarks>Use this method to advance the workflow state based on the provided trigger. The operation is
+    /// performed asynchronously and may update the workflow state depending on the trigger's effect.</remarks>
+    /// <param name="trigger">The trigger to fire in the line of duty workflow. Specifies the action or event to advance the workflow state.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task FireAsync(LineOfDutyTrigger trigger)
     {
         await _sm.FireAsync(trigger);
     }
 
     /// <summary>
-    /// Generates a Mermaid-format state diagram representing all configured states
-    /// and transitions. Useful for documentation and debugging of the workflow graph.
+    /// Fires the specified trigger for the given Line of Duty case asynchronously.
     /// </summary>
-    /// <returns>A string containing the Mermaid graph markup.</returns>
-    public string ToMermaidGraph()
+    /// <param name="newCase">The Line of Duty case to which the trigger will be applied.</param>
+    /// <param name="trigger">The trigger to fire for the specified Line of Duty case.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public async Task FireAsync(LineOfDutyCase newCase, LineOfDutyTrigger trigger)
     {
-        return MermaidGraph.Format(_sm.GetInfo());
+        await _sm.FireAsync(_trigger, newCase);
+    }
+
+    /// <summary>
+    /// Determines whether the specified trigger can be fired from the current state.
+    /// </summary>
+    public bool CanFire(LineOfDutyTrigger trigger)
+    {
+        return _sm.CanFire(trigger);
     }
 }

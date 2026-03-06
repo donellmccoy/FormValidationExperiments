@@ -1,12 +1,12 @@
+using ECTSystem.Api.Logging;
+using ECTSystem.Persistence.Data;
+using ECTSystem.Persistence.Models;
+using ECTSystem.Shared.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OData.ModelBuilder;
 using Microsoft.OData.Edm;
-using ECTSystem.Persistence.Data;
-using ECTSystem.Persistence.Models;
-using ECTSystem.Api.Logging;
-using ECTSystem.Shared.Models;
+using Microsoft.OData.ModelBuilder;
 
 namespace ECTSystem.Api.Extensions;
 
@@ -109,6 +109,17 @@ public static class ServiceCollectionExtensions
 
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
         casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
+
+        var caseType = casesEntitySet.EntityType;
+        caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.TimelineSteps).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.Notifications).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.WorkflowStateHistories).AutomaticallyExpand(true);
+        caseType.HasOptional(c => c.Member).AutomaticallyExpand(true);
+        caseType.HasOptional(c => c.MEDCON).AutomaticallyExpand(true);
+        caseType.HasOptional(c => c.INCAP).AutomaticallyExpand(true);
 
         odataBuilder.EntitySet<Member>("Members");
         odataBuilder.EntitySet<Notification>("Notifications");

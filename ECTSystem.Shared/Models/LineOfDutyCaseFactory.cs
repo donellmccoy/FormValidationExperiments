@@ -1,5 +1,3 @@
-using ECTSystem.Shared.Enums;
-
 namespace ECTSystem.Shared.Models;
 
 public static class LineOfDutyCaseFactory
@@ -12,11 +10,8 @@ public static class LineOfDutyCaseFactory
         {
             CaseId = GenerateCaseId(now),
             MemberId = memberId,
-            InitiationDate = now,
-            IncidentDate = now,
             CreatedDate = now,
-            ModifiedDate = now,
-            TimelineSteps = []
+            ModifiedDate = now
         };
     }
 

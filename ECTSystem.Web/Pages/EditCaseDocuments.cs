@@ -7,10 +7,10 @@ namespace ECTSystem.Web.Pages;
 
 public partial class EditCase
 {
-    private int DocumentCount => _lodCase?.Documents?.Count ?? 0;
+    private int DocumentCount => _lineOfDutyCase?.Documents?.Count ?? 0;
 
     private IEnumerable<LineOfDutyDocument> SortedDocuments =>
-        _lodCase?.Documents?
+        _lineOfDutyCase?.Documents?
             .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
             .ThenByDescending(d => d.Id) ?? Enumerable.Empty<LineOfDutyDocument>();
 
@@ -31,14 +31,14 @@ public partial class EditCase
             return;
         }
 
-        if (_lodCase?.Id is null or 0)
+        if (_lineOfDutyCase?.Id is null or 0)
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Save Case First",
                 "Please save the case before uploading documents.");
             return;
         }
 
-        _lodCase.Documents ??= new HashSet<LineOfDutyDocument>();
+        _lineOfDutyCase.Documents ??= new HashSet<LineOfDutyDocument>();
 
         var contentType = GetContentType(_documents.UploadedFileName);
 
@@ -53,11 +53,11 @@ public partial class EditCase
             var fileBytes = Convert.FromBase64String(base64Data);
 
             var saved = await CaseService.UploadDocumentAsync(
-                _lodCase.Id, _documents.UploadedFileName, contentType, fileBytes, _cts.Token);
+                _lineOfDutyCase.Id, _documents.UploadedFileName, contentType, fileBytes, _cts.Token);
 
             if (saved is not null)
             {
-                _lodCase.Documents.Add(saved);
+                _lineOfDutyCase.Documents.Add(saved);
             }
         }
         catch (Exception ex)
@@ -119,7 +119,7 @@ public partial class EditCase
 
     private string GetDocumentDownloadUrl(LineOfDutyDocument doc)
     {
-        return $"{Http.BaseAddress}api/cases/{_lodCase.Id}/documents/{doc.Id}/download";
+        return $"{Http.BaseAddress}api/cases/{_lineOfDutyCase.Id}/documents/{doc.Id}/download";
     }
 
     private async Task OnDownloadDocumentAsync(LineOfDutyDocument doc)
@@ -141,7 +141,7 @@ public partial class EditCase
 
     private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
     {
-        if (_lodCase?.Id is null or 0 || doc.Id == 0)
+        if (_lineOfDutyCase?.Id is null or 0 || doc.Id == 0)
         {
             return;
         }
@@ -158,8 +158,8 @@ public partial class EditCase
 
         try
         {
-            await CaseService.DeleteDocumentAsync(_lodCase.Id, doc.Id, _cts.Token);
-            _lodCase.Documents?.Remove(doc);
+            await CaseService.DeleteDocumentAsync(_lineOfDutyCase.Id, doc.Id, _cts.Token);
+            _lineOfDutyCase.Documents?.Remove(doc);
 
             // Refresh the DataList
             var sorted = SortedDocuments.ToList();

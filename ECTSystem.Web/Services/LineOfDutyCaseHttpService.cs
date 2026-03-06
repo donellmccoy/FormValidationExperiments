@@ -172,7 +172,7 @@ public class LineOfDutyCaseHttpService : IDataService
         if (lodCase.Id == 0)
         {
             // POST — create new entity
-            return (LineOfDutyCase?)await _client.CreateAsync("Cases", lodCase, null, cancellationToken) ?? lodCase;
+            return await _client.CreateAsync("Cases", lodCase, null, cancellationToken) ?? lodCase;
         }
         else
         {
