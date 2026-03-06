@@ -67,6 +67,16 @@ public partial class CaseList : ComponentBase, IDisposable
             cases = result.Value.AsODataEnumerable();
             count = result.Count;
 
+            var firstItem = cases.FirstOrDefault();
+            if (firstItem != null && !_selectedCases.Any(c => c.Id == firstItem.Id))
+            {
+                _selectedCases = [firstItem];
+            }
+            else if (firstItem == null)
+            {
+                _selectedCases = [];
+            }
+
             await LoadBookmarkStates(ct);
         }
         catch (OperationCanceledException)

@@ -29,8 +29,10 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private IList<LineOfDutyCase> _selectedBookmarks = [];
     private int _count;
     private bool _isLoading;
+    private string _searchText = string.Empty;
     private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
+    private CancellationTokenSource _searchCts = new();
 
     private async Task LoadData(LoadDataArgs args)
     {
@@ -45,8 +47,10 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         try
         {
+            var filter = CombineFilters(args.Filter, BuildSearchFilter(_searchText));
+
             var result = await CaseService.GetBookmarkedCasesAsync(
-                filter: args.Filter,
+                filter: filter,
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
@@ -55,6 +59,16 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             _bookmarks = result.Value.AsODataEnumerable();
             _count = result.Count;
+
+            var firstItem = _bookmarks.FirstOrDefault();
+            if (firstItem != null && !_selectedBookmarks.Any(b => b.Id == firstItem.Id))
+            {
+                _selectedBookmarks = [firstItem];
+            }
+            else if (firstItem == null)
+            {
+                _selectedBookmarks = [];
+            }
         }
         catch (OperationCanceledException)
         {
@@ -105,9 +119,100 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         Navigation.NavigateTo("/case/new?from=bookmarks");
     }
 
+    private async Task OnSearchInput(ChangeEventArgs args)
+    {
+        _searchText = args.Value?.ToString() ?? string.Empty;
+
+        await _searchCts.CancelAsync();
+        _searchCts.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+
+        try
+        {
+            await Task.Delay(500, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await _grid.FirstPage(true);
+    }
+
+    private static string BuildSearchFilter(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var escaped = text.Replace("'", "''");
+        string[] columns =
+        [
+            // Case / Member identification
+            "CaseId", "MemberName", "MemberRank", "ServiceNumber", "Unit",
+            "FromLine", "IncidentDescription", "PointOfContact",
+
+            // Orders / Duty Period
+            "MemberOrdersStartTime", "MemberOrdersEndTime",
+
+            // Medical assessment
+            "TreatmentFacilityName", "ClinicalDiagnosis", "MedicalFindings",
+            "PsychiatricEvalResults", "OtherRelevantConditions", "OtherTestResults",
+            "MedicalRecommendation",
+
+            // Commander review
+            "OtherSourcesDescription", "MisconductExplanation",
+            "CommanderToLine", "CommanderFromLine",
+            "AbsentWithoutLeaveDate1", "AbsentWithoutLeaveTime1",
+            "AbsentWithoutLeaveDate2", "AbsentWithoutLeaveTime2",
+            "WitnessNameAddress1", "WitnessNameAddress2", "WitnessNameAddress3",
+            "WitnessNameAddress4", "WitnessNameAddress5",
+
+            // Findings
+            "ProximateCause", "PSCDocumentation",
+
+            // Signatures / name-ranks
+            "ProviderNameRank", "ProviderDate", "ProviderSignature",
+            "CommanderNameRank", "CommanderDate", "CommanderSignature",
+            "SjaNameRank", "SjaDate",
+            "WingCcSignature",
+            "AppointingAuthorityNameRank", "AppointingAuthorityDate", "AppointingAuthoritySignature",
+
+            // Board review
+            "MedicalReviewText", "MedicalReviewerNameRank", "MedicalReviewDate", "MedicalReviewerSignature",
+            "LegalReviewText", "LegalReviewerNameRank", "LegalReviewDate", "LegalReviewerSignature",
+            "LodBoardChairNameRank", "LodBoardChairDate", "LodBoardChairSignature",
+
+            // Approving authority
+            "ApprovingAuthorityNameRank", "ApprovingAuthorityDate", "ApprovingAuthoritySignature",
+
+            // Special handling / evidence
+            "SARCCoordination", "ToxicologyReport"
+        ];
+        return string.Join(" or ", columns.Select(c => $"contains({c},'{escaped}')"));
+    }
+
+    private static string CombineFilters(string columnFilter, string searchFilter)
+    {
+        var hasColumn = !string.IsNullOrEmpty(columnFilter);
+        var hasSearch = !string.IsNullOrEmpty(searchFilter);
+
+        return (hasColumn, hasSearch) switch
+        {
+            (true, true) => $"({columnFilter}) and ({searchFilter})",
+            (true, false) => columnFilter,
+            (false, true) => searchFilter,
+            _ => null
+        };
+    }
+
     public void Dispose()
     {
         _loadCts.Cancel();
         _loadCts.Dispose();
+        _searchCts.Cancel();
+        _searchCts.Dispose();
     }
 }

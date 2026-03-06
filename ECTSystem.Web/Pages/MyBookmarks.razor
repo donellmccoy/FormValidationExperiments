@@ -23,8 +23,11 @@
 else
 {
 
-<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center"
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
               class="rz-mb-4">
+    <RadzenTextBox Value="@_searchText"
+                   @oninput="@OnSearchInput"
+                   Placeholder="Search bookmarks..." Style="width: 51%;" />
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
