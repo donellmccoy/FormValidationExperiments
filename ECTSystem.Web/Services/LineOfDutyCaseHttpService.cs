@@ -102,12 +102,27 @@ public class LineOfDutyCaseHttpService : IDataService
                     || type == typeof(decimal);
             })];
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LineOfDutyCaseHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The underlying OData client.</param>
+    /// <param name="httpClient">The HTTP client used for making requests.</param>
     public LineOfDutyCaseHttpService(ODataClient client, HttpClient httpClient)
     {
         _client = client;
         _httpClient = httpClient;
     }
 
+    /// <summary>
+    /// Retrieves a paginated and filtered list of Line of Duty cases.
+    /// </summary>
+    /// <param name="filter">Optional OData filter string.</param>
+    /// <param name="top">Optional maximum number of records to return.</param>
+    /// <param name="skip">Optional number of records to skip for pagination.</param>
+    /// <param name="orderby">Optional ordering string.</param>
+    /// <param name="count">Whether to include the total record count in the response.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>An <see cref="ODataServiceResult{LineOfDutyCase}"/> containing the cases and count.</returns>
     public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null,
         int? top = null,
@@ -152,6 +167,12 @@ public class LineOfDutyCaseHttpService : IDataService
         };
     }
 
+    /// <summary>
+    /// Retrieves a complete Line of Duty case including all nested and related entities.
+    /// </summary>
+    /// <param name="caseId">The case identifier.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>The <see cref="LineOfDutyCase"/> if found; otherwise, null.</returns>
     public async Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default)
     {
         var query = _client.For<LineOfDutyCase>("Cases")
@@ -167,6 +188,12 @@ public class LineOfDutyCaseHttpService : IDataService
         return response.Value?.FirstOrDefault();
     }
 
+    /// <summary>
+    /// Saves a Line of Duty case. Uses POST for new cases or purely scalar PATCH for existing cases.
+    /// </summary>
+    /// <param name="lodCase">The case to be processed and saved.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>The updated or created <see cref="LineOfDutyCase"/>.</returns>
     public async Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default)
     {
         if (lodCase.Id == 0)
@@ -188,6 +215,12 @@ public class LineOfDutyCaseHttpService : IDataService
         }
     }
 
+    /// <summary>
+    /// Evaluates partial text logic via OData search, comparing rank matching and service component enumerations.
+    /// </summary>
+    /// <param name="searchText">The text filter string to match against member properties.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A list of successfully matched <see cref="Member"/> objects.</returns>
     public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)
     {
         // OData string literals escape single quotes by doubling them ('').
@@ -254,6 +287,16 @@ public class LineOfDutyCaseHttpService : IDataService
 
     // ──────────────────────────── Bookmark Operations ────────────────────────────
 
+    /// <summary>
+    /// Retrieves a paginated and filtered list of cases specifically bookmarked by the current user.
+    /// </summary>
+    /// <param name="filter">Optional OData filter string.</param>
+    /// <param name="top">Optional maximum number of records to return.</param>
+    /// <param name="skip">Optional number of records to skip for pagination.</param>
+    /// <param name="orderby">Optional ordering string.</param>
+    /// <param name="count">Whether to include the total record count in the response.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>An <see cref="ODataServiceResult{LineOfDutyCase}"/> containing the bookmarked cases and count.</returns>
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, bool? count = null,
@@ -299,6 +342,11 @@ public class LineOfDutyCaseHttpService : IDataService
         };
     }
 
+    /// <summary>
+    /// Adds a case to the current user's bookmarks list.
+    /// </summary>
+    /// <param name="caseId">The numeric identifier of the case to bookmark.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     public async Task AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
@@ -308,6 +356,11 @@ public class LineOfDutyCaseHttpService : IDataService
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// Removes a case from the current user's bookmarks list.
+    /// </summary>
+    /// <param name="caseId">The numeric identifier of the case to remove from bookmarks.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
@@ -317,6 +370,12 @@ public class LineOfDutyCaseHttpService : IDataService
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// Checks to see if a given case is already bookmarked by the current user.
+    /// </summary>
+    /// <param name="caseId">The numeric identifier of the case to verify.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>True if the case is bookmarked; otherwise, false.</returns>
     public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
@@ -327,6 +386,15 @@ public class LineOfDutyCaseHttpService : IDataService
         return response?.Value ?? false;
     }
 
+    /// <summary>
+    /// Authenticates and uploads a supporting document directly correlated to a case.
+    /// </summary>
+    /// <param name="caseId">The numeric case ID receiving the document attachment.</param>
+    /// <param name="fileName">The fully qualified name of the file to attach.</param>
+    /// <param name="contentType">The detected MIME type associated with the file payload.</param>
+    /// <param name="content">The raw byte payload rendering the file stream.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A processed <see cref="LineOfDutyDocument"/> indicating system placement.</returns>
     public async Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, byte[] content, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
@@ -350,6 +418,12 @@ public class LineOfDutyCaseHttpService : IDataService
         return (await response.Content.ReadFromJsonAsync<LineOfDutyDocument>(ODataJsonOptions, cancellationToken))!;
     }
 
+    /// <summary>
+    /// Forcibly removes an established document currently tied to a specific case.
+    /// </summary>
+    /// <param name="caseId">The unique case identifier.</param>
+    /// <param name="documentId">The specific document tracking id resolving the active document.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     public async Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
@@ -360,6 +434,12 @@ public class LineOfDutyCaseHttpService : IDataService
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// Confirms action over a specific timeline workflow entry by appending a cryptographic digital signature payload signature.
+    /// </summary>
+    /// <param name="stepId">The numeric identifier of the timeline step.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A signed <see cref="TimelineStep"/> tracking the completed operation.</returns>
     public async Task<TimelineStep> SignTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepId);
@@ -371,6 +451,12 @@ public class LineOfDutyCaseHttpService : IDataService
         return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
     }
 
+    /// <summary>
+    /// Executes step activation protocol against an existing timeline step, flagging an active task metric loop.
+    /// </summary>
+    /// <param name="stepId">The numeric identifier of the timeline step.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A modified <see cref="TimelineStep"/> resolving the startup configuration.</returns>
     public async Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepId);
@@ -382,6 +468,12 @@ public class LineOfDutyCaseHttpService : IDataService
         return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
     }
 
+    /// <summary>
+    /// Captures standard workflow movement triggers by inserting historical breadcrumbs for detailed auditability operations.
+    /// </summary>
+    /// <param name="entry">The <see cref="WorkflowStateHistory"/> configuration containing system properties to store.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A registered <see cref="WorkflowStateHistory"/> confirming tracking placement.</returns>
     public async Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistory entry, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entry);
