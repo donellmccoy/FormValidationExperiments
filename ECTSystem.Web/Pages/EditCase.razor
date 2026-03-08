@@ -1058,6 +1058,7 @@ else
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                 <RadzenSplitButton Click="@OnForwardToBoardTechnicianClick" Text="Forward to Board Review" Icon="send"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
@@ -1101,6 +1102,7 @@ else
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                     <RadzenSplitButton Click="@OnForwardToBoardMedicalClick" Text="Forward to Board Medical" Icon="send"
+                                                                        Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardMedicalReview) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Legal" Icon="send" Value="board-legal" />
@@ -1148,6 +1150,7 @@ else
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                     <RadzenSplitButton Click="@OnForwardToBoardLegalClick" Text="Forward to Board Legal" Icon="send"
+                                                                        Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardLegalReview) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
@@ -1195,6 +1198,7 @@ else
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                     <RadzenSplitButton Click="@OnForwardToBoardAdminClick" Text="Forward to Board Admin" Icon="send"
+                                                                        Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardAdministratorReview) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
@@ -1242,6 +1246,7 @@ else
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                     <RadzenSplitButton Click="@OnCompleteClick" Text="Complete Review" Icon="check_circle"
+                                                                        Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.Complete) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
