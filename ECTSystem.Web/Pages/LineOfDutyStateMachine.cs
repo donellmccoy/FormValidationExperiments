@@ -16,8 +16,10 @@ namespace ECTSystem.Web.Pages;
 /// history entries, case state updates, and timeline step activation) through
 /// <see cref="IDataService"/>.
 /// </summary>
-internal class LodStateMachine
+internal class LineOfDutyStateMachine
 {
+    #region Fields
+
     /// <summary>
     /// The underlying Stateless state machine that enforces legal transitions
     /// between <see cref="WorkflowState"/> values triggered by <see cref="LineOfDutyTrigger"/> actions.
@@ -53,6 +55,10 @@ internal class LodStateMachine
     /// workflow state history entries, updated case state, and timeline step activation.
     /// </summary>
     private readonly IDataService _dataService;
+
+    #endregion
+
+    #region Callbacks
 
     /// <summary>
     /// Optional callback invoked when the state machine enters
@@ -135,6 +141,10 @@ internal class LodStateMachine
     /// </summary>
     public Func<LineOfDutyCase, Task> OnCancelledEntered { get; set; }
 
+    #endregion
+
+    #region Properties
+
     /// <summary>
     /// Gets the current <see cref="WorkflowState"/> of the underlying state machine.
     /// Reflects the most recent state after any fired transitions.
@@ -157,64 +167,9 @@ internal class LodStateMachine
     /// </summary>
     public LineOfDutyCase Case => _lineOfDutyCase;
 
-    /// <summary>
-    /// Provides a mapping between workflow tab names and their corresponding workflow states for the Line of Duty
-    /// determination process.
-    /// </summary>
-    /// <remarks>This array is used to associate each UI tab in the workflow wizard with its logical workflow
-    /// state, enabling navigation and state tracking throughout the multi-step process.</remarks>
-    private static readonly (string TabName, WorkflowState State)[] WorkflowTabMap =
-    [
-        ("Member Information",       WorkflowState.MemberInformationEntry),        
-        ("Medical Technician",       WorkflowState.MedicalTechnicianReview),       
-        ("Medical Officer",          WorkflowState.MedicalOfficerReview),       
-        ("Unit CC Review",           WorkflowState.UnitCommanderReview),           
-        ("Wing JA Review",           WorkflowState.WingJudgeAdvocateReview),       
-        ("Wing CC Review",           WorkflowState.WingCommanderReview),           
-        ("Appointing Authority",     WorkflowState.AppointingAuthorityReview),     
-        ("Board Technician Review",  WorkflowState.BoardMedicalTechnicianReview),  
-        ("Board Medical Review",     WorkflowState.BoardMedicalOfficerReview),     
-        ("Board Legal Review",       WorkflowState.BoardLegalReview),              
-        ("Board Admin Review",       WorkflowState.BoardAdministratorReview),     
-    ];
+    #endregion
 
-    /// <summary>
-    /// Returns the tab index that corresponds to the given <see cref="WorkflowState"/>.
-    /// Terminal states (Completed, Cancelled) map to the last workflow tab; Draft maps to 0.
-    /// </summary>
-    /// <param name="state">The workflow state to resolve to a tab index.</param>
-    /// <returns>The zero-based index of the tab that corresponds to <paramref name="state"/>.</returns>
-    public static int GetTabIndexForState(WorkflowState state)
-    {
-        for (var i = 0; i < WorkflowTabMap.Length; i++)
-        {
-            if (WorkflowTabMap[i].State == state)
-            {
-                return i;
-            }
-        }
-
-        return state switch
-        {
-            WorkflowState.Completed => WorkflowTabMap.Length - 1,
-            WorkflowState.Draft => 0,
-            _ => 0
-        };
-    }
-
-    /// <summary>
-    /// Determines whether a tab at the given index should be disabled based on the current workflow state.
-    /// Tabs beyond index 10 (e.g., Documents, Timeline) are always enabled.
-    /// </summary>
-    /// <param name="tabIndex">The zero-based index of the tab to check.</param>
-    /// <returns>
-    /// <c>true</c> if <paramref name="tabIndex"/> refers to a workflow tab that is ahead of the
-    /// current workflow state; otherwise <c>false</c>.
-    /// </returns>
-    public bool IsTabDisabled(int tabIndex)
-    {
-        return tabIndex < WorkflowTabMap.Length && tabIndex > GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
-    }
+    #region Persistence
 
     /// <summary>
     /// Persists the current case entity via the data service and returns the saved entity
@@ -230,7 +185,7 @@ internal class LodStateMachine
         try
         {
             _lineOfDutyCase = await _dataService.SaveCaseAsync(_lineOfDutyCase, ct);
-            var tabIndex = GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            var tabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
             return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
         }
         catch (Exception ex)
@@ -239,8 +194,12 @@ internal class LodStateMachine
         }
     }
 
+    #endregion
+
+    #region Constructors
+
     /// <summary>
-    /// Initializes a new <see cref="LodStateMachine"/> for the specified LOD case.
+    /// Initializes a new <see cref="LineOfDutyStateMachine"/> for the specified LOD case.
     /// The state machine starts in <paramref name="lineOfDutyCase"/>'s current
     /// <see cref="LineOfDutyCase.WorkflowState"/>, registers
     /// <see cref="HandleTransitionAsync"/> as the post-transition callback for
@@ -254,7 +213,7 @@ internal class LodStateMachine
     /// The data service used to persist history entries, save case state, and
     /// start timeline steps during transitions.
     /// </param>
-    public LodStateMachine(LineOfDutyCase lineOfDutyCase, IDataService dataService)
+    public LineOfDutyStateMachine(LineOfDutyCase lineOfDutyCase, IDataService dataService)
     {
         _lineOfDutyCase = lineOfDutyCase;
         _dataService = dataService;
@@ -269,7 +228,7 @@ internal class LodStateMachine
     }
 
     /// <summary>
-    /// Initializes a new <see cref="LodStateMachine"/> in the <see cref="WorkflowState.Draft"/>
+    /// Initializes a new <see cref="LineOfDutyStateMachine"/> in the <see cref="WorkflowState.Draft"/>
     /// state without an existing case. Use this constructor when creating a new LOD case from
     /// scratch; call <see cref="FireAsync(LineOfDutyCase, LineOfDutyTrigger)"/> with
     /// <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> to advance past the draft state.
@@ -278,7 +237,7 @@ internal class LodStateMachine
     /// The data service used to persist history entries, save case state, and
     /// start timeline steps during transitions.
     /// </param>
-    public LodStateMachine(IDataService dataService)
+    public LineOfDutyStateMachine(IDataService dataService)
     {
         _dataService = dataService;
 
@@ -290,6 +249,10 @@ internal class LodStateMachine
 
         Configure();
     }
+
+    #endregion
+
+    #region Configuration
 
     /// <summary>
     /// Registers all <see cref="LineOfDutyCase"/>-parameterized triggers in the
@@ -440,6 +403,8 @@ internal class LodStateMachine
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.Cancel], OnCancelledEntryAsync)
             .Ignore(LineOfDutyTrigger.Cancel);
     }
+
+    #endregion
 
     #region Step 0: Draft
 
@@ -1109,6 +1074,8 @@ internal class LodStateMachine
 
     #endregion
 
+    #region Public Methods
+
     /// <summary>
     /// Fires a simple (non-parameterized) trigger to advance the workflow.
     /// Use this overload for triggers that do not carry a <see cref="LineOfDutyCase"/>
@@ -1155,4 +1122,6 @@ internal class LodStateMachine
     {
         return _sm.CanFire(trigger);
     }
+
+    #endregion
 }

@@ -17,7 +17,7 @@ namespace ECTSystem.Web.Pages;
 
 /// <summary>
 /// Code-behind for the Edit Case page — a multi-step wizard that drives an LOD case
-/// through the AF Form 348 workflow using <see cref="LodStateMachine"/>.
+/// through the AF Form 348 workflow using <see cref="LineOfDutyStateMachine"/>.
 /// </summary>
 public partial class EditCase : ComponentBase, IDisposable
 {
@@ -111,7 +111,7 @@ public partial class EditCase : ComponentBase, IDisposable
     private LineOfDutyCase _lineOfDutyCase;
 
     /// <summary>State machine controlling workflow transitions for the current case.</summary>
-    private LodStateMachine _stateMachine;
+    private LineOfDutyStateMachine _stateMachine;
 
     /// <summary>Index of the currently selected <see cref="RadzenTabs"/> tab.</summary>
     private int _selectedTabIndex;
@@ -149,7 +149,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (IsNewCase)
         {
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
 
             TakeSnapshots();
         }
@@ -192,7 +192,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
             try
             {
@@ -219,7 +219,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 Duration = 5000
             });
 
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
         }
         finally
         {
@@ -291,7 +291,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                     _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                    _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                    _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                     _tabs?.Reload();
 
@@ -303,7 +303,7 @@ public partial class EditCase : ComponentBase, IDisposable
                     return Task.CompletedTask;
                 };
 
-                await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+                await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.StartLineOfDutyCase);
             }
             catch (Exception ex)
             {
@@ -353,7 +353,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                     _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                    _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                    _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                     NotificationService.Notify(
                         NotificationSeverity.Success,
@@ -429,7 +429,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -504,7 +504,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -579,7 +579,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -654,7 +654,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -729,7 +729,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -804,7 +804,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -879,7 +879,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -954,7 +954,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -1029,7 +1029,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -1104,7 +1104,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
@@ -1125,7 +1125,8 @@ public partial class EditCase : ComponentBase, IDisposable
     /// <summary>Returns whether the tab at <paramref name="tabIndex"/> should be disabled given the current workflow state.</summary>
     private bool IsTabDisabled(int tabIndex)
     {
-        return _stateMachine?.IsTabDisabled(tabIndex) ?? tabIndex > LodStateMachine.GetTabIndexForState(WorkflowState.Draft);
+        var currentState = _lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft;
+        return WorkflowTabHelper.IsTabDisabled(tabIndex, currentState);
     }
 
     /// <summary>Sets the <see cref="PageOperationState.IsSaving"/> flag on <see cref="_page"/>.</summary>
