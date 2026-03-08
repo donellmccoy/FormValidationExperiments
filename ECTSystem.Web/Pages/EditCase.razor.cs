@@ -42,6 +42,9 @@ public partial class EditCase : ComponentBase, IDisposable
     private IDataService CaseService { get; set; }
 
     [Inject]
+    private LineOfDutyStateMachineFactory StateMachineFactory { get; set; }
+
+    [Inject]
     private BookmarkCountService BookmarkCountService { get; set; }
 
     [Inject]
@@ -188,7 +191,7 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             _lineOfDutyCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
 
-            _stateMachine = LineOfDutyStateMachineFactory.Create(_lineOfDutyCase, CaseService);
+            _stateMachine = StateMachineFactory.Create(_lineOfDutyCase);
 
             _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
@@ -277,11 +280,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
 
-                _stateMachine = LineOfDutyStateMachineFactory.Create(CaseService);
+                _stateMachine = StateMachineFactory.Create();
 
-                _stateMachine.OnMemberInformationEntered = lod =>
+                var result = await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.StartLineOfDutyCase);
+
+                if (result.Success)
                 {
-                    _lineOfDutyCase = lod;
+                    _lineOfDutyCase = result.Case;
 
                     CaseId = _lineOfDutyCase.CaseId;
 
@@ -291,7 +296,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                     _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                    _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                    _selectedTabIndex = result.TabIndex;
 
                     _tabs?.Reload();
 
@@ -299,11 +304,7 @@ public partial class EditCase : ComponentBase, IDisposable
                         NotificationSeverity.Success,
                         "Line of Duty Case Started",
                         $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
-
-                    return Task.CompletedTask;
-                };
-
-                await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.StartLineOfDutyCase);
+                }
             }
             catch (Exception ex)
             {
@@ -341,9 +342,11 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-                _stateMachine.OnMedicalTechnicianReviewEntered = lod =>
+                var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+
+                if (result.Success)
                 {
-                    _lineOfDutyCase = lod;
+                    _lineOfDutyCase = result.Case;
 
                     CaseId = _lineOfDutyCase.CaseId;
 
@@ -353,17 +356,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                     _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                    _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                    _selectedTabIndex = result.TabIndex;
 
                     NotificationService.Notify(
                         NotificationSeverity.Success,
                         "Line of Duty Case Updated",
                         $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                    return Task.CompletedTask;
-                };
-
-                await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+                }
             }
             finally
             {
@@ -417,9 +416,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnMedicalOfficerReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -429,17 +430,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+            }
         }
         finally
         {
@@ -492,9 +489,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnUnitCommanderReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToUnitCommanderReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -504,17 +503,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToUnitCommanderReview);
+            }
         }
         finally
         {
@@ -567,9 +562,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnWingJudgeAdvocateReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -579,17 +576,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview);
+            }
         }
         finally
         {
@@ -642,9 +635,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnWingCommanderReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingCommanderReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -654,17 +649,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingCommanderReview);
+            }
         }
         finally
         {
@@ -717,9 +708,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnAppointingAuthorityReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToAppointingAuthorityReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -729,17 +722,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToAppointingAuthorityReview);
+            }
         }
         finally
         {
@@ -792,9 +781,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnBoardMedicalTechnicianReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -804,17 +795,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+            }
         }
         finally
         {
@@ -867,9 +854,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnBoardMedicalOfficerReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -879,17 +868,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+            }
         }
         finally
         {
@@ -942,9 +927,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnBoardLegalReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -954,17 +941,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
+            }
         }
         finally
         {
@@ -1017,9 +1000,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnBoardAdministratorReviewEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -1029,17 +1014,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Updated",
                     $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+            }
         }
         finally
         {
@@ -1092,9 +1073,11 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            _stateMachine.OnCompletedEntered = lod =>
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.Complete);
+
+            if (result.Success)
             {
-                _lineOfDutyCase = lod;
+                _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
 
@@ -1104,17 +1087,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+                _selectedTabIndex = result.TabIndex;
 
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Line of Duty Case Completed",
                     $"Case: {_lineOfDutyCase.CaseId} completed for: {_lineOfDutyCase.MemberName}.");
-
-                return Task.CompletedTask;
-            };
-
-            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.Complete);
+            }
         }
         finally
         {

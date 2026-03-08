@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Http.Resilience;
+using ECTSystem.Web.Pages;
 using ECTSystem.Web.Services;
 using PanoramicData.OData.Client;
 using PanoramicData.OData.Client.Converters;
@@ -107,6 +108,7 @@ public static class ServiceCollectionExtensions
         services.AddRadzenComponents();
         services.AddScoped<BookmarkCountService>();
         services.AddScoped<IDataService, LineOfDutyCaseHttpService>();
+        services.AddScoped<LineOfDutyStateMachineFactory>();
 
         return services;
     }

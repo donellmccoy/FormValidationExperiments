@@ -1,29 +1,50 @@
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Pages;
 
 /// <summary>
-/// Factory for creating <see cref="LineOfDutyStateMachine"/> instances from a
-/// <see cref="LineOfDutyCase"/> and an <see cref="IDataService"/>.
+/// Factory for creating <see cref="LineOfDutyStateMachine"/> instances.
+/// Registered as a scoped service so that <see cref="IDataService"/> and
+/// <see cref="ILogger"/> are injected once and reused for every state machine
+/// created during the component's lifetime.
 /// </summary>
-internal static class LineOfDutyStateMachineFactory
+internal class LineOfDutyStateMachineFactory
 {
+    private readonly IDataService _dataService;
+    private readonly ILogger<LineOfDutyStateMachineFactory> _logger;
+
+    public LineOfDutyStateMachineFactory(IDataService dataService, ILogger<LineOfDutyStateMachineFactory> logger)
+    {
+        _dataService = dataService;
+        _logger = logger;
+    }
+
     /// <summary>
     /// Creates a new <see cref="LineOfDutyStateMachine"/> initialized with the specified
-    /// LOD case and data service. The state machine starts in the case's current
+    /// LOD case. The state machine starts in the case's current
     /// <see cref="LineOfDutyCase.WorkflowState"/>.
     /// </summary>
     /// <param name="lineOfDutyCase">The LOD case to manage.</param>
-    /// <param name="dataService">The data service used to persist transition side-effects.</param>
     /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/>.</returns>
-    public static LineOfDutyStateMachine Create(LineOfDutyCase lineOfDutyCase, IDataService dataService)
+    public LineOfDutyStateMachine Create(LineOfDutyCase lineOfDutyCase)
     {
-        return new LineOfDutyStateMachine(lineOfDutyCase, dataService);
+        _logger.LogDebug("Creating state machine for case {CaseId} in state {State}",
+            lineOfDutyCase.CaseId, lineOfDutyCase.WorkflowState);
+
+        return new LineOfDutyStateMachine(lineOfDutyCase, _dataService);
     }
 
-    public static LineOfDutyStateMachine Create(IDataService dataService)
+    /// <summary>
+    /// Creates a new <see cref="LineOfDutyStateMachine"/> in the <see cref="ECTSystem.Shared.Enums.WorkflowState.Draft"/>
+    /// state for a brand-new LOD case.
+    /// </summary>
+    /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/> in Draft state.</returns>
+    public LineOfDutyStateMachine Create()
     {
-        return new LineOfDutyStateMachine(dataService);
+        _logger.LogDebug("Creating state machine for new case (Draft)");
+
+        return new LineOfDutyStateMachine(_dataService);
     }
 }

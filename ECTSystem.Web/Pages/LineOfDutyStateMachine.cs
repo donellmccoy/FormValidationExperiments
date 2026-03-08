@@ -56,90 +56,13 @@ internal class LineOfDutyStateMachine
     /// </summary>
     private readonly IDataService _dataService;
 
-    #endregion
-
-    #region Callbacks
-
     /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.MemberInformationEntry"/> from the
-    /// <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> trigger. Allows the UI layer
-    /// (e.g., <c>EditCase</c>) to react to case creation without the state machine
-    /// holding a reference to UI components.
+    /// Stores the result of the most recent entry handler invocation, allowing the
+    /// non-generic <c>OnEntryFromAsync</c> callback (which must return <see cref="Task"/>)
+    /// to communicate success or failure back to the <see cref="FireAsync(LineOfDutyTrigger)"/>
+    /// and <see cref="FireAsync(LineOfDutyCase, LineOfDutyTrigger)"/> methods.
     /// </summary>
-    public Func<LineOfDutyCase, Task> OnMemberInformationEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.MedicalTechnicianReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnMedicalTechnicianReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.MedicalOfficerReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnMedicalOfficerReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.UnitCommanderReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnUnitCommanderReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.WingJudgeAdvocateReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnWingJudgeAdvocateReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.WingCommanderReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnWingCommanderReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.AppointingAuthorityReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnAppointingAuthorityReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnBoardMedicalTechnicianReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.BoardMedicalOfficerReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnBoardMedicalOfficerReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.BoardLegalReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnBoardLegalReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.BoardAdministratorReview"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnBoardAdministratorReviewEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.Completed"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnCompletedEntered { get; set; }
-
-    /// <summary>
-    /// Optional callback invoked when the state machine enters
-    /// <see cref="WorkflowState.Cancelled"/>.
-    /// </summary>
-    public Func<LineOfDutyCase, Task> OnCancelledEntered { get; set; }
+    private StateMachineResult _lastTransitionResult;
 
     #endregion
 
@@ -192,6 +115,45 @@ internal class LineOfDutyStateMachine
         {
             return StateMachineResult.Fail(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Shared helper invoked by every entry handler. Applies the workflow state change,
+    /// records a history entry, and persists the case. If the save fails, the in-memory
+    /// state is reverted and a <see cref="StateMachineResult.Fail"/> is stored in
+    /// <see cref="_lastTransitionResult"/>.
+    /// </summary>
+    private async Task SaveAndNotifyAsync(WorkflowState targetState)
+    {
+        var previousState = _lineOfDutyCase.WorkflowState;
+
+        _lineOfDutyCase.UpdateWorkflowState(targetState);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(targetState);
+
+        LineOfDutyCase saved;
+
+        try
+        {
+            saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+        }
+        catch (Exception ex)
+        {
+            _lineOfDutyCase.WorkflowState = previousState;
+
+            var lastHistory = _lineOfDutyCase.WorkflowStateHistories.LastOrDefault(h => h.WorkflowState == targetState);
+
+            if (lastHistory is not null)
+            {
+                _lineOfDutyCase.WorkflowStateHistories.Remove(lastHistory);
+            }
+
+            _lastTransitionResult = StateMachineResult.Fail(ex.Message);
+
+            return;
+        }
+
+        _lastTransitionResult = StateMachineResult.Ok(saved, WorkflowTabHelper.GetTabIndexForState(saved.WorkflowState));
     }
 
     #endregion
@@ -448,13 +410,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.MemberInformationEntry);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.MemberInformationEntry);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnMemberInformationEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.MemberInformationEntry);
     }
 
     /// <summary>
@@ -496,13 +452,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.MedicalTechnicianReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.MedicalTechnicianReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnMedicalTechnicianReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.MedicalTechnicianReview);
     }
 
     /// <summary>
@@ -544,13 +494,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.MedicalOfficerReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.MedicalOfficerReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnMedicalOfficerReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.MedicalOfficerReview);
     }
 
     /// <summary>
@@ -592,13 +536,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.UnitCommanderReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.UnitCommanderReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnUnitCommanderReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.UnitCommanderReview);
     }
 
     /// <summary>
@@ -640,13 +578,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.WingJudgeAdvocateReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.WingJudgeAdvocateReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnWingJudgeAdvocateReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.WingJudgeAdvocateReview);
     }
 
     /// <summary>
@@ -688,13 +620,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.WingCommanderReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.WingCommanderReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnWingCommanderReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.WingCommanderReview);
     }
 
     /// <summary>
@@ -738,13 +664,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.AppointingAuthorityReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.AppointingAuthorityReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnAppointingAuthorityReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.AppointingAuthorityReview);
     }
 
     /// <summary>
@@ -774,13 +694,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardMedicalTechnicianReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardMedicalTechnicianReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnBoardMedicalTechnicianReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.BoardMedicalTechnicianReview);
     }
 
     /// <summary>
@@ -810,13 +724,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardMedicalOfficerReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardMedicalOfficerReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnBoardMedicalOfficerReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.BoardMedicalOfficerReview);
     }
 
     /// <summary>
@@ -845,13 +753,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardLegalReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardLegalReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnBoardLegalReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.BoardLegalReview);
     }
 
     /// <summary>
@@ -881,13 +783,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardAdministratorReview);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardAdministratorReview);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnBoardAdministratorReviewEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.BoardAdministratorReview);
     }
 
     /// <summary>
@@ -932,13 +828,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.Completed);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.Completed);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnCompletedEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.Completed);
     }
 
     /// <summary>
@@ -951,14 +841,7 @@ internal class LineOfDutyStateMachine
     private async Task OnCancelledEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
         _lineOfDutyCase = lineOfDutyCase;
-
-        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.Cancelled);
-
-        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.Cancelled);
-
-        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        await OnCancelledEntered?.Invoke(saved);
+        await SaveAndNotifyAsync(WorkflowState.Cancelled);
     }
 
     #endregion
@@ -1082,10 +965,17 @@ internal class LineOfDutyStateMachine
     /// payload (e.g., <see cref="LineOfDutyTrigger.Cancel"/>).
     /// </summary>
     /// <param name="trigger">The workflow trigger to fire.</param>
-    /// <returns>A task that completes when the transition and all entry/exit handlers have finished.</returns>
-    public async Task FireAsync(LineOfDutyTrigger trigger)
+    /// <returns>
+    /// A <see cref="StateMachineResult"/> indicating success (with the updated case and tab
+    /// index) or failure (with the error message from the failed save operation).
+    /// </returns>
+    public async Task<StateMachineResult> FireAsync(LineOfDutyTrigger trigger)
     {
+        _lastTransitionResult = null;
+
         await _sm.FireAsync(trigger);
+
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
     }
 
     /// <summary>
@@ -1095,18 +985,25 @@ internal class LineOfDutyStateMachine
     /// </summary>
     /// <param name="newCase">The LOD case to pass to the destination state's entry handler.</param>
     /// <param name="trigger">The workflow trigger to fire. Must be a key in <see cref="_caseTriggers"/>.</param>
-    /// <returns>A task that completes when the transition and all entry/exit handlers have finished.</returns>
+    /// <returns>
+    /// A <see cref="StateMachineResult"/> indicating success (with the updated case and tab
+    /// index) or failure (with the error message from the failed save operation).
+    /// </returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <paramref name="trigger"/> is not registered as a parameterized case trigger.
     /// </exception>
-    public async Task FireAsync(LineOfDutyCase newCase, LineOfDutyTrigger trigger)
+    public async Task<StateMachineResult> FireAsync(LineOfDutyCase newCase, LineOfDutyTrigger trigger)
     {
         if (!_caseTriggers.TryGetValue(trigger, out var paramTrigger))
         {
             throw new InvalidOperationException($"Trigger '{trigger}' is not configured as a parameterized case trigger.");
         }
 
+        _lastTransitionResult = null;
+
         await _sm.FireAsync(paramTrigger, newCase);
+
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
     }
 
     /// <summary>
