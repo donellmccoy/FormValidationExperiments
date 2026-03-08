@@ -14,20 +14,31 @@ namespace ECTSystem.Web.Pages;
 
 public partial class EditCase
 {
+    /// <summary>UI state for the member-search popup.</summary>
     private readonly MemberSearchUiState _memberSearch = new();
 
+    /// <summary>Cancellation source for debouncing member-search API calls.</summary>
     private CancellationTokenSource _searchCts = new();
 
+    /// <summary>Whether the member-search popup is currently open.</summary>
     private bool _memberSearchPopupOpen;
 
+    /// <summary>DataGrid selection binding for the highlighted member row.</summary>
     private IList<Member> _memberSearchSelection = [];
 
+    /// <summary>Reference to the search text box element (used for popup anchoring).</summary>
     private RadzenTextBox _memberSearchTextBox;
 
+    /// <summary>Reference to the member-search popup component.</summary>
     private Popup _memberSearchPopup;
 
+    /// <summary>Reference to the search results data grid.</summary>
     private RadzenDataGrid<Member> _memberSearchGrid;
 
+    /// <summary>
+    /// Handles keyboard navigation within the member-search popup.
+    /// Arrow keys move the selection, Enter selects, Escape/Tab closes the popup.
+    /// </summary>
     private async Task OnMemberSearchKeyDown(KeyboardEventArgs args)
     {
         var items = _memberSearch.Results;
@@ -65,6 +76,10 @@ public partial class EditCase
         }
     }
 
+    /// <summary>
+    /// Debounces user input and performs a member search via <see cref="IDataService.SearchMembersAsync"/>.
+    /// Opens or closes the popup based on input and populates <see cref="MemberSearchUiState.Results"/>.
+    /// </summary>
     private async Task OnMemberSearchInput(ChangeEventArgs args)
     {
         _memberSearch.SelectedIndex = 0;
@@ -128,6 +143,11 @@ public partial class EditCase
         }
     }
 
+    /// <summary>
+    /// Populates the Member Information form fields from the selected <paramref name="member"/>
+    /// record, closes the search popup, and refreshes the tab display.
+    /// </summary>
+    /// <param name="member">The member chosen from the search results.</param>
     private async Task OnMemberSelected(Member member)
     {
         _memberSearch.Text = string.Empty;

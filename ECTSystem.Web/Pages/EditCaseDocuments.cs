@@ -7,13 +7,24 @@ namespace ECTSystem.Web.Pages;
 
 public partial class EditCase
 {
+    /// <summary>
+    /// Gets the total number of documents attached to the current case.
+    /// </summary>
     private int DocumentCount => _lineOfDutyCase?.Documents?.Count ?? 0;
 
+    /// <summary>
+    /// Returns the case’s documents sorted by upload date (descending), then by ID.
+    /// </summary>
     private IEnumerable<LineOfDutyDocument> SortedDocuments =>
         _lineOfDutyCase?.Documents?
             .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
             .ThenByDescending(d => d.Id) ?? Enumerable.Empty<LineOfDutyDocument>();
 
+    /// <summary>
+    /// Receives the Base64 content from the <c>RadzenFileInput</c> and, when both content
+    /// and file name are available, triggers the upload via <see cref="AddDocumentAsync"/>.
+    /// </summary>
+    /// <param name="content">Base64 data-URI string provided by the file-input component.</param>
     private async Task OnFileSelected(string content)
     {
         _documents.UploadedFileContent = content;
@@ -24,6 +35,11 @@ public partial class EditCase
         }
     }
 
+    /// <summary>
+    /// Decodes the staged Base64 file, sends it to the API via
+    /// <see cref="IDataService.UploadDocumentAsync"/>, adds the resulting document
+    /// to the case, and refreshes the paged document list.
+    /// </summary>
     private async Task AddDocumentAsync()
     {
         if (string.IsNullOrWhiteSpace(_documents.UploadedFileContent) || string.IsNullOrWhiteSpace(_documents.UploadedFileName))
@@ -76,6 +92,11 @@ public partial class EditCase
         _documents.UploadedFileSize = null;
     }
 
+    /// <summary>
+    /// Maps a file extension to its MIME content type.
+    /// </summary>
+    /// <param name="fileName">The file name whose extension is inspected.</param>
+    /// <returns>The MIME type string, defaulting to <c>application/octet-stream</c>.</returns>
     private static string GetContentType(string fileName)
     {
         var ext = System.IO.Path.GetExtension(fileName)?.ToLowerInvariant();
@@ -93,6 +114,9 @@ public partial class EditCase
         };
     }
 
+    /// <summary>
+    /// Formats a byte count as a human-readable size string (B, KB, or MB).
+    /// </summary>
     private static string FormatFileSize(long bytes)
     {
         return bytes switch
@@ -103,6 +127,9 @@ public partial class EditCase
         };
     }
 
+    /// <summary>
+    /// Returns the Material icon name appropriate for the file’s extension.
+    /// </summary>
     private static string GetDocumentIcon(string fileName)
     {
         var ext = System.IO.Path.GetExtension(fileName)?.ToLowerInvariant();
@@ -117,17 +144,27 @@ public partial class EditCase
         };
     }
 
+    /// <summary>
+    /// Builds the API download URL for the specified document.
+    /// </summary>
     private string GetDocumentDownloadUrl(LineOfDutyDocument doc)
     {
         return $"{Http.BaseAddress}api/cases/{_lineOfDutyCase.Id}/documents/{doc.Id}/download";
     }
 
+    /// <summary>
+    /// Opens the document download URL in a new browser tab.
+    /// </summary>
     private async Task OnDownloadDocumentAsync(LineOfDutyDocument doc)
     {
         var url = GetDocumentDownloadUrl(doc);
         await JSRuntime.InvokeVoidAsync("open", url, "_blank");
     }
 
+    /// <summary>
+    /// Handles paging for the documents <c>RadzenDataList</c>.
+    /// Slices <see cref="SortedDocuments"/> using the requested skip/take values.
+    /// </summary>
     private void OnDocumentsLoadData(LoadDataArgs args)
     {
         _documents.IsLoading = true;
@@ -139,6 +176,10 @@ public partial class EditCase
         _documents.IsLoading = false;
     }
 
+    /// <summary>
+    /// Confirms and deletes the specified document via
+    /// <see cref="IDataService.DeleteDocumentAsync"/>, then refreshes the paged list.
+    /// </summary>
     private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
     {
         if (_lineOfDutyCase?.Id is null or 0 || doc.Id == 0)
