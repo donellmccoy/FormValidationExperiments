@@ -617,34 +617,430 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private Task OnForwardToAppointingAuthorityClick(RadzenSplitButtonItem item)
+    private async Task OnForwardToAppointingAuthorityClick(RadzenSplitButtonItem item)
     {
-        return Task.CompletedTask;
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Appointing Authority?",
+            "Forward to Appointing Authority",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Appointing Authority...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnAppointingAuthorityReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToAppointingAuthorityReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    private Task OnForwardToBoardTechnicianClick(RadzenSplitButtonItem item)
+    private async Task OnForwardToBoardTechnicianClick(RadzenSplitButtonItem item)
     {
-        return Task.CompletedTask;
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Board Technician?",
+            "Forward to Board Technician",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Board Technician...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnBoardMedicalTechnicianReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    private Task OnForwardToBoardMedicalClick(RadzenSplitButtonItem item)
+    private async Task OnForwardToBoardMedicalClick(RadzenSplitButtonItem item)
     {
-        return Task.CompletedTask;
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Board Medical Officer?",
+            "Forward to Board Medical Officer",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Board Medical Officer...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnBoardMedicalOfficerReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    private Task OnForwardToBoardLegalClick(RadzenSplitButtonItem item)
+    private async Task OnForwardToBoardLegalClick(RadzenSplitButtonItem item)
     {
-        return Task.CompletedTask;
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Board Legal Advisor?",
+            "Forward to Board Legal Advisor",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Board Legal Advisor...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnBoardLegalReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    private Task OnForwardToBoardAdminClick(RadzenSplitButtonItem item)
+    private async Task OnForwardToBoardAdminClick(RadzenSplitButtonItem item)
     {
-        return Task.CompletedTask;
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Board Administrator?",
+            "Forward to Board Administrator",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Board Administrator...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnBoardAdministratorReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    private Task OnCompleteClick(RadzenSplitButtonItem item)
+    private async Task OnCompleteClick(RadzenSplitButtonItem item)
     {
-        return Task.CompletedTask;
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to complete this line of duty case?",
+            "Complete Case",
+            new ConfirmOptions
+            {
+                OkButtonText = "Complete",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Completing line of duty case...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnCompletedEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Completed",
+                    $"Case: {_lineOfDutyCase.CaseId} completed for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.Complete);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
 
