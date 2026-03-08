@@ -141,13 +141,13 @@ else
                         </RadzenStack>
                     </HeaderTemplate>
                     <ChildContent>
-                        <RadzenTabs @bind-SelectedIndex="_selectedTabIndex" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
+                        <RadzenTabs SelectedIndex="_selectedTabIndex"  RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                             <Tabs>
                                 @* ─── Member Tab ─── *@
-                                <RadzenTabsItem Text="Member">
+                                <RadzenTabsItem Text="Member Information">
                                     <Template>
                                         <span class="tab-label">
-                                            Member @if (!IsNewCase && _viewModel.IsDirtySection("MemberInfo")) {
+                                            Member Information @if (!IsNewCase && _viewModel.IsDirtySection("MemberInfo")) {
                                             <span class="dirty-indicator"></span>
                                         }
                                     </span>
@@ -305,14 +305,14 @@ else
                                         </RadzenFieldset>
 
                                         @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                 <RadzenSplitButton Click="@(item => OnMemberForwardClick(item))" 
-                                                                    Text="Start Line Of Duty Case" 
+                                                                    Text="Forward to Medical Technician" 
                                                                     Icon="send" 
                                                                     ButtonStyle="ButtonStyle.Primary" 
                                                                     Variant="Variant.Outlined"
-                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.StartLineOfDutyCase) == true)">
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician) == true)">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                     </ChildContent>
@@ -350,9 +350,8 @@ else
                                         </div>
 
                                         @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                 <RadzenSplitButton Click="@OnMedicalTechnicianForwardClick" 
                                                                     Text="Forward to Medical Officer" 
                                                                     Icon="send"
@@ -675,10 +674,11 @@ else
                                         </div>
 
                                         @* ═══ Fieldset J: Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                <RadzenSplitButton Click="@OnMedicalForwardClick" Text="Forward to Unit CC" Icon="send"
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@OnForwardToUnitCommanderClick" 
+                                                    Text="Forward to Unit Commander" Icon="send"
+                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToUnitCommanderReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
@@ -692,7 +692,7 @@ else
                                 </ChildContent>
                             </RadzenTabsItem>
 
-                                @* ─── Commander Review Tab ─── *@
+                                @* ─── Unit Commander Review Tab ─── *@
                                 <RadzenTabsItem Text="Unit CC Review" Disabled="@IsTabDisabled(3)">
                                     <Template>
                                         <span class="tab-label">
@@ -878,10 +878,11 @@ else
                                         </div>
 
                                         @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                <RadzenSplitButton Click="@OnCommanderForwardClick" Text="Forward to Wing JA" Icon="send"
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@OnForwardToWingJudgeAdvocateClick" 
+                                                    Text="Forward to Wing Judge Advocate" Icon="send"
+                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
@@ -922,10 +923,10 @@ else
                                         </div>
 
                                         @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                <RadzenSplitButton Click="@OnWingJAForwardClick" Text="Forward to Wing CC" Icon="send"
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@OnForwardToWingCommanderClick" Text="Forward to Wing Commander" Icon="send"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToWingCommanderReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
@@ -939,7 +940,7 @@ else
                                     </ChildContent>
                                 </RadzenTabsItem>
 
-                                @* ─── Legal Tab ─── *@
+                                @* ─── Wing CC Review Tab ─── *@
                                 <RadzenTabsItem Text="Wing CC Review" Disabled="@IsTabDisabled(5)">
                                     <Template>
                                         <span class="tab-label">
@@ -1010,10 +1011,10 @@ else
                                         </div>
 
                                         @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                <RadzenSplitButton Click="@OnLegalForwardClick" Text="Forward to Appointing Authority" Icon="send"
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@OnForwardToAppointingAuthorityClick" Text="Forward to Appointing Authority" Icon="send"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToAppointingAuthorityReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
@@ -1030,7 +1031,7 @@ else
                                 </ChildContent>
                             </RadzenTabsItem>
 
-                                @* ─── Wing Tab ─── *@
+                                @* ─── Appointing Authority Tab ─── *@
                                 <RadzenTabsItem Text="Appointing Authority" Disabled="@IsTabDisabled(6)">
                                     <Template>
                                         <span class="tab-label">Appointing Authority</span>
@@ -1054,10 +1055,9 @@ else
                                         </div>
 
                                         @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                <RadzenSplitButton Click="@OnWingForwardClick" Text="Forward to Board Review" Icon="send"
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@OnForwardToBoardTechnicianClick" Text="Forward to Board Review" Icon="send"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
@@ -1098,10 +1098,9 @@ else
                                             </div>
 
                                             @* ═══ Routing ═══ *@
-                                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                    <RadzenSplitButton Click="@OnBoardTechForwardClick" Text="Forward to Board Medical" Icon="send"
+                                            <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                    <RadzenSplitButton Click="@OnForwardToBoardMedicalClick" Text="Forward to Board Medical" Icon="send"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Legal" Icon="send" Value="board-legal" />
@@ -1146,10 +1145,9 @@ else
                                             </div>
 
                                             @* ═══ Routing ═══ *@
-                                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                    <RadzenSplitButton Click="@OnBoardMedForwardClick" Text="Forward to Board Legal" Icon="send"
+                                            <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                    <RadzenSplitButton Click="@OnForwardToBoardLegalClick" Text="Forward to Board Legal" Icon="send"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
@@ -1194,10 +1192,9 @@ else
                                             </div>
 
                                             @* ═══ Routing ═══ *@
-                                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                    <RadzenSplitButton Click="@OnBoardLegalForwardClick" Text="Forward to Board Admin" Icon="send"
+                                            <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                    <RadzenSplitButton Click="@OnForwardToBoardAdminClick" Text="Forward to Board Admin" Icon="send"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />
@@ -1242,10 +1239,9 @@ else
                                             </div>
 
                                             @* ═══ Routing ═══ *@
-                                            <RadzenFieldset Text="Routing" class="rz-mt-2 rz-mb-4">
-                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                                    <RadzenButton Text="Digitally Sign" Icon="edit_square" ButtonStyle="ButtonStyle.Success" Click="@OnDigitallySign" Variant="Variant.Outlined" />
-                                                    <RadzenSplitButton Click="@OnBoardAdminForwardClick" Text="Complete Review" Icon="check_circle"
+                                            <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                    <RadzenSplitButton Click="@OnCompleteClick" Text="Complete Review" Icon="check_circle"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
                                                             <RadzenSplitButtonItem Text="Forward to Board Technician" Icon="send" Value="board-tech" />

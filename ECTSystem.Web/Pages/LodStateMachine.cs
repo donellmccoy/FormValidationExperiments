@@ -34,14 +34,11 @@ internal class LodStateMachine
     private StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<WorkflowState> _returnTrigger;
 
     /// <summary>
-    /// Parameterized trigger for <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> that carries
-    /// the <see cref="LineOfDutyCase"/> instance being initiated into the LOD workflow.
-    /// The case is passed through to <see cref="OnMemberInformationEntryAsync(LineOfDutyCase)"/>
-    /// via <see cref="StateMachine{TState,TTrigger}.TriggerWithParameters{TArg0}"/>.
+    /// Dictionary mapping each <see cref="LineOfDutyTrigger"/> to its corresponding
+    /// <see cref="StateMachine{TState,TTrigger}.TriggerWithParameters{TArg0}"/> carrying
+    /// a <see cref="LineOfDutyCase"/>. Populated by <see cref="RegisterCaseTriggers"/>.
     /// </summary>
-    private StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<LineOfDutyCase> _trigger;
-
-
+    private Dictionary<LineOfDutyTrigger, StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<LineOfDutyCase>> _caseTriggers;
 
     /// <summary>
     /// The LOD case whose <see cref="LineOfDutyCase.WorkflowState"/> is managed by this
@@ -50,8 +47,6 @@ internal class LodStateMachine
     /// <see cref="LineOfDutyCase.TimelineSteps"/>.
     /// </summary>
     private LineOfDutyCase _lineOfDutyCase;
-
-    private EditCase _editCase;
 
     /// <summary>
     /// The data service used to persist all transition side-effects, including
@@ -68,7 +63,79 @@ internal class LodStateMachine
     /// </summary>
     public Func<LineOfDutyCase, Task> OnMemberInformationEntered { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback that is invoked when the medical technician review is entered for a Line of Duty case.
+    /// </summary>
+    /// <remarks>The assigned delegate should perform any actions required when the medical technician review
+    /// step is completed, such as saving data or updating workflow status. The callback receives the current Line of
+    /// Duty case as its parameter and executes asynchronously.</remarks>
     public Func<LineOfDutyCase, Task> OnMedicalTechnicianReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.MedicalOfficerReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnMedicalOfficerReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.UnitCommanderReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnUnitCommanderReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.WingJudgeAdvocateReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnWingJudgeAdvocateReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.WingCommanderReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnWingCommanderReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.AppointingAuthorityReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnAppointingAuthorityReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnBoardMedicalTechnicianReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.BoardMedicalOfficerReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnBoardMedicalOfficerReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.BoardLegalReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnBoardLegalReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.BoardAdministratorReview"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnBoardAdministratorReviewEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.Completed"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnCompletedEntered { get; set; }
+
+    /// <summary>
+    /// Optional callback invoked when the state machine enters
+    /// <see cref="WorkflowState.Cancelled"/>.
+    /// </summary>
+    public Func<LineOfDutyCase, Task> OnCancelledEntered { get; set; }
 
     /// <summary>
     /// Gets the current <see cref="WorkflowState"/> of the underlying state machine.
@@ -105,19 +172,25 @@ internal class LodStateMachine
 
     #region Tab/State Mapping
 
+    /// <summary>
+    /// Provides a mapping between workflow tab names and their corresponding workflow states for the Line of Duty
+    /// determination process.
+    /// </summary>
+    /// <remarks>This array is used to associate each UI tab in the workflow wizard with its logical workflow
+    /// state, enabling navigation and state tracking throughout the multi-step process.</remarks>
     private static readonly (string TabName, WorkflowState State)[] WorkflowTabMap =
     [
-        ("Member Information",       WorkflowState.MemberInformationEntry),        // 0
-        ("Medical Technician",       WorkflowState.MedicalTechnicianReview),       // 1
-        ("Medical Officer",          WorkflowState.MedicalOfficerReview),          // 2
-        ("Unit CC Review",           WorkflowState.UnitCommanderReview),           // 3
-        ("Wing JA Review",           WorkflowState.WingJudgeAdvocateReview),       // 4
-        ("Wing CC Review",           WorkflowState.WingCommanderReview),           // 5
-        ("Appointing Authority",     WorkflowState.AppointingAuthorityReview),     // 6
-        ("Board Technician Review",  WorkflowState.BoardMedicalTechnicianReview),  // 7
-        ("Board Medical Review",     WorkflowState.BoardMedicalOfficerReview),     // 8
-        ("Board Legal Review",       WorkflowState.BoardLegalReview),              // 9
-        ("Board Admin Review",       WorkflowState.BoardAdministratorReview),      // 10
+        ("Member Information",       WorkflowState.MemberInformationEntry),        
+        ("Medical Technician",       WorkflowState.MedicalTechnicianReview),       
+        ("Medical Officer",          WorkflowState.MedicalOfficerReview),       
+        ("Unit CC Review",           WorkflowState.UnitCommanderReview),           
+        ("Wing JA Review",           WorkflowState.WingJudgeAdvocateReview),       
+        ("Wing CC Review",           WorkflowState.WingCommanderReview),           
+        ("Appointing Authority",     WorkflowState.AppointingAuthorityReview),     
+        ("Board Technician Review",  WorkflowState.BoardMedicalTechnicianReview),  
+        ("Board Medical Review",     WorkflowState.BoardMedicalOfficerReview),     
+        ("Board Legal Review",       WorkflowState.BoardLegalReview),              
+        ("Board Admin Review",       WorkflowState.BoardAdministratorReview),     
     ];
 
     /// <summary>
@@ -148,21 +221,7 @@ internal class LodStateMachine
     /// </summary>
     public bool IsTabDisabled(int tabIndex)
     {
-        if (tabIndex >= 11)
-        {
-            return false;
-        }
-
-        var state = _lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft;
-        var maxEnabledIndex = GetTabIndexForState(state);
-
-        // In non-Draft states, also enable the next tab so the user can navigate forward
-        if (state != WorkflowState.Draft)
-        {
-            maxEnabledIndex++;
-        }
-
-        return tabIndex > maxEnabledIndex;
+        return tabIndex < WorkflowTabMap.Length && tabIndex > GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
     }
 
     #endregion
@@ -445,6 +504,10 @@ internal class LodStateMachine
             {
                 await _sm.FireAsync(_returnTrigger, targetState);
             }
+            else if (_caseTriggers.TryGetValue(trigger, out var paramTrigger))
+            {
+                await _sm.FireAsync(paramTrigger, _lineOfDutyCase);
+            }
             else
             {
                 await _sm.FireAsync(trigger);
@@ -471,30 +534,6 @@ internal class LodStateMachine
         try
         {
             _lineOfDutyCase = await _dataService.SaveCaseAsync(_lineOfDutyCase, ct);
-            var tabIndex = GetTabIndexForState(_lineOfDutyCase.WorkflowState);
-            return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
-        }
-        catch (Exception ex)
-        {
-            return StateMachineResult.Fail(ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Creates a new LOD case by saving it to the API, reinitializing the state machine,
-    /// firing <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/>, and re-fetching the persisted case.
-    /// </summary>
-    public async Task<StateMachineResult> CreateCaseAsync(LineOfDutyCase newCase, CancellationToken ct = default)
-    {
-        try
-        {
-            var saved = await _dataService.SaveCaseAsync(newCase, ct);
-
-            await _sm.FireAsync(_trigger, saved);
-
-            // Re-fetch to get full navigation properties
-            _lineOfDutyCase = await _dataService.GetCaseAsync(saved.CaseId, ct) ?? saved;
-
             var tabIndex = GetTabIndexForState(_lineOfDutyCase.WorkflowState);
             return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
         }
@@ -590,11 +629,10 @@ internal class LodStateMachine
         _dataService = dataService;
 
         _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.WorkflowState, FiringMode.Queued);
-        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
-        _trigger = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.StartLineOfDutyCase);
 
-        //_sm.OnTransitionedAsync(HandleTransitionAsync);
-        //_sm.OnTransitionCompletedAsync(OnTransitionCompletedAsync);
+        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
+
+        RegisterCaseTriggers();
 
         Configure();
     }
@@ -604,71 +642,37 @@ internal class LodStateMachine
         _dataService = dataService;
 
         _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(WorkflowState.Draft, FiringMode.Queued);
-        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
-        _trigger = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.StartLineOfDutyCase);
 
-        //_sm.OnTransitionedAsync(HandleTransitionAsync);
-        //_sm.OnTransitionCompletedAsync(OnTransitionCompletedAsync);
+        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
+
+        RegisterCaseTriggers();
 
         Configure();
     }
 
     /// <summary>
-    /// Post-transition callback that persists all side-effects of a state transition.
-    /// Executes three operations in order:
-    /// <list type="number">
-    ///   <item>Records an exit <see cref="WorkflowStateHistory"/> entry for the source state
-    ///         (marked <see cref="TransitionAction.Completed"/> for forward transitions or
-    ///         <see cref="TransitionAction.Leave"/> for backward transitions). Skipped
-    ///         for terminal states (<see cref="WorkflowState.Completed"/>,
-    ///         <see cref="WorkflowState.Cancelled"/>).</item>
-    ///   <item>Persists the destination <see cref="WorkflowState"/> on the
-    ///         <see cref="_lineOfDutyCase"/> via <see cref="IDataService.SaveCaseAsync"/>.</item>
-    ///   <item>Records an entry <see cref="WorkflowStateHistory"/> for the destination state
-    ///         and starts the corresponding <see cref="TimelineStep"/> if it hasn't been
-    ///         started yet (skipped for terminal states).</item>
-    /// </list>
+    /// Registers all <see cref="LineOfDutyCase"/>-parameterized triggers in the
+    /// <see cref="_caseTriggers"/> dictionary. Called from both constructors to avoid
+    /// duplicating the trigger registration list.
     /// </summary>
-    /// <param name="transition">
-    /// The Stateless transition descriptor containing the source state, destination state,
-    /// and trigger that caused the transition.
-    /// </param>
-    private async Task HandleTransitionAsync(StateMachine<WorkflowState, LineOfDutyTrigger>.Transition transition)
+    private void RegisterCaseTriggers()
     {
-        _lineOfDutyCase.WorkflowState = transition.Destination;
-
-        await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-        var now = DateTime.UtcNow;
-
-        await _dataService.AddHistoryEntryAsync(new WorkflowStateHistory
+        _caseTriggers = new Dictionary<LineOfDutyTrigger, StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<LineOfDutyCase>>
         {
-            LineOfDutyCaseId = _lineOfDutyCase.Id,
-            WorkflowState = transition.Destination,
-            Action = TransitionAction.Enter,
-            StartDate = now,
-            PerformedBy = string.Empty,
-            CreatedDate = now,
-            CreatedBy = string.Empty,
-            ModifiedDate = now,
-            ModifiedBy = string.Empty
-        });
-    }
-
-    /// <summary>
-    /// Callback invoked after a state transition has fully completed, including all
-    /// entry/exit actions and <see cref="HandleTransitionAsync"/> persistence.
-    /// Use this to perform post-transition logic such as UI refresh notifications,
-    /// audit logging, or follow-up processing that should only occur once the state
-    /// machine has settled into its new <see cref="WorkflowState"/>.
-    /// </summary>
-    /// <param name="transition">
-    /// The Stateless transition descriptor containing the source state, destination state,
-    /// and trigger that caused the transition.
-    /// </param>
-    private Task OnTransitionCompletedAsync(StateMachine<WorkflowState, LineOfDutyTrigger>.Transition transition)
-    {
-        return Task.CompletedTask;
+            [LineOfDutyTrigger.StartLineOfDutyCase] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.StartLineOfDutyCase),
+            [LineOfDutyTrigger.ForwardToMedicalTechnician] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToMedicalTechnician),
+            [LineOfDutyTrigger.ForwardToMedicalOfficerReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToMedicalOfficerReview),
+            [LineOfDutyTrigger.ForwardToUnitCommanderReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToUnitCommanderReview),
+            [LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview),
+            [LineOfDutyTrigger.ForwardToWingCommanderReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToWingCommanderReview),
+            [LineOfDutyTrigger.ForwardToAppointingAuthorityReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToAppointingAuthorityReview),
+            [LineOfDutyTrigger.ForwardToBoardTechnicianReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToBoardTechnicianReview),
+            [LineOfDutyTrigger.ForwardToBoardMedicalReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToBoardMedicalReview),
+            [LineOfDutyTrigger.ForwardToBoardLegalReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToBoardLegalReview),
+            [LineOfDutyTrigger.ForwardToBoardAdministratorReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToBoardAdministratorReview),
+            [LineOfDutyTrigger.Complete] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.Complete),
+            [LineOfDutyTrigger.Cancel] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.Cancel),
+        };
     }
 
     /// <summary>
@@ -692,21 +696,21 @@ internal class LodStateMachine
 
         // Step 1: Member Information Entry — initial state; forward-only to Med Tech or cancel
         _sm.Configure(WorkflowState.MemberInformationEntry)
-            .OnEntryFromAsync(_trigger, OnMemberInformationEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.StartLineOfDutyCase], OnMemberInformationEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToMedicalTechnician, WorkflowState.MedicalTechnicianReview, CanForwardToMedicalTechnicianAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMemberInformationExitAsync);
 
         // Step 2: Medical Technician Review — forward-only to Med Officer or cancel
         _sm.Configure(WorkflowState.MedicalTechnicianReview)
-            .OnEntryFromAsync(_trigger, OnMedicalTechnicianReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToMedicalTechnician], OnMedicalTechnicianReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanForwardToMedicalOfficerReviewAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMedicalTechnicianReviewExitAsync);
 
         // Step 3: Medical Officer Review — can forward to Unit CC or return to Med Tech
         _sm.Configure(WorkflowState.MedicalOfficerReview)
-            .OnEntryAsync(OnMedicalOfficerReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToMedicalOfficerReview], OnMedicalOfficerReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanForwardToUnitCommanderReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -714,7 +718,7 @@ internal class LodStateMachine
 
         // Step 4: Unit Commander Review — can forward to Wing JA or return to earlier stages
         _sm.Configure(WorkflowState.UnitCommanderReview)
-            .OnEntryAsync(OnUnitCommanderReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToUnitCommanderReview], OnUnitCommanderReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanForwardToWingJudgeAdvocateReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -722,7 +726,7 @@ internal class LodStateMachine
 
         // Step 5: Wing Judge Advocate Review — can forward to Wing CC or return to earlier stages
         _sm.Configure(WorkflowState.WingJudgeAdvocateReview)
-            .OnEntryAsync(OnWingJudgeAdvocateReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview], OnWingJudgeAdvocateReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, CanForwardToWingCommanderReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -730,7 +734,7 @@ internal class LodStateMachine
 
         // Step 6: Wing Commander Review — can forward to Appointing Authority or return to earlier stages
         _sm.Configure(WorkflowState.WingCommanderReview)
-            .OnEntryAsync(OnWingCommanderReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingCommanderReview], OnWingCommanderReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanForwardToAppointingAuthorityReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -738,7 +742,7 @@ internal class LodStateMachine
 
         // Step 7: Appointing Authority Review — can forward to Board Tech or return to earlier stages
         _sm.Configure(WorkflowState.AppointingAuthorityReview)
-            .OnEntryAsync(OnAppointingAuthorityReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToAppointingAuthorityReview], OnAppointingAuthorityReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -746,7 +750,7 @@ internal class LodStateMachine
 
         // Step 8: Board Medical Technician Review — lateral routing to Board Med/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalTechnicianReview)
-            .OnEntryAsync(OnBoardMedicalTechnicianReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardTechnicianReview], OnBoardMedicalTechnicianReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
@@ -756,7 +760,7 @@ internal class LodStateMachine
 
         // Step 9: Board Medical Officer — lateral routing to Board Tech/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalOfficerReview)
-            .OnEntryAsync(OnBoardMedicalOfficerReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardMedicalReview], OnBoardMedicalOfficerReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
@@ -766,7 +770,7 @@ internal class LodStateMachine
 
         // Step 10: Board Legal Review — lateral routing to Board Tech/Med/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardLegalReview)
-            .OnEntryAsync(OnBoardLegalReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardLegalReview], OnBoardLegalReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
@@ -776,7 +780,7 @@ internal class LodStateMachine
 
         // Step 11: Board Administrator Review — final review stage; can complete the case, route laterally, or return to any earlier stage
         _sm.Configure(WorkflowState.BoardAdministratorReview)
-            .OnEntryAsync(OnBoardAdministratorReviewEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardAdministratorReview], OnBoardAdministratorReviewEntryAsync)
             .PermitIf(LineOfDutyTrigger.Complete, WorkflowState.Completed, CanCompleteAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
@@ -787,12 +791,12 @@ internal class LodStateMachine
 
         // Terminal state: Completed — no further transitions; Cancel is silently ignored
         _sm.Configure(WorkflowState.Completed)
-            .OnEntryAsync(OnCompletedEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.Complete], OnCompletedEntryAsync)
             .Ignore(LineOfDutyTrigger.Cancel);
 
         // Terminal state: Cancelled — no further transitions; Cancel is silently ignored
         _sm.Configure(WorkflowState.Cancelled)
-            .OnEntryAsync(OnCancelledEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.Cancel], OnCancelledEntryAsync)
             .Ignore(LineOfDutyTrigger.Cancel);
     }
 
@@ -932,9 +936,17 @@ internal class LodStateMachine
     /// medical officer review step (e.g., presenting Items 9–15 of AF Form 348 for physician review).
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnMedicalOfficerReviewEntryAsync()
+    private async Task OnMedicalOfficerReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.MedicalOfficerReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.MedicalOfficerReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnMedicalOfficerReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -973,9 +985,17 @@ internal class LodStateMachine
     /// unit commander review step (e.g., loading Items 16–23 endorsement fields).
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnUnitCommanderReviewEntryAsync()
+    private async Task OnUnitCommanderReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.UnitCommanderReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.UnitCommanderReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnUnitCommanderReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1014,9 +1034,17 @@ internal class LodStateMachine
     /// Wing Judge Advocate (SJA) legal review step.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnWingJudgeAdvocateReviewEntryAsync()
+    private async Task OnWingJudgeAdvocateReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.WingJudgeAdvocateReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.WingJudgeAdvocateReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnWingJudgeAdvocateReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1055,9 +1083,17 @@ internal class LodStateMachine
     /// Wing Commander review step (e.g., loading Items 24-25 of AF Form 348).
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnWingCommanderReviewEntryAsync()
+    private async Task OnWingCommanderReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.WingCommanderReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.WingCommanderReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnWingCommanderReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1097,9 +1133,17 @@ internal class LodStateMachine
     /// pre-board sequential workflow and the board-level lateral review process.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnAppointingAuthorityReviewEntryAsync()
+    private async Task OnAppointingAuthorityReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.AppointingAuthorityReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.AppointingAuthorityReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnAppointingAuthorityReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1125,9 +1169,17 @@ internal class LodStateMachine
     /// entry may be reached from the appointing authority, another board reviewer, or a return.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnBoardMedicalTechnicianReviewEntryAsync()
+    private async Task OnBoardMedicalTechnicianReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardMedicalTechnicianReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardMedicalTechnicianReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnBoardMedicalTechnicianReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1153,9 +1205,17 @@ internal class LodStateMachine
     /// entry may be reached from another board reviewer or from a return.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnBoardMedicalOfficerReviewEntryAsync()
+    private async Task OnBoardMedicalOfficerReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardMedicalOfficerReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardMedicalOfficerReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnBoardMedicalOfficerReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1181,9 +1241,17 @@ internal class LodStateMachine
     /// reached from another board reviewer or from a return.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnBoardLegalReviewEntryAsync()
+    private async Task OnBoardLegalReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardLegalReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardLegalReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnBoardLegalReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1209,9 +1277,17 @@ internal class LodStateMachine
     /// can be completed, cancelled, routed laterally, or returned to an earlier stage.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnBoardAdministratorReviewEntryAsync()
+    private async Task OnBoardAdministratorReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.BoardAdministratorReview);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.BoardAdministratorReview);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnBoardAdministratorReviewEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1254,9 +1330,17 @@ internal class LodStateMachine
     /// <see cref="LineOfDutyTrigger.Cancel"/>.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnCompletedEntryAsync()
+    private async Task OnCompletedEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.Completed);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.Completed);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnCompletedEntered?.Invoke(saved);
     }
 
     /// <summary>
@@ -1267,9 +1351,17 @@ internal class LodStateMachine
     /// <see cref="LineOfDutyTrigger.Cancel"/>.
     /// </summary>
     /// <returns>A completed task. Override with actual logic when entry side-effects are needed.</returns>
-    private Task OnCancelledEntryAsync()
+    private async Task OnCancelledEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        return Task.CompletedTask;
+        _lineOfDutyCase = lineOfDutyCase;
+
+        _lineOfDutyCase.UpdateWorkflowState(WorkflowState.Cancelled);
+
+        _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.Cancelled);
+
+        var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+        await OnCancelledEntered?.Invoke(saved);
     }
 
     #endregion
@@ -1395,7 +1487,12 @@ internal class LodStateMachine
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task FireAsync(LineOfDutyCase newCase, LineOfDutyTrigger trigger)
     {
-        await _sm.FireAsync(_trigger, newCase);
+        if (!_caseTriggers.TryGetValue(trigger, out var paramTrigger))
+        {
+            throw new InvalidOperationException($"Trigger '{trigger}' is not configured as a parameterized case trigger.");
+        }
+
+        await _sm.FireAsync(paramTrigger, newCase);
     }
 
     /// <summary>

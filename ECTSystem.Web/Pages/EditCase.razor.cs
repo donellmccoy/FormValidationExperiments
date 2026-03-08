@@ -33,10 +33,6 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string Draft = "Draft";
     }
 
-
-
-    private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
-
     [Inject]
     private IDataService CaseService { get; set; }
 
@@ -86,6 +82,8 @@ public partial class EditCase : ComponentBase, IDisposable
         _ => "Dashboard"
     };
 
+    private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
+
     private readonly PageOperationState _page = new();
 
     private readonly BookmarkUiState _bookmark = new();
@@ -100,6 +98,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private int _selectedTabIndex;
 
+    private RadzenTabs _tabs;
+
     private WorkflowSidebar _workflowSidebar;
 
     private int _selectedMemberId;
@@ -108,58 +108,546 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private RadzenTemplateForm<LineOfDutyViewModel> _medicalForm;
 
-    private IReadOnlyList<TrackableModel> AllFormModels
-    {
-        get
-        {
-            return [_viewModel];
-        }
-    }
+    private IReadOnlyList<TrackableModel> AllFormModels => [_viewModel];
 
-    private bool HasAnyChanges
-    {
-        get
-        {
-            return _viewModel.IsDirty;
-        }
-    }
+    private bool HasAnyChanges => _viewModel.IsDirty;
 
-    private int NotificationCount
-    {
-        get
-        {
-            return _lineOfDutyCase?.Notifications?.Count ?? 0;
-        }
-    }
-
-    private int CurrentStepIndex => _workflowSidebar?.CurrentStepIndex ?? 0;
+    private int NotificationCount => _lineOfDutyCase?.Notifications?.Count ?? 0;
 
     private WorkflowStep CurrentStep => _workflowSidebar?.CurrentStep;
 
-    private Task OnBoardTechForwardClick(RadzenSplitButtonItem item)
+
+    protected override async Task OnInitializedAsync()
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardMedicalTechnicianReview, item);
+        if (IsNewCase)
+        {
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
+
+            TakeSnapshots();
+        }
+        else
+        {
+            await LoadCaseAsync();
+        }
+
+        _page.IsLoading = false;
     }
 
-    private Task OnBoardMedForwardClick(RadzenSplitButtonItem item)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardMedicalOfficerReview, item);
+        if (firstRender)
+        {
+            _tabs?.Reload();
+
+            if (IsNewCase && _memberSearchTextBox is not null)
+            {
+                await _memberSearchTextBox.Element.FocusAsync();
+            }
+        }
     }
 
-    private Task OnBoardLegalForwardClick(RadzenSplitButtonItem item)
+    private async Task LoadCaseAsync()
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardLegalReview, item);
+        await SetBusyAsync("Loading case...");
+
+        try
+        {
+            _lineOfDutyCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+
+            _stateMachine = LineOfDutyStateMachineFactory.Create(_lineOfDutyCase, CaseService);
+
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+            try
+            {
+                _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lineOfDutyCase.Id);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Component disposed during load — silently ignore
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load case {CaseId}", CaseId);
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load Failed",
+                Detail = $"Failed to load case: {ex.Message}",
+                Duration = 5000
+            });
+
+            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    private Task OnBoardAdminForwardClick(RadzenSplitButtonItem item)
+    private async Task OnMemberForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(WorkflowState.BoardAdministratorReview, item);
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        if (IsNewCase)
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to start this line of duty case?",
+                "Start Line of Duty Case",
+                new ConfirmOptions
+                {
+                    OkButtonText = "Start",
+                    CancelButtonText = "Cancel"
+                });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Creating line of duty case...");
+
+            try
+            {
+                var lineOfDutyCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
+
+                LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
+
+                _stateMachine = LineOfDutyStateMachineFactory.Create(CaseService);
+
+                _stateMachine.OnMemberInformationEntered = lod =>
+                {
+                    _lineOfDutyCase = lod;
+
+                    CaseId = _lineOfDutyCase.CaseId;
+
+                    _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                    TakeSnapshots();
+
+                    _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                    _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                    _tabs?.Reload();
+
+                    NotificationService.Notify(
+                        NotificationSeverity.Success,
+                        "Line of Duty Case Started",
+                        $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
+
+                    return Task.CompletedTask;
+                };
+
+                await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to create case: {CaseId}", CaseId);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Create Line of Duty Case Failed",
+                    ex.Message);
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
+        else
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to forward the case to the Medical Technician?",
+                "Forward to Medical Technician",
+                new ConfirmOptions
+                {
+                    OkButtonText = "Start",
+                    CancelButtonText = "Cancel"
+                });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync("Forwarding case to Medical Technician...");
+
+            try
+            {
+                LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+                _stateMachine.OnMedicalTechnicianReviewEntered = lod =>
+                {
+                    _lineOfDutyCase = lod;
+
+                    CaseId = _lineOfDutyCase.CaseId;
+
+                    _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                    TakeSnapshots();
+
+                    _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                    _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                    NotificationService.Notify(
+                        NotificationSeverity.Success,
+                        "Line of Duty Case Updated",
+                        $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                    return Task.CompletedTask;
+                };
+
+                await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+        }
     }
 
-    private Task OnBoardCompleteClick(RadzenSplitButtonItem item)
+    private async Task OnMedicalTechnicianForwardClick(RadzenSplitButtonItem item)
     {
-        return HandleWorkflowActionAsync(WorkflowState.Completed, item);
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Medical Officer?",
+            "Forward to Medical Officer",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Medical Officer...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnMedicalOfficerReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
     }
+
+    private async Task OnForwardToUnitCommanderClick(RadzenSplitButtonItem item)
+    {
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Medical Officer?",
+            "Forward to Medical Officer",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Unit Commander...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnUnitCommanderReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToUnitCommanderReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private async Task OnForwardToWingJudgeAdvocateClick(RadzenSplitButtonItem item)
+    {
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Wing Judge Advocate?",
+            "Forward to Wing Judge Advocate",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Wing Judge Advocate...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnWingJudgeAdvocateReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private async Task OnForwardToWingCommanderClick(RadzenSplitButtonItem item)
+    {
+        bool? confirmed = null;
+
+        if (item?.Value == "cancel")
+        {
+            confirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Wing Commander?",
+            "Forward to Wing Commander",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Wing Commander...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _stateMachine.OnWingCommanderReviewEntered = lod =>
+            {
+                _lineOfDutyCase = lod;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+
+                return Task.CompletedTask;
+            };
+
+            await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingCommanderReview);
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private Task OnForwardToAppointingAuthorityClick(RadzenSplitButtonItem item)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task OnForwardToBoardTechnicianClick(RadzenSplitButtonItem item)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task OnForwardToBoardMedicalClick(RadzenSplitButtonItem item)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task OnForwardToBoardLegalClick(RadzenSplitButtonItem item)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task OnForwardToBoardAdminClick(RadzenSplitButtonItem item)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task OnCompleteClick(RadzenSplitButtonItem item)
+    {
+        return Task.CompletedTask;
+    }
+
+
 
     private async Task HandleWorkflowActionAsync(WorkflowState sourceState, RadzenSplitButtonItem item)
     {
@@ -211,6 +699,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _workflowSidebar?.ApplyWorkflowState(_lineOfDutyCase);
                 _selectedTabIndex = result.TabIndex;
+                _tabs?.Reload();
 
                 TakeSnapshots();
 
@@ -231,148 +720,6 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnMemberForwardClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to start this line of duty case?",
-            "Start Line of Duty Case",
-            new ConfirmOptions 
-            { 
-                OkButtonText = "Start", 
-                CancelButtonText = "Cancel" 
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Creating line of duty case...");
-
-        try
-        {
-            var lineOfDutyCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
-
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
-
-            _stateMachine = LineOfDutyStateMachineFactory.Create(CaseService);
-
-            _stateMachine.OnMemberInformationEntered = OnMemberInformationEntered;
-
-            await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to create case: {CaseId}", CaseId);
-
-            NotificationService.Notify(
-                NotificationSeverity.Error, 
-                "Create Line of Duty Case Failed", 
-                ex.Message);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-
-        async Task OnMemberInformationEntered(LineOfDutyCase lodCase)
-        {
-            _lineOfDutyCase = lodCase;
-
-            CaseId = _lineOfDutyCase.CaseId;
-
-            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-            TakeSnapshots();
-
-            _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
-
-            NotificationService.Notify(
-                NotificationSeverity.Success, 
-                "Line of Duty Case Started", 
-                $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
-        }
-    }
-
-    private async Task OnMedicalTechnicianForwardClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-        _stateMachine.OnMedicalTechnicianReviewEntered = OnMedicalTechnicianReviewEntered;
-
-        await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
-    }
-
-    private async Task OnMedicalTechnicianReviewEntered(LineOfDutyCase @case)
-    {
-        throw new NotImplementedException();
-    }
-
-    private Task OnMedicalForwardClick(RadzenSplitButtonItem item)
-    {
-        return HandleWorkflowActionAsync(WorkflowState.MedicalOfficerReview, item);
-    }
-
-    private Task OnCommanderForwardClick(RadzenSplitButtonItem item)
-    {
-        return HandleWorkflowActionAsync(WorkflowState.UnitCommanderReview, item);
-    }
-
-    private Task OnWingJAForwardClick(RadzenSplitButtonItem item)
-    {
-        return HandleWorkflowActionAsync(WorkflowState.WingJudgeAdvocateReview, item);
-    }
-
-    private Task OnLegalForwardClick(RadzenSplitButtonItem item)
-    {
-        return HandleWorkflowActionAsync(WorkflowState.WingCommanderReview, item);
-    }
-
-    private Task OnWingForwardClick(RadzenSplitButtonItem item)
-    {
-        return HandleWorkflowActionAsync(WorkflowState.AppointingAuthorityReview, item);
-    }
-
     private bool IsTabDisabled(int tabIndex)
     {
         return _stateMachine?.IsTabDisabled(tabIndex) ?? tabIndex > LodStateMachine.GetTabIndexForState(WorkflowState.Draft);
@@ -391,114 +738,6 @@ public partial class EditCase : ComponentBase, IDisposable
                 NotificationSeverity.Warning,
                 "Investigation Cancelled",
                 "The LOD investigation has been cancelled."));
-    }
-
-    private async Task OnDigitallySign()
-    {
-        // If LOD case doesn't exist yet, create it first (without advancing workflow)
-        if (_lineOfDutyCase is null)
-        {
-            if (_selectedMemberId <= 0)
-            {
-                NotificationService.Notify(NotificationSeverity.Warning, "No Member Selected",
-                    "Please search for and select a member before signing.");
-                return;
-            }
-
-            var confirmed = await DialogService.Confirm(
-                "This will create the LOD case and digitally sign the Member Information section. Continue?",
-                "Create and Sign",
-                new ConfirmOptions { OkButtonText = "Create & Sign", CancelButtonText = "Cancel" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Creating LOD case...");
-
-            try
-            {
-                var newCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
-
-                LineOfDutyCaseMapper.ApplyToCase(_viewModel, newCase);
-
-                newCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(0, WorkflowState.MemberInformationEntry));
-
-                var saved = await CaseService.SaveCaseAsync(newCase, _cts.Token);
-
-                // Record workflow history entry
-                //await CaseService.AddHistoryEntryAsync(WorkflowStateHistoryFactory.CreateInitialHistory(saved.Id, WorkflowState.MemberInformationEntry, saved.CreatedDate), _cts.Token);
-
-                CaseId = saved.CaseId;
-
-                // Reload the full case — the POST response omits navigation properties
-                // (TimelineSteps, WorkflowStateHistories, etc.)
-                _lineOfDutyCase = await CaseService.GetCaseAsync(saved.CaseId, _cts.Token) ?? saved;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                _workflowSidebar?.ApplyWorkflowState(_lineOfDutyCase);
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
-
-                TakeSnapshots();
-
-                Navigation.NavigateTo($"/case/{saved.CaseId}", replace: true);
-            }
-            catch (Exception ex)
-            {
-                NotificationService.Notify(NotificationSeverity.Error, "Creation Failed", ex.Message);
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-            return;
-        }
-
-        var confirmed2 = await DialogService.Confirm(
-            "Are you sure you want to digitally sign this section?",
-            "Confirm Digital Signature",
-            new ConfirmOptions { OkButtonText = "Sign", CancelButtonText = "Cancel" });
-
-        if (confirmed2 != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Applying digital signature...");
-
-        try
-        {
-            var result = await _stateMachine.SignTimelineStepAsync(CurrentStepIndex, CurrentStep?.StartDate, _cts.Token);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-                _workflowSidebar?.ApplyWorkflowState(_lineOfDutyCase);
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Digitally Signed",
-                    Detail = "Section has been digitally signed.",
-                    Duration = 3000
-                });
-            }
-            else
-            {
-                NotificationService.Notify(NotificationSeverity.Error, "Signing Failed", result.ErrorMessage);
-            }
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Signing Failed", ex.Message);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
     }
 
     private void SetIsSaving(bool isSaving)
@@ -655,85 +894,6 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (IsNewCase)
-        {
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
-
-            TakeSnapshots();
-        }
-        else
-        {
-            await LoadCaseAsync();
-        }
-
-        _page.IsLoading = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && IsNewCase && _memberSearchTextBox is not null)
-        {
-            await _memberSearchTextBox.Element.FocusAsync();
-        }
-    }
-
-    private async Task LoadCaseAsync()
-    {
-        await SetBusyAsync("Loading case...");
-
-        try
-        {
-            _lineOfDutyCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
-
-            if (_lineOfDutyCase is null)
-            {
-                _selectedTabIndex = LodStateMachine.GetTabIndexForState(WorkflowState.Draft);
-
-                return;
-            }
-
-            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
-
-            if (_lineOfDutyCase.Id > 0)
-            {
-                try
-                {
-                    _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lineOfDutyCase.Id);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Component disposed during load — silently ignore
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Failed to load case {CaseId}", CaseId);
-
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Load Failed",
-                Detail = $"Failed to load case: {ex.Message}",
-                Duration = 5000
-            });
-
-            _selectedTabIndex = LodStateMachine.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
     public void TakeSnapshots()
     {
         foreach (var model in AllFormModels)
@@ -757,24 +917,9 @@ public partial class EditCase : ComponentBase, IDisposable
         await SaveCurrentTabAsync(TabNames.UnitCommander);
     }
 
-    private async Task OnWingJAFormSubmit(LineOfDutyViewModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.WingJudgeAdvocate);
-    }
-
     private async Task OnWingCommanderFormSubmit(LineOfDutyViewModel model)
     {
         await SaveCurrentTabAsync(TabNames.WingCommander);
-    }
-
-    private async Task OnAppointingAuthorityFormSubmit(LineOfDutyViewModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.AppointingAuthority);
-    }
-
-    private async Task OnBoardFormSubmit(LineOfDutyViewModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.BoardTechnicianReview);
     }
 
     private async Task OnBookmarkClick()

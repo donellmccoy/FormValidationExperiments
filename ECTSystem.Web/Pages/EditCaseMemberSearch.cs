@@ -152,6 +152,6 @@ public partial class EditCase
         _viewModel.Unit = _viewModel.OrganizationUnit;
 
         _selectedTabIndex = 0;
-        StateHasChanged();
+        _tabs?.Reload();        StateHasChanged();
     }
 }

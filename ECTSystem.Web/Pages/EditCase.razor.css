@@ -695,9 +695,17 @@
     letter-spacing: 0.05em;
     color: var(--rz-text-tertiary-color);
 }
-}
 
 ::deep .doc-actions {
     flex: 0 0 auto;
     margin-left: auto;
+}
+
+/* ═══════════════════ Routing Fieldset ═══════════════════ */
+
+::deep .routing-fieldset .rz-fieldset-content-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    /*min-height: 0px;*/
+    /*padding: 0px;*/
 }
