@@ -1,4 +1,5 @@
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
 using ECTSystem.Shared.Models;
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
                 .AddIdentity()
                 .AddApiLogging()
                 .AddODataControllers()
+                .AddPdfServices()
                 .AddCorsPolicy()
                 .AddOpenApi();
 
@@ -84,6 +86,13 @@ public static class ServiceCollectionExtensions
                 options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             });
+
+        return services;
+    }
+
+    private static IServiceCollection AddPdfServices(this IServiceCollection services)
+    {
+        services.AddScoped<AF348PdfService>();
 
         return services;
     }

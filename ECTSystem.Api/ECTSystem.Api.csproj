@@ -13,11 +13,18 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ECTSystem.Persistence\ECTSystem.Persistence.csproj" />
     <ProjectReference Include="..\ECTSystem.Shared\ECTSystem.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Templates\AF348_06012015_Template.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

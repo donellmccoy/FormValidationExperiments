@@ -80,4 +80,9 @@ public interface IDataService
     /// Appends a workflow step history snapshot entry for a LOD case.
     /// </summary>
     Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistory entry, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Downloads the filled AF Form 348 PDF for the specified case.
+    /// </summary>
+    Task<byte[]> GetForm348PdfAsync(int caseId, CancellationToken cancellationToken = default);
 }

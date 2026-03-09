@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
+using Microsoft.AspNetCore.Hosting;
 using Moq;
 using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
@@ -52,12 +54,20 @@ public class CasesControllerTests : ControllerTestBase
 
         _sut = new CasesController(
             _mockLog.Object,
-            _mockContextFactory.Object);
+            _mockContextFactory.Object,
+            CreatePdfService());
 
         _sut.ControllerContext = CreateControllerContext();
     }
 
     private EctDbContext CreateSeedContext() => new EctDbContext(_dbOptions);
+
+    private static AF348PdfService CreatePdfService()
+    {
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        mockEnv.Setup(e => e.ContentRootPath).Returns(AppContext.BaseDirectory);
+        return new AF348PdfService(mockEnv.Object);
+    }
 
     private void SeedCase(LineOfDutyCase lodCase)
     {

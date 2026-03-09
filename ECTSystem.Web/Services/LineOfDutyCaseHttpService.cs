@@ -485,6 +485,14 @@ public class LineOfDutyCaseHttpService : IDataService
         return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(ODataJsonOptions, cancellationToken))!;
     }
 
+    /// <inheritdoc />
+    public async Task<byte[]> GetForm348PdfAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        return await _httpClient.GetByteArrayAsync($"api/cases/{caseId}/form348", cancellationToken);
+    }
+
     private class IsBookmarkedResponse
     {
         [JsonPropertyName("value")]

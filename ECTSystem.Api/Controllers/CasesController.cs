@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using System.Text.Json.Serialization;
@@ -31,12 +32,16 @@ public class CasesController : ODataController
     /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
+    private readonly AF348PdfService _pdfService;
+
     public CasesController(
         ILoggingService loggingService,
-        IDbContextFactory<EctDbContext> contextFactory)
+        IDbContextFactory<EctDbContext> contextFactory,
+        AF348PdfService pdfService)
     {
         _loggingService = loggingService;
         _contextFactory = contextFactory;
+        _pdfService = pdfService;
     }
 
     /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
@@ -339,6 +344,25 @@ public class CasesController : ODataController
         var context = await CreateContextAsync(ct);
 
         return SingleResult.Create(context.Cases.AsNoTracking().Where(c => c.Id == key).Select(c => c.INCAP));
+    }
+
+    /// <summary>
+    /// Generates a filled AF Form 348 PDF for the specified case.
+    /// Standard MVC route: GET /api/cases/{key}/form348
+    /// </summary>
+    [HttpGet("api/cases/{key:int}/form348")]
+    public async Task<IActionResult> GetForm348([FromRoute] int key, CancellationToken ct = default)
+    {
+        var context = await CreateContextAsync(ct);
+        var lodCase = await context.Cases.AsNoTracking()
+            .Include(c => c.Member)
+            .FirstOrDefaultAsync(c => c.Id == key, ct);
+
+        if (lodCase is null)
+            return NotFound();
+
+        var pdfBytes = _pdfService.GenerateFilledForm(lodCase);
+        return File(pdfBytes, "application/pdf", $"AF348_{lodCase.CaseId}.pdf");
     }
 
     // ── Private helpers ─────────────────────────────────────────────────

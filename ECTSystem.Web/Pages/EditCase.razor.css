@@ -583,6 +583,26 @@
 
 /* ═══════════════════ Secondary Text ═══════════════════ */
 
+/* ═══════════════════ Form 348 PDF Viewer ═══════════════════ */
+
+::deep .form348-viewer-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+}
+
+::deep .form348-toolbar {
+    border-bottom: 1px solid var(--rz-base-700);
+    flex-shrink: 0;
+}
+
+::deep .form348-iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background-color: var(--rz-base-900);
+}
+
 ::deep .text-secondary {
     color: var(--rz-text-secondary-color);
 }
