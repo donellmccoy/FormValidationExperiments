@@ -316,6 +316,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 if (result.Success)
                 {
+                    result = await _stateMachine.FireAsync(result.Case, LineOfDutyTrigger.ForwardToMedicalTechnician);
+                }
+
+                if (result.Success)
+                {
                     _lineOfDutyCase = result.Case;
 
                     CaseId = _lineOfDutyCase.CaseId;
@@ -792,7 +797,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     #endregion
 
-    #region Bookmarks & Attachments
+    #region Bookmarks & Documents
 
     private async Task OnBookmarkClick()
     {

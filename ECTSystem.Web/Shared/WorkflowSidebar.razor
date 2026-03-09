@@ -48,13 +48,13 @@
                     }
                     else if (step.Status == WorkflowStepStatus.Completed)
                     {
-                        @if (step.StartDate.HasValue)
-                        {
-                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
-                        }
                         @if (step.CompletedDate.HasValue)
                         {
                             <span class="step-detail">Completed Date &mdash; @step.CompletedDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
+                        }
+                        @if (step.StartDate.HasValue)
+                        {
+                            <span class="step-detail">Start Date &mdash; @step.StartDate.Value.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")</span>
                         }
                         @if (step.DaysInProcess.HasValue)
                         {

@@ -166,10 +166,13 @@ internal class LineOfDutyStateMachine
             //    get server-assigned IDs and are actually written to the database.
             //    SaveCaseAsync only PATCHes scalar properties — it does NOT persist
             //    navigation-property entries added to the in-memory collection.
+            //    For new cases, the entries were built before SaveCaseAsync assigned
+            //    the server-generated Id, so update them now.
             var savedEntries = new List<WorkflowStateHistory>(entriesToSave.Count);
 
             foreach (var entry in entriesToSave)
             {
+                entry.LineOfDutyCaseId = saved.Id;
                 savedEntries.Add(await _dataService.AddHistoryEntryAsync(entry));
             }
 

@@ -81,10 +81,10 @@ public partial class WorkflowSidebar : ComponentBase
         var rawState = lodCase is not null ? (int)lodCase.WorkflowState : 1;
         var stateInt = rawState < 1 ? 1 : rawState > Steps.Count ? Steps.Count : rawState;
 
-        // Primary source: latest history entry per WorkflowState (highest Id = most recent)
+        // Primary source: most recent history entry per WorkflowState (by CreatedDate)
         var historyByState = lodCase?.WorkflowStateHistories?
             .GroupBy(h => h.WorkflowState)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.Id).First())
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.CreatedDate).First())
             ?? [];
 
         // Fallback: positional TimelineStep data (backward compatibility with seeded cases)
@@ -95,6 +95,14 @@ public partial class WorkflowSidebar : ComponentBase
 
         foreach (var step in Steps)
         {
+            // Steps after the current step are always Pending with no data,
+            // even if history entries exist from a previous forward pass before a return.
+            if (step.Number > stateInt)
+            {
+                ClearStep(step);
+                continue;
+            }
+
             if (historyByState.TryGetValue(step.WorkflowState, out var history))
             {
                 step.Status = history.Status;
@@ -154,12 +162,6 @@ public partial class WorkflowSidebar : ComponentBase
                     step.StatusText = string.Empty;
                     step.CompletionDate = string.Empty;
                 }
-                else
-                {
-                    step.Status = WorkflowStepStatus.Pending;
-                    step.StatusText = string.Empty;
-                    step.CompletionDate = string.Empty;
-                }
 
                 step.StartDate = timeline?.StartDate;
                 step.SignedDate = timeline?.SignedDate;
@@ -170,6 +172,23 @@ public partial class WorkflowSidebar : ComponentBase
         }
 
         CurrentStepIndex = stateInt - 1;
+    }
+
+    /// <summary>
+    /// Resets a workflow step to the default Pending state with no data.
+    /// Used for steps beyond the current workflow position.
+    /// </summary>
+    private static void ClearStep(WorkflowStep step)
+    {
+        step.Status = WorkflowStepStatus.Pending;
+        step.StartDate = null;
+        step.EndDate = null;
+        step.CompletedDate = null;
+        step.SignedDate = null;
+        step.SignedBy = string.Empty;
+        step.CompletedBy = string.Empty;
+        step.StatusText = string.Empty;
+        step.CompletionDate = string.Empty;
     }
 
     /// <summary>
