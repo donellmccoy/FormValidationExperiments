@@ -1393,6 +1393,13 @@ else
                                     </Template>
                                     <ChildContent>
                                         <div class="form348-viewer-container">
+                                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                                         JustifyContent="JustifyContent.End"
+                                                         Gap="0.5rem" class="rz-p-2 form348-toolbar">
+                                                <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light"
+                                                              Size="ButtonSize.Small" Click="@LoadForm348Async"
+                                                              Variant="Variant.Text" Disabled="@isLoadingForm348" />
+                                            </RadzenStack>
                                             @if (!string.IsNullOrEmpty(form348Error))
                                             {
                                                 <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" class="rz-m-4">
@@ -1407,12 +1414,6 @@ else
                                             }
                                             else
                                             {
-                                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                                                             Gap="0.5rem" class="rz-p-2 form348-toolbar">
-                                                    <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light"
-                                                                  Size="ButtonSize.Small" Click="@LoadForm348Async"
-                                                                  Variant="Variant.Text" />
-                                                </RadzenStack>
                                                 <iframe src="@form348BlobUrl" class="form348-iframe"></iframe>
                                             }
                                         </div>

@@ -12,10 +12,12 @@ public partial class EditCase
     private bool isLoadingForm348;
     private string form348Error;
 
+    private bool form348Loaded;
+
     private async Task OnTabIndexChanged(int index)
     {
         _selectedTabIndex = index;
-        if (index == Form348TabIndex)
+        if (index == Form348TabIndex && !form348Loaded)
         {
             await LoadForm348Async();
         }
@@ -30,6 +32,7 @@ public partial class EditCase
 
         isLoadingForm348 = true;
         form348Error = null;
+        form348Loaded = false;
         StateHasChanged();
 
         try
@@ -57,6 +60,7 @@ public partial class EditCase
         finally
         {
             isLoadingForm348 = false;
+            form348Loaded = string.IsNullOrEmpty(form348Error);
             StateHasChanged();
         }
     }

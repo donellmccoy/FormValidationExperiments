@@ -585,6 +585,10 @@
 
 /* ═══════════════════ Form 348 PDF Viewer ═══════════════════ */
 
+::deep .rz-tabview-panel:has(> .form348-viewer-container) {
+    padding: 0 !important;
+}
+
 ::deep .form348-viewer-container {
     display: flex;
     flex-direction: column;
