@@ -30,6 +30,7 @@ public sealed class AF348PdfService
 
         var fields = CollectFields(document);
         FillFields(fields, lodCase);
+        SetAllFieldsReadOnly(fields);
 
         using var ms = new MemoryStream();
         document.Save(ms, false);
@@ -364,5 +365,17 @@ public sealed class AF348PdfService
         }
 
         return "/1";
+    }
+
+    /// <summary>
+    /// Sets the ReadOnly flag (bit 1 of /Ff) on every field so the PDF cannot be edited.
+    /// </summary>
+    private static void SetAllFieldsReadOnly(Dictionary<string, PdfDictionary> fields)
+    {
+        foreach (var field in fields.Values)
+        {
+            var flags = field.Elements.GetInteger("/Ff");
+            field.Elements.SetInteger("/Ff", flags | 1); // Bit 1 = ReadOnly
+        }
     }
 }

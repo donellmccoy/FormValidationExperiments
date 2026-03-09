@@ -141,7 +141,7 @@ else
                         </RadzenStack>
                     </HeaderTemplate>
                     <ChildContent>
-                        <RadzenTabs SelectedIndex="_selectedTabIndex" Change="@OnTabChanged" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
+                        <RadzenTabs SelectedIndex="@_selectedTabIndex" SelectedIndexChanged="@OnTabIndexChanged" RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Left" class="assessment-tabs">
                             <Tabs>
                                 @* ─── Member Tab ─── *@
                                 <RadzenTabsItem Text="Member Information">
@@ -1393,16 +1393,7 @@ else
                                     </Template>
                                     <ChildContent>
                                         <div class="form348-viewer-container">
-                                            @if (isLoadingForm348)
-                                            {
-                                                <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" class="rz-p-8">
-                                                    <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Medium" />
-                                                    <RadzenText TextStyle="TextStyle.Body2" class="rz-color-secondary rz-mt-2">
-                                                        Generating Form 348...
-                                                    </RadzenText>
-                                                </RadzenStack>
-                                            }
-                                            else if (!string.IsNullOrEmpty(form348Error))
+                                            @if (!string.IsNullOrEmpty(form348Error))
                                             {
                                                 <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" class="rz-m-4">
                                                     @form348Error
@@ -1410,7 +1401,11 @@ else
                                                 <RadzenButton Text="Retry" Icon="refresh" ButtonStyle="ButtonStyle.Secondary"
                                                               Click="@LoadForm348Async" class="rz-ml-4" />
                                             }
-                                            else if (!string.IsNullOrEmpty(form348BlobUrl))
+                                            else if (isLoadingForm348)
+                                            {
+                                                <RadzenSkeleton Style="width: 100%; flex: 1;" Animation="SkeletonAnimation.Wave" />
+                                            }
+                                            else
                                             {
                                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
                                                              Gap="0.5rem" class="rz-p-2 form348-toolbar">

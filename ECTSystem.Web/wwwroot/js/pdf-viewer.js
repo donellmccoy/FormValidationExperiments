@@ -4,18 +4,26 @@
  */
 window.pdfViewerInterop = {
     /**
-     * Creates a blob URL from a base64-encoded PDF byte array.
+     * Creates a blob URL from a base64-encoded PDF byte array and optionally sets an iframe src.
      * @param {string} base64 - Base64-encoded PDF content.
+     * @param {string} [iframeSelector] - CSS selector for an iframe to set the src on.
      * @returns {string} A blob URL pointing to the PDF.
      */
-    createBlobUrl: function (base64) {
+    createBlobUrl: function (base64, iframeSelector) {
         var byteChars = atob(base64);
         var byteNumbers = new Uint8Array(byteChars.length);
         for (var i = 0; i < byteChars.length; i++) {
             byteNumbers[i] = byteChars.charCodeAt(i);
         }
         var blob = new Blob([byteNumbers], { type: 'application/pdf' });
-        return URL.createObjectURL(blob);
+        var url = URL.createObjectURL(blob);
+        if (iframeSelector) {
+            var iframe = document.querySelector(iframeSelector);
+            if (iframe) {
+                iframe.src = url;
+            }
+        }
+        return url;
     },
 
     /**

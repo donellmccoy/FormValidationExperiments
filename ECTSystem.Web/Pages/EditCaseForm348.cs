@@ -12,7 +12,7 @@ public partial class EditCase
     private bool isLoadingForm348;
     private string form348Error;
 
-    private async Task OnTabChanged(int index)
+    private async Task OnTabIndexChanged(int index)
     {
         _selectedTabIndex = index;
         if (index == Form348TabIndex)
@@ -24,7 +24,9 @@ public partial class EditCase
     private async Task LoadForm348Async()
     {
         if (_lineOfDutyCase?.Id is null or 0)
+        {
             return;
+        }
 
         isLoadingForm348 = true;
         form348Error = null;
@@ -41,7 +43,11 @@ public partial class EditCase
 
             var pdfBytes = await CaseService.GetForm348PdfAsync(_lineOfDutyCase.Id, _cts.Token);
             var base64 = Convert.ToBase64String(pdfBytes);
-            form348BlobUrl = await JSRuntime.InvokeAsync<string>("pdfViewerInterop.createBlobUrl", base64);
+
+            // Pass iframe selector so JS sets the src directly — works around
+            // RadzenTabs Client-mode not re-rendering inactive panel content.
+            form348BlobUrl = await JSRuntime.InvokeAsync<string>(
+                "pdfViewerInterop.createBlobUrl", base64, ".form348-iframe");
         }
         catch (Exception ex)
         {
