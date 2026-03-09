@@ -109,7 +109,7 @@
 ::deep .case-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--rz-text-color);
     margin: 0;
 }
 
@@ -118,7 +118,7 @@
     flex-wrap: wrap;
     gap: 0.25rem 2rem;
     font-size: 0.8rem;
-    color: #8F8F8F;
+    color: var(--rz-text-secondary-color);
 }
 
 ::deep .meta-item {
@@ -126,7 +126,7 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.8rem;
-    color: #8F8F8F;
+    color: var(--rz-text-secondary-color);
 }
 
 ::deep .meta-item .material-symbols-outlined {
@@ -577,7 +577,7 @@
 
 ::deep .case-member-name {
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.70);
+    color: var(--rz-text-color);
     margin: 0;
 }
 

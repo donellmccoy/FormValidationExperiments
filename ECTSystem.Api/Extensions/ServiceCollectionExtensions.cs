@@ -28,7 +28,8 @@ public static class ServiceCollectionExtensions
     {
         var connectionString = configuration.GetConnectionString("EctDatabase");
 
-        services.AddPooledDbContextFactory<EctDbContext>(options => options.UseSqlServer(connectionString), poolSize: 32);
+        services.AddPooledDbContextFactory<EctDbContext>(options =>
+            options.UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)), poolSize: 32);
 
         services.AddPooledDbContextFactory<EctIdentityDbContext>(options => options.UseSqlServer(connectionString), poolSize: 32);
 

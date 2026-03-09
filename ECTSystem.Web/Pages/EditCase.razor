@@ -695,10 +695,10 @@ else
                             </RadzenTabsItem>
 
                                 @* ─── Unit Commander Review Tab ─── *@
-                                <RadzenTabsItem Text="Unit CC Review" Disabled="@IsTabDisabled(3)">
+                                <RadzenTabsItem Text="Unit Commander Review" Disabled="@IsTabDisabled(3)">
                                     <Template>
                                         <span class="tab-label">
-                                            Unit CC Review @if (!IsNewCase && _viewModel.IsDirtySection("UnitCommander")) {
+                                            Unit Commander Review @if (!IsNewCase && _viewModel.IsDirtySection("UnitCommander")) {
                                             <span class="dirty-indicator"></span>
                                         }
                                     </span>
@@ -945,10 +945,10 @@ else
                                 </RadzenTabsItem>
 
                                 @* ─── Wing CC Review Tab ─── *@
-                                <RadzenTabsItem Text="Wing CC Review" Disabled="@IsTabDisabled(5)">
+                                <RadzenTabsItem Text="Wing Commander Review" Disabled="@IsTabDisabled(5)">
                                     <Template>
                                         <span class="tab-label">
-                                            Wing CC Review @if (!IsNewCase && _viewModel.IsDirtySection("WingCommander")) {
+                                            Wing Commander Review @if (!IsNewCase && _viewModel.IsDirtySection("WingCommander")) {
                                             <span class="dirty-indicator"></span>
                                         }
                                     </span>

@@ -88,6 +88,11 @@ else
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="80px" TextAlign="TextAlign.Center" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="WorkflowState" Title="Status">
+            <Template Context="lodCase">
+                @lodCase.WorkflowState.ToDisplayString()
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()

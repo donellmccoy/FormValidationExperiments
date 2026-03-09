@@ -45,6 +45,13 @@
     /* Success & Danger — keep semantic defaults */
     --rz-success: #4caf50;
     --rz-danger: #f44336;
+
+    /* Soften white text for reduced eye strain */
+    --rz-text-color: rgba(255, 255, 255, 0.70);
+    --rz-text-title-color: rgba(255, 255, 255, 0.70);
+    --rz-text-secondary-color: rgba(255, 255, 255, 0.60);
+    --rz-text-tertiary-color: rgba(255, 255, 255, 0.45);
+    --rz-text-disabled-color: rgba(255, 255, 255, 0.38);
 }
 
 .rzi {
