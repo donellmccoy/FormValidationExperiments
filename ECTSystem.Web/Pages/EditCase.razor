@@ -153,7 +153,7 @@ else
                                     </span>
                                 </Template>
                                 <ChildContent>
-                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@OnMemberFormSubmit">
+                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MemberInformation))">
 
                                         @* ═══ Fieldset A: Items 4–6 — Member Identification ═══ *@
                                         <RadzenFieldset Text="Member Identification">
@@ -332,6 +332,7 @@ else
                                         </span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MedicalTechnician))">
                                         <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                             Medical Technician review content will be added here.
                                         </RadzenText>
@@ -352,7 +353,7 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@OnMedicalTechnicianForwardClick" 
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToMedicalOfficerReview))" 
                                                                     Text="Forward to Medical Officer" 
                                                                     Icon="send"
                                                                     ButtonStyle="ButtonStyle.Primary" 
@@ -364,6 +365,7 @@ else
                                                 </RadzenSplitButton>
                                             </RadzenStack>
                                         </RadzenFieldset>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -377,7 +379,7 @@ else
                                     </span>
                                 </Template>
                                 <ChildContent>
-                                    <RadzenTemplateForm @ref="_medicalForm" TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@OnFormSubmit">
+                                    <RadzenTemplateForm @ref="_medicalForm" TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MedicalOfficer))">
                                         <RadzenDataAnnotationValidator />
 
                                         @* ═══ Fieldset B: Item 9 — Type of Investigation ═══ *@
@@ -676,12 +678,12 @@ else
                                         @* ═══ Fieldset J: Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@OnForwardToUnitCommanderClick" 
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToUnitCommanderReview))" 
                                                     Text="Forward to Unit Commander" Icon="send"
                                                     Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToUnitCommanderReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return" />
+                                                        <RadzenSplitButtonItem Text="Return to Med Tech" Icon="replay" Value="return-med-tech" />
                                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
                                                     </ChildContent>
                                                 </RadzenSplitButton>
@@ -702,7 +704,7 @@ else
                                     </span>
                                 </Template>
                                 <ChildContent>
-                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@OnCommanderFormSubmit">
+                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.UnitCommander))">
 
                                         @* ═══ Fieldset A: Item 16 — Sources of Information ═══ *@
                                         <RadzenFieldset Text="Sources of Information" class="arc-fieldset">
@@ -880,7 +882,7 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@OnForwardToWingJudgeAdvocateClick" 
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview))" 
                                                     Text="Forward to Wing Judge Advocate" Icon="send"
                                                     Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
@@ -905,6 +907,7 @@ else
                                         </span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.WingJudgeAdvocate))">
                                         <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                             Wing JA review content will be added here.
                                         </RadzenText>
@@ -925,7 +928,7 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@OnForwardToWingCommanderClick" Text="Forward to Wing Commander" Icon="send"
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToWingCommanderReview))" Text="Forward to Wing Commander" Icon="send"
                                                                     Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToWingCommanderReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
@@ -937,6 +940,7 @@ else
                                                 </RadzenSplitButton>
                                             </RadzenStack>
                                         </RadzenFieldset>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -950,7 +954,7 @@ else
                                     </span>
                                 </Template>
                                 <ChildContent>
-                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@OnWingCommanderFormSubmit">
+                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.WingCommander))">
 
                                         @* ═══ Fieldset A: Item 24 — Legal Sufficiency Review ═══ *@
                                         <RadzenFieldset Text="Legal Sufficiency Review" class="arc-fieldset">
@@ -1013,12 +1017,12 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@OnForwardToAppointingAuthorityClick" Text="Forward to Appointing Authority" Icon="send"
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToAppointingAuthorityReview))" Text="Forward to Appointing Authority" Icon="send"
                                                                     Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToAppointingAuthorityReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
-                                                        <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return" />
+                                                        <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
                                                         <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
                                                         <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
                                                         <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
@@ -1037,6 +1041,7 @@ else
                                         <span class="tab-label">Appointing Authority</span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.AppointingAuthority))">
                                         <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                             Wing-level review and approval for this LOD case.
                                         </RadzenText>
@@ -1057,7 +1062,7 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@OnForwardToBoardTechnicianClick" Text="Forward to Board Review" Icon="send"
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToBoardTechnicianReview))" Text="Forward to Board Review" Icon="send"
                                                                     Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
@@ -1071,6 +1076,7 @@ else
                                                 </RadzenSplitButton>
                                             </RadzenStack>
                                         </RadzenFieldset>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -1080,6 +1086,7 @@ else
                                         <span class="tab-label">Board Technician Review</span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.BoardTechnicianReview))">
                                         <div class="rz-overflow-auto rz-h-100">
                                             <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                                 Board proceedings and findings for this LOD case.
@@ -1101,7 +1108,7 @@ else
                                             @* ═══ Routing ═══ *@
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                    <RadzenSplitButton Click="@OnForwardToBoardMedicalClick" Text="Forward to Board Medical" Icon="send"
+                                                    <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToBoardMedicalReview))" Text="Forward to Board Medical" Icon="send"
                                                                         Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardMedicalReview) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
@@ -1119,6 +1126,7 @@ else
                                                 </RadzenStack>
                                             </RadzenFieldset>
                                         </div>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -1128,6 +1136,7 @@ else
                                         <span class="tab-label">Board Medical Review</span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.BoardMedicalReview))">
                                         <div class="rz-overflow-auto rz-h-100">
                                             <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                                 Board medical officer review for this LOD case.
@@ -1149,7 +1158,7 @@ else
                                             @* ═══ Routing ═══ *@
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                    <RadzenSplitButton Click="@OnForwardToBoardLegalClick" Text="Forward to Board Legal" Icon="send"
+                                                    <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToBoardLegalReview))" Text="Forward to Board Legal" Icon="send"
                                                                         Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardLegalReview) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
@@ -1167,6 +1176,7 @@ else
                                                 </RadzenStack>
                                             </RadzenFieldset>
                                         </div>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -1176,6 +1186,7 @@ else
                                         <span class="tab-label">Board Legal Review</span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.BoardLegalReview))">
                                         <div class="rz-overflow-auto rz-h-100">
                                             <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                                 Board legal review for this LOD case.
@@ -1197,7 +1208,7 @@ else
                                             @* ═══ Routing ═══ *@
                                             <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                    <RadzenSplitButton Click="@OnForwardToBoardAdminClick" Text="Forward to Board Admin" Icon="send"
+                                                    <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToBoardAdministratorReview))" Text="Forward to Board Admin" Icon="send"
                                                                         Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardAdministratorReview) == true)"
                                                                         ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                         <ChildContent>
@@ -1215,6 +1226,7 @@ else
                                                 </RadzenStack>
                                             </RadzenFieldset>
                                         </div>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -1224,6 +1236,7 @@ else
                                         <span class="tab-label">Board Admin Review</span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.BoardAdminReview))">
                                         <div class="rz-overflow-auto rz-h-100">
                                             <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                                 Board administrative review for this LOD case.
@@ -1264,6 +1277,7 @@ else
                                                 </RadzenStack>
                                             </RadzenFieldset>
                                         </div>
+                                        </RadzenTemplateForm>
                                     </ChildContent>
                                 </RadzenTabsItem>
 
@@ -1371,10 +1385,10 @@ else
                                 </RadzenTabsItem>
 
                                 @* ─── Form 348 Tab ─── *@
-                                <RadzenTabsItem Text="Form 348">
+                                <RadzenTabsItem Text="Air Force Form 348">
                                     <Template>
                                         <span class="tab-label">
-                                            Form 348
+                                            Air Force Form 348
                                         </span>
                                     </Template>
                                     <ChildContent>

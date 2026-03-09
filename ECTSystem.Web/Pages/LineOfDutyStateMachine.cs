@@ -86,36 +86,19 @@ internal class LineOfDutyStateMachine
     }
 
     /// <summary>
-    /// Gets the current <see cref="LineOfDutyCase"/> managed by this state machine.
+    /// Gets or sets the current <see cref="LineOfDutyCase"/> managed by this state machine.
+    /// The setter allows callers to sync the internal reference after an external save
+    /// that returns a new object instance.
     /// </summary>
-    public LineOfDutyCase Case => _lineOfDutyCase;
+    public LineOfDutyCase Case
+    {
+        get => _lineOfDutyCase;
+        set => _lineOfDutyCase = value;
+    }
 
     #endregion
 
     #region Persistence
-
-    /// <summary>
-    /// Persists the current case entity via the data service and returns the saved entity
-    /// with its current tab index.
-    /// </summary>
-    /// <param name="ct">A cancellation token that can be used to cancel the save operation.</param>
-    /// <returns>
-    /// A <see cref="StateMachineResult"/> indicating success (with the saved case and its tab
-    /// index) or failure (with the exception message).
-    /// </returns>
-    public async Task<StateMachineResult> SaveCaseAsync(CancellationToken ct = default)
-    {
-        try
-        {
-            _lineOfDutyCase = await _dataService.SaveCaseAsync(_lineOfDutyCase, ct);
-            var tabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
-            return StateMachineResult.Ok(_lineOfDutyCase, tabIndex);
-        }
-        catch (Exception ex)
-        {
-            return StateMachineResult.Fail(ex.Message);
-        }
-    }
 
     /// <summary>
     /// Shared helper invoked by every entry handler. Applies the workflow state change,
@@ -267,9 +250,10 @@ internal class LineOfDutyStateMachine
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMemberInformationExitAsync);
 
-        // Step 2: Medical Technician Review — forward-only to Med Officer or cancel
+        // Step 2: Medical Technician Review — forward to Med Officer, return destination, or cancel
         _sm.Configure(WorkflowState.MedicalTechnicianReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToMedicalTechnician], OnMedicalTechnicianReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, CanForwardToMedicalOfficerReviewAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMedicalTechnicianReviewExitAsync);
@@ -277,6 +261,7 @@ internal class LineOfDutyStateMachine
         // Step 3: Medical Officer Review — can forward to Unit CC or return to Med Tech
         _sm.Configure(WorkflowState.MedicalOfficerReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToMedicalOfficerReview], OnMedicalOfficerReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanForwardToUnitCommanderReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -285,6 +270,7 @@ internal class LineOfDutyStateMachine
         // Step 4: Unit Commander Review — can forward to Wing JA or return to earlier stages
         _sm.Configure(WorkflowState.UnitCommanderReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToUnitCommanderReview], OnUnitCommanderReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanForwardToWingJudgeAdvocateReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -293,6 +279,7 @@ internal class LineOfDutyStateMachine
         // Step 5: Wing Judge Advocate Review — can forward to Wing CC or return to earlier stages
         _sm.Configure(WorkflowState.WingJudgeAdvocateReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview], OnWingJudgeAdvocateReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, CanForwardToWingCommanderReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -301,6 +288,7 @@ internal class LineOfDutyStateMachine
         // Step 6: Wing Commander Review — can forward to Appointing Authority or return to earlier stages
         _sm.Configure(WorkflowState.WingCommanderReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingCommanderReview], OnWingCommanderReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanForwardToAppointingAuthorityReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -309,6 +297,7 @@ internal class LineOfDutyStateMachine
         // Step 7: Appointing Authority Review — can forward to Board Tech or return to earlier stages
         _sm.Configure(WorkflowState.AppointingAuthorityReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToAppointingAuthorityReview], OnAppointingAuthorityReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
@@ -846,6 +835,22 @@ internal class LineOfDutyStateMachine
 
     #endregion
 
+    #region Shared Entry Handlers
+
+    /// <summary>
+    /// Called when the state machine enters any state via the <see cref="LineOfDutyTrigger.Return"/>
+    /// trigger. Persists the workflow state change and records a history entry. Unlike forward
+    /// entry handlers, this does not receive a <see cref="LineOfDutyCase"/> parameter because the
+    /// case is already loaded in <see cref="_lineOfDutyCase"/> by <see cref="FireReturnAsync"/>.
+    /// </summary>
+    /// <param name="destinationState">The <see cref="WorkflowState"/> being returned to.</param>
+    private async Task OnReturnEntryAsync(WorkflowState destinationState)
+    {
+        await SaveAndNotifyAsync(destinationState);
+    }
+
+    #endregion
+
     #region Shared Guard Methods
 
     /// <summary>
@@ -1002,6 +1007,27 @@ internal class LineOfDutyStateMachine
         _lastTransitionResult = null;
 
         await _sm.FireAsync(paramTrigger, newCase);
+
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
+    }
+
+    /// <summary>
+    /// Fires the parameterized <see cref="LineOfDutyTrigger.Return"/> trigger, transitioning the
+    /// workflow back to the specified <paramref name="targetState"/>. Updates the internal case
+    /// reference before firing so that <see cref="OnReturnEntryAsync"/> persists the latest data.
+    /// </summary>
+    /// <param name="lodCase">The LOD case with any pending form edits applied.</param>
+    /// <param name="targetState">The <see cref="WorkflowState"/> to return to.</param>
+    /// <returns>
+    /// A <see cref="StateMachineResult"/> indicating success (with the saved case and tab index)
+    /// or failure (with the error message from the failed save operation).
+    /// </returns>
+    public async Task<StateMachineResult> FireReturnAsync(LineOfDutyCase lodCase, WorkflowState targetState)
+    {
+        _lineOfDutyCase = lodCase;
+        _lastTransitionResult = null;
+
+        await _sm.FireAsync(_returnTrigger, targetState);
 
         return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
     }

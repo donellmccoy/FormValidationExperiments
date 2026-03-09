@@ -15,13 +15,10 @@ using System.Text.Json;
 
 namespace ECTSystem.Web.Pages;
 
-/// <summary>
-/// Code-behind for the Edit Case page — a multi-step wizard that drives an LOD case
-/// through the AF Form 348 workflow using <see cref="LineOfDutyStateMachine"/>.
-/// </summary>
 public partial class EditCase : ComponentBase, IDisposable
 {
-    /// <summary>Constants for the tab display names shown in the <see cref="RadzenTabs"/> control.</summary>
+    #region Constants & Lookups
+
     private static class TabNames
     {
         public const string MemberInformation = "Member Information";
@@ -37,6 +34,41 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string BoardAdminReview = "Board Admin Review";
         public const string Draft = "Draft";
     }
+
+    private static readonly Dictionary<string, (WorkflowState State, string DisplayName)> ReturnTargets = new()
+    {
+        ["return-med-tech"] = (WorkflowState.MedicalTechnicianReview, "Medical Technician"),
+        ["return-med-officer"] = (WorkflowState.MedicalOfficerReview, "Medical Officer"),
+        ["return-unit-cc"] = (WorkflowState.UnitCommanderReview, "Unit Commander"),
+        ["return-wing-ja"] = (WorkflowState.WingJudgeAdvocateReview, "Wing Judge Advocate"),
+        ["return-wing-cc"] = (WorkflowState.WingCommanderReview, "Wing Commander"),
+        ["return-appointing-authority"] = (WorkflowState.AppointingAuthorityReview, "Appointing Authority"),
+    };
+
+    private static readonly Dictionary<string, (LineOfDutyTrigger Trigger, string DisplayName)> BoardTargets = new()
+    {
+        ["board-tech"] = (LineOfDutyTrigger.ForwardToBoardTechnicianReview, "Board Technician"),
+        ["board-med"] = (LineOfDutyTrigger.ForwardToBoardMedicalReview, "Board Medical Officer"),
+        ["board-legal"] = (LineOfDutyTrigger.ForwardToBoardLegalReview, "Board Legal Advisor"),
+        ["board-admin"] = (LineOfDutyTrigger.ForwardToBoardAdministratorReview, "Board Administrator"),
+    };
+
+    private static readonly Dictionary<LineOfDutyTrigger, string> TriggerDisplayNames = new()
+    {
+        [LineOfDutyTrigger.ForwardToMedicalOfficerReview] = "Medical Officer",
+        [LineOfDutyTrigger.ForwardToUnitCommanderReview] = "Unit Commander",
+        [LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview] = "Wing Judge Advocate",
+        [LineOfDutyTrigger.ForwardToWingCommanderReview] = "Wing Commander",
+        [LineOfDutyTrigger.ForwardToAppointingAuthorityReview] = "Appointing Authority",
+        [LineOfDutyTrigger.ForwardToBoardTechnicianReview] = "Board Technician",
+        [LineOfDutyTrigger.ForwardToBoardMedicalReview] = "Board Medical Officer",
+        [LineOfDutyTrigger.ForwardToBoardLegalReview] = "Board Legal Advisor",
+        [LineOfDutyTrigger.ForwardToBoardAdministratorReview] = "Board Administrator",
+    };
+
+    #endregion
+
+    #region Injected Services
 
     [Inject]
     private IDataService CaseService { get; set; }
@@ -68,18 +100,22 @@ public partial class EditCase : ComponentBase, IDisposable
     [Inject]
     private HttpClient Http { get; set; }
 
-    /// <summary>Route parameter identifying the case to edit; <c>null</c> when creating a new case.</summary>
+    #endregion
+
+    #region Parameters
+
     [Parameter]
     public string CaseId { get; set; }
 
-    /// <summary>Optional query-string parameter (<c>?from=</c>) indicating the originating page for breadcrumb navigation.</summary>
     [SupplyParameterFromQuery(Name = "from")]
     public string FromPage { get; set; }
 
-    /// <summary>Whether a new case is being created (no <see cref="CaseId"/> supplied).</summary>
+    #endregion
+
+    #region Properties & Fields
+
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
-    /// <summary>Resolves the <see cref="FromPage"/> query parameter to a navigation URI.</summary>
     private string NavigatedFromPath => FromPage?.ToLowerInvariant() switch
     {
         "cases" => "/cases",
@@ -87,7 +123,6 @@ public partial class EditCase : ComponentBase, IDisposable
         _ => "/"
     };
 
-    /// <summary>Display text for the breadcrumb link back to the originating page.</summary>
     private string BreadcrumbText => FromPage?.ToLowerInvariant() switch
     {
         "cases" => "Search Cases",
@@ -95,59 +130,44 @@ public partial class EditCase : ComponentBase, IDisposable
         _ => "Dashboard"
     };
 
-    /// <summary>Cached dropdown items for <see cref="DutyStatus"/>.</summary>
     private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
 
-    /// <summary>Loading / busy / saving UI state.</summary>
     private readonly PageOperationState _page = new();
 
-    /// <summary>Bookmark toggle UI state.</summary>
     private readonly BookmarkUiState _bookmark = new();
 
-    /// <summary>Document upload / paging UI state.</summary>
     private readonly DocumentUiState _documents = new();
 
-    /// <summary>Cancellation source linked to the component lifetime; cancelled on <see cref="Dispose"/>.</summary>
     private readonly CancellationTokenSource _cts = new();
 
-    /// <summary>The domain entity loaded from the API, or <c>null</c> for a new case.</summary>
     private LineOfDutyCase _lineOfDutyCase;
 
-    /// <summary>State machine controlling workflow transitions for the current case.</summary>
     private LineOfDutyStateMachine _stateMachine;
 
-    /// <summary>Index of the currently selected <see cref="RadzenTabs"/> tab.</summary>
     private int _selectedTabIndex;
 
-    /// <summary>Reference to the <see cref="RadzenTabs"/> component.</summary>
     private RadzenTabs _tabs;
 
-    /// <summary>Reference to the workflow sidebar component.</summary>
     private WorkflowSidebar _workflowSidebar;
 
-    /// <summary>Primary key of the member selected via the member-search popup.</summary>
     private int _selectedMemberId;
 
-    /// <summary>Two-way data-bound view model for all form tabs.</summary>
     private LineOfDutyViewModel _viewModel = new();
 
-    /// <summary>Reference to the Medical Technician <see cref="RadzenTemplateForm{TItem}"/> for manual validation.</summary>
     private RadzenTemplateForm<LineOfDutyViewModel> _medicalForm;
 
-    /// <summary>Aggregate list of all trackable models used for dirty-checking.</summary>
     private IReadOnlyList<TrackableModel> AllFormModels => [_viewModel];
 
-    /// <summary>Whether any form model has unsaved changes.</summary>
     private bool HasAnyChanges => _viewModel.IsDirty;
 
-    /// <summary>Number of unread notifications attached to the current case.</summary>
     private int NotificationCount => _lineOfDutyCase?.Notifications?.Count ?? 0;
 
-    /// <summary>The currently active <see cref="WorkflowStep"/> from the sidebar.</summary>
     private WorkflowStep CurrentStep => _workflowSidebar?.CurrentStep;
 
+    #endregion
 
-    /// <inheritdoc/>
+    #region Lifecycle
+
     protected override async Task OnInitializedAsync()
     {
         if (IsNewCase)
@@ -164,7 +184,6 @@ public partial class EditCase : ComponentBase, IDisposable
         _page.IsLoading = false;
     }
 
-    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -178,11 +197,10 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Loads the case identified by <see cref="CaseId"/> from the API, initialises the
-    /// <see cref="_stateMachine"/>, maps the entity to <see cref="_viewModel"/>, and
-    /// checks the bookmark status.
-    /// </summary>
+    #endregion
+
+    #region Data Loading
+
     private async Task LoadCaseAsync()
     {
         await SetBusyAsync("Loading case...");
@@ -230,11 +248,10 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Handles the "Forward" split-button action on the Member Information step.
-    /// For new cases, creates the case via the state machine; for existing cases,
-    /// transitions to <see cref="WorkflowState.MedicalTechnicianReview"/>.
-    /// </summary>
+    #endregion
+
+    #region Workflow Actions
+
     private async Task OnMemberForwardClick(RadzenSplitButtonItem item)
     {
         bool? confirmed = null;
@@ -252,6 +269,13 @@ public partial class EditCase : ComponentBase, IDisposable
             }
 
             Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        if (item?.Value == "revert")
+        {
+            await OnRevertChanges();
 
             return;
         }
@@ -319,89 +343,189 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 await SetBusyAsync(isBusy: false);
             }
-        }
-        else
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to forward the case to the Medical Technician?",
-                "Forward to Medical Technician",
-                new ConfirmOptions
-                {
-                    OkButtonText = "Start",
-                    CancelButtonText = "Cancel"
-                });
 
-            if (confirmed != true)
+            return;
+        }
+
+        confirmed = await DialogService.Confirm(
+            "Are you sure you want to forward the case to the Medical Technician?",
+            "Forward to Medical Technician",
+            new ConfirmOptions
+            {
+                OkButtonText = "Start",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetBusyAsync("Forwarding case to Medical Technician...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+
+            if (result.Success)
+            {
+                _lineOfDutyCase = result.Case;
+
+                CaseId = _lineOfDutyCase.CaseId;
+
+                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+                TakeSnapshots();
+
+                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
+
+                _selectedTabIndex = result.TabIndex;
+
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Line of Duty Case Updated",
+                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+            }
+        }
+        finally
+        {
+            await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private async Task OnForwardClick(RadzenSplitButtonItem item, LineOfDutyTrigger trigger)
+    {
+        var name = TriggerDisplayNames[trigger];
+
+        await FireWorkflowActionAsync(
+            item,
+            $"Are you sure you want to forward the case to the {name}?",
+            $"Forward to {name}",
+            $"Forwarding case to {name}...",
+            trigger);
+    }
+
+    private async Task OnCompleteClick(RadzenSplitButtonItem item)
+    {
+        await FireWorkflowActionAsync(
+            item,
+            "Are you sure you want to complete this line of duty case?",
+            "Complete Case",
+            "Completing line of duty case...",
+            LineOfDutyTrigger.Complete,
+            okButtonText: "Complete",
+            notifySummary: "Line of Duty Case Completed",
+            notifyVerb: "completed");
+    }
+
+    private async Task FireWorkflowActionAsync(
+        RadzenSplitButtonItem item,
+        string confirmMessage,
+        string confirmTitle,
+        string busyMessage,
+        LineOfDutyTrigger forwardTrigger,
+        string okButtonText = "Start",
+        string notifySummary = "Line of Duty Case Updated",
+        string notifyVerb = "updated")
+    {
+        var value = item?.Value;
+
+        // Revert — restore snapshot without any state transition.
+        if (value == "revert")
+        {
+            await OnRevertChanges();
+            return;
+        }
+
+        // Cancel — confirm, then navigate away without saving.
+        if (value == "cancel")
+        {
+            var cancelConfirmed = await DialogService.Confirm(
+                "Are you sure you want to cancel this line of duty case?",
+                "Confirm Cancellation",
+                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+
+            if (cancelConfirmed != true)
             {
                 return;
             }
 
-            await SetBusyAsync("Forwarding case to Medical Technician...");
+            Navigation.NavigateTo(NavigatedFromPath, replace: true);
+
+            return;
+        }
+
+        // Return — send the case back to an earlier workflow step.
+        if (value is not null && ReturnTargets.TryGetValue(value, out var returnTarget))
+        {
+            var returnConfirmed = await DialogService.Confirm(
+                $"Are you sure you want to return the case to {returnTarget.DisplayName}?",
+                $"Return to {returnTarget.DisplayName}",
+                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+
+            if (returnConfirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync($"Returning case to {returnTarget.DisplayName}...");
 
             try
             {
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-                var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+                var result = await _stateMachine.FireReturnAsync(_lineOfDutyCase, returnTarget.State);
 
-                if (result.Success)
-                {
-                    _lineOfDutyCase = result.Case;
-
-                    CaseId = _lineOfDutyCase.CaseId;
-
-                    _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                    TakeSnapshots();
-
-                    _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                    _selectedTabIndex = result.TabIndex;
-
-                    NotificationService.Notify(
-                        NotificationSeverity.Success,
-                        "Line of Duty Case Updated",
-                        $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-                }
+                ApplyTransitionResult(result, notifySummary, notifyVerb);
             }
             finally
             {
                 await SetBusyAsync(isBusy: false);
             }
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Medical Technician step, transitioning
-    /// to <see cref="WorkflowState.MedicalOfficerReview"/>.
-    /// </summary>
-    private async Task OnMedicalTechnicianForwardClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
 
             return;
         }
 
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Medical Officer?",
-            "Forward to Medical Officer",
+        // Board — lateral transfer to another board reviewer.
+        if (value is not null && BoardTargets.TryGetValue(value, out var boardTarget))
+        {
+            var boardConfirmed = await DialogService.Confirm(
+                $"Are you sure you want to forward the case to {boardTarget.DisplayName}?",
+                $"Forward to {boardTarget.DisplayName}",
+                new ConfirmOptions { OkButtonText = "Start", CancelButtonText = "Cancel" });
+
+            if (boardConfirmed != true)
+            {
+                return;
+            }
+
+            await SetBusyAsync($"Forwarding case to {boardTarget.DisplayName}...");
+
+            try
+            {
+                LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+                var result = await _stateMachine.FireAsync(_lineOfDutyCase, boardTarget.Trigger);
+
+                ApplyTransitionResult(result, notifySummary, notifyVerb);
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
+
+            return;
+        }
+
+        // Default — forward to the next workflow step.
+        var confirmed = await DialogService.Confirm(
+            confirmMessage,
+            confirmTitle,
             new ConfirmOptions
             {
-                OkButtonText = "Start",
+                OkButtonText = okButtonText,
                 CancelButtonText = "Cancel"
             });
 
@@ -410,33 +534,15 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        await SetBusyAsync("Forwarding case to Medical Officer...");
+        await SetBusyAsync(busyMessage);
 
         try
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, forwardTrigger);
 
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
+            ApplyTransitionResult(result, notifySummary, notifyVerb);
         }
         finally
         {
@@ -444,744 +550,106 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Handles the "Forward" action on the Medical Officer step, transitioning
-    /// to <see cref="WorkflowState.UnitCommanderReview"/>.
-    /// </summary>
-    private async Task OnForwardToUnitCommanderClick(RadzenSplitButtonItem item)
+    private void ApplyTransitionResult(StateMachineResult result, string notifySummary, string notifyVerb)
     {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Medical Officer?",
-            "Forward to Medical Officer",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
+        if (!result.Success)
         {
             return;
         }
 
-        await SetBusyAsync("Forwarding case to Unit Commander...");
+        _lineOfDutyCase = result.Case;
 
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+        CaseId = _lineOfDutyCase.CaseId;
 
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToUnitCommanderReview);
+        _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
+        TakeSnapshots();
 
-                CaseId = _lineOfDutyCase.CaseId;
+        _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+        _selectedTabIndex = result.TabIndex;
 
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
+        NotificationService.Notify(
+            NotificationSeverity.Success,
+            notifySummary,
+            $"Case: {_lineOfDutyCase.CaseId} {notifyVerb} for: {_lineOfDutyCase.MemberName}.");
     }
 
-    /// <summary>
-    /// Handles the "Forward" action on the Unit Commander step, transitioning
-    /// to <see cref="WorkflowState.WingJudgeAdvocateReview"/>.
-    /// </summary>
-    private async Task OnForwardToWingJudgeAdvocateClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
+    #endregion
 
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
+    #region Tab & Form Helpers
 
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Wing Judge Advocate?",
-            "Forward to Wing Judge Advocate",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Wing Judge Advocate...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Wing Judge Advocate step, transitioning
-    /// to <see cref="WorkflowState.WingCommanderReview"/>.
-    /// </summary>
-    private async Task OnForwardToWingCommanderClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Wing Commander?",
-            "Forward to Wing Commander",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Wing Commander...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToWingCommanderReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Wing Commander step, transitioning
-    /// to <see cref="WorkflowState.AppointingAuthorityReview"/>.
-    /// </summary>
-    private async Task OnForwardToAppointingAuthorityClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Appointing Authority?",
-            "Forward to Appointing Authority",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Appointing Authority...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToAppointingAuthorityReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Appointing Authority step, transitioning
-    /// to <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
-    /// </summary>
-    private async Task OnForwardToBoardTechnicianClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Board Technician?",
-            "Forward to Board Technician",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Board Technician...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Board Technician step, transitioning
-    /// to <see cref="WorkflowState.BoardMedicalOfficerReview"/>.
-    /// </summary>
-    private async Task OnForwardToBoardMedicalClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Board Medical Officer?",
-            "Forward to Board Medical Officer",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Board Medical Officer...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Board Medical Officer step, transitioning
-    /// to <see cref="WorkflowState.BoardLegalReview"/>.
-    /// </summary>
-    private async Task OnForwardToBoardLegalClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Board Legal Advisor?",
-            "Forward to Board Legal Advisor",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Board Legal Advisor...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Forward" action on the Board Legal Review step, transitioning
-    /// to <see cref="WorkflowState.BoardAdministratorReview"/>.
-    /// </summary>
-    private async Task OnForwardToBoardAdminClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Board Administrator?",
-            "Forward to Board Administrator",
-            new ConfirmOptions
-            {
-                OkButtonText = "Start",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Forwarding case to Board Administrator...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>
-    /// Handles the "Complete" action on the Board Administrator step, transitioning
-    /// to <see cref="WorkflowState.Completed"/>.
-    /// </summary>
-    private async Task OnCompleteClick(RadzenSplitButtonItem item)
-    {
-        bool? confirmed = null;
-
-        if (item?.Value == "cancel")
-        {
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to cancel this line of duty case?",
-                "Confirm Cancellation",
-                new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            Navigation.NavigateTo(NavigatedFromPath, replace: true);
-
-            return;
-        }
-
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to complete this line of duty case?",
-            "Complete Case",
-            new ConfirmOptions
-            {
-                OkButtonText = "Complete",
-                CancelButtonText = "Cancel"
-            });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SetBusyAsync("Completing line of duty case...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
-
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.Complete);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-
-                CaseId = _lineOfDutyCase.CaseId;
-
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                TakeSnapshots();
-
-                _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                _selectedTabIndex = result.TabIndex;
-
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Line of Duty Case Completed",
-                    $"Case: {_lineOfDutyCase.CaseId} completed for: {_lineOfDutyCase.MemberName}.");
-            }
-        }
-        finally
-        {
-            await SetBusyAsync(isBusy: false);
-        }
-    }
-
-    /// <summary>Returns whether the tab at <paramref name="tabIndex"/> should be disabled given the current workflow state.</summary>
     private bool IsTabDisabled(int tabIndex)
     {
-        var currentState = _lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft;
-        return WorkflowTabHelper.IsTabDisabled(tabIndex, currentState);
+        return WorkflowTabHelper.IsTabDisabled(tabIndex, _lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
     }
 
-    /// <summary>Sets the <see cref="PageOperationState.IsSaving"/> flag on <see cref="_page"/>.</summary>
-    private void SetIsSaving(bool isSaving)
+    #endregion
+
+    #region Form Field Change Handlers
+
+    private void OnIsMilitaryFacilityChanged()
     {
-        _page.IsSaving = isSaving;
+        if (_viewModel.IsMilitaryFacility != true)
+        {
+            _viewModel.TreatmentFacilityName = null;
+        }
     }
 
-    /// <summary>
-    /// Persists the current tab's form data via the state machine and refreshes the view model.
-    /// </summary>
-    private async Task SaveCurrentTabAsync(string tabName)
+    private void OnWasUnderInfluenceChanged()
     {
-        if (_lineOfDutyCase is null)
+        if (_viewModel.WasUnderInfluence != true)
         {
-            return;
-        }
-
-        SetIsSaving(true);
-        await SetBusyAsync($"Saving {tabName}...");
-
-        try
-        {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _stateMachine.Case);
-
-            var result = await _stateMachine.SaveCaseAsync(_cts.Token);
-
-            if (result.Success)
-            {
-                _lineOfDutyCase = result.Case;
-                _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-                TakeSnapshots();
-
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Saved",
-                    Detail = $"{tabName} saved successfully.",
-                    Duration = 3000
-                });
-            }
-            else
-            {
-                NotificationService.Notify(NotificationSeverity.Error, "Save Failed", result.ErrorMessage);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Component disposed during save — silently ignore
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Save Failed",
-                Detail = ex.Message,
-                Duration = 5000
-            });
-        }
-        finally
-        {
-            SetIsSaving(false);
-            await SetBusyAsync(isBusy: false);
+            _viewModel.SubstanceType = null;
         }
     }
 
-    /// <summary>Sets the busy overlay message and triggers a UI re-render.</summary>
-    private async Task SetBusyAsync(string message = "Working...", bool? isBusy = true)
+    private void OnToxicologyTestDoneChanged()
     {
-        _page.BusyMessage = message;
-        _page.IsBusy = isBusy.GetValueOrDefault(true);
-        await InvokeAsync(StateHasChanged);
+        if (_viewModel.ToxicologyTestDone != true)
+        {
+            _viewModel.ToxicologyTestResults = null;
+        }
     }
 
-    /// <summary>Prompts the user to confirm and then reverts all form models to their last snapshot.</summary>
+    private void OnPsychiatricEvalCompletedChanged()
+    {
+        if (_viewModel.PsychiatricEvalCompleted != true)
+        {
+            _viewModel.PsychiatricEvalDate = null;
+            _viewModel.PsychiatricEvalResults = null;
+        }
+    }
+
+    private void OnOtherTestsDoneChanged()
+    {
+        if (_viewModel.OtherTestsDone != true)
+        {
+            _viewModel.OtherTestDate = null;
+            _viewModel.OtherTestResults = null;
+        }
+    }
+
+    private void OnIsEptsNsaChanged()
+    {
+        if (_viewModel.IsEptsNsa != true)
+        {
+            _viewModel.IsServiceAggravated = null;
+        }
+    }
+
+    private void OnIsAtDeployedLocationChanged()
+    {
+        if (_viewModel.IsAtDeployedLocation != false)
+        {
+            _viewModel.RequiresArcBoard = null;
+        }
+    }
+
+    #endregion
+
+    #region Save & Revert
+
     private async Task OnRevertChanges()
     {
         var confirmed = await DialogService.Confirm(
@@ -1210,86 +678,6 @@ public partial class EditCase : ComponentBase, IDisposable
         StateHasChanged();
     }
 
-    /// <summary>Clears dependent facility-name field when the military-facility flag is toggled off.</summary>
-    /// <summary>Clears dependent facility-name field when the military-facility flag is toggled off.</summary>
-    /// <summary>Clears dependent facility-name field when the military-facility flag is toggled off.</summary>
-    private void OnIsMilitaryFacilityChanged()
-    {
-        if (_viewModel.IsMilitaryFacility != true)
-        {
-            _viewModel.TreatmentFacilityName = null;
-        }
-    /// <summary>Clears the substance-type field when the under-influence flag is toggled off.</summary>
-    }
-/// <summary>Clears the substance-type field when the under-influence flag is toggled off.</summary>
-    
-    /// <summary>Clears the substance-type field when the under-influence flag is toggled off.</summary>
-    private void OnWasUnderInfluenceChanged()
-    {
-        if (_viewModel.WasUnderInfluence != true)
-        {
-    /// <summary>Clears toxicology results when the toxicology-test-done flag is toggled off.</summary>
-            _viewModel.SubstanceType = null;
-        }
-    /// <summary>Clears toxicology results when the toxicology-test-done flag is toggled off.</summary>
-    }
-
-    /// <summary>Clears toxicology results when the toxicology-test-done flag is toggled off.</summary>
-    private void OnToxicologyTestDoneChanged()
-    {
-    /// <summary>Clears psychiatric evaluation date and results when the eval flag is toggled off.</summary>
-        if (_viewModel.ToxicologyTestDone != true)
-        {
-            _viewModel.ToxicologyTestResults = null;
-    /// <summary>Clears psychiatric evaluation date and results when the eval flag is toggled off.</summary>
-        }
-    }
-
-    /// <summary>Clears psychiatric evaluation date and results when the eval flag is toggled off.</summary>
-    private void OnPsychiatricEvalCompletedChanged()
-    /// <summary>Clears other-test date and results when the other-tests-done flag is toggled off.</summary>
-    {
-        if (_viewModel.PsychiatricEvalCompleted != true)
-        {
-            _viewModel.PsychiatricEvalDate = null;
-    /// <summary>Clears other-test date and results when the other-tests-done flag is toggled off.</summary>
-            _viewModel.PsychiatricEvalResults = null;
-        }
-    }
-
-    /// <summary>Clears the service-aggravated flag when the EPTS/NSA flag is toggled off.</summary>
-    /// <summary>Clears other-test date and results when the other-tests-done flag is toggled off.</summary>
-    private void OnOtherTestsDoneChanged()
-    {
-        if (_viewModel.OtherTestsDone != true)
-        {
-    /// <summary>Clears the service-aggravated flag when the EPTS/NSA flag is toggled off.</summary>
-            _viewModel.OtherTestDate = null;
-            _viewModel.OtherTestResults = null;
-    /// <summary>Clears the ARC-board-required flag when the deployed-location flag changes.</summary>
-        }
-    }
-
-    /// <summary>Clears the service-aggravated flag when the EPTS/NSA flag is toggled off.</summary>
-    private void OnIsEptsNsaChanged()
-    {
-    /// <summary>Clears the ARC-board-required flag when the deployed-location flag changes.</summary>
-        if (_viewModel.IsEptsNsa != true)
-        {
-            _viewModel.IsServiceAggravated = null;
-        }
-    }
-
-    /// <summary>Clears the ARC-board-required flag when the deployed-location flag changes.</summary>
-    private void OnIsAtDeployedLocationChanged()
-    {
-        if (_viewModel.IsAtDeployedLocation != false)
-        {
-            _viewModel.RequiresArcBoard = null;
-        }
-    }
-
-    /// <summary>Captures a JSON snapshot of every form model for dirty-tracking.</summary>
     public void TakeSnapshots()
     {
         foreach (var model in AllFormModels)
@@ -1298,31 +686,108 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    /// <summary>Handles the Medical Technician form submit by saving the current tab.</summary>
-    private async Task OnFormSubmit(LineOfDutyViewModel model)
+    private async Task OnApplyChangesClick(RadzenSplitButtonItem item)
     {
-        await SaveCurrentTabAsync(TabNames.MedicalTechnician);
+        if (item?.Value == "revert")
+        {
+            await OnRevertChanges();
+
+            return;
+        }
+
+        // Validate the medical tab before saving
+        if (_selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
+        {
+            return;
+        }
+
+        // Determine which tab to save based on the currently selected tab index
+        var source = _selectedTabIndex switch
+        {
+            0 => TabNames.MemberInformation,
+            1 => TabNames.MedicalTechnician,
+            2 => TabNames.MedicalOfficer,
+            3 => TabNames.UnitCommander,
+            4 => TabNames.WingJudgeAdvocate,
+            5 => TabNames.WingCommander,
+            6 => TabNames.AppointingAuthority,
+            7 => TabNames.BoardTechnicianReview,
+            8 => TabNames.BoardMedicalReview,
+            9 => TabNames.BoardLegalReview,
+            10 => TabNames.BoardAdminReview,
+            _ => TabNames.Draft
+        };
+
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to save?",
+            "Confirm Save",
+            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SaveTabFormDataAsync(source);
     }
 
-    /// <summary>Handles the Member Information form submit by saving the current tab.</summary>
-    private async Task OnMemberFormSubmit(LineOfDutyViewModel model)
+    private async Task SaveTabFormDataAsync(string tabName)
     {
-        await SaveCurrentTabAsync(TabNames.MemberInformation);
+        if (_lineOfDutyCase is null)
+        {
+            return;
+        }
+
+        SetIsSaving(true);
+
+        await SetBusyAsync($"Saving {tabName}...");
+
+        try
+        {
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+
+            _lineOfDutyCase = await CaseService.SaveCaseAsync(_lineOfDutyCase, _cts.Token);
+
+            _stateMachine.Case = _lineOfDutyCase;
+
+            _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
+
+            TakeSnapshots();
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Saved",
+                Detail = $"{tabName} saved successfully.",
+                Duration = 3000
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Component disposed during save — silently ignore
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Save Failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            SetIsSaving(false);
+
+            await SetBusyAsync(isBusy: false);
+        }
     }
 
-    /// <summary>Handles the Unit Commander form submit by saving the current tab.</summary>
-    private async Task OnCommanderFormSubmit(LineOfDutyViewModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.UnitCommander);
-    }
+    #endregion
 
-    /// <summary>Handles the Wing Commander form submit by saving the current tab.</summary>
-    private async Task OnWingCommanderFormSubmit(LineOfDutyViewModel model)
-    {
-        await SaveCurrentTabAsync(TabNames.WingCommander);
-    }
+    #region Bookmarks & Attachments
 
-    /// <summary>Toggles the bookmark for the current case with animation and API persistence.</summary>
     private async Task OnBookmarkClick()
     {
         if (_lineOfDutyCase?.Id is null or 0)
@@ -1367,60 +832,32 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    /// <summary>Opens the file attachment dialog. Not yet implemented.</summary>
     private async Task OnAttachFileClick()
     {
         // TODO: Implement file attachment dialog/upload
         await Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Top-level save dispatcher: validates the active form, confirms with the user,
-    /// and delegates to <see cref="SaveCurrentTabAsync"/>.
-    /// </summary>
-    private async Task OnApplyChangesClick(RadzenSplitButtonItem item)
+    #endregion
+
+    #region UI Helpers
+
+    private void SetIsSaving(bool isSaving)
     {
-        if (item?.Value == "revert")
-        {
-            await OnRevertChanges();
-
-            return;
-        }
-
-        // Validate the medical tab before saving
-        if (_selectedTabIndex == 1 && _medicalForm?.EditContext?.Validate() == false)
-        {
-            return;
-        }
-
-        // Determine which tab to save based on the currently selected tab index
-        var source = _selectedTabIndex switch
-        {
-            0 => TabNames.MemberInformation,
-            1 => TabNames.MedicalTechnician,
-            2 => TabNames.MedicalOfficer,
-            3 => TabNames.UnitCommander,
-            4 => TabNames.WingJudgeAdvocate,
-            5 => TabNames.WingCommander,
-            6 => TabNames.AppointingAuthority,
-            7 => TabNames.BoardTechnicianReview,
-            _ => TabNames.Draft
-        };
-
-        var confirmed = await DialogService.Confirm(
-            "Are you sure you want to save?",
-            "Confirm Save",
-            new ConfirmOptions { OkButtonText = "Save", CancelButtonText = "Cancel" });
-
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        await SaveCurrentTabAsync(source);
+        _page.IsSaving = isSaving;
     }
 
-    /// <summary>Cancels and disposes the <see cref="CancellationTokenSource"/> instances.</summary>
+    private async Task SetBusyAsync(string message = "Working...", bool? isBusy = true)
+    {
+        _page.BusyMessage = message;
+        _page.IsBusy = isBusy.GetValueOrDefault(true);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    #endregion
+
+    #region IDisposable
+
     public void Dispose()
     {
         _cts.Cancel();
@@ -1428,4 +865,6 @@ public partial class EditCase : ComponentBase, IDisposable
         _searchCts.Cancel();
         _searchCts.Dispose();
     }
+
+    #endregion
 }

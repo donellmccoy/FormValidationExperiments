@@ -2,35 +2,25 @@
 
 ## 1. Eliminate Repetitive Entry Handlers
 
-**Severity: High** — 11 of 14 entry handlers (Steps 1–11) are identical copy-paste with only the `WorkflowState` and callback name varying:
+**Severity: High** | **Status: Partially Addressed**
+
+~~11 of 14 entry handlers (Steps 1–11) are identical copy-paste with only the `WorkflowState` and callback name varying.~~
+
+**What changed:** The shared `SaveAndNotifyAsync(WorkflowState)` helper now encapsulates all entry handler logic — state update, history recording, persistence with try/catch rollback, and result capture via `_lastTransitionResult`. Each forward entry handler is now a trivial 2-line wrapper:
 
 ```csharp
 private async Task OnXxxEntryAsync(LineOfDutyCase lineOfDutyCase)
 {
     _lineOfDutyCase = lineOfDutyCase;
-    _lineOfDutyCase.UpdateWorkflowState(WorkflowState.Xxx);
-    _lineOfDutyCase.AddWorkflowStateHistory(WorkflowState.Xxx);
-    var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-    await OnXxxEntered?.Invoke(saved);
+    await SaveAndNotifyAsync(WorkflowState.Xxx);
 }
 ```
 
-**Recommendation:** Extract a single generic handler and resolve the callback by state:
+A shared `OnReturnEntryAsync(WorkflowState)` handler is also registered via `.OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)` for states 2–7, eliminating the need for per-state return entry handlers.
 
-```csharp
-private async Task OnStateEntryAsync(WorkflowState state, LineOfDutyCase lineOfDutyCase)
-{
-    _lineOfDutyCase = lineOfDutyCase;
-    _lineOfDutyCase.UpdateWorkflowState(state);
-    _lineOfDutyCase.AddWorkflowStateHistory(state);
-    var saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+The 13 `Func<LineOfDutyCase, Task>` callback properties have been completely removed (see Recommendation 5).
 
-    if (_entryCallbacks.TryGetValue(state, out var callback))
-        await callback?.Invoke(saved);
-}
-```
-
-Replace the 13 individual `Func<LineOfDutyCase, Task>` callback properties with a `Dictionary<WorkflowState, Func<LineOfDutyCase, Task>>` populated via a single `OnStateEntered(WorkflowState, Func<...>)` registration method. This eliminates ~300 lines of boilerplate.
+**Remaining opportunity:** The 11 forward entry handler methods are still individually defined even though they are now trivial 2-line wrappers. Further consolidation (e.g., a single generic handler via a `Dictionary<LineOfDutyTrigger, WorkflowState>` mapping) could eliminate them entirely, but the impact is much smaller now (~50 lines vs. the original ~300 lines).
 
 ---
 
@@ -68,11 +58,11 @@ Consider making guards `async` and accepting a `LineOfDutyCase` parameter so the
 
 ## 5. Replace 13 Callback Properties with Event/Dictionary Pattern
 
-**Severity: Medium** — The 13 `Func<LineOfDutyCase, Task>` properties create a wide surface area that the consumer (`EditCase`) must wire up individually.
+**Severity: Medium** | **Status: ✅ Done**
 
-**Recommendation:** Use either:
-- **Option A (Dictionary):** A single `RegisterCallback(WorkflowState, Func<LineOfDutyCase, Task>)` method — simpler, pairs with Recommendation 1.
-- **Option B (Single event):** A single `event Func<WorkflowState, LineOfDutyCase, Task> OnStateEntered` that fires for every transition. The consumer can switch on the state if step-specific behavior is needed. Most consumer callbacks currently do the same thing (update viewmodel, update sidebar, notify), so a single handler is likely sufficient.
+~~The 13 `Func<LineOfDutyCase, Task>` properties create a wide surface area that the consumer (`EditCase`) must wire up individually.~~
+
+**What changed:** All 13 callback properties have been removed from the state machine. The `FireAsync` and `FireReturnAsync` methods now return `StateMachineResult` (see Recommendation 7), and the consumer (`EditCase`) handles the result uniformly via a shared `ApplyTransitionResult(result, ...)` helper. There is no longer any per-state callback wiring — the state machine is fully decoupled from the UI.
 
 ---
 
@@ -92,36 +82,74 @@ Consider making guards `async` and accepting a `LineOfDutyCase` parameter so the
 
 ## 7. Return `StateMachineResult` from `FireAsync`
 
-**Severity: Medium** — `FireAsync` returns `Task` (void), pushing callers to use callbacks for results. `SaveCaseAsync` returns `StateMachineResult` with structured success/failure, but `FireAsync` doesn't.
+**Severity: Medium** | **Status: ✅ Done**
 
-**Recommendation:** Have `FireAsync` return `StateMachineResult` with the saved case and tab index. This lets callers handle the result inline:
+~~`FireAsync` returns `Task` (void), pushing callers to use callbacks for results.~~
+
+**What changed:** Both `FireAsync` overloads and the new `FireReturnAsync` method now return `Task<StateMachineResult>`:
 
 ```csharp
-var result = await _stateMachine.FireAsync(lineOfDutyCase, trigger);
-if (result.Success)
-{
-    _lineOfDutyCase = result.Case;
-    _selectedTabIndex = result.TabIndex;
-}
+// Non-parameterized (e.g., Cancel)
+public async Task<StateMachineResult> FireAsync(LineOfDutyTrigger trigger)
+
+// Parameterized with LineOfDutyCase (forward/board triggers)
+public async Task<StateMachineResult> FireAsync(LineOfDutyCase newCase, LineOfDutyTrigger trigger)
+
+// Parameterized return to a specific destination state
+public async Task<StateMachineResult> FireReturnAsync(LineOfDutyCase lodCase, WorkflowState targetState)
 ```
 
-This simplifies the consumer and may eliminate the need for per-state callbacks entirely.
+The result flows through `_lastTransitionResult`, which is set by `SaveAndNotifyAsync` (on success or failure with rollback). The consumer uses `ApplyTransitionResult` to uniformly handle the result — updating the case, view model, sidebar, tab index, and notification. This eliminated the need for per-state callbacks entirely.
 
 ---
 
 ## 8. Add Error Handling in Entry Handlers
 
-**Severity: Medium** — Entry handlers call `_dataService.SaveCaseAsync()` but have no try/catch. If the API save fails mid-transition, the state machine has already advanced but persistence hasn't occurred, leaving the in-memory state diverged from the database.
+**Severity: Medium** | **Status: ✅ Done**
 
-**Recommendation:** Wrap the save call in error handling and consider what the correct recovery is — either roll back the state machine state or surface the error to the UI. `SaveCaseAsync` already demonstrates this pattern with try/catch returning `StateMachineResult.Fail()`.
+~~Entry handlers call `_dataService.SaveCaseAsync()` but have no try/catch. If the API save fails mid-transition, the state machine has already advanced but persistence hasn't occurred, leaving the in-memory state diverged from the database.~~
+
+**What changed:** The shared `SaveAndNotifyAsync(WorkflowState)` method — called by all entry handlers — now wraps the save in try/catch with full rollback on failure:
+
+```csharp
+private async Task SaveAndNotifyAsync(WorkflowState targetState)
+{
+    var previousState = _lineOfDutyCase.WorkflowState;
+    _lineOfDutyCase.UpdateWorkflowState(targetState);
+    _lineOfDutyCase.AddWorkflowStateHistory(targetState);
+
+    try
+    {
+        saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+    }
+    catch (Exception ex)
+    {
+        _lineOfDutyCase.WorkflowState = previousState;
+        // Remove the history entry that was just added
+        var lastHistory = _lineOfDutyCase.WorkflowStateHistories
+            .LastOrDefault(h => h.WorkflowState == targetState);
+        if (lastHistory is not null)
+            _lineOfDutyCase.WorkflowStateHistories.Remove(lastHistory);
+
+        _lastTransitionResult = StateMachineResult.Fail(ex.Message);
+        return;
+    }
+
+    _lastTransitionResult = StateMachineResult.Ok(saved, ...);
+}
+```
+
+On failure, the in-memory `WorkflowState` is reverted to the previous state, the speculative history entry is removed, and a `StateMachineResult.Fail` is stored for the consumer to handle. This prevents state/DB divergence.
 
 ---
 
 ## 9. Move Tab Mapping Responsibility Out of the State Machine
 
-**Severity: Low** — `WorkflowTabMap`, `GetTabIndexForState()`, and `IsTabDisabled()` are UI concerns (which RadzenTabs tab to select/disable). They don't relate to state machine transitions.
+**Severity: Low** | **Status: ✅ Done**
 
-**Recommendation:** Move these to a standalone static helper (e.g., `WorkflowTabHelper`) or into the `EditCase` code-behind. The state machine should focus strictly on workflow transitions and persistence.
+~~`WorkflowTabMap`, `GetTabIndexForState()`, and `IsTabDisabled()` are UI concerns (which RadzenTabs tab to select/disable). They don't relate to state machine transitions.~~
+
+**What changed:** Tab mapping logic has been moved to a standalone `WorkflowTabHelper` static class. The state machine references `WorkflowTabHelper.GetTabIndexForState()` only when constructing `StateMachineResult` values. The `EditCase` code-behind delegates to `WorkflowTabHelper.IsTabDisabled(tabIndex, currentState)` for tab enable/disable decisions. The state machine no longer owns or exposes tab-related API surface.
 
 ---
 
@@ -135,15 +163,15 @@ This simplifies the consumer and may eliminate the need for per-state callbacks 
 
 ## Priority Summary
 
-| Priority | Recommendation | Impact |
-|----------|---------------|--------|
-| **P0** | 2. Implement guard methods | No validation = invalid transitions allowed |
-| **P1** | 1. Consolidate entry handlers | Eliminates ~300 lines of identical boilerplate |
-| **P1** | 5. Replace 13 callback properties | Simplifies consumer wiring |
-| **P1** | 8. Add error handling in entry handlers | Prevents state/DB divergence |
-| **P2** | 7. Return `StateMachineResult` from `FireAsync` | Cleaner consumer API |
-| **P2** | 4. Remove placeholder exit handlers | Removes ~120 lines of dead code |
-| **P3** | 3. Remove `Async` suffix from sync guards | Naming accuracy |
-| **P3** | 6. Clean up unused triggers/states | Enum hygiene |
-| **P3** | 9. Move tab mapping out | Separation of concerns |
-| **P3** | 10. Immutable case reference | Easier state reasoning |
+| Priority | Recommendation | Impact | Status |
+|----------|---------------|--------|--------|
+| **P0** | 2. Implement guard methods | No validation = invalid transitions allowed | Open |
+| **P1** | 1. Consolidate entry handlers | ~~Eliminates ~300 lines~~ ~50 lines of trivial wrappers remain | Partially Addressed |
+| **P1** | 5. Replace 13 callback properties | Simplifies consumer wiring | ✅ Done |
+| **P1** | 8. Add error handling in entry handlers | Prevents state/DB divergence | ✅ Done |
+| **P2** | 7. Return `StateMachineResult` from `FireAsync` | Cleaner consumer API | ✅ Done |
+| **P2** | 4. Remove placeholder exit handlers | Removes ~120 lines of dead code | Open |
+| **P3** | 3. Remove `Async` suffix from sync guards | Naming accuracy | Open |
+| **P3** | 6. Clean up unused triggers/states | Enum hygiene | Open |
+| **P3** | 9. Move tab mapping out | Separation of concerns | ✅ Done |
+| **P3** | 10. Immutable case reference | Easier state reasoning | Open |
