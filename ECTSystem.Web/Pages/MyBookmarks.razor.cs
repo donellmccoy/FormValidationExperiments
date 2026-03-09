@@ -34,12 +34,14 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
     private CancellationTokenSource _searchCts = new();
+    private bool _searchBoxFocused;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && _searchBox is not null)
+        if (!_searchBoxFocused && _searchBox is not null && _bookmarks is not null)
         {
-            await _searchBox.FocusAsync();
+            _searchBoxFocused = true;
+            await _searchBox.Element.FocusAsync();
         }
     }
 

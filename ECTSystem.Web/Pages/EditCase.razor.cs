@@ -282,6 +282,12 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (IsNewCase)
         {
+            if (_selectedMemberId == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Member Required", "Please search for and select a member before starting a case.");
+                return;
+            }
+
             confirmed = await DialogService.Confirm(
                 "Are you sure you want to start this line of duty case?",
                 "Start Line of Duty Case",
