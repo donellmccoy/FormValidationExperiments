@@ -101,13 +101,17 @@ internal class LineOfDutyStateMachine
     #region Persistence
 
     /// <summary>
-    /// Shared helper invoked by every entry handler. Applies the workflow state change,
-    /// records a history entry, and persists the case. If the save fails, the in-memory
-    /// state is reverted and a <see cref="StateMachineResult.Fail"/> is stored in
-    /// <see cref="_lastTransitionResult"/>.
+    /// Shared helper invoked by every entry handler. Stores the incoming case reference,
+    /// applies the workflow state change, records a history entry, and persists the case.
+    /// If the save fails, the in-memory state is reverted and a
+    /// <see cref="StateMachineResult.Fail"/> is stored in <see cref="_lastTransitionResult"/>.
     /// </summary>
-    private async Task SaveAndNotifyAsync(WorkflowState targetState)
+    /// <param name="lineOfDutyCase">The LOD case received from the parameterized trigger.</param>
+    /// <param name="targetState">The <see cref="WorkflowState"/> the case is transitioning to.</param>
+    private async Task SaveAndNotifyAsync(LineOfDutyCase lineOfDutyCase, WorkflowState targetState)
     {
+        _lineOfDutyCase = lineOfDutyCase;
+
         var previousState = _lineOfDutyCase.WorkflowState;
 
         _lineOfDutyCase.UpdateWorkflowState(targetState);
@@ -119,6 +123,8 @@ internal class LineOfDutyStateMachine
         try
         {
             saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+            _lineOfDutyCase = saved;
         }
         catch (Exception ex)
         {
@@ -385,7 +391,7 @@ internal class LineOfDutyStateMachine
     }
 
     #endregion
-    
+
     #region Step 1: Member Information Entry
 
     /// <summary>
@@ -397,9 +403,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case being initiated into the workflow.</param>
     private async Task OnMemberInformationEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.MemberInformationEntry);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.MemberInformationEntry);
     }
 
     /// <summary>
@@ -439,9 +443,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into medical technician review.</param>
     private async Task OnMedicalTechnicianReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.MedicalTechnicianReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.MedicalTechnicianReview);
     }
 
     /// <summary>
@@ -481,9 +483,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into medical officer review.</param>
     private async Task OnMedicalOfficerReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.MedicalOfficerReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.MedicalOfficerReview);
     }
 
     /// <summary>
@@ -523,9 +523,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into unit commander review.</param>
     private async Task OnUnitCommanderReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.UnitCommanderReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.UnitCommanderReview);
     }
 
     /// <summary>
@@ -565,9 +563,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into Wing Judge Advocate review.</param>
     private async Task OnWingJudgeAdvocateReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.WingJudgeAdvocateReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.WingJudgeAdvocateReview);
     }
 
     /// <summary>
@@ -607,9 +603,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into Wing Commander review.</param>
     private async Task OnWingCommanderReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.WingCommanderReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.WingCommanderReview);
     }
 
     /// <summary>
@@ -651,9 +645,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into appointing authority review.</param>
     private async Task OnAppointingAuthorityReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.AppointingAuthorityReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.AppointingAuthorityReview);
     }
 
     /// <summary>
@@ -681,9 +673,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into board medical technician review.</param>
     private async Task OnBoardMedicalTechnicianReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.BoardMedicalTechnicianReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.BoardMedicalTechnicianReview);
     }
 
     /// <summary>
@@ -711,9 +701,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into board medical officer review.</param>
     private async Task OnBoardMedicalOfficerReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.BoardMedicalOfficerReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.BoardMedicalOfficerReview);
     }
 
     /// <summary>
@@ -740,9 +728,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into board legal review.</param>
     private async Task OnBoardLegalReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.BoardLegalReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.BoardLegalReview);
     }
 
     /// <summary>
@@ -770,9 +756,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning into board administrator review.</param>
     private async Task OnBoardAdministratorReviewEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.BoardAdministratorReview);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.BoardAdministratorReview);
     }
 
     /// <summary>
@@ -815,9 +799,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning to the completed terminal state.</param>
     private async Task OnCompletedEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-
-        await SaveAndNotifyAsync(WorkflowState.Completed);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.Completed);
     }
 
     /// <summary>
@@ -829,8 +811,7 @@ internal class LineOfDutyStateMachine
     /// <param name="lineOfDutyCase">The LOD case transitioning to the cancelled terminal state.</param>
     private async Task OnCancelledEntryAsync(LineOfDutyCase lineOfDutyCase)
     {
-        _lineOfDutyCase = lineOfDutyCase;
-        await SaveAndNotifyAsync(WorkflowState.Cancelled);
+        await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.Cancelled);
     }
 
     #endregion
@@ -846,7 +827,7 @@ internal class LineOfDutyStateMachine
     /// <param name="destinationState">The <see cref="WorkflowState"/> being returned to.</param>
     private async Task OnReturnEntryAsync(WorkflowState destinationState)
     {
-        await SaveAndNotifyAsync(destinationState);
+        await SaveAndNotifyAsync(_lineOfDutyCase, destinationState);
     }
 
     #endregion
