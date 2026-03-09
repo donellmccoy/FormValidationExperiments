@@ -13,19 +13,4 @@ public static class LineOfDutyExtensions
             lineOfDutyCase.ModifiedDate = DateTime.UtcNow;
         }
     }
-    public static void AddWorkflowStateHistory(this LineOfDutyCase lineOfDutyCase, WorkflowState workflowState)
-    {
-        lineOfDutyCase.WorkflowStateHistories.Add(new WorkflowStateHistory
-        {
-            LineOfDutyCaseId = lineOfDutyCase.Id,
-            WorkflowState = workflowState,
-            Action = TransitionAction.Enter,
-            StartDate = lineOfDutyCase.CreatedDate,
-            PerformedBy = lineOfDutyCase.CreatedBy,
-            CreatedDate = lineOfDutyCase.CreatedDate,
-            CreatedBy = lineOfDutyCase.CreatedBy,
-            ModifiedDate = lineOfDutyCase.ModifiedDate,
-            ModifiedBy = lineOfDutyCase.ModifiedBy  
-        });
-    }
 }

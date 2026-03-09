@@ -56,6 +56,7 @@ public static class WorkflowStateHistoryFactory
             WorkflowState = state,
             Status = WorkflowStepStatus.Completed,
             StartDate = stepStartDate,
+            EndDate = now,
             SignedDate = signedDate ?? now,
             SignedBy = signedBy ?? string.Empty,
             PerformedBy = string.Empty,

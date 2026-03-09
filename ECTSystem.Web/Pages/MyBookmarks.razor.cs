@@ -25,6 +25,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private BookmarkCountService BookmarkCountService { get; set; }
 
     private RadzenDataGrid<LineOfDutyCase> _grid;
+    private RadzenTextBox _searchBox;
     private ODataEnumerable<LineOfDutyCase> _bookmarks;
     private IList<LineOfDutyCase> _selectedBookmarks = [];
     private int _count;
@@ -33,6 +34,14 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
     private CancellationTokenSource _searchCts = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _searchBox is not null)
+        {
+            await _searchBox.FocusAsync();
+        }
+    }
 
     private async Task LoadData(LoadDataArgs args)
     {

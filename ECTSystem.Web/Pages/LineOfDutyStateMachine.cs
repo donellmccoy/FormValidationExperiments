@@ -102,13 +102,26 @@ internal class LineOfDutyStateMachine
 
     /// <summary>
     /// Shared helper invoked by every entry handler. Stores the incoming case reference,
-    /// applies the workflow state change, records a history entry, and persists the case.
-    /// If the save fails, the in-memory state is reverted and a
-    /// <see cref="StateMachineResult.Fail"/> is stored in <see cref="_lastTransitionResult"/>.
+    /// applies the workflow state change, records history entries via
+    /// <see cref="WorkflowStateHistoryFactory"/>, and persists the case.
+    /// <para>
+    /// For <b>forward</b> transitions: creates a <c>Completed</c> history entry for the
+    /// state being left and an <c>InProgress</c> entry for the state being entered.
+    /// </para>
+    /// <para>
+    /// For <b>return</b> transitions: creates <c>Pending</c> history entries for every
+    /// state from the source down to <paramref name="targetState"/> + 1 (marking them as
+    /// "never happened"), plus an <c>InProgress</c> entry for <paramref name="targetState"/>.
+    /// </para>
+    /// If the save fails, all newly added history entries are removed and the in-memory
+    /// state is reverted.
     /// </summary>
     /// <param name="lineOfDutyCase">The LOD case received from the parameterized trigger.</param>
     /// <param name="targetState">The <see cref="WorkflowState"/> the case is transitioning to.</param>
-    private async Task SaveAndNotifyAsync(LineOfDutyCase lineOfDutyCase, WorkflowState targetState)
+    /// <param name="isReturn">
+    /// <c>true</c> when the transition is a backward (return) move; <c>false</c> for forward transitions.
+    /// </param>
+    private async Task SaveAndNotifyAsync(LineOfDutyCase lineOfDutyCase, WorkflowState targetState, bool isReturn = false)
     {
         _lineOfDutyCase = lineOfDutyCase;
 
@@ -116,26 +129,62 @@ internal class LineOfDutyStateMachine
 
         _lineOfDutyCase.UpdateWorkflowState(targetState);
 
-        _lineOfDutyCase.AddWorkflowStateHistory(targetState);
+        // Build the list of history entries to persist.
+        var entriesToSave = new List<WorkflowStateHistory>();
+
+        if (isReturn)
+        {
+            // Backward transition: mark all states from previousState down to targetState+1 as Pending
+            for (var state = (int)previousState; state > (int)targetState; state--)
+            {
+                entriesToSave.Add(WorkflowStateHistoryFactory.CreateReturned(_lineOfDutyCase.Id, (WorkflowState)state, stepStartDate: null));
+            }
+
+            // Create InProgress entry for the destination state
+            entriesToSave.Add(WorkflowStateHistoryFactory.CreateInitialHistory(_lineOfDutyCase.Id, targetState));
+        }
+        else
+        {
+            // Forward transition: complete the old state, start the new one
+            var oldStartDate = _lineOfDutyCase.WorkflowStateHistories
+                .Where(h => h.WorkflowState == previousState && h.Status == WorkflowStepStatus.InProgress)
+                .OrderByDescending(h => h.Id)
+                .FirstOrDefault()?.StartDate;
+
+            entriesToSave.Add(WorkflowStateHistoryFactory.CreateCompleted(_lineOfDutyCase.Id, previousState, oldStartDate));
+            entriesToSave.Add(WorkflowStateHistoryFactory.CreateInitialHistory(_lineOfDutyCase.Id, targetState));
+        }
 
         LineOfDutyCase saved;
 
         try
         {
+            // 1. Persist the case's scalar WorkflowState change first.
             saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
+
+            // 2. Persist each history entry via the dedicated API endpoint so they
+            //    get server-assigned IDs and are actually written to the database.
+            //    SaveCaseAsync only PATCHes scalar properties — it does NOT persist
+            //    navigation-property entries added to the in-memory collection.
+            var savedEntries = new List<WorkflowStateHistory>(entriesToSave.Count);
+
+            foreach (var entry in entriesToSave)
+            {
+                savedEntries.Add(await _dataService.AddHistoryEntryAsync(entry));
+            }
+
+            // 3. Attach the server-returned entries (with proper IDs) to the saved case
+            //    so the sidebar can render them immediately without a re-fetch.
+            foreach (var entry in savedEntries)
+            {
+                saved.WorkflowStateHistories.Add(entry);
+            }
 
             _lineOfDutyCase = saved;
         }
         catch (Exception ex)
         {
             _lineOfDutyCase.WorkflowState = previousState;
-
-            var lastHistory = _lineOfDutyCase.WorkflowStateHistories.LastOrDefault(h => h.WorkflowState == targetState);
-
-            if (lastHistory is not null)
-            {
-                _lineOfDutyCase.WorkflowStateHistories.Remove(lastHistory);
-            }
 
             _lastTransitionResult = StateMachineResult.Fail(ex.Message);
 
@@ -827,7 +876,7 @@ internal class LineOfDutyStateMachine
     /// <param name="destinationState">The <see cref="WorkflowState"/> being returned to.</param>
     private async Task OnReturnEntryAsync(WorkflowState destinationState)
     {
-        await SaveAndNotifyAsync(_lineOfDutyCase, destinationState);
+        await SaveAndNotifyAsync(_lineOfDutyCase, destinationState, isReturn: true);
     }
 
     #endregion

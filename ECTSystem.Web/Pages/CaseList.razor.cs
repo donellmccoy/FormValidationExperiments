@@ -29,6 +29,7 @@ public partial class CaseList : ComponentBase, IDisposable
     private IJSRuntime JSRuntime { get; set; }
 
     private RadzenDataGrid<LineOfDutyCase> _grid;
+    private RadzenTextBox _searchBox;
     private ODataEnumerable<LineOfDutyCase> cases;
     private IList<LineOfDutyCase> _selectedCases = [];
     private HashSet<int> bookmarkedCaseIds = [];
@@ -38,6 +39,14 @@ public partial class CaseList : ComponentBase, IDisposable
     private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
     private CancellationTokenSource _searchCts = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _searchBox is not null)
+        {
+            await _searchBox.FocusAsync();
+        }
+    }
 
     private async Task LoadData(LoadDataArgs args)
     {

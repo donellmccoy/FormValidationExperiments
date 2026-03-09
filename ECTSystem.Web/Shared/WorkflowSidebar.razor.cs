@@ -98,13 +98,41 @@ public partial class WorkflowSidebar : ComponentBase
             if (historyByState.TryGetValue(step.WorkflowState, out var history))
             {
                 step.Status = history.Status;
-                step.StartDate = history.StartDate;
-                step.SignedDate = history.SignedDate;
-                step.SignedBy = history.SignedBy ?? string.Empty;
-                step.CompletedBy = history.PerformedBy;
-                step.StatusText = history.Status == WorkflowStepStatus.Completed ? "Completed" : string.Empty;
-                step.CompletedDate = history.Status == WorkflowStepStatus.Completed ? history.StartDate : null;
-                step.CompletionDate = history.Status == WorkflowStepStatus.Completed ? history.StartDate?.ToString("MM/dd/yyyy h:mm tt") : string.Empty;
+
+                if (history.Status == WorkflowStepStatus.Completed)
+                {
+                    step.StartDate = history.StartDate;
+                    step.EndDate = history.EndDate;
+                    step.CompletedDate = history.EndDate;
+                    step.SignedDate = history.SignedDate;
+                    step.SignedBy = history.SignedBy ?? string.Empty;
+                    step.CompletedBy = history.PerformedBy;
+                    step.StatusText = "Completed";
+                    step.CompletionDate = history.EndDate?.ToString("MM/dd/yyyy h:mm tt") ?? string.Empty;
+                }
+                else if (history.Status == WorkflowStepStatus.InProgress)
+                {
+                    step.StartDate = history.StartDate;
+                    step.EndDate = null;
+                    step.CompletedDate = null;
+                    step.SignedDate = null;
+                    step.SignedBy = string.Empty;
+                    step.CompletedBy = string.Empty;
+                    step.StatusText = string.Empty;
+                    step.CompletionDate = string.Empty;
+                }
+                else
+                {
+                    // Pending / returned — show nothing
+                    step.StartDate = null;
+                    step.EndDate = null;
+                    step.CompletedDate = null;
+                    step.SignedDate = null;
+                    step.SignedBy = string.Empty;
+                    step.CompletedBy = string.Empty;
+                    step.StatusText = string.Empty;
+                    step.CompletionDate = string.Empty;
+                }
             }
             else
             {
