@@ -73,7 +73,7 @@ else
                                             <span>Case #@_viewModel.CaseNumber</span>
                                         </RadzenStack>
                                     </RadzenText>
-                                    <RadzenBadge Text="@_viewModel.Status" BadgeStyle="BadgeStyle.Primary" />
+                                    <RadzenBadge Text="@_viewModel.WorkflowState.ToDisplayString()" BadgeStyle="BadgeStyle.Primary" />
                                 </RadzenStack>
                                 <RadzenText TextStyle="TextStyle.Body1" class="case-member-name">
                                     Member: @_viewModel.MemberName

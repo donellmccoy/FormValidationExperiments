@@ -42,6 +42,9 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     public string Status { get; set; } = string.Empty;
 
     [FormSection("CaseInfo")]
+    public WorkflowState WorkflowState { get; set; }
+
+    [FormSection("CaseInfo")]
     public string IncidentCircumstances { get; set; } = string.Empty;
 
     [FormSection("CaseInfo")]
