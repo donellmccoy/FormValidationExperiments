@@ -176,7 +176,7 @@
 
 ::deep .panel-title {
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 350;
     color: rgba(255, 255, 255, 0.87);
     margin: 0;
 }
@@ -604,7 +604,7 @@
 /* ═══════════════════ Case Member Name ═══════════════════ */
 
 ::deep .case-member-name {
-    font-weight: 600;
+    font-weight: 350;
     color: var(--rz-text-color);
     margin: 0;
 }
