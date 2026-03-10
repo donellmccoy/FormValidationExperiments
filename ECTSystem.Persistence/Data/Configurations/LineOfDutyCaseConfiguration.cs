@@ -34,11 +34,6 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
                .HasForeignKey(a => a.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.ClientCascade);
 
-        builder.HasMany(e => e.TimelineSteps)
-               .WithOne(t => t.LineOfDutyCase)
-               .HasForeignKey(t => t.LineOfDutyCaseId)
-               .OnDelete(DeleteBehavior.ClientCascade);
-
         builder.HasMany(e => e.Notifications)
                .WithOne(n => n.LineOfDutyCase)
                .HasForeignKey(n => n.LineOfDutyCaseId)

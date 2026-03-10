@@ -67,16 +67,6 @@ public interface IDataService
     Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Digitally signs the specified timeline step.
-    /// </summary>
-    Task<TimelineStep> SignTimelineStepAsync(int stepId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Sets the StartDate on the specified timeline step.
-    /// </summary>
-    Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Appends a workflow step history snapshot entry for a LOD case.
     /// </summary>
     Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistory entry, CancellationToken cancellationToken = default);

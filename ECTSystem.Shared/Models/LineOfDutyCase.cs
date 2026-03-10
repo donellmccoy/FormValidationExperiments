@@ -100,7 +100,6 @@ public class LineOfDutyCase : AuditableEntity
     public int TotalTimelineDays { get; set; } // e.g., 90 for Informal, 160 for Formal
     public bool IsInterimLOD { get; set; }
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
-    public ICollection<TimelineStep> TimelineSteps { get; set; } = new HashSet<TimelineStep>();
     public ICollection<LineOfDutyAuthority> Authorities { get; set; } = new HashSet<LineOfDutyAuthority>();
     public ICollection<WorkflowStateHistory> WorkflowStateHistories { get; set; } = new HashSet<WorkflowStateHistory>();
 

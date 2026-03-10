@@ -179,7 +179,6 @@ public class LineOfDutyCaseHttpService : IDataService
             .Filter($"CaseId eq '{caseId}'")
             .Top(1)
             .Expand("Documents,Authorities," +
-                    "TimelineSteps($expand=ResponsibleAuthority)," +
                     "Appeals($expand=AppellateAuthority)," +
                     "Member,MEDCON,INCAP,Notifications,WorkflowStateHistories");
 
@@ -432,40 +431,6 @@ public class LineOfDutyCaseHttpService : IDataService
         var response = await _httpClient.DeleteAsync($"api/cases/{caseId}/documents/{documentId}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
-    }
-
-    /// <summary>
-    /// Confirms action over a specific timeline workflow entry by appending a cryptographic digital signature payload signature.
-    /// </summary>
-    /// <param name="stepId">The numeric identifier of the timeline step.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A signed <see cref="TimelineStep"/> tracking the completed operation.</returns>
-    public async Task<TimelineStep> SignTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepId);
-
-        var response = await _httpClient.PostAsync($"odata/TimelineSteps({stepId})/Sign", null, cancellationToken);
-
-        response.EnsureSuccessStatusCode();
-
-        return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
-    }
-
-    /// <summary>
-    /// Executes step activation protocol against an existing timeline step, flagging an active task metric loop.
-    /// </summary>
-    /// <param name="stepId">The numeric identifier of the timeline step.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A modified <see cref="TimelineStep"/> resolving the startup configuration.</returns>
-    public async Task<TimelineStep> StartTimelineStepAsync(int stepId, CancellationToken cancellationToken = default)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepId);
-
-        var response = await _httpClient.PostAsync($"odata/TimelineSteps({stepId})/Start", null, cancellationToken);
-
-        response.EnsureSuccessStatusCode();
-
-        return (await response.Content.ReadFromJsonAsync<TimelineStep>(ODataJsonOptions, cancellationToken))!;
     }
 
     /// <summary>

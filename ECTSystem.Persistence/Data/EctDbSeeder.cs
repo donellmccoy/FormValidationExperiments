@@ -183,15 +183,6 @@ public static class EctDbSeeder
                     }
                 },
                 Documents =[],
-                TimelineSteps = TimelineStep.CreateDefaultSteps().Select((step, i) =>
-                {
-                    if (i == 0)
-                    {
-                        step.StartDate = incidentDate;
-                    }
-
-                    return step;
-                }).ToList(),
                 WorkflowStateHistories = new List<WorkflowStateHistory>
                 {
                     WorkflowStateHistoryFactory.CreateInitialHistory(0, WorkflowState.MemberInformationEntry, initiationDate)

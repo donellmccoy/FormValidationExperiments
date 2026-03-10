@@ -123,7 +123,6 @@ public static class ServiceCollectionExtensions
         var caseType = casesEntitySet.EntityType;
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.TimelineSteps).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Notifications).AutomaticallyExpand(true);
         caseType.HasMany(c => c.WorkflowStateHistories).AutomaticallyExpand(true);
@@ -138,10 +137,6 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
         odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
         odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
-
-        var timelineStepsEntitySet = odataBuilder.EntitySet<TimelineStep>("TimelineSteps");
-        timelineStepsEntitySet.EntityType.Action("Sign").ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
-        timelineStepsEntitySet.EntityType.Action("Start").ReturnsFromEntitySet<TimelineStep>("TimelineSteps");
 
         odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");

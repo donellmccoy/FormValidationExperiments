@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using PdfSharp.Pdf;
@@ -27,6 +28,11 @@ public sealed class AF348PdfService
     public byte[] GenerateFilledForm(LineOfDutyCase lodCase)
     {
         using var document = PdfReader.Open(_templatePath, PdfDocumentOpenMode.Modify);
+
+        // Remove the XFA data stream so the viewer renders AcroForm field values
+        // instead of the XFA XML layer (which causes garbled text with "&" artifacts).
+        var acroForm = document.Internals.Catalog.Elements.GetDictionary("/AcroForm");
+        acroForm?.Elements.Remove("/XFA");
 
         var fields = CollectFields(document);
         FillFields(fields, lodCase);
@@ -75,10 +81,15 @@ public sealed class AF348PdfService
         }
         else
         {
-            // Leaf field — has /T (field name) and /FT (field type)
+            // Leaf field — has /T (field name) and /FT (field type).
+            // XFA-style PDFs append "[0]" array indices to /T values;
+            // strip them so lookups use the base name (e.g. "part1NameFill").
             var name = dict.Elements.GetString("/T");
             if (!string.IsNullOrEmpty(name))
+            {
+                name = Regex.Replace(name, @"\[\d+\]$", string.Empty);
                 result[name] = dict;
+            }
         }
     }
 

@@ -47,6 +47,23 @@ public partial class WorkflowSidebar : ComponentBase
         new() { Number = 12, Name = "Completed",                 Icon = "check_circle",         Status = WorkflowStepStatus.Pending, WorkflowState = WorkflowState.Completed,                Description = "LOD determination has been finalized and the case is closed." }
     ];
 
+    public static List<TimelineStep> TimelineSteps { get; } =
+    [
+        new() { StepDescription = "Enter Member Information",  WorkflowState = WorkflowState.MemberInformationEntry,         TimelineDays = 3,  IsOptional = false },
+        new() { StepDescription = "Medical Technician Review", WorkflowState = WorkflowState.MedicalTechnicianReview,        TimelineDays = 5,  IsOptional = false },
+        new() { StepDescription = "Medical Officer Review",    WorkflowState = WorkflowState.MedicalOfficerReview,           TimelineDays = 5,  IsOptional = false },
+        new() { StepDescription = "Unit Commander Review",     WorkflowState = WorkflowState.UnitCommanderReview,            TimelineDays = 14, IsOptional = false },
+        new() { StepDescription = "Wing JA Review",            WorkflowState = WorkflowState.WingJudgeAdvocateReview,        TimelineDays = 10, IsOptional = false },
+        new() { StepDescription = "Appointing Authority",      WorkflowState = WorkflowState.AppointingAuthorityReview,      TimelineDays = 10, IsOptional = false },
+        new() { StepDescription = "Wing CC Review",            WorkflowState = WorkflowState.WingCommanderReview,            TimelineDays = 7,  IsOptional = false },
+        new() { StepDescription = "Board Technician Review",   WorkflowState = WorkflowState.BoardMedicalTechnicianReview,   TimelineDays = 10, IsOptional = false },
+        new() { StepDescription = "Board Medical Review",      WorkflowState = WorkflowState.BoardMedicalOfficerReview,      TimelineDays = 10, IsOptional = false },
+        new() { StepDescription = "Board Legal Review",        WorkflowState = WorkflowState.BoardLegalReview,               TimelineDays = 7,  IsOptional = false },
+        new() { StepDescription = "Board Admin Review",        WorkflowState = WorkflowState.BoardAdministratorReview,       TimelineDays = 7,  IsOptional = false },
+        new() { StepDescription = "Completed",                 WorkflowState = WorkflowState.Completed,                     TimelineDays = 0,  IsOptional = false },
+    ];
+
+
     /// <summary>
     /// The 0-based index of the currently active workflow step.
     /// </summary>
@@ -67,8 +84,7 @@ public partial class WorkflowSidebar : ComponentBase
     /// Synchronizes step statuses and computes the current step index
     /// from the specified LOD case (or the bound <see cref="LineOfDutyCase"/> parameter).
     /// Uses <see cref="WorkflowStateHistory"/> entries as the primary source for step status,
-    /// dates, and signatures; falls back to positional <see cref="TimelineStep"/> data
-    /// for cases that predate the history feature.
+    /// dates, and signatures.
     /// </summary>
     /// <param name="lodCase">
     /// Optional LOD case override. When <c>null</c>, uses the bound <see cref="LineOfDutyCase"/> parameter.
@@ -87,12 +103,6 @@ public partial class WorkflowSidebar : ComponentBase
         var historiesByState = lodCase?.WorkflowStateHistories?
             .GroupBy(h => h.WorkflowState)
             .ToDictionary(g => g.Key, g => g.ToList())
-            ?? [];
-
-        // Fallback: positional TimelineStep data (backward compatibility with seeded cases)
-        var timelineByIndex = lodCase?.TimelineSteps
-            .Select((ts, i) => (Index: i + 1, Step: ts))
-            .ToDictionary(x => x.Index, x => x.Step)
             ?? [];
 
         foreach (var step in Steps)
@@ -159,16 +169,14 @@ public partial class WorkflowSidebar : ComponentBase
             }
             else
             {
-                // No history — fall back to positional timeline data
-                var timeline = timelineByIndex.GetValueOrDefault(step.Number);
-
+                // No history — set status based on position relative to current state
                 if (step.Number < stateInt)
                 {
                     step.Status = WorkflowStepStatus.Completed;
                     step.StatusText = "Completed";
                     if (string.IsNullOrEmpty(step.CompletionDate))
                     {
-                        step.CompletionDate = timeline?.CompletionDate?.ToString("MM/dd/yyyy h:mm tt") ?? DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
+                        step.CompletionDate = DateTime.Now.ToString("MM/dd/yyyy h:mm tt");
                     }
                 }
                 else if (step.Number == stateInt)
@@ -177,12 +185,6 @@ public partial class WorkflowSidebar : ComponentBase
                     step.StatusText = string.Empty;
                     step.CompletionDate = string.Empty;
                 }
-
-                step.StartDate = timeline?.StartDate;
-                step.SignedDate = timeline?.SignedDate;
-                step.SignedBy = timeline?.SignedBy ?? string.Empty;
-                step.CompletedDate = timeline?.CompletionDate;
-                step.CompletedBy = timeline?.ModifiedBy ?? string.Empty;
             }
         }
 
@@ -238,5 +240,34 @@ public partial class WorkflowSidebar : ComponentBase
             WorkflowStepStatus.Pending => "pending",
             _ => ""
         };
+    }
+
+    private static string FormatDaysInProcess(WorkflowStep step)
+    {
+        if (!step.DaysInProcess.HasValue)
+        {
+            return string.Empty;
+        }
+
+        var days = step.DaysInProcess.Value;
+        var timelineStep = TimelineSteps.Find(t => t.WorkflowState == step.WorkflowState);
+
+        if (timelineStep is null || timelineStep.TimelineDays <= 0)
+        {
+            return $"Days in Process \u2014 {days} days";
+        }
+
+        if (days > timelineStep.TimelineDays)
+        {
+            var overdue = days - timelineStep.TimelineDays;
+            return $"Days in Process \u2014 {days} days | {overdue} Overdue";
+        }
+
+        if (days == timelineStep.TimelineDays)
+        {
+            return $"Days in Process \u2014 {days} days | Due today";
+        }
+
+        return $"Days in Process \u2014 {days} days";
     }
 }

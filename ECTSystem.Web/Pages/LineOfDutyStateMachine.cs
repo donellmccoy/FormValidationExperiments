@@ -45,8 +45,7 @@ internal class LineOfDutyStateMachine
     /// <summary>
     /// The LOD case whose <see cref="LineOfDutyCase.WorkflowState"/> is managed by this
     /// state machine. Updated in place during transitions and used to retrieve
-    /// <see cref="LineOfDutyCase.WorkflowStateHistories"/> and
-    /// <see cref="LineOfDutyCase.TimelineSteps"/>.
+    /// <see cref="LineOfDutyCase.WorkflowStateHistories"/>.
     /// </summary>
     private LineOfDutyCase _lineOfDutyCase;
 
@@ -334,32 +333,32 @@ internal class LineOfDutyStateMachine
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnUnitCommanderReviewExitAsync);
 
-        // Step 5: Wing Judge Advocate Review — can forward to Wing CC or return to earlier stages
+        // Step 5: Wing Judge Advocate Review — can forward to Appointing Authority or return to earlier stages
         _sm.Configure(WorkflowState.WingJudgeAdvocateReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview], OnWingJudgeAdvocateReviewEntryAsync)
-            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
-            .PermitIf(LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, CanForwardToWingCommanderReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
-            .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
-            .OnExitAsync(OnWingJudgeAdvocateReviewExitAsync);
-
-        // Step 6: Wing Commander Review — can forward to Appointing Authority or return to earlier stages
-        _sm.Configure(WorkflowState.WingCommanderReview)
-            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingCommanderReview], OnWingCommanderReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanForwardToAppointingAuthorityReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
-            .OnExitAsync(OnWingCommanderReviewExitAsync);
+            .OnExitAsync(OnWingJudgeAdvocateReviewExitAsync);
 
-        // Step 7: Appointing Authority Review — can forward to Board Tech or return to earlier stages
+        // Step 6: Appointing Authority Review — can forward to Wing CC or return to earlier stages
         _sm.Configure(WorkflowState.AppointingAuthorityReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToAppointingAuthorityReview], OnAppointingAuthorityReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
+            .PermitIf(LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, CanForwardToWingCommanderReviewAsync)
+            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
+            .OnExitAsync(OnAppointingAuthorityReviewExitAsync);
+
+        // Step 7: Wing Commander Review — can forward to Board Tech or return to earlier stages
+        _sm.Configure(WorkflowState.WingCommanderReview)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingCommanderReview], OnWingCommanderReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
-            .OnExitAsync(OnAppointingAuthorityReviewExitAsync);
+            .OnExitAsync(OnWingCommanderReviewExitAsync);
 
         // Step 8: Board Medical Technician Review — lateral routing to Board Med/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalTechnicianReview)

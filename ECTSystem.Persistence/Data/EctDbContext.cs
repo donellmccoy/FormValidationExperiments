@@ -22,7 +22,6 @@ public class EctDbContext : DbContext
     public DbSet<LineOfDutyAuthority> Authorities { get; set; }
     public DbSet<MEDCONDetail> MEDCONDetails { get; set; }
     public DbSet<INCAPDetails> INCAPDetails { get; set; }
-    public DbSet<TimelineStep> TimelineSteps { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<CaseBookmark> CaseBookmarks { get; set; }
     public DbSet<WorkflowStateLookup> WorkflowStates { get; set; }

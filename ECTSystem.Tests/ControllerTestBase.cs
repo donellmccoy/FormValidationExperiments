@@ -51,7 +51,6 @@ public abstract class ControllerTestBase
         Authorities         = [],
         Documents           = [],
         Appeals             = [],
-        TimelineSteps       = [],
         Notifications       = [],
         WitnessStatements   = [],
         AuditComments       = []

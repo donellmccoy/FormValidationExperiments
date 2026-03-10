@@ -233,48 +233,6 @@ public class CasesController : ODataController
     }
 
     /// <summary>
-    /// Returns timeline steps for a specific case.
-    /// OData route: GET /odata/Cases({key})/TimelineSteps
-    /// </summary>
-    [EnableQuery]
-    public async Task<IActionResult> GetTimelineSteps([FromODataUri] int key, CancellationToken ct = default)
-    {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.TimelineSteps));
-
-        var context = await CreateContextAsync(ct);
-
-        return Ok(context.TimelineSteps.AsNoTracking().Where(t => t.LineOfDutyCaseId == key));
-    }
-
-    /// <summary>
-    /// Returns authorities for a specific case.
-    /// OData route: GET /odata/Cases({key})/Authorities
-    /// </summary>
-    [EnableQuery]
-    public async Task<IActionResult> GetAuthorities([FromODataUri] int key, CancellationToken ct = default)
-    {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Authorities));
-
-        var context = await CreateContextAsync(ct);
-
-        return Ok(context.Authorities.AsNoTracking().Where(a => a.LineOfDutyCaseId == key));
-    }
-
-    /// <summary>
-    /// Returns appeals for a specific case.
-    /// OData route: GET /odata/Cases({key})/Appeals
-    /// </summary>
-    [EnableQuery]
-    public async Task<IActionResult> GetAppeals([FromODataUri] int key, CancellationToken ct = default)
-    {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Appeals));
-
-        var context = await CreateContextAsync(ct);
-
-        return Ok(context.Appeals.AsNoTracking().Where(a => a.LineOfDutyCaseId == key));
-    }
-
-    /// <summary>
     /// Returns notifications for a specific case.
     /// OData route: GET /odata/Cases({key})/Notifications
     /// </summary>

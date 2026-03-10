@@ -1,7 +1,7 @@
 <aside class="workflow-sidebar rz-border-primary-lighter rz-border-radius-2">
     <div class="sidebar-header">
         <div class="sidebar-header-row">
-            <RadzenText Style="font-size: 0.7rem;margin-bottom:0" TextStyle="TextStyle.Overline">Case Tracking</RadzenText>
+            <RadzenText Style="font-size: 0.7rem;margin-bottom:0" TextStyle="TextStyle.Overline">Tracking</RadzenText>
             <span class="sidebar-step-count">Step @(CurrentStepIndex + 1) of @Steps.Count</span>
         </div>
         <div class="progress-track">
@@ -43,7 +43,7 @@
                         }
                         @if (step.DaysInProcess.HasValue)
                         {
-                            <span class="step-detail">Days in Process &mdash; @step.DaysInProcess.Value days</span>
+                            <span class="step-detail">@FormatDaysInProcess(step)</span>
                         }
                     }
                     else if (step.Status == WorkflowStepStatus.Completed)
@@ -58,7 +58,7 @@
                         }
                         @if (step.DaysInProcess.HasValue)
                         {
-                            <span class="step-detail">Days in Process &mdash; @step.DaysInProcess.Value days</span>
+                            <span class="step-detail">@FormatDaysInProcess(step)</span>
                         }
                     }
                 </div>

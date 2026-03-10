@@ -928,8 +928,8 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToWingCommanderReview))" Text="Forward to Wing Commander" Icon="send"
-                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToWingCommanderReview) == true)"
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToAppointingAuthorityReview))" Text="Forward to Appointing Authority" Icon="send"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToAppointingAuthorityReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
                                                         <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
@@ -944,8 +944,52 @@ else
                                     </ChildContent>
                                 </RadzenTabsItem>
 
+                                @* ─── Appointing Authority Tab ─── *@
+                                <RadzenTabsItem Text="Appointing Authority" Disabled="@IsTabDisabled(5)">
+                                    <Template>
+                                        <span class="tab-label">Appointing Authority</span>
+                                    </Template>
+                                    <ChildContent>
+                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.AppointingAuthority))">
+                                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                            Wing-level review and approval for this LOD case.
+                                        </RadzenText>
+
+                                        @* ═══ Form Actions ═══ *@
+                                        <div class="form-actions rz-mt-2">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                                <RadzenSplitButton Click="@OnApplyChangesClick" Text="Apply Changes" Icon="save"
+                                                                    Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
+                                                                    Disabled="@(!HasAnyChanges)">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
+                                            </RadzenStack>
+                                        </div>
+
+                                        @* ═══ Routing ═══ *@
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToWingCommanderReview))" Text="Forward to Wing Commander" Icon="send"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToWingCommanderReview) == true)"
+                                                                    ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
+                                                        <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
+                                                        <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
+                                                        <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
+                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+                                        </RadzenTemplateForm>
+                                    </ChildContent>
+                                </RadzenTabsItem>
+
                                 @* ─── Wing CC Review Tab ─── *@
-                                <RadzenTabsItem Text="Wing Commander Review" Disabled="@IsTabDisabled(5)">
+                                <RadzenTabsItem Text="Wing Commander Review" Disabled="@IsTabDisabled(6)">
                                     <Template>
                                         <span class="tab-label">
                                             Wing Commander Review @if (!IsNewCase && _viewModel.IsDirtySection("WingCommander")) {
@@ -1017,10 +1061,11 @@ else
                                         @* ═══ Routing ═══ *@
                                         <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToAppointingAuthorityReview))" Text="Forward to Appointing Authority" Icon="send"
-                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToAppointingAuthorityReview) == true)"
+                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToBoardTechnicianReview))" Text="Forward to Board Review" Icon="send"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview) == true)"
                                                                     ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
                                                     <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Return to Appointing Authority" Icon="replay" Value="return-appt-auth" />
                                                         <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
                                                         <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
                                                         <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
@@ -1034,51 +1079,6 @@ else
                                     </RadzenTemplateForm>
                                 </ChildContent>
                             </RadzenTabsItem>
-
-                                @* ─── Appointing Authority Tab ─── *@
-                                <RadzenTabsItem Text="Appointing Authority" Disabled="@IsTabDisabled(6)">
-                                    <Template>
-                                        <span class="tab-label">Appointing Authority</span>
-                                    </Template>
-                                    <ChildContent>
-                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.AppointingAuthority))">
-                                        <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                            Wing-level review and approval for this LOD case.
-                                        </RadzenText>
-
-                                        @* ═══ Form Actions ═══ *@
-                                        <div class="form-actions rz-mt-2">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
-                                                <RadzenSplitButton Click="@OnApplyChangesClick" Text="Apply Changes" Icon="save"
-                                                                    Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
-                                                                    Disabled="@(!HasAnyChanges)">
-                                                    <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
-                                                    </ChildContent>
-                                                </RadzenSplitButton>
-                                            </RadzenStack>
-                                        </div>
-
-                                        @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@(item => OnForwardClick(item, LineOfDutyTrigger.ForwardToBoardTechnicianReview))" Text="Forward to Board Review" Icon="send"
-                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview) == true)"
-                                                                    ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined">
-                                                    <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Return to Wing CC" Icon="replay" Value="return-wing-cc" />
-                                                        <RadzenSplitButtonItem Text="Return to Wing JA" Icon="replay" Value="return-wing-ja" />
-                                                        <RadzenSplitButtonItem Text="Return to Unit CC" Icon="replay" Value="return-unit-cc" />
-                                                        <RadzenSplitButtonItem Text="Return to Medical Officer" Icon="replay" Value="return-med-officer" />
-                                                        <RadzenSplitButtonItem Text="Return to Medical Technician" Icon="replay" Value="return-med-tech" />
-                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
-                                                    </ChildContent>
-                                                </RadzenSplitButton>
-                                            </RadzenStack>
-                                        </RadzenFieldset>
-                                        </RadzenTemplateForm>
-                                    </ChildContent>
-                                </RadzenTabsItem>
 
                                 @* ─── Board Technician Review Tab ─── *@
                                 <RadzenTabsItem Text="Board Technician Review" Disabled="@IsTabDisabled(7)">

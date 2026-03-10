@@ -58,15 +58,6 @@ public interface ILoggingService
     void QueryingCaseNavigation(int caseId, string navigationProperty);
     void QueryingMemberNavigation(int memberId, string navigationProperty);
 
-    // Timeline Steps
-    void SigningTimelineStep(int stepId);
-    void TimelineStepSigned(int stepId);
-    void TimelineStepAlreadySigned(int stepId);
-    void StartingTimelineStep(int stepId);
-    void TimelineStepStarted(int stepId);
-    void TimelineStepAlreadyStarted(int stepId);
-    void TimelineStepNotFound(int stepId);
-
     // Workflow State Histories
     void CreatingWorkflowStateHistory(int caseId);
     void WorkflowStateHistoryCreated(int entryId, int caseId);

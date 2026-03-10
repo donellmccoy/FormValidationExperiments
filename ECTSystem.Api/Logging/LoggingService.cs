@@ -152,29 +152,6 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 401, Level = LogLevel.Information, Message = "Querying {NavigationProperty} for member {MemberId}")]
     public partial void QueryingMemberNavigation(int memberId, string navigationProperty);
 
-    // Timeline Steps (EventId 600–604)
-
-    [LoggerMessage(EventId = 600, Level = LogLevel.Information, Message = "Signing timeline step {StepId}")]
-    public partial void SigningTimelineStep(int stepId);
-
-    [LoggerMessage(EventId = 601, Level = LogLevel.Information, Message = "Timeline step {StepId} signed")]
-    public partial void TimelineStepSigned(int stepId);
-
-    [LoggerMessage(EventId = 602, Level = LogLevel.Information, Message = "Starting timeline step {StepId}")]
-    public partial void StartingTimelineStep(int stepId);
-
-    [LoggerMessage(EventId = 603, Level = LogLevel.Information, Message = "Timeline step {StepId} started")]
-    public partial void TimelineStepStarted(int stepId);
-
-    [LoggerMessage(EventId = 604, Level = LogLevel.Warning, Message = "Timeline step {StepId} not found")]
-    public partial void TimelineStepNotFound(int stepId);
-
-    [LoggerMessage(EventId = 605, Level = LogLevel.Warning, Message = "Timeline step {StepId} is already signed")]
-    public partial void TimelineStepAlreadySigned(int stepId);
-
-    [LoggerMessage(EventId = 606, Level = LogLevel.Warning, Message = "Timeline step {StepId} is already started")]
-    public partial void TimelineStepAlreadyStarted(int stepId);
-
     // Workflow State Histories (EventId 700–703)
 
     [LoggerMessage(EventId = 700, Level = LogLevel.Information, Message = "Creating workflow state history entry for case {CaseId}")]

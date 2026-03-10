@@ -15,7 +15,6 @@ BEGIN TRY
     -- --------------------------------------------------------
     -- 1. Domain child tables (depend on Cases / Authorities)
     -- --------------------------------------------------------
-    DELETE FROM [dbo].[TimelineSteps];
     DELETE FROM [dbo].[Appeals];
     DELETE FROM [dbo].[Authorities];
     DELETE FROM [dbo].[WorkflowStateHistories];
@@ -37,7 +36,6 @@ BEGIN TRY
     -- --------------------------------------------------------
     -- 4. Reseed identity columns
     -- --------------------------------------------------------
-    DBCC CHECKIDENT ('[dbo].[TimelineSteps]',   RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[Appeals]',          RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[Authorities]',      RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[WorkflowStateHistories]', RESEED, 0);

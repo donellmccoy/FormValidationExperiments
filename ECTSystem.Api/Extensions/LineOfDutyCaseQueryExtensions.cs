@@ -17,7 +17,6 @@ public static class LineOfDutyCaseQueryExtensions
             .AsSplitQuery()
             .Include(c => c.Documents)
             .Include(c => c.Authorities)
-            .Include(c => c.TimelineSteps).ThenInclude(t => t.ResponsibleAuthority)
             .Include(c => c.Appeals).ThenInclude(a => a.AppellateAuthority)
             .Include(c => c.Member)
             .Include(c => c.MEDCON)

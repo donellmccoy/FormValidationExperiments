@@ -36,8 +36,7 @@ ECTSystem.Web/
 │   ├── LODAppeal.cs              # Appeal records
 │   ├── LODAuthority.cs           # Reviewing authority entries
 │   ├── MEDCONDetails.cs          # Medical Continuation benefit tracking
-│   ├── INCAPDetails.cs           # Incapacitation Pay benefit tracking
-│   └── TimelineStep.cs           # Workflow timeline entries
+│   └── INCAPDetails.cs           # Incapacitation Pay benefit tracking
 ├── Enums/                  # Domain enums (namespace: ECTSystem.Web.Enums)
 │   ├── CommanderRecommendation.cs  # Item 21: commander's LOD recommendation
 │   ├── DutyStatus.cs              # Duty status at time of incident
