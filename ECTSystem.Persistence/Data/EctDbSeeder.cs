@@ -57,10 +57,16 @@ public static class EctDbSeeder
     {
         var rng = new Random(42); // Fixed seed for reproducibility
         var cases = new List<LineOfDutyCase>(count);
+        var dateCounters = new Dictionary<string, int>();
 
         for (var i = 0; i < count; i++)
         {
             var incidentDate = new DateTime(2024, 1, 1).AddDays(rng.Next(0, 540));
+            var dateKey = incidentDate.ToString("yyyyMMdd");
+
+            dateCounters.TryGetValue(dateKey, out var currentCount);
+            dateCounters[dateKey] = ++currentCount;
+
             var initiationDate = incidentDate.AddDays(rng.Next(1, 5));
             var processType = rng.Next(100) < 70 ? ProcessType.Informal : ProcessType.Formal;
             var component = PickRandom(rng, ServiceComponent.RegularAirForce, ServiceComponent.AirForceReserve, ServiceComponent.AirNationalGuard, ServiceComponent.UnitedStatesSpaceForce);
@@ -78,7 +84,7 @@ public static class EctDbSeeder
 
             var lodCase = new LineOfDutyCase
             {
-                CaseId = $"{incidentDate:yyyyMMdd}-{(i + 1):D3}",
+                CaseId = $"{dateKey}-{currentCount:D3}",
                 MemberId = members[i % members.Count].Id,
                 ProcessType = processType,
                 WorkflowState = workflowState,
@@ -188,7 +194,7 @@ public static class EctDbSeeder
                     WorkflowStateHistoryFactory.CreateInitialHistory(0, WorkflowState.MemberInformationEntry, initiationDate)
                 },
                 Appeals = [],
-                Notifications = []//GenerateNotifications(rng, $"{incidentDate:yyyyMMdd}-{(i + 1):D3}", memberName, unit, initiationDate)
+                Notifications = []//GenerateNotifications(rng, $"{dateKey}-{currentCount:D3}", memberName, unit, initiationDate)
             };
 
             cases.Add(lodCase);

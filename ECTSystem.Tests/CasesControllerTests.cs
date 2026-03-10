@@ -115,11 +115,13 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_ReturnsCreatedWithCase()
     {
-        var lodCase = BuildCase(0, "CASE-NEW");
+        var lodCase = BuildCase(0);
+        lodCase.CaseId = string.Empty; // server generates CaseId
 
         var result = await _sut.Post(lodCase);
 
-        Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result);
+        var created = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result);
+        Assert.Matches(@"^\d{8}-\d{3}$", created.Entity.CaseId);
     }
 
     [Fact]
@@ -130,6 +132,24 @@ public class CasesControllerTests : ControllerTestBase
         var result = await _sut.Post(new LineOfDutyCase());
 
         Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Post_SequentialCases_GetIncrementingSuffix()
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+
+        var case1 = BuildCase(0);
+        case1.CaseId = string.Empty;
+        var result1 = await _sut.Post(case1);
+        var created1 = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result1);
+        Assert.Equal($"{today}-001", created1.Entity.CaseId);
+
+        var case2 = BuildCase(0);
+        case2.CaseId = string.Empty;
+        var result2 = await _sut.Post(case2);
+        var created2 = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result2);
+        Assert.Equal($"{today}-002", created2.Entity.CaseId);
     }
 
     // ─────────────────────────────── Patch ───────────────────────────────────

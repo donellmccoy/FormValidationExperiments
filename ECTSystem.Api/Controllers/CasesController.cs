@@ -104,7 +104,8 @@ public class CasesController : ODataController
     }
 
     /// <summary>
-    /// Creates a new LOD case.
+    /// Creates a new LOD case. The server generates the <see cref="LineOfDutyCase.CaseId"/>
+    /// in YYYYMMDD-XXX format (001–999 sequential suffix per date).
     /// OData route: POST /odata/Cases
     /// </summary>
     [EnableQuery]
@@ -119,6 +120,8 @@ public class CasesController : ODataController
 
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
+        lodCase.CaseId = await GenerateCaseIdAsync(context, ct);
+
         context.Cases.Add(lodCase);
 
         await context.SaveChangesAsync(ct);
@@ -128,6 +131,28 @@ public class CasesController : ODataController
         _loggingService.CaseCreated(lodCase.Id);
 
         return Created(created);
+    }
+
+    /// <summary>
+    /// Generates a case ID in YYYYMMDD-XXX format where XXX is a sequential
+    /// number (001–999) based on existing cases for today's date.
+    /// </summary>
+    private static async Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var prefix = $"{today}-";
+
+        var maxSuffix = await context.Cases
+            .Where(c => c.CaseId.StartsWith(prefix))
+            .Select(c => c.CaseId.Substring(prefix.Length))
+            .MaxAsync(ct)
+            .ConfigureAwait(false);
+
+        var next = maxSuffix is not null && int.TryParse(maxSuffix, out var current)
+            ? current + 1
+            : 1;
+
+        return $"{today}-{next:D3}";
     }
 
     /// <summary>

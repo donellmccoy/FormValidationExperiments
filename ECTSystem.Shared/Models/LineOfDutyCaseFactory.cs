@@ -8,12 +8,9 @@ public static class LineOfDutyCaseFactory
 
         return new LineOfDutyCase
         {
-            CaseId = GenerateCaseId(now),
             MemberId = memberId,
             CreatedDate = now,
             ModifiedDate = now
         };
     }
-
-    public static string GenerateCaseId(DateTime timestamp) => $"{timestamp:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
 }

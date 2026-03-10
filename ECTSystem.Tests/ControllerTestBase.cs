@@ -39,7 +39,7 @@ public abstract class ControllerTestBase
     protected static LineOfDutyCase BuildCase(int id = 1, string caseId = null) => new LineOfDutyCase
     {
         Id                  = id,
-        CaseId              = caseId ?? $"CASE-{id:D4}",
+        CaseId              = caseId ?? $"{DateTime.UtcNow:yyyyMMdd}-{id:D3}",
         MemberId            = DefaultMemberId,
         MemberName          = "SSgt John Doe",
         MemberRank          = "SSgt",
