@@ -759,8 +759,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _lineOfDutyCase = await CaseService.SaveCaseAsync(_lineOfDutyCase, _cts.Token);
 
-            _stateMachine.Case = _lineOfDutyCase;
-
             _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
             TakeSnapshots();

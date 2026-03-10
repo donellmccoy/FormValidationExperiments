@@ -28,12 +28,13 @@ internal class LineOfDutyStateMachine
 
     /// <summary>
     /// Parameterized trigger for <see cref="LineOfDutyTrigger.Return"/> that carries
-    /// the target <see cref="WorkflowState"/> to return to. Configured via
-    /// <see cref="StateMachine{TState,TTrigger}.SetTriggerParameters{TArg0}"/> and
-    /// used with <see cref="StateMachine{TState,TTrigger}.PermitDynamicIf{TArg0}"/>
+    /// both the <see cref="LineOfDutyCase"/> and the target <see cref="WorkflowState"/>
+    /// to return to. Configured via
+    /// <see cref="StateMachine{TState,TTrigger}.SetTriggerParameters{TArg0,TArg1}"/> and
+    /// used with <see cref="StateMachine{TState,TTrigger}.PermitDynamicIf{TArg0,TArg1}"/>
     /// so a single trigger replaces all <c>ReturnTo*</c> variants.
     /// </summary>
-    private StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<WorkflowState> _returnTrigger;
+    private readonly StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<LineOfDutyCase, WorkflowState> _returnTrigger;
 
     /// <summary>
     /// Dictionary mapping each <see cref="LineOfDutyTrigger"/> to its corresponding
@@ -85,15 +86,10 @@ internal class LineOfDutyStateMachine
     }
 
     /// <summary>
-    /// Gets or sets the current <see cref="LineOfDutyCase"/> managed by this state machine.
-    /// The setter allows callers to sync the internal reference after an external save
-    /// that returns a new object instance.
+    /// Gets the current <see cref="LineOfDutyCase"/> managed by this state machine.
+    /// Updated internally by <see cref="SaveAndNotifyAsync"/> during transitions.
     /// </summary>
-    public LineOfDutyCase Case
-    {
-        get => _lineOfDutyCase;
-        set => _lineOfDutyCase = value;
-    }
+    public LineOfDutyCase Case => _lineOfDutyCase;
 
     #endregion
 
@@ -222,7 +218,7 @@ internal class LineOfDutyStateMachine
 
         _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.WorkflowState, FiringMode.Queued);
 
-        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
+        _returnTrigger = _sm.SetTriggerParameters<LineOfDutyCase, WorkflowState>(LineOfDutyTrigger.Return);
 
         RegisterCaseTriggers();
 
@@ -242,10 +238,11 @@ internal class LineOfDutyStateMachine
     public LineOfDutyStateMachine(IDataService dataService)
     {
         _dataService = dataService;
+        _lineOfDutyCase = new LineOfDutyCase();
 
         _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(WorkflowState.Draft, FiringMode.Queued);
 
-        _returnTrigger = _sm.SetTriggerParameters<WorkflowState>(LineOfDutyTrigger.Return);
+        _returnTrigger = _sm.SetTriggerParameters<LineOfDutyCase, WorkflowState>(LineOfDutyTrigger.Return);
 
         RegisterCaseTriggers();
 
@@ -320,7 +317,7 @@ internal class LineOfDutyStateMachine
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToMedicalOfficerReview], OnMedicalOfficerReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToUnitCommanderReview, WorkflowState.UnitCommanderReview, CanForwardToUnitCommanderReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMedicalOfficerReviewExitAsync);
 
@@ -329,7 +326,7 @@ internal class LineOfDutyStateMachine
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToUnitCommanderReview], OnUnitCommanderReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, CanForwardToWingJudgeAdvocateReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnUnitCommanderReviewExitAsync);
 
@@ -338,7 +335,7 @@ internal class LineOfDutyStateMachine
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview], OnWingJudgeAdvocateReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, CanForwardToAppointingAuthorityReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnWingJudgeAdvocateReviewExitAsync);
 
@@ -347,7 +344,7 @@ internal class LineOfDutyStateMachine
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToAppointingAuthorityReview], OnAppointingAuthorityReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, CanForwardToWingCommanderReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnAppointingAuthorityReviewExitAsync);
 
@@ -356,7 +353,7 @@ internal class LineOfDutyStateMachine
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToWingCommanderReview], OnWingCommanderReviewEntryAsync)
             .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnWingCommanderReviewExitAsync);
 
@@ -366,7 +363,7 @@ internal class LineOfDutyStateMachine
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardMedicalTechnicianReviewExitAsync);
 
@@ -376,7 +373,7 @@ internal class LineOfDutyStateMachine
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardMedicalOfficerReviewExitAsync);
 
@@ -386,7 +383,7 @@ internal class LineOfDutyStateMachine
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardLegalReviewExitAsync);
 
@@ -397,7 +394,7 @@ internal class LineOfDutyStateMachine
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
-            .PermitDynamicIf(_returnTrigger, destination => destination, CanReturnAsync)
+            .PermitDynamicIf(_returnTrigger, (_, destination) => destination, CanReturnAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnBoardAdministratorReviewExitAsync);
 
@@ -644,7 +641,7 @@ internal class LineOfDutyStateMachine
 
     #endregion
 
-    #region Step 6: Wing Commander Review
+    #region Step 7: Wing Commander Review
 
     /// <summary>
     /// Called when the state machine enters <see cref="WorkflowState.WingCommanderReview"/>.
@@ -684,7 +681,7 @@ internal class LineOfDutyStateMachine
 
     #endregion
 
-    #region Step 7: Appointing Authority Review
+    #region Step 6: Appointing Authority Review
 
     /// <summary>
     /// Called when the state machine enters <see cref="WorkflowState.AppointingAuthorityReview"/>.
@@ -871,14 +868,15 @@ internal class LineOfDutyStateMachine
 
     /// <summary>
     /// Called when the state machine enters any state via the <see cref="LineOfDutyTrigger.Return"/>
-    /// trigger. Persists the workflow state change and records a history entry. Unlike forward
-    /// entry handlers, this does not receive a <see cref="LineOfDutyCase"/> parameter because the
-    /// case is already loaded in <see cref="_lineOfDutyCase"/> by <see cref="FireReturnAsync"/>.
+    /// trigger. Persists the workflow state change and records a history entry. Receives the
+    /// <see cref="LineOfDutyCase"/> directly from the trigger parameters, eliminating the need
+    /// to pre-load it into <see cref="_lineOfDutyCase"/>.
     /// </summary>
+    /// <param name="lineOfDutyCase">The LOD case with any pending edits applied.</param>
     /// <param name="destinationState">The <see cref="WorkflowState"/> being returned to.</param>
-    private async Task OnReturnEntryAsync(WorkflowState destinationState)
+    private async Task OnReturnEntryAsync(LineOfDutyCase lineOfDutyCase, WorkflowState destinationState)
     {
-        await SaveAndNotifyAsync(_lineOfDutyCase, destinationState, isReturn: true);
+        await SaveAndNotifyAsync(lineOfDutyCase, destinationState, isReturn: true);
     }
 
     #endregion
@@ -983,11 +981,13 @@ internal class LineOfDutyStateMachine
     /// guard methods), this method is synchronous. Currently returns <c>true</c>
     /// unconditionally.
     /// </remarks>
+    /// <param name="lineOfDutyCase">The LOD case being returned.</param>
+    /// <param name="destinationState">The <see cref="WorkflowState"/> being returned to.</param>
     /// <returns>
     /// <c>true</c> if the case may be returned to the requested destination state;
     /// otherwise <c>false</c>.
     /// </returns>
-    private bool CanReturnAsync()
+    private bool CanReturnAsync(LineOfDutyCase lineOfDutyCase, WorkflowState destinationState)
     {
         return true;
     }
@@ -1056,10 +1056,9 @@ internal class LineOfDutyStateMachine
     /// </returns>
     public async Task<StateMachineResult> FireReturnAsync(LineOfDutyCase lodCase, WorkflowState targetState)
     {
-        _lineOfDutyCase = lodCase;
         _lastTransitionResult = null;
 
-        await _sm.FireAsync(_returnTrigger, targetState);
+        await _sm.FireAsync(_returnTrigger, lodCase, targetState);
 
         return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
     }
