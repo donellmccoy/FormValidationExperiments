@@ -156,6 +156,8 @@ public partial class EditCase
 
         _selectedMemberId = member.Id;
 
+        await LoadPreviousCasesAsync(_selectedMemberId);
+
         _viewModel.FirstName = member.FirstName;
         _viewModel.LastName = member.LastName;
         _viewModel.MiddleInitial = member.MiddleInitial;

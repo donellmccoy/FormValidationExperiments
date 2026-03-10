@@ -428,7 +428,35 @@
     font-size: 24px;
 }
 
-::deep .toolbar-icon-btn .bookmark-flash {
+::deep .previous-cases-content {
+    flex: 1;
+    min-height: 100%;
+}
+
+::deep .case-id-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+::deep .case-id-cell .bookmark-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    padding: 2px;
+    min-width: unset;
+}
+
+::deep .case-id-cell:hover .bookmark-btn {
+    opacity: 1;
+}
+
+::deep .bookmark-btn .material-symbols-outlined {
+    font-size: 16px;
+}
+
+::deep .toolbar-icon-btn .bookmark-flash,
+::deep .bookmark-btn .bookmark-flash {
     color: var(--rz-success);
     animation: bookmarkPulse 0.4s ease;
 }

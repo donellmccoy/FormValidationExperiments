@@ -322,7 +322,7 @@ else
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
-                            </RadzenTabsItem>
+                                </RadzenTabsItem>
 
                                 @* ─── Medical Technician Tab ─── *@
                                 <RadzenTabsItem Text="Medical Technician" Disabled="@IsTabDisabled(1)">
@@ -692,7 +692,7 @@ else
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
-                            </RadzenTabsItem>
+                                </RadzenTabsItem>
 
                                 @* ─── Unit Commander Review Tab ─── *@
                                 <RadzenTabsItem Text="Unit Commander Review" Disabled="@IsTabDisabled(3)">
@@ -897,7 +897,7 @@ else
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
-                            </RadzenTabsItem>
+                                </RadzenTabsItem>
 
                                 @* ─── Wing JA Review Tab ─── *@
                                 <RadzenTabsItem Text="Wing JA Review" Disabled="@IsTabDisabled(4)">
@@ -1078,7 +1078,7 @@ else
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
-                            </RadzenTabsItem>
+                                </RadzenTabsItem>
 
                                 @* ─── Board Technician Review Tab ─── *@
                                 <RadzenTabsItem Text="Board Technician Review" Disabled="@IsTabDisabled(7)">
@@ -1428,8 +1428,80 @@ else
                                         </span>
                                     </Template>
                                     <ChildContent>
+                                        <RadzenStack class="rz-p-4 previous-cases-content" Gap="1rem">
+                                            <RadzenTextBox Value="@_previousCasesSearchText"
+                                                           @oninput="@OnPreviousCasesSearchInput"
+                                                           Placeholder="Search previous cases..."
+                                                           Style="width: 50%;" />
+
+                                            <RadzenDataGrid @ref="_previousCasesGrid" TItem="LineOfDutyCase"
+                                                            Data="@_previousCases"
+                                                            Count="@_previousCasesCount"
+                                                            LoadData="@LoadPreviousCasesData"
+                                                            IsLoading="@_previousCasesLoading"
+                                                            SelectionMode="DataGridSelectionMode.Single"
+                                                            AllowRowSelectOnRowClick="true"
+                                                            AllowSorting="true"
+                                                            AllowColumnResize="true"
+                                                            FilterMode="FilterMode.Simple"
+                                                            PageSize="10"
+                                                            AllowPaging="true"
+                                                            ShowPagingSummary="true"
+                                                            PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
+                                                            PageSizeOptions="@(new[] { 5, 10, 25, 50 })"
+                                                            PagerHorizontalAlign="HorizontalAlign.Center"
+                                                            GridLines="DataGridGridLines.Both"
+                                                            class="rz-border-radius-2">
+                                                <EmptyTemplate>
+                                                    <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" class="rz-py-12">
+                                                        <RadzenIcon Icon="history" Style="font-size: 48px; color: var(--rz-text-disabled-color);" />
+                                                        <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">
+                                                            No previous cases found for this member.
+                                                        </RadzenText>
+                                                    </RadzenStack>
+                                                </EmptyTemplate>
+                                                <Columns>
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
+                                                        <Template Context="lodCase">
+                                                            <div class="case-id-cell">
+                                                                <RadzenLink Path="@($"case/{lodCase.CaseId}?from={FromPage}")" Text="@lodCase.CaseId" />
+                                                                <RadzenButton ButtonStyle="ButtonStyle.Light"
+                                                                              Variant="Variant.Text"
+                                                                              Size="ButtonSize.ExtraSmall"
+                                                                              class="bookmark-btn"
+                                                                              Click="@(() => TogglePreviousCaseBookmark(lodCase))"
+                                                                              title="@(_previousCasesBookmarkedIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark")">
+                                                                    <ChildContent>
+                                                                        <span class="material-symbols-outlined @(_previousCasesAnimatingIds.Contains(lodCase.Id) ? "bookmark-flash" : "")">@(_previousCasesBookmarkedIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")</span>
+                                                                    </ChildContent>
+                                                                </RadzenButton>
+                                                            </div>
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="WorkflowState" Title="Status">
+                                                        <Template Context="lodCase">
+                                                            @lodCase.WorkflowState.ToDisplayString()
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="InitiationDate" Title="Created" FormatString="{0:yyyy-MM-dd}" Width="120px" />
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CompletionDate" Title="Completed" FormatString="{0:yyyy-MM-dd}" Width="120px" />
+                                                </Columns>
+                                            </RadzenDataGrid>
+                                        </RadzenStack>
+                                    </ChildContent>
+                                </RadzenTabsItem>
+
+                                @* ─── Tracking Tab ─── *@
+                                <RadzenTabsItem Text="Tracking">
+                                    <Template>
+                                        <span class="tab-label">
+                                            Tracking
+                                        </span>
+                                    </Template>
+                                    <ChildContent>
                                         <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                            Previous case history will be presented here. caseid, unit, status, created, completed date
+                                            Tracking information will be presented here. caseid, start date, end date, days in process.
                                         </RadzenText>
                                     </ChildContent>
                                 </RadzenTabsItem>

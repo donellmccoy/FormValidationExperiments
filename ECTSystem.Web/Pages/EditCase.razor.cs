@@ -164,6 +164,17 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private WorkflowStep CurrentStep => _workflowSidebar?.CurrentStep;
 
+    private RadzenDataGrid<LineOfDutyCase> _previousCasesGrid;
+    private ODataEnumerable<LineOfDutyCase> _previousCases;
+    private int _previousCasesCount;
+    private bool _previousCasesLoading;
+    private string _previousCasesSearchText = string.Empty;
+    private CancellationTokenSource _previousCasesSearchCts = new();
+    private int _previousCasesLoadGeneration;
+    private int _previousCasesMemberId;
+    private readonly HashSet<int> _previousCasesBookmarkedIds = [];
+    private readonly HashSet<int> _previousCasesAnimatingIds = [];
+
     #endregion
 
     #region Lifecycle
@@ -182,6 +193,22 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         _page.IsLoading = false;
+    }
+
+    private string _loadedCaseId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsNewCase && CaseId != _loadedCaseId)
+        {
+            _page.IsLoading = true;
+            StateHasChanged();
+
+            await LoadCaseAsync();
+
+            _page.IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -223,6 +250,10 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lineOfDutyCase.Id);
             }
+
+            await LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
+
+            _loadedCaseId = CaseId;
         }
         catch (OperationCanceledException)
         {
@@ -245,6 +276,178 @@ public partial class EditCase : ComponentBase, IDisposable
         finally
         {
             await SetBusyAsync(isBusy: false);
+        }
+    }
+
+    private async Task LoadPreviousCasesAsync(int memberId)
+    {
+        _previousCasesMemberId = memberId;
+        _previousCasesSearchText = string.Empty;
+
+        if (_previousCasesGrid is not null)
+        {
+            await _previousCasesGrid.FirstPage(true);
+        }
+    }
+
+    private async Task LoadPreviousCasesData(LoadDataArgs args)
+    {
+        if (_previousCasesMemberId == 0)
+        {
+            return;
+        }
+
+        var generation = ++_previousCasesLoadGeneration;
+
+        _previousCasesLoading = true;
+
+        try
+        {
+            var currentId = _lineOfDutyCase?.Id ?? 0;
+            var memberFilter = currentId > 0
+                ? $"MemberId eq {_previousCasesMemberId} and Id ne {currentId}"
+                : $"MemberId eq {_previousCasesMemberId}";
+
+            var filter = CombinePreviousCasesFilters(memberFilter, args.Filter, BuildPreviousCasesSearchFilter(_previousCasesSearchText));
+
+            var result = await CaseService.GetCasesAsync(
+                filter: filter,
+                top: args.Top,
+                skip: args.Skip,
+                orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
+                count: true,
+                cancellationToken: _cts.Token);
+
+            if (generation != _previousCasesLoadGeneration)
+            {
+                return;
+            }
+
+            _previousCases = result?.Value?.AsODataEnumerable();
+            _previousCasesCount = result?.Count ?? 0;
+
+            _previousCasesBookmarkedIds.Clear();
+
+            if (_previousCases is not null)
+            {
+                foreach (var lodCase in _previousCases)
+                {
+                    if (generation != _previousCasesLoadGeneration)
+                    {
+                        return;
+                    }
+
+                    if (await CaseService.IsBookmarkedAsync(lodCase.Id, _cts.Token))
+                    {
+                        _previousCasesBookmarkedIds.Add(lodCase.Id);
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Component disposed — ignore
+        }
+        catch (Exception ex)
+        {
+            if (generation == _previousCasesLoadGeneration)
+            {
+                Logger.LogWarning(ex, "Failed to load previous cases for member {MemberId}", _previousCasesMemberId);
+                _previousCases = null;
+                _previousCasesCount = 0;
+            }
+        }
+        finally
+        {
+            if (generation == _previousCasesLoadGeneration)
+            {
+                _previousCasesLoading = false;
+            }
+        }
+    }
+
+    private async Task OnPreviousCasesSearchInput(ChangeEventArgs args)
+    {
+        _previousCasesSearchText = args.Value?.ToString() ?? string.Empty;
+
+        await _previousCasesSearchCts.CancelAsync();
+        _previousCasesSearchCts.Dispose();
+        _previousCasesSearchCts = new CancellationTokenSource();
+        var token = _previousCasesSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(500, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (_previousCasesGrid is not null)
+        {
+            await _previousCasesGrid.FirstPage(true);
+        }
+    }
+
+    private static string BuildPreviousCasesSearchFilter(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var escaped = text.Replace("'", "''");
+        return $"contains(CaseId,'{escaped}') or contains(Unit,'{escaped}')";
+    }
+
+    private static string CombinePreviousCasesFilters(string memberFilter, string columnFilter, string searchFilter)
+    {
+        var parts = new[] { memberFilter, columnFilter, searchFilter }
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Select(p => $"({p})")
+            .ToList();
+
+        return parts.Count > 0 ? string.Join(" and ", parts) : null;
+    }
+
+    private async Task TogglePreviousCaseBookmark(LineOfDutyCase lodCase)
+    {
+        var isBookmarked = _previousCasesBookmarkedIds.Contains(lodCase.Id);
+
+        if (isBookmarked)
+        {
+            try
+            {
+                await CaseService.RemoveBookmarkAsync(lodCase.Id);
+                _previousCasesBookmarkedIds.Remove(lodCase.Id);
+                await BookmarkCountService.RefreshAsync();
+                NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to remove bookmark for case {CaseId}", lodCase.Id);
+            }
+        }
+        else
+        {
+            _previousCasesAnimatingIds.Add(lodCase.Id);
+            StateHasChanged();
+
+            try
+            {
+                await CaseService.AddBookmarkAsync(lodCase.Id);
+                _previousCasesBookmarkedIds.Add(lodCase.Id);
+                await BookmarkCountService.RefreshAsync();
+                NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to add bookmark for case {CaseId}", lodCase.Id);
+            }
+
+            await Task.Delay(800);
+            _previousCasesAnimatingIds.Remove(lodCase.Id);
         }
     }
 
@@ -873,6 +1076,8 @@ public partial class EditCase : ComponentBase, IDisposable
         _cts.Dispose();
         _searchCts.Cancel();
         _searchCts.Dispose();
+        _previousCasesSearchCts.Cancel();
+        _previousCasesSearchCts.Dispose();
     }
 
     #endregion
