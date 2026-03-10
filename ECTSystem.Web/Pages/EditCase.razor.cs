@@ -35,6 +35,27 @@ public partial class EditCase : ComponentBase, IDisposable
         public const string Draft = "Draft";
     }
 
+    private static readonly (string Name, string Icon)[] TabMetadata =
+    [
+        ("Member Information",      "person"),
+        ("Medical Technician",      "biotech"),
+        ("Medical Officer",         "medical_services"),
+        ("Unit Commander Review",   "edit_document"),
+        ("Wing JA Review",          "gavel"),
+        ("Appointing Authority",    "verified_user"),
+        ("Wing Commander Review",   "stars"),
+        ("Board Technician Review", "rate_review"),
+        ("Board Medical Review",    "medical_services"),
+        ("Board Legal Review",      "balance"),
+        ("Board Admin Review",      "admin_panel_settings"),
+        ("Case Dialogue",           "forum"),
+        ("Notifications",           "notifications"),
+        ("Documents",               "folder"),
+        ("Air Force Form 348",      "description"),
+        ("Case History",            "history"),
+        ("Tracking",                "track_changes"),
+    ];
+
     private static readonly Dictionary<string, (WorkflowState State, string DisplayName)> ReturnTargets = new()
     {
         ["return-med-tech"] = (WorkflowState.MedicalTechnicianReview, "Medical Technician"),
@@ -163,6 +184,14 @@ public partial class EditCase : ComponentBase, IDisposable
     private int NotificationCount => _lineOfDutyCase?.Notifications?.Count ?? 0;
 
     private WorkflowStep CurrentStep => _workflowSidebar?.CurrentStep;
+
+    private string CurrentTabName => _selectedTabIndex >= 0 && _selectedTabIndex < TabMetadata.Length
+        ? TabMetadata[_selectedTabIndex].Name
+        : "Assessment";
+
+    private string CurrentTabIcon => _selectedTabIndex >= 0 && _selectedTabIndex < TabMetadata.Length
+        ? TabMetadata[_selectedTabIndex].Icon
+        : "assignment";
 
     private RadzenDataGrid<LineOfDutyCase> _previousCasesGrid;
     private ODataEnumerable<LineOfDutyCase> _previousCases;
