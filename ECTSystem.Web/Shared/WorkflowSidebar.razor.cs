@@ -81,10 +81,12 @@ public partial class WorkflowSidebar : ComponentBase
         var rawState = lodCase is not null ? (int)lodCase.WorkflowState : 1;
         var stateInt = rawState < 1 ? 1 : rawState > Steps.Count ? Steps.Count : rawState;
 
-        // Primary source: most recent history entry per WorkflowState (by CreatedDate)
-        var historyByState = lodCase?.WorkflowStateHistories?
+        // Primary source: all history entries for each WorkflowState.
+        // Grouped into lists so we can pick the semantically correct entry based
+        // on the step's position relative to the current state.
+        var historiesByState = lodCase?.WorkflowStateHistories?
             .GroupBy(h => h.WorkflowState)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.CreatedDate).First())
+            .ToDictionary(g => g.Key, g => g.ToList())
             ?? [];
 
         // Fallback: positional TimelineStep data (backward compatibility with seeded cases)
@@ -103,8 +105,21 @@ public partial class WorkflowSidebar : ComponentBase
                 continue;
             }
 
-            if (historyByState.TryGetValue(step.WorkflowState, out var history))
+            if (historiesByState.TryGetValue(step.WorkflowState, out var histories))
             {
+                // For past steps, prefer the Completed entry; for the current step, prefer InProgress.
+                // Always pick the most recent entry with the preferred status (highest Id)
+                // because a step may have multiple entries after return transitions.
+                var preferredStatus = step.Number < stateInt
+                    ? WorkflowStepStatus.Completed
+                    : WorkflowStepStatus.InProgress;
+
+                var history = histories
+                    .Where(h => h.Status == preferredStatus)
+                    .OrderByDescending(h => h.Id)
+                    .FirstOrDefault()
+                    ?? histories.OrderByDescending(h => h.CreatedDate).ThenByDescending(h => h.Id).First();
+
                 step.Status = history.Status;
 
                 if (history.Status == WorkflowStepStatus.Completed)

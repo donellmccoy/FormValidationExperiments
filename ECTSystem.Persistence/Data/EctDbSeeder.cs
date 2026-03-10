@@ -18,13 +18,13 @@ public static class EctDbSeeder
             return;
         }
 
-        var members = GenerateMembers(20);
+        var members = GenerateMembers(200);
         context.Members.AddRange(members);
         await context.SaveChangesAsync();
 
-        var cases = GenerateCases(100, members);
-        context.Cases.AddRange(cases);
-        await context.SaveChangesAsync();
+        //var cases = GenerateCases(100, members);
+        //context.Cases.AddRange(cases);
+        //await context.SaveChangesAsync();
     }
 
     private static List<Member> GenerateMembers(int count)
@@ -35,7 +35,7 @@ public static class EctDbSeeder
         for (var i = 0; i < count; i++)
         {
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
-            var component = PickRandom(rng, ServiceComponent.RegularAirForce, ServiceComponent.AirForceReserve, ServiceComponent.AirNationalGuard, ServiceComponent.UnitedStatesSpaceForce);
+            var component = PickRandom(rng, ServiceComponent.AirForceReserve, ServiceComponent.AirNationalGuard);
 
             members.Add(new Member
             {
