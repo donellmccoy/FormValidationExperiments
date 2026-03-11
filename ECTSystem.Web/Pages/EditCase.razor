@@ -1345,7 +1345,7 @@ else
                                                                 Error="@(args => NotificationService.Notify(NotificationSeverity.Error, "Upload Error", args.Message))" />
 
                                             @* ═══ Documents Data List ═══ *@
-                                            <RadzenDataList AllowPaging="true" PageSize="10"
+                                            <RadzenDataList @ref="_documentsDataList" AllowPaging="true" PageSize="10"
                                                             ShowPagingSummary="true"
                                                             PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
                                                             PagerHorizontalAlign="HorizontalAlign.Center"

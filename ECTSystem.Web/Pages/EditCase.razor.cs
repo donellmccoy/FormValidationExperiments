@@ -159,6 +159,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private readonly DocumentUiState _documents = new();
 
+    private RadzenDataList<LineOfDutyDocument> _documentsDataList;
+
     private readonly CancellationTokenSource _cts = new();
 
     private LineOfDutyCase _lineOfDutyCase;
@@ -354,6 +356,13 @@ public partial class EditCase : ComponentBase, IDisposable
                 : null;
 
             _loadedCaseId = CaseId;
+
+            // Pre-populate document paging state so the DataList has data
+            // on its first render. The tabs are behind @if (_page.IsLoading)
+            // so _documentsDataList is null here — Reload() would be a no-op.
+            var docs = SortedDocuments.ToList();
+            _documents.Count = docs.Count;
+            _documents.PagedItems = docs.Take(10);
         }
         catch (OperationCanceledException)
         {

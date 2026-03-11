@@ -91,15 +91,14 @@ public partial class EditCase
             NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", ex.Message);
         }
 
-        // Refresh the DataList
-        var sorted = SortedDocuments.ToList();
-        _documents.Count = sorted.Count;
-        _documents.PagedItems = sorted.Take(10);
+        // Force the DataList to re-query via LoadData
+        _documentsDataList?.Reload();
 
-        // Reset upload fields
+        // Reset upload fields so RadzenFileInput clears its display
         _documents.UploadedFileContent = null;
         _documents.UploadedFileName = null;
         _documents.UploadedFileSize = null;
+        StateHasChanged();
     }
 
     /// <summary>
@@ -210,12 +209,17 @@ public partial class EditCase
         try
         {
             await CaseService.DeleteDocumentAsync(_lineOfDutyCase.Id, doc.Id, _cts.Token);
-            _lineOfDutyCase.Documents?.Remove(doc);
 
-            // Refresh the DataList
-            var sorted = SortedDocuments.ToList();
-            _documents.Count = sorted.Count;
-            _documents.PagedItems = sorted.Take(10);
+            // Remove by ID rather than reference equality so stale references
+            // (e.g. after a case save/refresh) still match.
+            var toRemove = _lineOfDutyCase.Documents?.FirstOrDefault(d => d.Id == doc.Id);
+            if (toRemove is not null)
+            {
+                _lineOfDutyCase.Documents!.Remove(toRemove);
+            }
+
+            // Force the DataList to re-query via LoadData so it picks up the removal.
+            _documentsDataList?.Reload();
 
             NotificationService.Notify(NotificationSeverity.Success, "Deleted", $"\"{doc.FileName}\" was removed.");
         }

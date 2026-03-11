@@ -7,6 +7,7 @@ namespace ECTSystem.Web.Pages;
 /// </summary>
 public partial class EditCase
 {
+    private const int DocumentsTabIndex = 13;
     private const int Form348TabIndex = 14;
     private const int TrackingTabIndex = 16;
     private string form348BlobUrl;
@@ -18,7 +19,11 @@ public partial class EditCase
     private async Task OnTabIndexChanged(int index)
     {
         _selectedTabIndex = index;
-        if (index == Form348TabIndex && !form348Loaded)
+        if (index == DocumentsTabIndex)
+        {
+            _documentsDataList?.Reload();
+        }
+        else if (index == Form348TabIndex && !form348Loaded)
         {
             await LoadForm348Async();
         }
