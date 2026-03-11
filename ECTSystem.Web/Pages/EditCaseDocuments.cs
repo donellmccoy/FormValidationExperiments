@@ -21,13 +21,23 @@ public partial class EditCase
             .ThenByDescending(d => d.Id) ?? Enumerable.Empty<LineOfDutyDocument>();
 
     /// <summary>
-    /// Receives the Base64 content from the <c>RadzenFileInput</c> and, when both content
-    /// and file name are available, triggers the upload via <see cref="AddDocumentAsync"/>.
+    /// Receives the Base64 content from the <c>RadzenFileInput</c>.
+    /// The content arrives before the file name, so upload is deferred
+    /// until <see cref="OnFileNameChanged"/> fires.
     /// </summary>
-    /// <param name="content">Base64 data-URI string provided by the file-input component.</param>
-    private async Task OnFileSelected(string content)
+    private void OnFileContentChanged(string content)
     {
         _documents.UploadedFileContent = content;
+    }
+
+    /// <summary>
+    /// Receives the file name from the <c>RadzenFileInput</c> after the content
+    /// has been set. Triggers <see cref="AddDocumentAsync"/> when both content
+    /// and file name are available.
+    /// </summary>
+    private async Task OnFileNameChanged(string fileName)
+    {
+        _documents.UploadedFileName = fileName;
 
         if (!string.IsNullOrWhiteSpace(_documents.UploadedFileContent) && !string.IsNullOrWhiteSpace(_documents.UploadedFileName))
         {

@@ -203,19 +203,46 @@ public partial class EditCase : ComponentBase, IDisposable
     private int _previousCasesMemberId;
     private readonly HashSet<int> _previousCasesBookmarkedIds = [];
     private readonly HashSet<int> _previousCasesAnimatingIds = [];
+    private IList<LineOfDutyCase> _selectedPreviousCase;
 
     private RadzenDataGrid<WorkflowStateHistory> _trackingGrid;
     private string _trackingSearchText = string.Empty;
     private CancellationTokenSource _trackingSearchCts = new();
+    private bool _trackingLoading;
+    private IList<WorkflowStateHistory> _selectedTrackingEntry;
 
-    private async Task RefreshTrackingGrid()
+    private async Task RefreshCaseHistoryGrid()
     {
-        if (_trackingGrid is not null)
+        if (_previousCasesGrid is not null)
         {
-            await _trackingGrid.Reload();
+            await _previousCasesGrid.FirstPage(true);
         }
 
         StateHasChanged();
+    }
+
+    private async Task RefreshTrackingGrid()
+    {
+        _trackingLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var refreshedCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+            if (refreshedCase is not null)
+            {
+                _lineOfDutyCase.WorkflowStateHistories = refreshedCase.WorkflowStateHistories;
+            }
+
+            _selectedTrackingEntry = TrackingHistory.FirstOrDefault() is { } first
+                ? new List<WorkflowStateHistory> { first }
+                : null;
+        }
+        finally
+        {
+            _trackingLoading = false;
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<WorkflowStateHistory> TrackingHistory
@@ -322,6 +349,10 @@ public partial class EditCase : ComponentBase, IDisposable
 
             await LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
 
+            _selectedTrackingEntry = TrackingHistory.FirstOrDefault() is { } firstTracking
+                ? new List<WorkflowStateHistory> { firstTracking }
+                : null;
+
             _loadedCaseId = CaseId;
         }
         catch (OperationCanceledException)
@@ -394,6 +425,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _previousCases = result?.Value?.AsODataEnumerable();
             _previousCasesCount = result?.Count ?? 0;
+
+            var firstCase = _previousCases?.FirstOrDefault();
+            _selectedPreviousCase = firstCase is not null ? new List<LineOfDutyCase> { firstCase } : null;
 
             _previousCasesBookmarkedIds.Clear();
 
