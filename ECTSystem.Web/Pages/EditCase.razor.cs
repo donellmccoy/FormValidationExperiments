@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
+using Blazored.LocalStorage;
 using Stateless;
 using System.Text.Json;
 
@@ -121,6 +122,9 @@ public partial class EditCase : ComponentBase, IDisposable
     [Inject]
     private HttpClient Http { get; set; }
 
+    [Inject]
+    private ILocalStorageService LocalStorage { get; set; }
+
     #endregion
 
     #region Parameters
@@ -159,7 +163,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private readonly DocumentUiState _documents = new();
 
-    private RadzenDataList<LineOfDutyDocument> _documentsDataList;
+    private RadzenDataGrid<LineOfDutyDocument> _documentsGrid;
 
     private readonly CancellationTokenSource _cts = new();
 
@@ -357,12 +361,18 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _loadedCaseId = CaseId;
 
-            // Pre-populate document paging state so the DataList has data
-            // on its first render. The tabs are behind @if (_page.IsLoading)
-            // so _documentsDataList is null here — Reload() would be a no-op.
-            var docs = SortedDocuments.ToList();
-            _documents.Count = docs.Count;
-            _documents.PagedItems = docs.Take(10);
+            // Load auth token for RadzenUpload Authorization header
+            try
+            {
+                var token = await LocalStorage.GetItemAsStringAsync("accessToken");
+                _documents.AuthToken = !string.IsNullOrEmpty(token) ? $"Bearer {token}" : string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load auth token for document uploads");
+            }
+
+            // No pre-population needed — the DataGrid binds directly to SortedDocuments.
         }
         catch (OperationCanceledException)
         {

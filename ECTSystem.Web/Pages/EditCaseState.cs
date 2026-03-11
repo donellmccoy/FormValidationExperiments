@@ -57,27 +57,14 @@ public partial class EditCase
     }
 
     /// <summary>
-    /// Holds the state for the documents tab, including paged items,
-    /// total count, and staging fields for an uploaded file.
+    /// Holds the state for the documents tab.
     /// </summary>
     private sealed class DocumentUiState
     {
         /// <summary>Gets or sets whether the document list is loading.</summary>
         public bool IsLoading { get; set; }
 
-        /// <summary>Gets or sets the current page of documents.</summary>
-        public IEnumerable<LineOfDutyDocument> PagedItems { get; set; } = [];
-
-        /// <summary>Gets or sets the total number of documents for the case.</summary>
-        public int Count { get; set; }
-
-        /// <summary>Gets or sets the Base64-encoded content of the staged upload file.</summary>
-        public string UploadedFileContent { get; set; }
-
-        /// <summary>Gets or sets the file name of the staged upload file.</summary>
-        public string UploadedFileName { get; set; }
-
-        /// <summary>Gets or sets the byte size of the staged upload file.</summary>
-        public long? UploadedFileSize { get; set; }
+        /// <summary>Gets or sets the Bearer token for the RadzenUpload Authorization header.</summary>
+        public string AuthToken { get; set; }
     }
 }

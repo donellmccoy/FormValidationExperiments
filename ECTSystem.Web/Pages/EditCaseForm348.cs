@@ -21,7 +21,7 @@ public partial class EditCase
         _selectedTabIndex = index;
         if (index == DocumentsTabIndex)
         {
-            _documentsDataList?.Reload();
+            _documentsGrid?.Reload();
         }
         else if (index == Form348TabIndex && !form348Loaded)
         {

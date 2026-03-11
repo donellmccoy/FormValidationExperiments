@@ -98,7 +98,7 @@ public class DocumentFilesController : ControllerBase
     public async Task<IActionResult> Upload(
         [FromRoute] int caseId,
         IFormFile file,
-        [FromForm] string documentType,
+        [FromForm] string documentType = "Supporting Document",
         [FromForm] string description = "",
         CancellationToken ct = default)
     {
@@ -106,12 +106,6 @@ public class DocumentFilesController : ControllerBase
         {
             _loggingService.InvalidUpload(caseId);
             return BadRequest("No file provided.");
-        }
-
-        if (string.IsNullOrWhiteSpace(documentType))
-        {
-            _loggingService.InvalidUpload(caseId);
-            return BadRequest("documentType is required.");
         }
 
         var extension = Path.GetExtension(file.FileName);
