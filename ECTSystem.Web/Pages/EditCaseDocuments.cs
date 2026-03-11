@@ -41,29 +41,35 @@ public partial class EditCase
 
     /// <summary>
     /// Handles the <c>RadzenUpload.Complete</c> event. Deserializes the server
-    /// response into a <see cref="LineOfDutyDocument"/> and adds it to the case.
+    /// response into one or more <see cref="LineOfDutyDocument"/> entries and adds them to the case.
     /// </summary>
     private void OnUploadComplete(UploadCompleteEventArgs args)
     {
         try
         {
-            var document = JsonSerializer.Deserialize<LineOfDutyDocument>(args.RawResponse, JsonOptions);
-            if (document is not null)
+            var documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(args.RawResponse, JsonOptions);
+            if (documents is { Count: > 0 })
             {
                 _lineOfDutyCase.Documents ??= new HashSet<LineOfDutyDocument>();
-                _lineOfDutyCase.Documents.Add(document);
+                foreach (var document in documents)
+                {
+                    _lineOfDutyCase.Documents.Add(document);
+                }
                 _documentsGrid?.Reload();
                 StateHasChanged();
 
+                var names = string.Join(", ", documents.Select(d => d.FileName));
                 NotificationService.Notify(NotificationSeverity.Success, "Uploaded",
-                    $"\"{document.FileName}\" was added.");
+                    documents.Count == 1
+                        ? $"\"{documents[0].FileName}\" was added."
+                        : $"{documents.Count} files were added: {names}");
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to process upload response");
             NotificationService.Notify(NotificationSeverity.Error, "Upload Error",
-                "File was uploaded but the response could not be processed.");
+                "Files were uploaded but the response could not be processed.");
         }
     }
 

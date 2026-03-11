@@ -85,67 +85,81 @@ public class DocumentFilesController : ControllerBase
     }
 
     /// <summary>
-    /// Uploads a new document and associates it with the specified case.
+    /// Uploads one or more documents and associates them with the specified case.
     /// REST route: POST /api/cases/{caseId}/documents
     /// </summary>
-    /// <param name="caseId">The LOD case identifier to associate the document with.</param>
-    /// <param name="file">The multipart form file to upload.</param>
-    /// <param name="documentType">The category/type label for the document.</param>
-    /// <param name="description">Optional human-readable description of the document.</param>
+    /// <param name="caseId">The LOD case identifier to associate the documents with.</param>
+    /// <param name="file">The multipart form file(s) to upload.</param>
+    /// <param name="documentType">The category/type label for the documents.</param>
+    /// <param name="description">Optional human-readable description of the documents.</param>
     /// <param name="ct">Cancellation token.</param>
     [HttpPost("{caseId}/documents")]
-    [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB
+    [RequestSizeLimit(50 * 1024 * 1024)] // 50 MB total for multiple files
     public async Task<IActionResult> Upload(
         [FromRoute] int caseId,
-        IFormFile file,
+        List<IFormFile> file,
         [FromForm] string documentType = "Supporting Document",
         [FromForm] string description = "",
         CancellationToken ct = default)
     {
-        if (file is null || file.Length == 0)
+        if (file is null || file.Count == 0)
         {
             _loggingService.InvalidUpload(caseId);
             return BadRequest("No file provided.");
         }
 
-        var extension = Path.GetExtension(file.FileName);
-        if (!AllowedExtensions.Contains(extension))
+        foreach (var f in file)
         {
-            _loggingService.InvalidUpload(caseId);
-            return BadRequest($"File type '{extension}' is not permitted.");
+            var extension = Path.GetExtension(f.FileName);
+            if (!AllowedExtensions.Contains(extension))
+            {
+                _loggingService.InvalidUpload(caseId);
+                return BadRequest($"File type '{extension}' is not permitted.");
+            }
+
+            if (f.Length > MaxDocumentSize)
+            {
+                _loggingService.InvalidUpload(caseId);
+                return BadRequest($"File '{f.FileName}' exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
+            }
         }
-
-        if (file.Length > MaxDocumentSize)
-        {
-            _loggingService.InvalidUpload(caseId);
-            return BadRequest($"File size exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
-        }
-
-        _loggingService.UploadingDocument(caseId);
-        using var ms = new MemoryStream();
-        await using var stream = file.OpenReadStream();
-        await stream.CopyToAsync(ms, ct);
-        var bytes = ms.ToArray();
-
-        var document = new LineOfDutyDocument
-        {
-            LineOfDutyCaseId = caseId,
-            FileName = file.FileName,
-            ContentType = file.ContentType,
-            DocumentType = documentType,
-            Description = description,
-            Content = bytes,
-            FileSize = bytes.Length,
-            UploadDate = DateTime.UtcNow
-        };
 
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        context.Documents.Add(document);
+        var documents = new List<LineOfDutyDocument>(file.Count);
+
+        foreach (var f in file)
+        {
+            _loggingService.UploadingDocument(caseId);
+            using var ms = new MemoryStream();
+            await using var stream = f.OpenReadStream();
+            await stream.CopyToAsync(ms, ct);
+            var bytes = ms.ToArray();
+
+            var document = new LineOfDutyDocument
+            {
+                LineOfDutyCaseId = caseId,
+                FileName = f.FileName,
+                ContentType = f.ContentType,
+                DocumentType = documentType,
+                Description = description,
+                Content = bytes,
+                FileSize = bytes.Length,
+                UploadDate = DateTime.UtcNow
+            };
+
+            context.Documents.Add(document);
+            documents.Add(document);
+        }
+
         await context.SaveChangesAsync(ct);
 
-        document.Content = null!;
-        _loggingService.DocumentUploaded(document.Id, caseId);
-        return CreatedAtAction(nameof(Download), new { caseId, key = document.Id }, document);
+        foreach (var document in documents)
+        {
+            document.Content = null!;
+            _loggingService.DocumentUploaded(document.Id, caseId);
+        }
+
+        return Ok(documents);
     }
 
     /// <summary>
