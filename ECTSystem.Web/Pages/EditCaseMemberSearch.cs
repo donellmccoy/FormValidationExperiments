@@ -175,8 +175,6 @@ public partial class EditCase
 
         _selectedTabIndex = 0;
 
-        _tabs?.Reload();   
-        
         StateHasChanged();
     }
 }

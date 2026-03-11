@@ -65,8 +65,8 @@ dotnet run --project ECTSystem.Api --launch-profile https
 dotnet run --project ECTSystem.Web --launch-profile https
 ```
 
-- **Web UI:** https://localhost:7240
-- **API:** https://localhost:7173
+- **Web UI:** <https://localhost:7240>
+- **API:** <https://localhost:7173>
 
 ### 5. Run tests
 

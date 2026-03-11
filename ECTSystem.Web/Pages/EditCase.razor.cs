@@ -181,8 +181,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private int _selectedTabIndex;
 
-    private RadzenTabs _tabs;
-
     private WorkflowSidebar _workflowSidebar;
 
     private int _selectedMemberId;
@@ -284,8 +282,6 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (firstRender)
         {
-            _tabs?.Reload();
-
             if (IsNewCase && _memberSearchTextBox is not null)
             {
                 await _memberSearchTextBox.Element.FocusAsync();
@@ -724,8 +720,6 @@ public partial class EditCase : ComponentBase, IDisposable
                     _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
                     _selectedTabIndex = result.TabIndex;
-
-                    _tabs?.Reload();
 
                     NotificationService.Notify(
                         NotificationSeverity.Success,
