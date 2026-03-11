@@ -89,6 +89,105 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.Equal(0, count);
     }
 
+    // ─────────────────────────────── Batch ─────────────────────────────────────
+
+    [Fact]
+    public async Task Batch_WhenValidEntries_ReturnsOkWithEntries()
+    {
+        var entries = new List<WorkflowStateHistory> { BuildEntry(), BuildEntry() };
+
+        var result = await _sut.Batch(entries, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var returned = Assert.IsType<List<WorkflowStateHistory>>(ok.Value);
+        Assert.Equal(2, returned.Count);
+        Assert.All(returned, e => Assert.True(e.Id > 0));
+    }
+
+    [Fact]
+    public async Task Batch_WhenValidEntries_PersistsAllAtomically()
+    {
+        var entries = new List<WorkflowStateHistory> { BuildEntry(), BuildEntry(), BuildEntry() };
+
+        await _sut.Batch(entries, CancellationToken.None);
+
+        using var ctx = new EctDbContext(_dbOptions);
+        var count = await ctx.WorkflowStateHistories.CountAsync();
+        Assert.Equal(3, count);
+    }
+
+    [Fact]
+    public async Task Batch_WhenEmptyList_ReturnsBadRequest()
+    {
+        var result = await _sut.Batch(new List<WorkflowStateHistory>(), CancellationToken.None);
+
+        Assert.IsType<BadRequestODataResult>(result);
+    }
+
+    [Fact]
+    public async Task Batch_WhenModelInvalid_ReturnsBadRequest()
+    {
+        _sut.ModelState.AddModelError("key", "error");
+
+        var result = await _sut.Batch(new List<WorkflowStateHistory> { BuildEntry() }, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Batch_WhenModelInvalid_DoesNotPersist()
+    {
+        _sut.ModelState.AddModelError("key", "error");
+
+        await _sut.Batch(new List<WorkflowStateHistory> { BuildEntry() }, CancellationToken.None);
+
+        using var ctx = new EctDbContext(_dbOptions);
+        var count = await ctx.WorkflowStateHistories.CountAsync();
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public async Task Batch_WhenEntryHasInvalidCaseId_ReturnsBadRequest()
+    {
+        var entries = new List<WorkflowStateHistory>
+        {
+            BuildEntry(),
+            new WorkflowStateHistory
+            {
+                LineOfDutyCaseId = 0,
+                WorkflowState = WorkflowState.MemberInformationEntry,
+                Action = TransitionAction.Enter,
+                Status = WorkflowStepStatus.InProgress,
+            }
+        };
+
+        var result = await _sut.Batch(entries, CancellationToken.None);
+
+        Assert.IsType<BadRequestODataResult>(result);
+    }
+
+    [Fact]
+    public async Task Batch_WhenEntryHasInvalidCaseId_DoesNotPersist()
+    {
+        var entries = new List<WorkflowStateHistory>
+        {
+            BuildEntry(),
+            new WorkflowStateHistory
+            {
+                LineOfDutyCaseId = 0,
+                WorkflowState = WorkflowState.MemberInformationEntry,
+                Action = TransitionAction.Enter,
+                Status = WorkflowStepStatus.InProgress,
+            }
+        };
+
+        await _sut.Batch(entries, CancellationToken.None);
+
+        using var ctx = new EctDbContext(_dbOptions);
+        var count = await ctx.WorkflowStateHistories.CountAsync();
+        Assert.Equal(0, count);
+    }
+
     // ─────────────────────────────── Helpers ─────────────────────────────────
 
     private static WorkflowStateHistory BuildEntry() => new WorkflowStateHistory

@@ -63,4 +63,49 @@ public class WorkflowStateHistoriesController : ODataController
         _loggingService.WorkflowStateHistoryCreated(entry.Id, entry.LineOfDutyCaseId);
         return Created(entry);
     }
+
+    /// <summary>
+    /// Creates multiple workflow state history entries atomically for the specified case.
+    /// Route: POST /odata/WorkflowStateHistories/Batch
+    /// All entries are persisted in a single SaveChangesAsync call for transactional consistency.
+    /// </summary>
+    /// <param name="entries">The list of workflow state history entries to persist.</param>
+    /// <param name="ct">Cancellation token.</param>
+    [HttpPost("/odata/WorkflowStateHistories/Batch")]
+    public async Task<IActionResult> Batch([FromBody] List<WorkflowStateHistory> entries, CancellationToken ct = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            _loggingService.WorkflowStateHistoryInvalidModelState();
+            return BadRequest(ModelState);
+        }
+
+        if (entries is not { Count: > 0 })
+        {
+            _loggingService.WorkflowStateHistoryBatchEmpty();
+            return BadRequest("At least one entry is required.");
+        }
+
+        var caseId = entries[0].LineOfDutyCaseId;
+
+        if (entries.Any(e => e.LineOfDutyCaseId <= 0))
+        {
+            _loggingService.WorkflowStateHistoryInvalidCaseId(caseId);
+            return BadRequest("All entries must have a valid LineOfDutyCaseId.");
+        }
+
+        _loggingService.CreatingWorkflowStateHistoryBatch(entries.Count, caseId);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        foreach (var entry in entries)
+        {
+            entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
+        }
+
+        context.WorkflowStateHistories.AddRange(entries);
+        await context.SaveChangesAsync(ct);
+
+        _loggingService.WorkflowStateHistoryBatchCreated(entries.Count, caseId);
+        return Ok(entries);
+    }
 }

@@ -514,6 +514,19 @@ public class LineOfDutyCaseHttpService : IDataService
     }
 
     /// <inheritdoc />
+    public async Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(IEnumerable<WorkflowStateHistory> entries, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+
+        var list = entries as List<WorkflowStateHistory> ?? entries.ToList();
+        var response = await _httpClient.PostAsJsonAsync("odata/WorkflowStateHistories/Batch", list, ODataJsonOptions, cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        return (await response.Content.ReadFromJsonAsync<List<WorkflowStateHistory>>(ODataJsonOptions, cancellationToken))!;
+    }
+
+    /// <inheritdoc />
     public async Task<byte[]> GetForm348PdfAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);

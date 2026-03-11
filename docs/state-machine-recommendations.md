@@ -1,10 +1,10 @@
 # LineOfDutyStateMachine Recommendations
 
-## 1. Board States Missing Entry Handlers for Return and Lateral Triggers
+## 1. Board States Missing Entry Handlers for Return Trigger
 
 **Severity: Critical — BUG** | **Status: Open**
 
-Board states (Steps 8–11) are missing `OnEntryFromAsync` registrations for both the `_returnTrigger` and lateral board-to-board triggers. This means transitions into these states via return or lateral routing **silently skip persistence** — no history entries are created, the case's `WorkflowState` is not saved, and `_lastTransitionResult` is never set.
+Board states (Steps 8–11) are missing `OnEntryFromAsync` registrations for the `_returnTrigger`. This means return transitions into these states **silently skip persistence** — no history entries are created, the case's `WorkflowState` is not saved, and `_lastTransitionResult` is never set.
 
 ### Missing Return Entry Handlers
 
@@ -20,19 +20,11 @@ _sm.Configure(WorkflowState.BoardMedicalTechnicianReview)
 
 Same gap exists for Steps 9, 10, and 11.
 
-### Missing Lateral Entry Handlers
+### Lateral Entry Handlers — Not Affected
 
-Each board state only registers an entry handler for its primary forward trigger. When entered laterally from a sibling board state, **no entry handler fires**:
+Lateral board-to-board transitions reuse the same forward triggers (e.g., `ForwardToBoardLegalReview`), so the existing `OnEntryFromAsync` registrations **do fire correctly** for lateral transitions. Only the `_returnTrigger` path is broken.
 
-```csharp
-// Step 9 — only handles entry from ForwardToBoardMedicalReview
-_sm.Configure(WorkflowState.BoardMedicalOfficerReview)
-    .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardMedicalReview], OnBoardMedicalOfficerReviewEntryAsync)
-    // ⚠️ Missing entry handlers for ForwardToBoardTechnicianReview, ForwardToBoardLegalReview,
-    //    ForwardToBoardAdministratorReview triggers that can route INTO this state
-```
-
-**Recommendation:** Add `.OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)` to all four board states. For lateral triggers, register `OnEntryFromAsync` for each trigger that can route into the state, or refactor to use a single unfiltered `.OnEntryAsync(...)` handler (Stateless fires unfiltered entry handlers for all triggers).
+**Recommendation:** Add `.OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)` to all four board states.
 
 ---
 
@@ -40,7 +32,7 @@ _sm.Configure(WorkflowState.BoardMedicalOfficerReview)
 
 **Severity: Critical** | **Status: Open**
 
-All 19 guard methods unconditionally return `true`. This means any transition is always allowed regardless of data completeness.
+All 14 guard methods unconditionally return `true`. This means any transition is always allowed regardless of data completeness.
 
 **Recommendation:** Implement real business rules. Examples:
 
@@ -140,7 +132,7 @@ The `LineOfDutyTrigger` enum has 4 values not used anywhere in the state machine
 
 | Priority | Recommendation | Impact | Status |
 |----------|---------------|--------|--------|
-| **P0** | 1. Board states missing entry handlers | Return/lateral transitions silently skip persistence (BUG) | Open |
+| **P0** | 1. Board states missing return entry handlers | Return transitions into board states silently skip persistence (BUG) | Open |
 | **P0** | 2. Implement guard methods | No validation = invalid transitions allowed | Open |
 | **P1** | 3. Add transactional atomicity | Partial DB writes on failure + N+1 API calls | Open |
 | **P2** | 4. Consolidate entry handlers | ~50 lines of trivial wrappers remain | Partially Addressed |

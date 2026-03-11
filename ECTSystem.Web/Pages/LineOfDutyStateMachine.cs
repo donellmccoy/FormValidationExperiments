@@ -168,8 +168,9 @@ internal class LineOfDutyStateMachine
             foreach (var entry in entriesToSave)
             {
                 entry.LineOfDutyCaseId = saved.Id;
-                savedEntries.Add(await _dataService.AddHistoryEntryAsync(entry));
             }
+
+            savedEntries = await _dataService.AddHistoryEntriesAsync(entriesToSave);
 
             // 3. Attach the server-returned entries (with proper IDs) to the saved case
             //    so the sidebar can render them immediately without a re-fetch.
