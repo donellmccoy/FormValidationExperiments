@@ -72,8 +72,7 @@ public partial class WorkflowSidebar : ComponentBase
     /// <summary>
     /// The currently active <see cref="WorkflowStep"/>, or <c>null</c> if no steps are available.
     /// </summary>
-    public WorkflowStep CurrentStep =>
-        CurrentStepIndex >= 0 && CurrentStepIndex < Steps.Count ? Steps[CurrentStepIndex] : null;
+    public WorkflowStep CurrentStep => CurrentStepIndex >= 0 && CurrentStepIndex < Steps.Count ? Steps[CurrentStepIndex] : null;
 
     protected override void OnParametersSet()
     {
@@ -254,20 +253,20 @@ public partial class WorkflowSidebar : ComponentBase
 
         if (timelineStep is null || timelineStep.TimelineDays <= 0)
         {
-            return $"Days in Process \u2014 {days} days";
+            return $"Days in process \u2014 {days} days";
         }
 
         if (days > timelineStep.TimelineDays)
         {
             var overdue = days - timelineStep.TimelineDays;
-            return $"Days in Process \u2014 {days} days | {overdue} Overdue";
+            return $"Days in process \u2014 {days} days | {overdue} Overdue";
         }
 
         if (days == timelineStep.TimelineDays)
         {
-            return $"Days in Process \u2014 {days} days | Due today";
+            return $"Days in process \u2014 {days} days | Due today";
         }
 
-        return $"Days in Process \u2014 {days} days";
+        return $"Days in process \u2014 {days} days";
     }
 }

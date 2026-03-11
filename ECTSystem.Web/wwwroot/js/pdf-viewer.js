@@ -20,7 +20,7 @@ window.pdfViewerInterop = {
         if (iframeSelector) {
             var iframe = document.querySelector(iframeSelector);
             if (iframe) {
-                iframe.src = url;
+                iframe.src = url + '#zoom=100';
             }
         }
         return url;

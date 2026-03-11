@@ -204,6 +204,46 @@ public partial class EditCase : ComponentBase, IDisposable
     private readonly HashSet<int> _previousCasesBookmarkedIds = [];
     private readonly HashSet<int> _previousCasesAnimatingIds = [];
 
+    private RadzenDataGrid<WorkflowStateHistory> _trackingGrid;
+    private string _trackingSearchText = string.Empty;
+    private CancellationTokenSource _trackingSearchCts = new();
+
+    private async Task RefreshTrackingGrid()
+    {
+        if (_trackingGrid is not null)
+        {
+            await _trackingGrid.Reload();
+        }
+
+        StateHasChanged();
+    }
+
+    private IEnumerable<WorkflowStateHistory> TrackingHistory
+    {
+        get
+        {
+            var items = _lineOfDutyCase?.WorkflowStateHistories;
+            if (items is null)
+                return Enumerable.Empty<WorkflowStateHistory>();
+
+            IEnumerable<WorkflowStateHistory> result = items;
+
+            if (!string.IsNullOrWhiteSpace(_trackingSearchText))
+            {
+                var search = _trackingSearchText.Trim();
+                result = result.Where(h =>
+                    h.WorkflowState.ToDisplayString().Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    h.Action.ToDisplayString().Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    h.Status.ToDisplayString().Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (h.PerformedBy is not null && h.PerformedBy.Contains(search, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return result
+                .OrderByDescending(h => h.CreatedDate)
+                .ThenByDescending(h => h.Id);
+        }
+    }
+
     #endregion
 
     #region Lifecycle
@@ -416,6 +456,30 @@ public partial class EditCase : ComponentBase, IDisposable
         if (_previousCasesGrid is not null)
         {
             await _previousCasesGrid.FirstPage(true);
+        }
+    }
+
+    private async Task OnTrackingSearchInput(ChangeEventArgs args)
+    {
+        _trackingSearchText = args.Value?.ToString() ?? string.Empty;
+
+        await _trackingSearchCts.CancelAsync();
+        _trackingSearchCts.Dispose();
+        _trackingSearchCts = new CancellationTokenSource();
+        var token = _trackingSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(500, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (_trackingGrid is not null)
+        {
+            await _trackingGrid.FirstPage(true);
         }
     }
 
@@ -1079,6 +1143,11 @@ public partial class EditCase : ComponentBase, IDisposable
         await Task.CompletedTask;
     }
 
+    private void OnCreateNewCase()
+    {
+        Navigation.NavigateTo("/case/new?from=case");
+    }
+
     #endregion
 
     #region UI Helpers
@@ -1107,6 +1176,8 @@ public partial class EditCase : ComponentBase, IDisposable
         _searchCts.Dispose();
         _previousCasesSearchCts.Cancel();
         _previousCasesSearchCts.Dispose();
+        _trackingSearchCts.Cancel();
+        _trackingSearchCts.Dispose();
     }
 
     #endregion

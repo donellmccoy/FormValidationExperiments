@@ -8,6 +8,7 @@ namespace ECTSystem.Web.Pages;
 public partial class EditCase
 {
     private const int Form348TabIndex = 14;
+    private const int TrackingTabIndex = 16;
     private string form348BlobUrl;
     private bool isLoadingForm348;
     private string form348Error;
@@ -20,6 +21,10 @@ public partial class EditCase
         if (index == Form348TabIndex && !form348Loaded)
         {
             await LoadForm348Async();
+        }
+        else if (index == TrackingTabIndex)
+        {
+            await RefreshTrackingGrid();
         }
     }
 
