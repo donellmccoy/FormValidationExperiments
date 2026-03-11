@@ -1334,7 +1334,8 @@ else
                                         <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" class="rz-p-4">
                                             @* ═══ File Upload Section ═══ *@
                                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                                                <RadzenTextBox Value="@_documentsSearchText"
+                                                <RadzenTextBox @ref="_documentsSearchBox"
+                                                               Value="@_documentsSearchText"
                                                                @oninput="@OnDocumentsSearchInput"
                                                                Placeholder="Search documents..."
                                                                Style="width: 50%;" />
@@ -1347,19 +1348,22 @@ else
                                                               Accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
                                                               MaxFileSize="10000000"
                                                               Disabled="@(_lineOfDutyCase?.Id is null or 0)"
+                                                              Progress="@OnUploadProgress"
                                                               Complete="@OnUploadComplete"
                                                               Error="@OnUploadError">
                                                     <RadzenUploadHeader Name="Authorization" Value="@_documents.AuthToken" />
                                                 </RadzenUpload>
                                                 <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                                                              Variant="Variant.Text" Click="@RefreshDocumentsList"
+                                                              Variant="Variant.Text" Click="@RefreshDocumentsAsync"
                                                               title="Refresh documents" />
                                                 </RadzenStack>
                                             </RadzenStack>
 
                                             @* ═══ Documents Data Grid ═══ *@
                                             <RadzenDataGrid @ref="_documentsGrid" TItem="LineOfDutyDocument"
-                                                            Data="@SortedDocuments"
+                                                            Data="@_documentsData"
+                                                            LoadData="@LoadDocumentsData"
+                                                            Count="@_documentsCount"
                                                             IsLoading="@_documents.IsLoading"
                                                             AllowSorting="true"
                                                             AllowColumnResize="true"
@@ -1459,7 +1463,8 @@ else
                                     <ChildContent>
                                         <RadzenStack class="rz-p-4 previous-cases-content" Gap="1rem">
                                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                                                <RadzenTextBox Value="@_previousCasesSearchText"
+                                                <RadzenTextBox @ref="_previousCasesSearchBox"
+                                                               Value="@_previousCasesSearchText"
                                                                @oninput="@OnPreviousCasesSearchInput"
                                                                Placeholder="Search previous cases..."
                                                                Style="width: 50%;" />
@@ -1533,7 +1538,8 @@ else
                                     <ChildContent>
                                         <RadzenStack class="rz-p-4" Gap="1rem">
                                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                                                <RadzenTextBox Value="@_trackingSearchText"
+                                                <RadzenTextBox @ref="_trackingSearchBox"
+                                                               Value="@_trackingSearchText"
                                                                @oninput="@OnTrackingSearchInput"
                                                                Placeholder="Search tracking history..."
                                                                Style="width: 50%;" />
@@ -1542,7 +1548,9 @@ else
                                             </RadzenStack>
 
                                             <RadzenDataGrid @ref="_trackingGrid" TItem="WorkflowStateHistory"
-                                                            Data="@TrackingHistory"
+                                                            Data="@_trackingData"
+                                                            LoadData="@LoadTrackingData"
+                                                            Count="@_trackingCount"
                                                             IsLoading="@_trackingLoading"
                                                             SelectionMode="DataGridSelectionMode.Single"
                                                             @bind-Value="@_selectedTrackingEntry"

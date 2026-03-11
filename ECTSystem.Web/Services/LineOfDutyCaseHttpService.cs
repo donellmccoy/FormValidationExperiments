@@ -386,6 +386,69 @@ public class LineOfDutyCaseHttpService : IDataService
     }
 
     /// <summary>
+    /// Fetches all documents for the given case via the OData navigation property.
+    /// </summary>
+    public async Task<List<LineOfDutyDocument>> GetDocumentsAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var response = await _httpClient.GetFromJsonAsync<ODataResponse<LineOfDutyDocument>>(
+            $"odata/Cases({caseId})/Documents", ODataJsonOptions, cancellationToken);
+
+        return response?.Value ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<ODataServiceResult<LineOfDutyDocument>> GetDocumentsAsync(
+        int caseId, string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, bool? count = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var url = BuildNavigationPropertyUrl($"odata/Cases({caseId})/Documents", filter, top, skip, orderby, count);
+        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyDocument>>(url, ODataJsonOptions, cancellationToken);
+
+        return new ODataServiceResult<LineOfDutyDocument>
+        {
+            Value = response?.Value?.ToList() ?? [],
+            Count = response?.Count ?? 0
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<ODataServiceResult<WorkflowStateHistory>> GetWorkflowStateHistoriesAsync(
+        int caseId, string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, bool? count = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var url = BuildNavigationPropertyUrl($"odata/Cases({caseId})/WorkflowStateHistories", filter, top, skip, orderby, count);
+        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<WorkflowStateHistory>>(url, ODataJsonOptions, cancellationToken);
+
+        return new ODataServiceResult<WorkflowStateHistory>
+        {
+            Value = response?.Value?.ToList() ?? [],
+            Count = response?.Count ?? 0
+        };
+    }
+
+    private static string BuildNavigationPropertyUrl(
+        string basePath, string? filter, int? top, int? skip, string? orderby, bool? count)
+    {
+        var parts = new List<string>();
+
+        if (!string.IsNullOrEmpty(filter)) parts.Add($"$filter={filter}");
+        if (top.HasValue) parts.Add($"$top={top.Value}");
+        if (skip.HasValue) parts.Add($"$skip={skip.Value}");
+        if (!string.IsNullOrEmpty(orderby)) parts.Add($"$orderby={orderby}");
+        if (count == true) parts.Add("$count=true");
+
+        return parts.Count > 0 ? $"{basePath}?{string.Join("&", parts)}" : basePath;
+    }
+
+    /// <summary>
     /// Authenticates and uploads a supporting document directly correlated to a case.
     /// </summary>
     /// <param name="caseId">The numeric case ID receiving the document attachment.</param>

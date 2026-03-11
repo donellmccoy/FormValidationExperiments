@@ -9,6 +9,7 @@ public partial class EditCase
 {
     private const int DocumentsTabIndex = 13;
     private const int Form348TabIndex = 14;
+    private const int CaseHistoryTabIndex = 15;
     private const int TrackingTabIndex = 16;
     private string form348BlobUrl;
     private bool isLoadingForm348;
@@ -22,14 +23,29 @@ public partial class EditCase
         if (index == DocumentsTabIndex)
         {
             _documentsGrid?.Reload();
+            if (_documentsSearchBox is not null)
+            {
+                await _documentsSearchBox.FocusAsync();
+            }
         }
         else if (index == Form348TabIndex && !form348Loaded)
         {
             await LoadForm348Async();
         }
+        else if (index == CaseHistoryTabIndex)
+        {
+            if (_previousCasesSearchBox is not null)
+            {
+                await _previousCasesSearchBox.FocusAsync();
+            }
+        }
         else if (index == TrackingTabIndex)
         {
             await RefreshTrackingGrid();
+            if (_trackingSearchBox is not null)
+            {
+                await _trackingSearchBox.FocusAsync();
+            }
         }
     }
 

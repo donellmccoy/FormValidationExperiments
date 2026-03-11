@@ -12,51 +12,108 @@ public partial class EditCase
     /// <summary>
     /// Gets the total number of documents attached to the current case.
     /// </summary>
-    private int DocumentCount => _lineOfDutyCase?.Documents?.Count ?? 0;
+    private int DocumentCount => _documentsCount;
 
     /// <summary>
-    /// Returns the case's documents filtered by the search text, sorted by upload date (descending), then by ID.
+    /// Server-side data load handler for the Documents grid.
     /// </summary>
-    private IEnumerable<LineOfDutyDocument> SortedDocuments
+    private async Task LoadDocumentsData(LoadDataArgs args)
     {
-        get
+        if (_lineOfDutyCase?.Id is null or 0)
         {
-            var docs = _lineOfDutyCase?.Documents?.AsEnumerable() ?? Enumerable.Empty<LineOfDutyDocument>();
+            return;
+        }
 
-            if (!string.IsNullOrWhiteSpace(_documentsSearchText))
+        var generation = ++_documentsLoadGeneration;
+
+        _documents.IsLoading = true;
+
+        try
+        {
+            var filter = CombineDocumentsFilters(args.Filter, BuildDocumentsSearchFilter(_documentsSearchText));
+
+            var result = await CaseService.GetDocumentsAsync(
+                caseId: _lineOfDutyCase.Id,
+                filter: filter,
+                top: args.Top,
+                skip: args.Skip,
+                orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "UploadDate desc,Id desc",
+                count: true,
+                cancellationToken: _cts.Token);
+
+            if (generation != _documentsLoadGeneration)
             {
-                var search = _documentsSearchText.Trim();
-                docs = docs.Where(d =>
-                    d.FileName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    d.DocumentType.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    d.CreatedBy.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    d.Description.Contains(search, StringComparison.OrdinalIgnoreCase));
+                return;
             }
 
-            return docs
-                .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
-                .ThenByDescending(d => d.Id);
+            _documentsData = result?.Value?.AsODataEnumerable();
+            _documentsCount = result?.Count ?? 0;
         }
+        catch (OperationCanceledException)
+        {
+            // Component disposed — ignore
+        }
+        catch (Exception ex)
+        {
+            if (generation == _documentsLoadGeneration)
+            {
+                Logger.LogWarning(ex, "Failed to load documents for case {CaseId}", _lineOfDutyCase.Id);
+                _documentsData = null;
+                _documentsCount = 0;
+            }
+        }
+        finally
+        {
+            if (generation == _documentsLoadGeneration)
+            {
+                _documents.IsLoading = false;
+            }
+        }
+    }
+
+    private static string BuildDocumentsSearchFilter(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var escaped = text.Replace("'", "''");
+        return $"contains(FileName,'{escaped}') or contains(DocumentType,'{escaped}') or contains(CreatedBy,'{escaped}') or contains(Description,'{escaped}')";
+    }
+
+    private static string CombineDocumentsFilters(string columnFilter, string searchFilter)
+    {
+        var parts = new[] { columnFilter, searchFilter }
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Select(p => $"({p})")
+            .ToList();
+
+        return parts.Count > 0 ? string.Join(" and ", parts) : null;
+    }
+
+    /// <summary>
+    /// Handles the <c>RadzenUpload.Progress</c> event to show loading state during file upload.
+    /// </summary>
+    private void OnUploadProgress(UploadProgressArgs args)
+    {
+        _documents.IsLoading = true;
     }
 
     /// <summary>
     /// Handles the <c>RadzenUpload.Complete</c> event. Deserializes the server
-    /// response into one or more <see cref="LineOfDutyDocument"/> entries and adds them to the case.
+    /// response for notification, then reloads the grid from the server.
     /// </summary>
     private void OnUploadComplete(UploadCompleteEventArgs args)
     {
+        _documents.IsLoading = false;
+
         try
         {
             var documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(args.RawResponse, JsonOptions);
             if (documents is { Count: > 0 })
             {
-                _lineOfDutyCase.Documents ??= new HashSet<LineOfDutyDocument>();
-                foreach (var document in documents)
-                {
-                    _lineOfDutyCase.Documents.Add(document);
-                }
                 _documentsGrid?.Reload();
-                StateHasChanged();
 
                 var names = string.Join(", ", documents.Select(d => d.FileName));
                 NotificationService.Notify(NotificationSeverity.Success, "Uploaded",
@@ -78,17 +135,24 @@ public partial class EditCase
     /// </summary>
     private void OnUploadError(UploadErrorEventArgs args)
     {
+        _documents.IsLoading = false;
         NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", args.Message);
     }
 
     /// <summary>
-    /// Refreshes the documents list by reloading the case's documents from
-    /// the in-memory collection and resetting the paged data.
+    /// Reloads the documents grid from the server.
     /// </summary>
-    private void RefreshDocumentsList()
+    private async Task RefreshDocumentsAsync()
     {
-        _documentsGrid?.Reload();
-        StateHasChanged();
+        if (_lineOfDutyCase?.Id is null or 0)
+        {
+            return;
+        }
+
+        if (_documentsGrid is not null)
+        {
+            await _documentsGrid.FirstPage(true);
+        }
     }
 
     /// <summary>
@@ -191,8 +255,10 @@ public partial class EditCase
             return;
         }
 
-        _documentsGrid?.Reload();
-        StateHasChanged();
+        if (_documentsGrid is not null)
+        {
+            await _documentsGrid.FirstPage(true);
+        }
     }
 
 
@@ -221,14 +287,6 @@ public partial class EditCase
         try
         {
             await CaseService.DeleteDocumentAsync(_lineOfDutyCase.Id, doc.Id, _cts.Token);
-
-            // Remove by ID rather than reference equality so stale references
-            // (e.g. after a case save/refresh) still match.
-            var toRemove = _lineOfDutyCase.Documents?.FirstOrDefault(d => d.Id == doc.Id);
-            if (toRemove is not null)
-            {
-                _lineOfDutyCase.Documents!.Remove(toRemove);
-            }
 
             _documentsGrid?.Reload();
 

@@ -57,6 +57,27 @@ public interface IDataService
     Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Fetches all documents for the given case.
+    /// </summary>
+    Task<List<LineOfDutyDocument>> GetDocumentsAsync(int caseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queries documents for a case via OData with filtering, paging, sorting, and count.
+    /// </summary>
+    Task<ODataServiceResult<LineOfDutyDocument>> GetDocumentsAsync(
+        int caseId, string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, bool? count = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queries workflow state histories for a case via OData with filtering, paging, sorting, and count.
+    /// </summary>
+    Task<ODataServiceResult<WorkflowStateHistory>> GetWorkflowStateHistoriesAsync(
+        int caseId, string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, bool? count = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Uploads a document file to the given case via the Documents API.
     /// </summary>
     Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, byte[] content, CancellationToken cancellationToken = default);

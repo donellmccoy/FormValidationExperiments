@@ -165,8 +165,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private RadzenDataGrid<LineOfDutyDocument> _documentsGrid;
 
+    private RadzenTextBox _documentsSearchBox;
+
     private string _documentsSearchText = string.Empty;
     private CancellationTokenSource _documentsSearchCts = new();
+    private ODataEnumerable<LineOfDutyDocument> _documentsData;
+    private int _documentsCount;
+    private int _documentsLoadGeneration;
 
     private readonly CancellationTokenSource _cts = new();
 
@@ -203,6 +208,7 @@ public partial class EditCase : ComponentBase, IDisposable
         : "assignment";
 
     private RadzenDataGrid<LineOfDutyCase> _previousCasesGrid;
+    private RadzenTextBox _previousCasesSearchBox;
     private ODataEnumerable<LineOfDutyCase> _previousCases;
     private int _previousCasesCount;
     private bool _previousCasesLoading;
@@ -215,10 +221,14 @@ public partial class EditCase : ComponentBase, IDisposable
     private IList<LineOfDutyCase> _selectedPreviousCase;
 
     private RadzenDataGrid<WorkflowStateHistory> _trackingGrid;
+    private RadzenTextBox _trackingSearchBox;
     private string _trackingSearchText = string.Empty;
     private CancellationTokenSource _trackingSearchCts = new();
     private bool _trackingLoading;
     private IList<WorkflowStateHistory> _selectedTrackingEntry;
+    private ODataEnumerable<WorkflowStateHistory> _trackingData;
+    private int _trackingCount;
+    private int _trackingLoadGeneration;
 
     private async Task RefreshCaseHistoryGrid()
     {
@@ -232,57 +242,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task RefreshTrackingGrid()
     {
-        _trackingLoading = true;
-        StateHasChanged();
-
-        try
+        if (_trackingGrid is not null)
         {
-            var refreshedCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
-            if (refreshedCase is not null)
-            {
-                _lineOfDutyCase.WorkflowStateHistories = refreshedCase.WorkflowStateHistories;
-            }
-
-            _selectedTrackingEntry = TrackingHistory.FirstOrDefault() is { } first
-                ? new List<WorkflowStateHistory> { first }
-                : null;
-        }
-        finally
-        {
-            _trackingLoading = false;
-            StateHasChanged();
+            await _trackingGrid.FirstPage(true);
         }
     }
-
-    private IEnumerable<WorkflowStateHistory> TrackingHistory
-    {
-        get
-        {
-            var items = _lineOfDutyCase?.WorkflowStateHistories;
-            if (items is null)
-                return Enumerable.Empty<WorkflowStateHistory>();
-
-            IEnumerable<WorkflowStateHistory> result = items;
-
-            if (!string.IsNullOrWhiteSpace(_trackingSearchText))
-            {
-                var search = _trackingSearchText.Trim();
-                result = result.Where(h =>
-                    h.WorkflowState.ToDisplayString().Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    h.Action.ToDisplayString().Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    h.Status.ToDisplayString().Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    (h.PerformedBy is not null && h.PerformedBy.Contains(search, StringComparison.OrdinalIgnoreCase)));
-            }
-
-            return result
-                .OrderByDescending(h => h.CreatedDate)
-                .ThenByDescending(h => h.Id);
-        }
-    }
-
-    #endregion
-
-    #region Lifecycle
 
     protected override async Task OnInitializedAsync()
     {
@@ -358,10 +322,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
             await LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
 
-            _selectedTrackingEntry = TrackingHistory.FirstOrDefault() is { } firstTracking
-                ? new List<WorkflowStateHistory> { firstTracking }
-                : null;
-
             _loadedCaseId = CaseId;
 
             // Load auth token for RadzenUpload Authorization header
@@ -374,8 +334,6 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 Logger.LogWarning(ex, "Failed to load auth token for document uploads");
             }
-
-            // No pre-population needed — the DataGrid binds directly to SortedDocuments.
         }
         catch (OperationCanceledException)
         {
@@ -537,6 +495,88 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             await _trackingGrid.FirstPage(true);
         }
+    }
+
+    /// <summary>
+    /// Server-side data load handler for the Tracking (Workflow History) grid.
+    /// </summary>
+    private async Task LoadTrackingData(LoadDataArgs args)
+    {
+        if (_lineOfDutyCase?.Id is null or 0)
+        {
+            return;
+        }
+
+        var generation = ++_trackingLoadGeneration;
+
+        _trackingLoading = true;
+
+        try
+        {
+            var filter = CombineTrackingFilters(args.Filter, BuildTrackingSearchFilter(_trackingSearchText));
+
+            var result = await CaseService.GetWorkflowStateHistoriesAsync(
+                caseId: _lineOfDutyCase.Id,
+                filter: filter,
+                top: args.Top,
+                skip: args.Skip,
+                orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "CreatedDate desc,Id desc",
+                count: true,
+                cancellationToken: _cts.Token);
+
+            if (generation != _trackingLoadGeneration)
+            {
+                return;
+            }
+
+            _trackingData = result?.Value?.AsODataEnumerable();
+            _trackingCount = result?.Count ?? 0;
+
+            _selectedTrackingEntry = _trackingData?.FirstOrDefault() is { } first
+                ? new List<WorkflowStateHistory> { first }
+                : null;
+        }
+        catch (OperationCanceledException)
+        {
+            // Component disposed — ignore
+        }
+        catch (Exception ex)
+        {
+            if (generation == _trackingLoadGeneration)
+            {
+                Logger.LogWarning(ex, "Failed to load tracking history for case {CaseId}", _lineOfDutyCase.Id);
+                _trackingData = null;
+                _trackingCount = 0;
+            }
+        }
+        finally
+        {
+            if (generation == _trackingLoadGeneration)
+            {
+                _trackingLoading = false;
+            }
+        }
+    }
+
+    private static string BuildTrackingSearchFilter(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var escaped = text.Replace("'", "''");
+        return $"contains(PerformedBy,'{escaped}') or contains(SignedBy,'{escaped}') or contains(CreatedBy,'{escaped}')";
+    }
+
+    private static string CombineTrackingFilters(string columnFilter, string searchFilter)
+    {
+        var parts = new[] { columnFilter, searchFilter }
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Select(p => $"({p})")
+            .ToList();
+
+        return parts.Count > 0 ? string.Join(" and ", parts) : null;
     }
 
     private static string BuildPreviousCasesSearchFilter(string text)
