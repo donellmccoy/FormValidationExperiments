@@ -1341,8 +1341,9 @@ else
                                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.25rem">
                                                 <RadzenUpload Url="@($"{Http.BaseAddress}api/cases/{_lineOfDutyCase?.Id}/documents")"
                                                               Auto="true"
+                                                              Multiple="true"
                                                               ParameterName="file"
-                                                              ChooseText="Choose File"
+                                                              ChooseText="Choose Files"
                                                               Accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
                                                               MaxFileSize="10000000"
                                                               Disabled="@(_lineOfDutyCase?.Id is null or 0)"
@@ -1385,6 +1386,10 @@ else
                                                                           class="doc-file-link">@doc.FileName</span>
                                                                 </RadzenStack>
                                                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" class="doc-actions">
+                                                                    <RadzenButton Icon="open_in_new" ButtonStyle="ButtonStyle.Info"
+                                                                                  Variant="Variant.Text" Size="ButtonSize.Small"
+                                                                                  Click="@(() => OnViewDocumentInBrowserAsync(doc))"
+                                                                                  title="View in browser" />
                                                                     <RadzenButton Icon="download" ButtonStyle="ButtonStyle.Info"
                                                                                   Variant="Variant.Text" Size="ButtonSize.Small"
                                                                                   Click="@(() => OnDownloadDocumentAsync(doc))"
@@ -1396,7 +1401,11 @@ else
                                                             </RadzenStack>
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="UploadDate" Title="Uploaded" FormatString="{0:MM/dd/yyyy hh:mm tt}" Width="180px" />
+                                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="UploadDate" Title="Uploaded" Width="180px">
+                                                        <Template Context="doc">
+                                                            @(doc.UploadDate?.ToLocalTime().ToString("MM/dd/yyyy hh:mm tt") ?? "")
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
                                                     <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="By" Width="140px" />
                                                 </Columns>
                                             </RadzenDataGrid>

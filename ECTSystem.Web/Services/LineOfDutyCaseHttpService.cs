@@ -426,7 +426,7 @@ public class LineOfDutyCaseHttpService : IDataService
     public async Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentId);
+        ArgumentOutOfRangeException.ThrowIfNegative(documentId);
 
         var response = await _httpClient.DeleteAsync($"api/cases/{caseId}/documents/{documentId}", cancellationToken);
 

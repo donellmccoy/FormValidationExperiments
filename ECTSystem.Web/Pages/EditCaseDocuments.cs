@@ -123,6 +123,26 @@ public partial class EditCase
         return $"{Http.BaseAddress}api/cases/{_lineOfDutyCase.Id}/documents/{doc.Id}/download";
     }
 
+    private async Task OnViewDocumentInBrowserAsync(LineOfDutyDocument doc)
+    {
+        try
+        {
+            var url = GetDocumentDownloadUrl(doc);
+            var response = await Http.GetAsync(url, _cts.Token);
+            response.EnsureSuccessStatusCode();
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(_cts.Token);
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+
+            await JSRuntime.InvokeVoidAsync("openFileInNewTab", contentType, bytes);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to view document {DocumentId}", doc.Id);
+            NotificationService.Notify(NotificationSeverity.Error, "View Failed", ex.Message);
+        }
+    }
+
     /// <summary>
     /// Downloads the document via an authenticated HTTP request and triggers
     /// a browser file-save using a temporary blob URL.
@@ -177,7 +197,7 @@ public partial class EditCase
     /// </summary>
     private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
     {
-        if (_lineOfDutyCase?.Id is null or 0 || doc.Id == 0)
+        if (_lineOfDutyCase?.Id is null or 0)
         {
             return;
         }
