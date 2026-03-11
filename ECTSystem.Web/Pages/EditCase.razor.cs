@@ -165,6 +165,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private RadzenDataGrid<LineOfDutyDocument> _documentsGrid;
 
+    private string _documentsSearchText = string.Empty;
+    private CancellationTokenSource _documentsSearchCts = new();
+
     private readonly CancellationTokenSource _cts = new();
 
     private LineOfDutyCase _lineOfDutyCase;
@@ -1231,6 +1234,8 @@ public partial class EditCase : ComponentBase, IDisposable
         _previousCasesSearchCts.Dispose();
         _trackingSearchCts.Cancel();
         _trackingSearchCts.Dispose();
+        _documentsSearchCts.Cancel();
+        _documentsSearchCts.Dispose();
     }
 
     #endregion

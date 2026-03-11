@@ -690,3 +690,24 @@
     /*min-height: 0px;*/
     /*padding: 0px;*/
 }
+
+/* ═══════════════════ Document Row Actions ═══════════════════ */
+
+::deep .doc-file-link {
+    cursor: pointer;
+    color: var(--rz-primary);
+    text-decoration: none;
+}
+
+::deep .doc-file-link:hover {
+    text-decoration: underline;
+}
+
+::deep .doc-actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+::deep .rz-data-row:hover .doc-actions {
+    opacity: 1;
+}

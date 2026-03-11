@@ -1,5 +1,6 @@
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
 using System.Text.Json;
@@ -14,12 +15,29 @@ public partial class EditCase
     private int DocumentCount => _lineOfDutyCase?.Documents?.Count ?? 0;
 
     /// <summary>
-    /// Returns the case’s documents sorted by upload date (descending), then by ID.
+    /// Returns the case's documents filtered by the search text, sorted by upload date (descending), then by ID.
     /// </summary>
-    private IEnumerable<LineOfDutyDocument> SortedDocuments =>
-        _lineOfDutyCase?.Documents?
-            .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
-            .ThenByDescending(d => d.Id) ?? Enumerable.Empty<LineOfDutyDocument>();
+    private IEnumerable<LineOfDutyDocument> SortedDocuments
+    {
+        get
+        {
+            var docs = _lineOfDutyCase?.Documents?.AsEnumerable() ?? Enumerable.Empty<LineOfDutyDocument>();
+
+            if (!string.IsNullOrWhiteSpace(_documentsSearchText))
+            {
+                var search = _documentsSearchText.Trim();
+                docs = docs.Where(d =>
+                    d.FileName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    d.DocumentType.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    d.CreatedBy.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    d.Description.Contains(search, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return docs
+                .OrderByDescending(d => d.UploadDate ?? (d.CreatedDate == default ? DateTime.MinValue : d.CreatedDate))
+                .ThenByDescending(d => d.Id);
+        }
+    }
 
     /// <summary>
     /// Handles the <c>RadzenUpload.Complete</c> event. Deserializes the server
@@ -106,12 +124,49 @@ public partial class EditCase
     }
 
     /// <summary>
-    /// Opens the document download URL in a new browser tab.
+    /// Downloads the document via an authenticated HTTP request and triggers
+    /// a browser file-save using a temporary blob URL.
     /// </summary>
     private async Task OnDownloadDocumentAsync(LineOfDutyDocument doc)
     {
-        var url = GetDocumentDownloadUrl(doc);
-        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+        try
+        {
+            var url = GetDocumentDownloadUrl(doc);
+            var response = await Http.GetAsync(url, _cts.Token);
+            response.EnsureSuccessStatusCode();
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(_cts.Token);
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBytes", doc.FileName, contentType, bytes);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to download document {DocumentId}", doc.Id);
+            NotificationService.Notify(NotificationSeverity.Error, "Download Failed", ex.Message);
+        }
+    }
+
+    private async Task OnDocumentsSearchInput(ChangeEventArgs args)
+    {
+        _documentsSearchText = args.Value?.ToString() ?? string.Empty;
+
+        await _documentsSearchCts.CancelAsync();
+        _documentsSearchCts.Dispose();
+        _documentsSearchCts = new CancellationTokenSource();
+        var token = _documentsSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        _documentsGrid?.Reload();
+        StateHasChanged();
     }
 
 
