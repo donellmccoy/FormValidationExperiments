@@ -156,27 +156,22 @@ internal class LineOfDutyStateMachine
 
         try
         {
-            // 1. Persist the case's scalar WorkflowState change first.
-            saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-            // 2. Persist each history entry via the dedicated API endpoint so they
-            //    get server-assigned IDs and are actually written to the database.
-            //    SaveCaseAsync only PATCHes scalar properties — it does NOT persist
-            //    navigation-property entries added to the in-memory collection.
-            //    For new cases, the entries were built before SaveCaseAsync assigned
-            //    the server-generated Id, so update them now.
-            var savedEntries = new List<WorkflowStateHistory>(entriesToSave.Count);
-
-            foreach (var entry in entriesToSave)
+            // Atomically persist both the WorkflowState change and the history
+            // entries in a single server-side transaction. This prevents the case
+            // from being left in an inconsistent state if the history write fails.
+            var request = new CaseTransitionRequest
             {
-                entry.LineOfDutyCaseId = saved.Id;
-            }
+                NewWorkflowState = targetState,
+                HistoryEntries = entriesToSave
+            };
 
-            savedEntries = await _dataService.AddHistoryEntriesAsync(entriesToSave);
+            var response = await _dataService.TransitionCaseAsync(_lineOfDutyCase.Id, request);
 
-            // 3. Attach the server-returned entries (with proper IDs) to the saved case
-            //    so the sidebar can render them immediately without a re-fetch.
-            foreach (var entry in savedEntries)
+            saved = response.Case;
+
+            // Attach the server-returned entries (with proper IDs) to the saved case
+            // so the sidebar can render them immediately without a re-fetch.
+            foreach (var entry in response.HistoryEntries)
             {
                 saved.WorkflowStateHistories.Add(entry);
             }

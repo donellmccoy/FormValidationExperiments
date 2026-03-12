@@ -15,6 +15,8 @@ public interface ILoggingService
     void CaseUpdated(int caseId);
     void PatchingCase(int caseId);
     void CasePatched(int caseId);
+    void TransitioningCase(int caseId);
+    void CaseTransitioned(int caseId, int historyEntryCount);
     void DeletingCase(int caseId);
     void CaseDeleted(int caseId);
 

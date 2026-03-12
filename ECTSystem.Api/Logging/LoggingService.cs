@@ -42,6 +42,12 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 108, Level = LogLevel.Information, Message = "LOD case {CaseId} patched")]
     public partial void CasePatched(int caseId);
 
+    [LoggerMessage(EventId = 111, Level = LogLevel.Information, Message = "Transitioning LOD case {CaseId}")]
+    public partial void TransitioningCase(int caseId);
+
+    [LoggerMessage(EventId = 112, Level = LogLevel.Information, Message = "LOD case {CaseId} transitioned with {HistoryEntryCount} history entries")]
+    public partial void CaseTransitioned(int caseId, int historyEntryCount);
+
     [LoggerMessage(EventId = 109, Level = LogLevel.Information, Message = "Deleting LOD case {CaseId}")]
     public partial void DeletingCase(int caseId);
 

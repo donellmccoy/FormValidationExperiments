@@ -214,6 +214,19 @@ public class LineOfDutyCaseHttpService : IDataService
         }
     }
 
+    /// <inheritdoc />
+    public async Task<CaseTransitionResponse> TransitionCaseAsync(int caseId, CaseTransitionRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+        ArgumentNullException.ThrowIfNull(request);
+
+        var response = await _httpClient.PostAsJsonAsync($"odata/Cases({caseId})/Transition", request, ODataJsonOptions, cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        return (await response.Content.ReadFromJsonAsync<CaseTransitionResponse>(ODataJsonOptions, cancellationToken))!;
+    }
+
     /// <summary>
     /// Evaluates partial text logic via OData search, comparing rank matching and service component enumerations.
     /// </summary>

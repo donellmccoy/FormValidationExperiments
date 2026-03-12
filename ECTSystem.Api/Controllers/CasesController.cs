@@ -200,6 +200,70 @@ public class CasesController : ODataController
     }
 
     /// <summary>
+    /// Atomically transitions a LOD case to a new workflow state and persists the
+    /// associated history entries in a single database transaction.
+    /// Route: POST /odata/Cases({key})/Transition
+    /// </summary>
+    [HttpPost("/odata/Cases({key})/Transition")]
+    public async Task<IActionResult> Transition([FromRoute] int key, [FromBody] CaseTransitionRequest request, CancellationToken ct = default)
+    {
+        if (request is null || !ModelState.IsValid)
+        {
+            _loggingService.InvalidModelState("Transition");
+
+            return BadRequest(ModelState);
+        }
+
+        _loggingService.TransitioningCase(key);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.Cases.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            _loggingService.CaseNotFound(key);
+
+            return NotFound();
+        }
+
+        // Apply the workflow state change
+        existing.WorkflowState = request.NewWorkflowState;
+
+        // Add history entries, clearing navigation properties to avoid re-inserting the parent
+        foreach (var entry in request.HistoryEntries)
+        {
+            entry.LineOfDutyCase = null;
+            entry.LineOfDutyCaseId = key;
+            context.WorkflowStateHistories.Add(entry);
+        }
+
+        // Single SaveChangesAsync — both the case update and history entries
+        // are committed atomically within EF Core's implicit transaction.
+        await context.SaveChangesAsync(ct);
+
+        // Re-fetch with all navigations for a complete response
+        var updated = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
+
+        // Extract the saved history entries with their server-assigned IDs
+        var savedEntries = await context.WorkflowStateHistories
+            .Where(h => h.LineOfDutyCaseId == key)
+            .OrderByDescending(h => h.Id)
+            .Take(request.HistoryEntries.Count)
+            .OrderBy(h => h.Id)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        _loggingService.CaseTransitioned(key, savedEntries.Count);
+
+        return Ok(new CaseTransitionResponse
+        {
+            Case = updated,
+            HistoryEntries = savedEntries
+        });
+    }
+
+    /// <summary>
     /// Deletes an LOD case and its related entities.
     /// OData route: DELETE /odata/Cases({key})
     /// </summary>

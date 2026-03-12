@@ -29,6 +29,13 @@ public interface IDataService
     Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Atomically transitions a LOD case to a new workflow state and persists the
+    /// associated history entries in a single server-side transaction.
+    /// Returns the updated case and server-persisted history entries.
+    /// </summary>
+    Task<CaseTransitionResponse> TransitionCaseAsync(int caseId, CaseTransitionRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Searches members by name, rank, unit, or service number.
     /// </summary>
     Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default);

@@ -23,68 +23,7 @@ they can query the data service for completeness checking.
 
 ---
 
-## 2. Add Transactional Atomicity to `SaveAndNotifyAsync`
-
-**Severity: High** | **Status: Partially Addressed**
-
-The N+1 API call issue has been resolved — `SaveAndNotifyAsync` now uses a batch
-`AddHistoryEntriesAsync` call instead of individual `AddHistoryEntryAsync` calls
-in a loop. However, `SaveAndNotifyAsync` still performs **two sequential API
-calls** — one `SaveCaseAsync` followed by one `AddHistoryEntriesAsync`. If
-`SaveCaseAsync` succeeds but `AddHistoryEntriesAsync` fails, the database is
-left in an inconsistent state: the case's `WorkflowState` is updated but the
-corresponding history entries are missing.
-
-```csharp
-// Current: 2 API calls with no transactional guarantee
-saved = await _dataService.SaveCaseAsync(_lineOfDutyCase);
-
-foreach (var entry in entriesToSave)
-{
-    entry.LineOfDutyCaseId = saved.Id;
-}
-
-// ⚠️ If this fails, case state is saved but history entries are lost
-savedEntries = await _dataService.AddHistoryEntriesAsync(entriesToSave);
-```
-
-The try/catch only reverts the in-memory state — it cannot undo the
-already-committed case write.
-
-**Recommendation:** Wrap the case save + history creation in a single API
-endpoint (e.g., `TransitionCaseAsync`) that performs both writes atomically on
-the server within a single database transaction.
-
----
-
-## 3. Eliminate Repetitive Entry Handlers
-
-**Severity: Medium** | **Status: Partially Addressed**
-
-The shared `SaveAndNotifyAsync` helper now encapsulates all entry handler logic
-— state update, history recording, persistence with try/catch rollback, and
-result capture via `_lastTransitionResult`. Each forward entry handler is now a
-trivial 1-line wrapper:
-
-```csharp
-private async Task OnXxxEntryAsync(LineOfDutyCase lineOfDutyCase)
-{
-    await SaveAndNotifyAsync(lineOfDutyCase, WorkflowState.Xxx);
-}
-```
-
-A shared `OnReturnEntryAsync(WorkflowState)` handler is registered via
-`.OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)` for all states (2–11).
-
-**Remaining opportunity:** The 11 forward entry handler methods are still
-individually defined even though they are trivial 1-line wrappers. Further
-consolidation (e.g., a single generic handler via a
-`Dictionary<LineOfDutyTrigger, WorkflowState>` mapping) could eliminate them
-entirely, but the impact is smaller now (~50 lines vs. the original ~300 lines).
-
----
-
-## 4. Consolidate Exit Handlers
+## 2. Consolidate Exit Handlers
 
 **Severity: Low** | **Status: Open**
 
@@ -97,7 +36,7 @@ logic, add only that handler. This removes ~120 lines of dead code.
 
 ---
 
-## 5. Remove `Async` Suffix from Synchronous Guards
+## 3. Remove `Async` Suffix from Synchronous Guards
 
 **Severity: Low** | **Status: Open**
 
@@ -112,7 +51,7 @@ confusing callers about concurrency expectations.
 
 ---
 
-## 6. Clean Up Unused Triggers and Orphaned State
+## 4. Clean Up Unused Triggers and Orphaned State
 
 **Severity: Low** | **Status: Open**
 
@@ -133,7 +72,7 @@ aligned with reality.
 
 ---
 
-## 7. Add Comprehensive Model Validation with Modern Validator Indicators
+## 5. Add Comprehensive Model Validation with Modern Validator Indicators
 
 **Severity: High** | **Status: Open**
 
@@ -447,7 +386,7 @@ glance which sections need attention — before attempting a workflow transition
 
 ### Integration with State Machine Guards
 
-Model validation directly enables guard implementation (Recommendation 1). The
+Model validation directly enables guard implementation (Recommendation #1). The
 `[FormSection]` attribute already tags each property with its workflow section.
 A section-aware validation helper ties the two together:
 
@@ -489,9 +428,7 @@ private bool CanForwardToUnitCommanderReviewAsync()
 | Priority | Recommendation | Impact | Status |
 | --- | --- | --- | --- |
 | **P0** | 1. Implement guards | No validation = invalid transitions | Open |
-| **P0** | 7. Add model validation + indicators | 8 of 9 forms have zero validation | Open |
-| **P1** | 2. Add transactional atomicity | Partial writes (2 calls) | Partial |
-| **P2** | 3. Consolidate entry handlers | ~50 lines of wrappers | Partial |
-| **P2** | 4. Remove placeholder exits | ~120 lines of dead code | Open |
-| **P3** | 5. Remove `Async` suffix from sync guards | Naming accuracy | Open |
-| **P3** | 6. Clean up unused triggers/states | Enum hygiene | Open |
+| **P0** | 5. Add model validation + indicators | 8 of 9 forms have zero validation | Open |
+| **P2** | 2. Remove placeholder exits | ~120 lines of dead code | Open |
+| **P3** | 3. Remove `Async` suffix from sync guards | Naming accuracy | Open |
+| **P3** | 4. Clean up unused triggers/states | Enum hygiene | Open |
