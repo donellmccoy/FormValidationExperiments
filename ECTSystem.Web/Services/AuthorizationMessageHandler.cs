@@ -15,12 +15,14 @@ public record ApiEndpoints(Uri ApiBaseAddress);
 public class AuthorizationMessageHandler : DelegatingHandler
 {
     private readonly ILocalStorageService _localStorage;
+    private readonly JwtAuthStateProvider _authStateProvider;
     private readonly Uri _apiBaseAddress;
     private static readonly SemaphoreSlim RefreshLock = new(1, 1);
 
-    public AuthorizationMessageHandler(ILocalStorageService localStorage, ApiEndpoints endpoints)
+    public AuthorizationMessageHandler(ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider, ApiEndpoints endpoints)
     {
         _localStorage = localStorage;
+        _authStateProvider = authStateProvider;
         _apiBaseAddress = endpoints.ApiBaseAddress;
     }
 
@@ -71,6 +73,9 @@ public class AuthorizationMessageHandler : DelegatingHandler
             var refreshToken = await _localStorage.GetItemAsStringAsync("refreshToken");
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
+                // No refresh token — clear stale access token and redirect to login
+                await _localStorage.RemoveItemAsync("accessToken");
+                _authStateProvider.NotifyAuthenticationStateChanged();
                 return false;
             }
 
@@ -82,9 +87,10 @@ public class AuthorizationMessageHandler : DelegatingHandler
             var refreshResponse = await base.SendAsync(refreshRequest, cancellationToken);
             if (!refreshResponse.IsSuccessStatusCode)
             {
-                // Refresh failed — clear tokens so the UI redirects to login
+                // Refresh failed — clear tokens and notify auth state so the UI redirects to login
                 await _localStorage.RemoveItemAsync("accessToken");
                 await _localStorage.RemoveItemAsync("refreshToken");
+                _authStateProvider.NotifyAuthenticationStateChanged();
                 return false;
             }
 
