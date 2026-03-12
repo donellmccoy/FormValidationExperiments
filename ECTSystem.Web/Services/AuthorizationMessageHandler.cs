@@ -42,6 +42,12 @@ public class AuthorizationMessageHandler : DelegatingHandler
             return response;
         }
 
+        // If we had no token to begin with, the user is unauthenticated — nothing to refresh
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return response;
+        }
+
         // Attempt to refresh the token (pass the failed token for double-check)
         if (!await TryRefreshTokenAsync(token, cancellationToken))
         {
@@ -73,9 +79,14 @@ public class AuthorizationMessageHandler : DelegatingHandler
             var refreshToken = await _localStorage.GetItemAsStringAsync("refreshToken");
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                // No refresh token — clear stale access token and redirect to login
-                await _localStorage.RemoveItemAsync("accessToken");
-                _authStateProvider.NotifyAuthenticationStateChanged();
+                // No refresh token — clear stale access token (if any) and redirect to login.
+                // Only notify if there was actually an access token to clear, to avoid
+                // triggering re-renders that cause another fetch → 401 → notify loop.
+                if (!string.IsNullOrWhiteSpace(currentToken))
+                {
+                    await _localStorage.RemoveItemAsync("accessToken");
+                    _authStateProvider.NotifyAuthenticationStateChanged();
+                }
                 return false;
             }
 
