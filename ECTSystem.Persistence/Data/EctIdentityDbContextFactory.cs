@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace ECTSystem.Persistence.Data;
 
@@ -9,15 +9,15 @@ public class EctIdentityDbContextFactory : IDesignTimeDbContextFactory<EctIdenti
     public EctIdentityDbContext CreateDbContext(string[] args)
     {
         var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "ECTSystem.Api");
-        var appSettingsPath = Path.Combine(basePath, "appsettings.json");
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-        using var stream = File.OpenRead(appSettingsPath);
-        using var doc = JsonDocument.Parse(stream);
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(basePath)
+            .AddJsonFile("appsettings.json", optional: false)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true)
+            .Build();
 
-        var connectionString = doc.RootElement
-            .GetProperty("ConnectionStrings")
-            .GetProperty("EctDatabase")
-            .GetString();
+        var connectionString = configuration.GetConnectionString("EctDatabase");
 
         var optionsBuilder = new DbContextOptionsBuilder<EctIdentityDbContext>();
         optionsBuilder.UseSqlServer(connectionString);
