@@ -305,6 +305,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
+            TakeSnapshots();
+
             _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
             try

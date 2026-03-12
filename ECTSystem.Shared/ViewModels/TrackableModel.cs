@@ -23,10 +23,7 @@ public abstract class TrackableModel
     /// Gets whether any tracked property has changed since the last snapshot.
     /// </summary>
     [JsonIgnore]
-    public bool IsDirty =>
-        !string.IsNullOrWhiteSpace(_snapshot)
-        && _jsonOptions is not null
-        && JsonSerializer.Serialize(this, GetType(), _jsonOptions) != _snapshot;
+    public bool IsDirty => CheckDirty(sectionFilter: null);
 
     [JsonIgnore]
     public bool HasSnapshot => !string.IsNullOrEmpty(_snapshot);
@@ -36,7 +33,17 @@ public abstract class TrackableModel
     /// </summary>
     public bool IsDirtySection(string sectionName)
     {
-        if (string.IsNullOrWhiteSpace(sectionName) || string.IsNullOrWhiteSpace(_snapshot) || _jsonOptions is null)
+        if (string.IsNullOrWhiteSpace(sectionName))
+        {
+            return false;
+        }
+
+        return CheckDirty(sectionFilter: sectionName);
+    }
+
+    private bool CheckDirty(string sectionFilter)
+    {
+        if (string.IsNullOrWhiteSpace(_snapshot) || _jsonOptions is null)
         {
             return false;
         }
@@ -47,21 +54,41 @@ public abstract class TrackableModel
             return false;
         }
 
-        var sectionProperties = GetType()
+        IEnumerable<PropertyInfo> properties = GetType()
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanRead && p.GetCustomAttributes<FormSectionAttribute>().Any(a => a.SectionName == sectionName));
+            .Where(p => p.CanRead);
 
-        foreach (var property in sectionProperties)
+        if (sectionFilter is not null)
+        {
+            properties = properties.Where(p => p.GetCustomAttributes<FormSectionAttribute>()
+                .Any(a => a.SectionName == sectionFilter));
+        }
+        else
+        {
+            properties = properties.Where(p => p.GetCustomAttribute<JsonIgnoreAttribute>() is null);
+        }
+
+        foreach (var property in properties)
         {
             var currentValue = property.GetValue(this);
             var snapshotValue = property.GetValue(snapshotObj);
-            if (!Equals(currentValue, snapshotValue))
+            if (!NormalizedEquals(currentValue, snapshotValue))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static bool NormalizedEquals(object current, object snapshot)
+    {
+        // Treat null and empty string as equivalent so that change handlers
+        // setting a string to null won't conflict with a snapshot that has "".
+        if (current is string sc && sc.Length == 0) current = null;
+        if (snapshot is string ss && ss.Length == 0) snapshot = null;
+
+        return Equals(current, snapshot);
     }
 
     /// <summary>
