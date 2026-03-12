@@ -1,8 +1,9 @@
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
+using ECTSystem.Web.StateMachines;
 using Microsoft.Extensions.Logging;
 
-namespace ECTSystem.Web.Pages;
+namespace ECTSystem.Web.Factories;
 
 /// <summary>
 /// Factory for creating <see cref="LineOfDutyStateMachine"/> instances.

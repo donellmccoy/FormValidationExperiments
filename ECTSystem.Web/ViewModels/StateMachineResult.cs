@@ -2,7 +2,7 @@ using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Radzen;
 
-namespace ECTSystem.Web.Pages;
+namespace ECTSystem.Web.ViewModels;
 
 /// <summary>
 /// Encapsulates the outcome of a state machine operation (transition, save, sign, or create).

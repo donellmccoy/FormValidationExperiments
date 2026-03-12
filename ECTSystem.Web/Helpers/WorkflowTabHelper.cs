@@ -1,6 +1,6 @@
 using ECTSystem.Shared.Enums;
 
-namespace ECTSystem.Web.Pages;
+namespace ECTSystem.Web.Helpers;
 
 /// <summary>
 /// Provides a mapping between workflow tab indices and their corresponding <see cref="WorkflowState"/> values
