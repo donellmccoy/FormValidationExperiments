@@ -706,7 +706,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _stateMachine = StateMachineFactory.Create();
 
-                var result = await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.StartLineOfDutyCase);
+                var result = await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
                 if (result.Success)
                 {

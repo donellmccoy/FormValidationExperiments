@@ -3,7 +3,6 @@ namespace ECTSystem.Shared.Enums;
 public enum LineOfDutyTrigger
 {
     None,
-    StartLineOfDutyCase,
     ForwardToMemberInformationEntry,
     ForwardToMedicalTechnician,
     ForwardToMedicalOfficerReview,

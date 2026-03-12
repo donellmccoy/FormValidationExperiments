@@ -232,7 +232,7 @@ internal class LineOfDutyStateMachine
     /// Initializes a new <see cref="LineOfDutyStateMachine"/> in the <see cref="WorkflowState.Draft"/>
     /// state without an existing case. Use this constructor when creating a new LOD case from
     /// scratch; call <see cref="FireAsync(LineOfDutyCase, LineOfDutyTrigger)"/> with
-    /// <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> to advance past the draft state.
+    /// <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/> to advance past the draft state.
     /// </summary>
     /// <param name="dataService">
     /// The data service used to persist history entries, save case state, and
@@ -265,7 +265,7 @@ internal class LineOfDutyStateMachine
     {
         _caseTriggers = new Dictionary<LineOfDutyTrigger, StateMachine<WorkflowState, LineOfDutyTrigger>.TriggerWithParameters<LineOfDutyCase>>
         {
-            [LineOfDutyTrigger.StartLineOfDutyCase] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.StartLineOfDutyCase),
+            [LineOfDutyTrigger.ForwardToMemberInformationEntry] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToMemberInformationEntry),
             [LineOfDutyTrigger.ForwardToMedicalTechnician] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToMedicalTechnician),
             [LineOfDutyTrigger.ForwardToMedicalOfficerReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToMedicalOfficerReview),
             [LineOfDutyTrigger.ForwardToUnitCommanderReview] = _sm.SetTriggerParameters<LineOfDutyCase>(LineOfDutyTrigger.ForwardToUnitCommanderReview),
@@ -296,13 +296,13 @@ internal class LineOfDutyStateMachine
     {
         // Step 0: Draft — case created but not yet initiated into the LOD workflow
         _sm.Configure(WorkflowState.Draft)
-            .PermitIf(LineOfDutyTrigger.StartLineOfDutyCase, WorkflowState.MemberInformationEntry, CanStartLodAsync)
+            .PermitIf(LineOfDutyTrigger.ForwardToMemberInformationEntry, WorkflowState.MemberInformationEntry, CanStartLodAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnDraftExitAsync);
 
         // Step 1: Member Information Entry — initial state; forward-only to Med Tech or cancel
         _sm.Configure(WorkflowState.MemberInformationEntry)
-            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.StartLineOfDutyCase], OnMemberInformationEntryAsync)
+            .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToMemberInformationEntry], OnMemberInformationEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToMedicalTechnician, WorkflowState.MedicalTechnicianReview, CanForwardToMedicalTechnicianAsync)
             .PermitIf(LineOfDutyTrigger.Cancel, WorkflowState.Cancelled, CanCancelAsync)
             .OnExitAsync(OnMemberInformationExitAsync);
@@ -363,6 +363,7 @@ internal class LineOfDutyStateMachine
         // Step 8: Board Medical Technician Review — lateral routing to Board Med/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalTechnicianReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardTechnicianReview], OnBoardMedicalTechnicianReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
@@ -373,6 +374,7 @@ internal class LineOfDutyStateMachine
         // Step 9: Board Medical Officer — lateral routing to Board Tech/Legal/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardMedicalOfficerReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardMedicalReview], OnBoardMedicalOfficerReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardLegalReview, WorkflowState.BoardLegalReview, CanForwardToBoardLegalReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
@@ -383,6 +385,7 @@ internal class LineOfDutyStateMachine
         // Step 10: Board Legal Review — lateral routing to Board Tech/Med/Admin; can return to any earlier stage
         _sm.Configure(WorkflowState.BoardLegalReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardLegalReview], OnBoardLegalReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardAdministratorReview, WorkflowState.BoardAdministratorReview, CanForwardToBoardAdministratorReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
@@ -393,6 +396,7 @@ internal class LineOfDutyStateMachine
         // Step 11: Board Administrator Review — final review stage; can complete the case, route laterally, or return to any earlier stage
         _sm.Configure(WorkflowState.BoardAdministratorReview)
             .OnEntryFromAsync(_caseTriggers[LineOfDutyTrigger.ForwardToBoardAdministratorReview], OnBoardAdministratorReviewEntryAsync)
+            .OnEntryFromAsync(_returnTrigger, OnReturnEntryAsync)
             .PermitIf(LineOfDutyTrigger.Complete, WorkflowState.Completed, CanCompleteAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, CanForwardToBoardTechnicianReviewAsync)
             .PermitIf(LineOfDutyTrigger.ForwardToBoardMedicalReview, WorkflowState.BoardMedicalOfficerReview, CanForwardToBoardMedicalReviewAsync)
@@ -417,7 +421,7 @@ internal class LineOfDutyStateMachine
     #region Step 0: Draft
 
     /// <summary>
-    /// Guard that determines whether the <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/>
+    /// Guard that determines whether the <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/>
     /// trigger may be fired from <see cref="WorkflowState.Draft"/>.
     /// Validates that the case satisfies all preconditions to begin the LOD workflow.
     /// </summary>
@@ -447,7 +451,7 @@ internal class LineOfDutyStateMachine
 
     /// <summary>
     /// Called when the state machine enters <see cref="WorkflowState.MemberInformationEntry"/>
-    /// from the <see cref="LineOfDutyTrigger.StartLineOfDutyCase"/> trigger. Updates the case's
+    /// from the <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/> trigger. Updates the case's
     /// workflow state, records a history entry, persists the case, and invokes
     /// <see cref="OnMemberInformationEntered"/>.
     /// </summary>
