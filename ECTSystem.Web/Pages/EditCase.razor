@@ -424,7 +424,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Facility Name" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox @bind-Value="_viewModel.TreatmentFacilityName" />
+                                                            <RadzenTextBox Value="@_viewModel.TreatmentFacilityName" @oninput="@(args => _viewModel.TreatmentFacilityName = args.Value?.ToString())" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -448,10 +448,10 @@ else
                                         <RadzenFieldset Text="Clinical Diagnosis" class="rz-mt-4">
                                             <RadzenStack Gap="1rem">
                                                 <RadzenFormField Text="Clinical Diagnosis" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox @bind-Value="_viewModel.ClinicalDiagnosis" />
+                                                    <RadzenTextBox Value="@_viewModel.ClinicalDiagnosis" @oninput="@(args => _viewModel.ClinicalDiagnosis = args.Value?.ToString())" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Medical Findings" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea @bind-Value="_viewModel.MedicalFindings" Rows="4" class="rz-w-100" />
+                                                    <RadzenTextArea Value="@_viewModel.MedicalFindings" @oninput="@(args => _viewModel.MedicalFindings = args.Value?.ToString())" Rows="4" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -507,7 +507,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Toxicology Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextArea @bind-Value="_viewModel.ToxicologyTestResults" Rows="3" class="rz-w-100" />
+                                                            <RadzenTextArea Value="@_viewModel.ToxicologyTestResults" @oninput="@(args => _viewModel.ToxicologyTestResults = args.Value?.ToString())" Rows="3" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -545,7 +545,7 @@ else
                                                                                     AllowInput="false" ShowTime="true" class="rz-w-100" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                             </RadzenFormField>
                                                             <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextArea @bind-Value="_viewModel.PsychiatricEvalResults" Rows="3" class="rz-w-100" />
+                                                                <RadzenTextArea Value="@_viewModel.PsychiatricEvalResults" @oninput="@(args => _viewModel.PsychiatricEvalResults = args.Value?.ToString())" Rows="3" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenStack>
                                                     </div>
@@ -554,7 +554,7 @@ else
                                                 @* ── Item 14b: Other relevant conditions ── *@
                                                 <div class="detail-section">
                                                     <RadzenFormField Text="Other Relevant Medical Conditions" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextArea @bind-Value="_viewModel.OtherRelevantConditions" Rows="3" class="rz-w-100" />
+                                                        <RadzenTextArea Value="@_viewModel.OtherRelevantConditions" @oninput="@(args => _viewModel.OtherRelevantConditions = args.Value?.ToString())" Rows="3" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </div>
 
@@ -579,7 +579,7 @@ else
                                                                                     AllowInput="false" ShowTime="true" class="rz-w-100" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                             </RadzenFormField>
                                                             <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextArea @bind-Value="_viewModel.OtherTestResults" Rows="3" class="rz-w-100" />
+                                                                <RadzenTextArea Value="@_viewModel.OtherTestResults" @oninput="@(args => _viewModel.OtherTestResults = args.Value?.ToString())" Rows="3" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenStack>
                                                     </div>
@@ -666,7 +666,7 @@ else
                                         @* ═══ Fieldset I: Medical Recommendation ═══ *@
                                         <RadzenFieldset Text="Medical Recommendation" class="rz-mt-4">
                                             <RadzenFormField Text="Medical Recommendation" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                <RadzenTextArea @bind-Value="_viewModel.MedicalRecommendation" Rows="5" class="rz-w-100" />
+                                                <RadzenTextArea Value="@_viewModel.MedicalRecommendation" @oninput="@(args => _viewModel.MedicalRecommendation = args.Value?.ToString())" Rows="5" class="rz-w-100" />
                                             </RadzenFormField>
                                         </RadzenFieldset>
 
