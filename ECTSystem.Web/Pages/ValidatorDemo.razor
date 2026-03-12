@@ -1,0 +1,312 @@
+@page "/validator-demo"
+
+<PageTitle>Validator Indicator Styles — Demo</PageTitle>
+
+<RadzenStack Gap="1.5rem" Style="max-width: 960px; margin: 2rem auto; padding: 0 1.5rem;">
+
+    <RadzenText TextStyle="TextStyle.H4" Style="color: var(--rz-text-color);">
+        Modern Validator Indicator Styles
+    </RadzenText>
+
+    <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">
+        Five indicator patterns for the LOD workflow forms. Each can be used
+        independently or combined.
+    </RadzenText>
+
+    @* ═══════════════════════════════════════════════════════════════════
+       1 ─ Pulse-Glow Required Field Indicator
+       ═══════════════════════════════════════════════════════════════════ *@
+    <RadzenFieldset>
+        <HeaderTemplate>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenBadge Text="1" BadgeStyle="BadgeStyle.Primary" IsPill="true" />
+                <RadzenText TextStyle="TextStyle.H6" TagName="TagName.Span">
+                    Pulse-Glow Required Field Indicator
+                </RadzenText>
+            </RadzenStack>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color); margin-bottom: 0.75rem;">
+                Empty required fields show a subtle animated glow. Fill the field to
+                see the glow stop.
+            </RadzenText>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+                <RadzenFormField Text="Last Name (empty — glowing)" Variant="Variant.Outlined"
+                                 class="@(_demo1Value == string.Empty ? "pulse-required" : "")">
+                    <ChildContent>
+                        <RadzenTextBox @bind-Value="_demo1Value" />
+                    </ChildContent>
+                </RadzenFormField>
+
+                <RadzenFormField Text="First Name (filled — no glow)" Variant="Variant.Outlined">
+                    <ChildContent>
+                        <RadzenTextBox Value="John" ReadOnly="true" />
+                    </ChildContent>
+                </RadzenFormField>
+            </RadzenStack>
+        </ChildContent>
+    </RadzenFieldset>
+
+    @* ═══════════════════════════════════════════════════════════════════
+       2 ─ Inline Status Chip Indicators
+       ═══════════════════════════════════════════════════════════════════ *@
+    <RadzenFieldset>
+        <HeaderTemplate>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenBadge Text="2" BadgeStyle="BadgeStyle.Primary" IsPill="true" />
+                <RadzenText TextStyle="TextStyle.H6" TagName="TagName.Span">
+                    Inline Status Chip Indicators
+                </RadzenText>
+            </RadzenStack>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color); margin-bottom: 0.75rem;">
+                Compact chip badges next to field labels show validation state.
+                Type in the first field to see the chip update in real time.
+            </RadzenText>
+
+            <RadzenStack Gap="1rem">
+                @* Editable field *@
+                <div>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem"
+                                 Style="margin-bottom: 0.25rem;">
+                        <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">Diagnosis</RadzenText>
+                        @if (string.IsNullOrWhiteSpace(_demo2Diagnosis))
+                        {
+                            <span class="field-status field-status--required">
+                                <RadzenIcon Icon="priority_high" Style="font-size: 0.75rem;" /> Required
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="field-status field-status--valid">
+                                <RadzenIcon Icon="check_circle" Style="font-size: 0.75rem;" /> Valid
+                            </span>
+                        }
+                    </RadzenStack>
+                    <RadzenTextBox @bind-Value="_demo2Diagnosis" Style="width: 100%;" Placeholder="Enter a diagnosis…" />
+                </div>
+
+                @* Pre-filled field *@
+                <div>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem"
+                                 Style="margin-bottom: 0.25rem;">
+                        <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">Incident Type</RadzenText>
+                        <span class="field-status field-status--valid">
+                            <RadzenIcon Icon="check_circle" Style="font-size: 0.75rem;" /> Valid
+                        </span>
+                    </RadzenStack>
+                    <RadzenTextBox Value="Injury" ReadOnly="true" Style="width: 100%;" />
+                </div>
+
+                @* Optional field *@
+                <div>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem"
+                                 Style="margin-bottom: 0.25rem;">
+                        <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">Remarks</RadzenText>
+                        <span class="field-status field-status--optional">
+                            <RadzenIcon Icon="do_not_disturb_on" Style="font-size: 0.75rem;" /> Optional
+                        </span>
+                    </RadzenStack>
+                    <RadzenTextBox Style="width: 100%;" Placeholder="Optional remarks…" />
+                </div>
+
+                @* Invalid field *@
+                <div>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem"
+                                 Style="margin-bottom: 0.25rem;">
+                        <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">SSN</RadzenText>
+                        <span class="field-status field-status--invalid">
+                            <RadzenIcon Icon="error_outline" Style="font-size: 0.75rem;" /> Invalid format
+                        </span>
+                    </RadzenStack>
+                    <RadzenTextBox Value="12345" ReadOnly="true" Style="width: 100%;" />
+                </div>
+            </RadzenStack>
+        </ChildContent>
+    </RadzenFieldset>
+
+    @* ═══════════════════════════════════════════════════════════════════
+       3 ─ Section Completeness Progress Ring
+       ═══════════════════════════════════════════════════════════════════ *@
+    <RadzenFieldset>
+        <HeaderTemplate>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenBadge Text="3" BadgeStyle="BadgeStyle.Primary" IsPill="true" />
+                <RadzenText TextStyle="TextStyle.H6" TagName="TagName.Span">
+                    Section Completeness Progress Ring
+                </RadzenText>
+            </RadzenStack>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color); margin-bottom: 0.75rem;">
+                Each fieldset header shows a circular progress indicator plus a
+                percentage badge. Fill in the fields to update the ring.
+            </RadzenText>
+
+            <RadzenStack Gap="1.25rem">
+                @* ── Section A: partially filled ── *@
+                <RadzenFieldset class="section-card">
+                    <HeaderTemplate>
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                            <RadzenProgressBarCircular Value="@_sectionAPercent"
+                                                       Size="ProgressBarCircularSize.Small" ShowValue="false"
+                                                       ProgressBarStyle="@(_sectionAPercent == 100 ? ProgressBarStyle.Success : ProgressBarStyle.Primary)" />
+                            <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.Span">
+                                Member Information
+                            </RadzenText>
+                            <RadzenBadge Text="@($"{_sectionAPercent:0}%")"
+                                         BadgeStyle="@(_sectionAPercent == 100 ? BadgeStyle.Success : BadgeStyle.Warning)"
+                                         IsPill="true" />
+                        </RadzenStack>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+                            <RadzenFormField Text="Last Name" Variant="Variant.Outlined">
+                                <ChildContent>
+                                    <RadzenTextBox @bind-Value="_sectionALast" Change="@(_ => RecalcSectionA())" />
+                                </ChildContent>
+                            </RadzenFormField>
+                            <RadzenFormField Text="First Name" Variant="Variant.Outlined">
+                                <ChildContent>
+                                    <RadzenTextBox @bind-Value="_sectionAFirst" Change="@(_ => RecalcSectionA())" />
+                                </ChildContent>
+                            </RadzenFormField>
+                            <RadzenFormField Text="Rank" Variant="Variant.Outlined">
+                                <ChildContent>
+                                    <RadzenTextBox @bind-Value="_sectionARank" Change="@(_ => RecalcSectionA())" />
+                                </ChildContent>
+                            </RadzenFormField>
+                            <RadzenFormField Text="Date of Birth" Variant="Variant.Outlined">
+                                <ChildContent>
+                                    <RadzenTextBox @bind-Value="_sectionADob" Change="@(_ => RecalcSectionA())" />
+                                </ChildContent>
+                            </RadzenFormField>
+                        </RadzenStack>
+                    </ChildContent>
+                </RadzenFieldset>
+
+                @* ── Section B: fully completed ── *@
+                <RadzenFieldset class="section-card">
+                    <HeaderTemplate>
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                            <RadzenProgressBarCircular Value="100"
+                                                       Size="ProgressBarCircularSize.Small" ShowValue="false"
+                                                       ProgressBarStyle="ProgressBarStyle.Success" />
+                            <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.Span">
+                                Medical Assessment
+                            </RadzenText>
+                            <RadzenBadge Text="100%" BadgeStyle="BadgeStyle.Success" IsPill="true" />
+                        </RadzenStack>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+                            <RadzenFormField Text="Diagnosis" Variant="Variant.Outlined">
+                                <ChildContent><RadzenTextBox Value="Lumbar strain" ReadOnly="true" /></ChildContent>
+                            </RadzenFormField>
+                            <RadzenFormField Text="Facility" Variant="Variant.Outlined">
+                                <ChildContent><RadzenTextBox Value="99 MDG" ReadOnly="true" /></ChildContent>
+                            </RadzenFormField>
+                        </RadzenStack>
+                    </ChildContent>
+                </RadzenFieldset>
+            </RadzenStack>
+        </ChildContent>
+    </RadzenFieldset>
+
+    @* ═══════════════════════════════════════════════════════════════════
+       4 ─ Animated Slide-Down Validation Summary
+       ═══════════════════════════════════════════════════════════════════ *@
+    <RadzenFieldset>
+        <HeaderTemplate>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenBadge Text="4" BadgeStyle="BadgeStyle.Primary" IsPill="true" />
+                <RadzenText TextStyle="TextStyle.H6" TagName="TagName.Span">
+                    Animated Slide-Down Validation Summary
+                </RadzenText>
+            </RadzenStack>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color); margin-bottom: 0.75rem;">
+                Toggle the alert to see the slide-in animation. Errors are grouped in
+                a compact list.
+            </RadzenText>
+
+            <RadzenButton Text="@(_showSummary ? "Hide Errors" : "Show Errors")"
+                          ButtonStyle="@(_showSummary ? ButtonStyle.Success : ButtonStyle.Danger)"
+                          Shade="Shade.Default"
+                          Icon="@(_showSummary ? "visibility_off" : "visibility")"
+                          Click="@(() => _showSummary = !_showSummary)"
+                          Style="margin-bottom: 0.75rem;" />
+
+            @if (_showSummary)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat"
+                             ShowIcon="true" AllowClose="true"
+                             Close="@(() => _showSummary = false)"
+                             class="validation-summary-slide">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">
+                        3 issues remaining
+                    </RadzenText>
+                    <ul class="validation-error-list">
+                        <li>
+                            <RadzenIcon Icon="error_outline" Style="font-size: 0.875rem; vertical-align: middle;" />
+                            Last name is required (Member Information)
+                        </li>
+                        <li>
+                            <RadzenIcon Icon="error_outline" Style="font-size: 0.875rem; vertical-align: middle;" />
+                            Narrative of circumstances is required (Unit Commander)
+                        </li>
+                        <li>
+                            <RadzenIcon Icon="error_outline" Style="font-size: 0.875rem; vertical-align: middle;" />
+                            SSN must match format 000-00-0000 (Member Information)
+                        </li>
+                    </ul>
+                </RadzenAlert>
+            }
+        </ChildContent>
+    </RadzenFieldset>
+
+    @* ═══════════════════════════════════════════════════════════════════
+       5 ─ Step-Level Validation Badge on Workflow Sidebar
+       ═══════════════════════════════════════════════════════════════════ *@
+    <RadzenFieldset>
+        <HeaderTemplate>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenBadge Text="5" BadgeStyle="BadgeStyle.Primary" IsPill="true" />
+                <RadzenText TextStyle="TextStyle.H6" TagName="TagName.Span">
+                    Step-Level Validation Badges (Workflow Sidebar)
+                </RadzenText>
+            </RadzenStack>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color); margin-bottom: 0.75rem;">
+                A simulated sidebar showing error-count badges that pop in on each
+                step. Users can see at a glance which sections need attention.
+            </RadzenText>
+
+            <div class="sidebar-demo">
+                @foreach (var step in _sidebarSteps)
+                {
+                    <div class="sidebar-step @(step.Active ? "sidebar-step--active" : "")">
+                        <div class="sidebar-step-indicator">
+                            <div class="sidebar-step-dot @(step.Complete ? "sidebar-step-dot--complete" : "")">
+                                @if (step.Complete)
+                                {
+                                    <RadzenIcon Icon="check" Style="font-size: 0.8rem; color: var(--rz-white);" />
+                                }
+                            </div>
+                            @if (step.Errors > 0)
+                            {
+                                <span class="step-validation-badge">@step.Errors</span>
+                            }
+                        </div>
+                        <span class="sidebar-step-label">@step.Label</span>
+                    </div>
+                }
+            </div>
+        </ChildContent>
+    </RadzenFieldset>
+
+</RadzenStack>
