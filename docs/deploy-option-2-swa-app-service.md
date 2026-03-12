@@ -2,7 +2,7 @@
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
 │  ┌───────────────────────┐         ┌──────────────────────┐     │
@@ -70,7 +70,8 @@ az staticwebapp create \
   --login-with-github
 ```
 
-> **Free tier** is sufficient for most workloads. Upgrade to Standard for custom auth, SLA, and more bandwidth.
+> **Free tier** is sufficient for most workloads. Upgrade to Standard for custom
+> auth, SLA, and more bandwidth.
 
 ### 1.4 Configure Managed Identity for API
 
@@ -87,14 +88,20 @@ az webapp identity assign \
 ### 2.1 Link SWA to API Backend
 
 ```bash
+BACKEND_ID="/subscriptions/<SUB_ID>"
+BACKEND_ID+="/resourceGroups/rg-ectsystem-prod"
+BACKEND_ID+="/providers/Microsoft.Web/sites"
+BACKEND_ID+="/app-ectsystem-api-prod"
+
 az staticwebapp backends link \
   --name swa-ectsystem-web-prod \
   --resource-group rg-ectsystem-prod \
-  --backend-resource-id "/subscriptions/<SUB_ID>/resourceGroups/rg-ectsystem-prod/providers/Microsoft.Web/sites/app-ectsystem-api-prod" \
+  --backend-resource-id "$BACKEND_ID" \
   --backend-region centralus
 ```
 
-> This creates a `/api` proxy from the SWA to the App Service, eliminating CORS issues.
+> This creates a `/api` proxy from the SWA to the App Service, eliminating CORS
+> issues.
 
 ### 2.2 Alternative: Direct API Calls with CORS
 
@@ -114,8 +121,11 @@ az webapp config appsettings set \
   --name app-ectsystem-api-prod \
   --resource-group rg-ectsystem-prod \
   --settings \
-    "ConnectionStrings__DefaultConnection=Server=sql-ect-dev-cus.database.windows.net;Database=ECT;Authentication=Active Directory Default;" \
-    "ASPNETCORE_ENVIRONMENT=Production"
+    ASPNETCORE_ENVIRONMENT=Production \
+    "ConnectionStrings__DefaultConnection=\
+Server=sql-ect-dev-cus.database.windows.net;\
+Database=ECT;\
+Authentication=Active Directory Default;"
 ```
 
 ---
@@ -152,7 +162,8 @@ Create `ECTSystem.Web/wwwroot/staticwebapp.config.json`:
 }
 ```
 
-> **Critical:** The `navigationFallback` ensures Blazor client-side routing works correctly. Without it, deep links return 404.
+> **Critical:** The `navigationFallback` ensures Blazor client-side routing
+> works correctly. Without it, deep links return 404.
 
 ---
 
@@ -160,7 +171,8 @@ Create `ECTSystem.Web/wwwroot/staticwebapp.config.json`:
 
 ### 4.1 SWA Deployment Workflow
 
-Azure Static Web Apps auto-generates a GitHub Actions workflow when linked. Customize it:
+Azure Static Web Apps auto-generates a GitHub Actions workflow when linked.
+Customize it:
 
 ```yaml
 name: Deploy Blazor WASM to Azure Static Web Apps
@@ -169,8 +181,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'ECTSystem.Web/**'
-      - 'ECTSystem.Shared/**'
+      - "ECTSystem.Web/**"
+      - "ECTSystem.Shared/**"
 
 jobs:
   build_and_deploy:
@@ -181,10 +193,12 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Publish Blazor WASM
-        run: dotnet publish ECTSystem.Web/ECTSystem.Web.csproj -c Release -o ./publish
+        run:
+          dotnet publish ECTSystem.Web/ECTSystem.Web.csproj -c Release -o
+          ./publish
 
       - name: Deploy to SWA
         uses: Azure/static-web-apps-deploy@v1
@@ -220,11 +234,13 @@ az webapp config hostname add \
   --hostname api.ectsystem.mil
 ```
 
-> SWA provides **free managed TLS certificates** for custom domains automatically.
+> SWA provides **free managed TLS certificates** for custom domains
+> automatically.
 
 ### 5.2 Environment-Specific API URL
 
-Configure the Blazor WASM app to point at the correct API URL per environment using `appsettings.json` in `wwwroot/`:
+Configure the Blazor WASM app to point at the correct API URL per environment
+using `appsettings.json` in `wwwroot/`:
 
 ```json
 {
@@ -237,7 +253,7 @@ Configure the Blazor WASM app to point at the correct API URL per environment us
 ## Advantages over Option 1
 
 | Factor | SWA + App Service | App Service Only |
-|--------|-------------------|-----------------|
+| --- | --- | --- |
 | Frontend hosting cost | Free tier available | Requires paid plan |
 | Global CDN | Built-in, automatic | Requires separate Azure CDN |
 | TLS certificates | Free, auto-managed | Free (App Service Managed) |
@@ -250,12 +266,12 @@ Configure the Blazor WASM app to point at the correct API URL per environment us
 ## Cost Estimate
 
 | Resource | SKU | Monthly Cost (approx.) |
-|----------|-----|----------------------|
+| --- | --- | --- |
 | Static Web App | Free | $0 |
 | Static Web App | Standard | ~$9 |
 | App Service Plan (API) | B1 | ~$13 |
 | Azure SQL | S0 (10 DTU) | ~$15 |
-| **Total (Free SWA + B1)** | | **~$28/month** |
+| **Total (Free SWA + B1)** | — | **~$28/month** |
 
 ---
 

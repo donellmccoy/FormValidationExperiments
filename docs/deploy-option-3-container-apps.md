@@ -2,7 +2,7 @@
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────┐
 │               Azure Container Apps Environment                │
 │                                                              │
@@ -145,17 +145,26 @@ az containerapp env create \
 az acr login --name acrectsystem
 
 # Build and push API image
-docker build -t acrectsystem.azurecr.io/ectsystem-api:latest -f ECTSystem.Api/Dockerfile .
+docker build \
+  -t acrectsystem.azurecr.io/ectsystem-api:latest \
+  -f ECTSystem.Api/Dockerfile .
 docker push acrectsystem.azurecr.io/ectsystem-api:latest
 
 # Build and push Web image
-docker build -t acrectsystem.azurecr.io/ectsystem-web:latest -f ECTSystem.Web/Dockerfile .
+docker build \
+  -t acrectsystem.azurecr.io/ectsystem-web:latest \
+  -f ECTSystem.Web/Dockerfile .
 docker push acrectsystem.azurecr.io/ectsystem-web:latest
 ```
 
-> **Alternative:** Use `az acr build` to build directly in ACR (no local Docker needed):
+> **Alternative:** Use `az acr build` to build directly in ACR (no local Docker
+> needed):
+>
 > ```bash
-> az acr build --registry acrectsystem --image ectsystem-api:latest -f ECTSystem.Api/Dockerfile .
+> az acr build \
+>   --registry acrectsystem \
+>   --image ectsystem-api:latest \
+>   -f ECTSystem.Api/Dockerfile .
 > ```
 
 ---
@@ -180,7 +189,10 @@ az containerapp create \
   --cpu 0.5 \
   --memory 1.0Gi \
   --env-vars \
-    "ConnectionStrings__DefaultConnection=Server=sql-ect-dev-cus.database.windows.net;Database=ECT;Authentication=Active Directory Default;" \
+    "ConnectionStrings__DefaultConnection=\
+Server=sql-ect-dev-cus.database.windows.net;\
+Database=ECT;\
+Authentication=Active Directory Default;" \
     "ASPNETCORE_ENVIRONMENT=Production"
 ```
 
@@ -203,7 +215,9 @@ az containerapp create \
   --memory 0.5Gi
 ```
 
-> **Scale to zero:** Set `--min-replicas 0` on the Web container since it serves static files and can cold-start quickly. Keep `--min-replicas 1` on the API to avoid EF Core cold-start latency.
+> **Scale to zero:** Set `--min-replicas 0` on the Web container since it serves
+> static files and can cold-start quickly. Keep `--min-replicas 1` on the API to
+> avoid EF Core cold-start latency.
 
 ### 3.3 Enable Managed Identity
 
@@ -228,7 +242,8 @@ name: Deploy API to Container Apps
 on:
   push:
     branches: [main]
-    paths: ['ECTSystem.Api/**', 'ECTSystem.Persistence/**', 'ECTSystem.Shared/**']
+    paths:
+      ["ECTSystem.Api/**", "ECTSystem.Persistence/**", "ECTSystem.Shared/**"]
 
 jobs:
   build-and-deploy:
@@ -304,12 +319,12 @@ az containerapp update \
 ## Cost Estimate
 
 | Resource | Configuration | Monthly Cost (approx.) |
-|----------|--------------|----------------------|
+| --- | --- | --- |
 | Container Apps (API) | 0.5 vCPU / 1Gi, 1 replica | ~$36 |
 | Container Apps (Web) | 0.25 vCPU / 0.5Gi, scale-to-zero | ~$0–18 |
 | Container Registry | Basic | ~$5 |
 | Azure SQL | S0 (10 DTU) | ~$15 |
-| **Total** | | **~$56–74/month** |
+| **Total** | — | **~$56–74/month** |
 
 ---
 

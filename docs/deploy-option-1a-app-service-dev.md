@@ -1,10 +1,12 @@
 # Option 1a — Azure App Service (Dev / Demo Environment)
 
-A lightweight, low-cost deployment for development and demo purposes. No staging slots, no Blue/Green, no CI/CD pipelines — just get the app running in Azure quickly.
+A lightweight, low-cost deployment for development and demo purposes. No staging
+slots, no Blue/Green, no CI/CD pipelines — just get the app running in Azure
+quickly.
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │              Azure App Service (B1 Linux)             │
 │                                                      │
@@ -29,13 +31,15 @@ A lightweight, low-cost deployment for development and demo purposes. No staging
 - Azure subscription
 - Azure CLI (`az`) installed and logged in (`az login`)
 - .NET 10 SDK installed
-- Existing Azure SQL Database (`sql-ect-dev-cus.database.windows.net`, database `ECT`)
+- Existing Azure SQL Database (`sql-ect-dev-cus.database.windows.net`, database
+  `ECT`)
 
 ---
 
 ## Step 1 — Create App Service Plan
 
-Use the existing `rg-ectsystem-dev` resource group and a **Basic B1** plan (cheapest tier that runs 24/7):
+Use the existing `rg-ectsystem-dev` resource group and a **Basic B1** plan
+(cheapest tier that runs 24/7):
 
 ```bash
 az appservice plan create \
@@ -46,7 +50,8 @@ az appservice plan create \
   --is-linux
 ```
 
-> **Cost:** ~$13/month. Alternatively, use `F1` (Free) but it has 60 min/day CPU limits and no always-on.
+> **Cost:** ~$13/month. Alternatively, use `F1` (Free) but it has 60 min/day CPU
+> limits and no always-on.
 
 ---
 
@@ -72,7 +77,8 @@ az webapp identity assign \
 
 ### 2.3 Grant SQL Access
 
-Run in Azure SQL (connect via SSMS, Azure Data Studio, or the portal query editor):
+Run in Azure SQL (connect via SSMS, Azure Data Studio, or the portal query
+editor):
 
 ```sql
 CREATE USER [app-ectsystem-api-dev] FROM EXTERNAL PROVIDER;
@@ -88,7 +94,10 @@ az webapp config appsettings set \
   --resource-group rg-ectsystem-dev \
   --settings \
     ASPNETCORE_ENVIRONMENT="Development" \
-    ConnectionStrings__DefaultConnection="Server=sql-ect-dev-cus.database.windows.net;Database=ECT;Authentication=Active Directory Default;"
+    ConnectionStrings__DefaultConnection="\
+Server=sql-ect-dev-cus.database.windows.net;\
+Database=ECT;\
+Authentication=Active Directory Default;"
 ```
 
 ### 2.5 Configure CORS
@@ -132,9 +141,11 @@ az webapp create \
 
 ### 3.2 Update API Base URL in the Blazor Client
 
-Before publishing, ensure the Blazor WASM app points to the deployed API URL. Update the API base address in `Program.cs` (or `appsettings.json` / `wwwroot/appsettings.json`) to:
+Before publishing, ensure the Blazor WASM app points to the deployed API URL.
+Update the API base address in `Program.cs` (or `appsettings.json` /
+`wwwroot/appsettings.json`) to:
 
-```
+```text
 https://app-ectsystem-api-dev.azurewebsites.net
 ```
 
@@ -179,7 +190,8 @@ dotnet ef database update `
   --startup-project ECTSystem.Api
 ```
 
-> This uses the connection string in `appsettings.Development.json` which points to `sql-ect-dev-cus.database.windows.net`.
+> This uses the connection string in `appsettings.Development.json` which points
+> to `sql-ect-dev-cus.database.windows.net`.
 
 ---
 
@@ -197,13 +209,24 @@ No CI/CD pipeline needed — just publish and zip deploy from your terminal:
 ```powershell
 # API
 dotnet publish ECTSystem.Api/ECTSystem.Api.csproj -c Release -o ./publish-api
-Compress-Archive -Path ./publish-api/* -DestinationPath ./ectsystem-api.zip -Force
-az webapp deploy --name app-ectsystem-api-dev --resource-group rg-ectsystem-dev --src-path ectsystem-api.zip --type zip
+Compress-Archive `
+  -Path ./publish-api/* `
+  -DestinationPath ./ectsystem-api.zip -Force
+az webapp deploy `
+  --name app-ectsystem-api-dev `
+  --resource-group rg-ectsystem-dev `
+  --src-path ectsystem-api.zip --type zip
 
 # Web
-dotnet publish ECTSystem.Web/ECTSystem.Web.csproj -c Release -o ./publish-web
-Compress-Archive -Path ./publish-web/* -DestinationPath ./ectsystem-web.zip -Force
-az webapp deploy --name app-ectsystem-web-dev --resource-group rg-ectsystem-dev --src-path ectsystem-web.zip --type zip
+dotnet publish ECTSystem.Web/ECTSystem.Web.csproj `
+  -c Release -o ./publish-web
+Compress-Archive `
+  -Path ./publish-web/* `
+  -DestinationPath ./ectsystem-web.zip -Force
+az webapp deploy `
+  --name app-ectsystem-web-dev `
+  --resource-group rg-ectsystem-dev `
+  --src-path ectsystem-web.zip --type zip
 ```
 
 ---
@@ -215,34 +238,39 @@ Remove everything when the demo is over:
 ```bash
 az webapp delete --name app-ectsystem-api-dev --resource-group rg-ectsystem-dev
 az webapp delete --name app-ectsystem-web-dev --resource-group rg-ectsystem-dev
-az appservice plan delete --name asp-ectsystem-dev --resource-group rg-ectsystem-dev --yes
+az appservice plan delete \
+  --name asp-ectsystem-dev \
+  --resource-group rg-ectsystem-dev \
+  --yes
 ```
 
-> The Azure SQL database and resource group are preserved — only the App Service resources are removed.
+> The Azure SQL database and resource group are preserved — only the App Service
+> resources are removed.
 
 ---
 
 ## Cost Estimate (Dev / Demo)
 
 | Resource | SKU | Monthly Cost |
-|----------|-----|-------------|
+| --- | --- | --- |
 | App Service Plan | B1 (shared by both apps) | ~$13 |
 | Azure SQL | S0 (existing) | ~$15 |
-| **Total** | | **~$28/month** |
+| **Total** | — | **~$28/month** |
 
-> Shut down the App Service Plan when not demoing to pay $0 for compute. The SQL database cost remains.
+> Shut down the App Service Plan when not demoing to pay $0 for compute. The SQL
+> database cost remains.
 
 ---
 
 ## Comparison to Option 1 (Full)
 
 | Feature | Option 1a (Dev/Demo) | Option 1 (Production) |
-|---------|---------------------|----------------------|
+| --- | --- | --- |
 | App Service SKU | B1 (~$13/mo) | S1+ (~$73/mo) |
 | Deployment Slots | No | Yes (Blue/Green) |
 | CI/CD Pipeline | No (manual zip deploy) | GitHub Actions |
 | Custom Domain | No | Yes |
-| HTTPS Certificate | Azure default (`*.azurewebsites.net`) | Managed cert or App Service cert |
+| HTTPS Cert | Default (`*.azurewebsites.net`) | Managed or App Service cert |
 | Autoscaling | No | Optional |
 | Monitoring | Basic (portal metrics) | Application Insights |
 | Estimated Cost | ~$28/month | ~$88+/month |

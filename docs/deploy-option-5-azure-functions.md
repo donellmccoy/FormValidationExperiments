@@ -2,7 +2,7 @@
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                                                                  │
 │  ┌───────────────────────┐         ┌──────────────────────────┐  │
@@ -35,12 +35,14 @@
 
 ## Important Considerations
 
-> **This option requires significant refactoring.** The current `ECTSystem.Api` is an ASP.NET Core OData API with middleware, Identity endpoints, and EF Core — not a Functions project. This plan covers the migration path.
+> **This option requires significant refactoring.** The current `ECTSystem.Api`
+> is an ASP.NET Core OData API with middleware, Identity endpoints, and EF Core
+> — not a Functions project. This plan covers the migration path.
 
 ### What Changes
 
 | Component | Current | After Migration |
-|-----------|---------|----------------|
+| --- | --- | --- |
 | API Framework | ASP.NET Core OData | Azure Functions (Isolated Worker) |
 | Hosting | Kestrel / IIS | Azure Functions Runtime |
 | Routing | OData convention routing | Function triggers + route attributes |
@@ -63,7 +65,7 @@ func new --name CasesFunction --template "HTTP trigger"
 
 ### 1.2 Project Structure
 
-```
+```text
 ECTSystem.Functions/
 ├── Program.cs              # Host builder with DI
 ├── CasesFunction.cs        # Cases CRUD endpoints
@@ -101,17 +103,20 @@ host.Run();
 ### 1.4 Convert Controllers to Functions
 
 **Before (ASP.NET Core OData Controller):**
+
 ```csharp
 public class CasesController : ODataController
 {
     [EnableQuery]
     public IActionResult Get() => Ok(_context.LineOfDutyCases);
 
-    public async Task<IActionResult> Post([FromBody] LineOfDutyCase lodCase) { ... }
+    public async Task<IActionResult> Post(
+        [FromBody] LineOfDutyCase lodCase) { ... }
 }
 ```
 
 **After (Azure Function):**
+
 ```csharp
 public class CasesFunction
 {
@@ -124,9 +129,13 @@ public class CasesFunction
 
     [Function("GetCases")]
     public async Task<HttpResponseData> GetCases(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "cases")] HttpRequestData req)
+        [HttpTrigger(
+            AuthorizationLevel.Anonymous,
+            "get", Route = "cases")]
+        HttpRequestData req)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context =
+            await _contextFactory.CreateDbContextAsync();
         var cases = await context.LineOfDutyCases.ToListAsync();
         var response = req.CreateResponse(HttpStatusCode.OK);
         await response.WriteAsJsonAsync(cases);
@@ -135,7 +144,10 @@ public class CasesFunction
 
     [Function("GetCase")]
     public async Task<HttpResponseData> GetCase(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "cases/{id:int}")] HttpRequestData req,
+        [HttpTrigger(
+            AuthorizationLevel.Anonymous,
+            "get", Route = "cases/{id:int}")]
+        HttpRequestData req,
         int id)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -151,7 +163,10 @@ public class CasesFunction
 
     [Function("CreateCase")]
     public async Task<HttpResponseData> CreateCase(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "cases")] HttpRequestData req)
+        [HttpTrigger(
+            AuthorizationLevel.Anonymous,
+            "post", Route = "cases")]
+        HttpRequestData req)
     {
         var lodCase = await req.ReadFromJsonAsync<LineOfDutyCase>();
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -165,9 +180,12 @@ public class CasesFunction
 }
 ```
 
-> **OData Limitation:** Azure Functions does not natively support OData query syntax (`$select`, `$expand`, `$filter`). You'll need to either:
+> **OData Limitation:** Azure Functions does not natively support OData query
+> syntax (`$select`, `$expand`, `$filter`). You'll need to either:
+>
 > 1. Implement manual query parsing
-> 2. Use a library like `Microsoft.AspNetCore.OData` in the Functions isolated worker
+> 2. Use a library like `Microsoft.AspNetCore.OData` in the Functions isolated
+>    worker
 > 3. Replace OData queries with explicit REST endpoints
 
 ---
@@ -189,7 +207,10 @@ Configure Functions for B2C token validation:
 ```csharp
 [Function("GetCases")]
 public async Task<HttpResponseData> GetCases(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "cases")] HttpRequestData req,
+    [HttpTrigger(
+        AuthorizationLevel.Anonymous,
+        "get", Route = "cases")]
+    HttpRequestData req,
     FunctionContext context)
 {
     // Validate JWT from B2C
@@ -204,7 +225,8 @@ public async Task<HttpResponseData> GetCases(
 
 ### Option B: Keep ASP.NET Identity as Separate Service
 
-Deploy Identity endpoints as a separate App Service while using Functions for the data API.
+Deploy Identity endpoints as a separate App Service while using Functions for
+the data API.
 
 ---
 
@@ -247,7 +269,8 @@ az functionapp create \
   --runtime-version 10
 ```
 
-> **Flex Consumption** provides faster cold starts and VNet integration, recommended for production workloads.
+> **Flex Consumption** provides faster cold starts and VNet integration,
+> recommended for production workloads.
 
 ### 3.4 Create Static Web App
 
@@ -260,7 +283,10 @@ az functionapp config appsettings set \
   --name func-ectsystem-api-prod \
   --resource-group rg-ectsystem-prod \
   --settings \
-    "SqlConnectionString=Server=sql-ect-dev-cus.database.windows.net;Database=ECT;Authentication=Active Directory Default;"
+    "SqlConnectionString=\
+Server=sql-ect-dev-cus.database.windows.net;\
+Database=ECT;\
+Authentication=Active Directory Default;"
 ```
 
 ### 3.6 Enable Managed Identity
@@ -281,7 +307,12 @@ name: Deploy Functions API
 on:
   push:
     branches: [main]
-    paths: ['ECTSystem.Functions/**', 'ECTSystem.Persistence/**', 'ECTSystem.Shared/**']
+    paths:
+      [
+        "ECTSystem.Functions/**",
+        "ECTSystem.Persistence/**",
+        "ECTSystem.Shared/**",
+      ]
 
 jobs:
   build-and-deploy:
@@ -291,10 +322,12 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Build
-        run: dotnet publish ECTSystem.Functions/ECTSystem.Functions.csproj -c Release -o ./publish
+        run:
+          dotnet publish ECTSystem.Functions/ECTSystem.Functions.csproj -c
+          Release -o ./publish
 
       - name: Deploy to Azure Functions
         uses: azure/functions-action@v2
@@ -311,10 +344,15 @@ jobs:
 Link the Static Web App to the Function App to proxy `/api` requests:
 
 ```bash
+BACKEND_ID="/subscriptions/<SUB_ID>"
+BACKEND_ID+="/resourceGroups/rg-ectsystem-prod"
+BACKEND_ID+="/providers/Microsoft.Web/sites"
+BACKEND_ID+="/func-ectsystem-api-prod"
+
 az staticwebapp backends link \
   --name swa-ectsystem-web-prod \
   --resource-group rg-ectsystem-prod \
-  --backend-resource-id "/subscriptions/<SUB_ID>/resourceGroups/rg-ectsystem-prod/providers/Microsoft.Web/sites/func-ectsystem-api-prod" \
+  --backend-resource-id "$BACKEND_ID" \
   --backend-region centralus
 ```
 
@@ -323,7 +361,7 @@ az staticwebapp backends link \
 ## Migration Effort Estimate
 
 | Task | Effort |
-|------|--------|
+| --- | --- |
 | Create Functions project with DI | Low |
 | Convert 6 controllers to Functions | Medium |
 | Replace OData query support | High |
@@ -339,15 +377,16 @@ az staticwebapp backends link \
 ## Cost Estimate
 
 | Resource | Configuration | Monthly Cost (approx.) |
-|----------|--------------|----------------------|
+| --- | --- | --- |
 | Functions (Consumption) | Pay-per-execution | ~$0–5 (low traffic) |
 | Functions (Flex Consumption) | Per-invocation + vCPU/GB-s | ~$5–20 |
 | Storage Account | Standard LRS | ~$1 |
 | Static Web App | Free | $0 |
 | Azure SQL | S0 (10 DTU) | ~$15 |
-| **Total (Consumption + Free SWA)** | | **~$16–41/month** |
+| **Total (Consumption + Free SWA)** | — | **~$16–41/month** |
 
-> **Lowest cost option** when traffic is low or spiky. Cost scales linearly with usage.
+> **Lowest cost option** when traffic is low or spiky. Cost scales linearly with
+> usage.
 
 ---
 

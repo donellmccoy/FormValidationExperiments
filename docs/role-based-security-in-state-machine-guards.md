@@ -1,10 +1,13 @@
 # Role-Based Security in State Machine Guards
 
-Your project already has the auth plumbing — JWT tokens, `JwtAuthStateProvider`, `ClaimsIdentity`, `[Authorize]` controllers. Here's how to wire roles into the guards.
+Your project already has the auth plumbing — JWT tokens, `JwtAuthStateProvider`,
+`ClaimsIdentity`, `[Authorize]` controllers. Here's how to wire roles into the
+guards.
 
 ## 1. Define Workflow Roles
 
-Create an enum in `ECTSystem.Shared/Enums/` mapping to the LOD workflow participants:
+Create an enum in `ECTSystem.Shared/Enums/` mapping to the LOD workflow
+participants:
 
 ```csharp
 public enum WorkflowRole
@@ -36,11 +39,14 @@ foreach (var role in Enum.GetNames<WorkflowRole>())
 }
 ```
 
-Then assign roles to users via `UserManager.AddToRoleAsync()`. The roles will be included as claims in the JWT token automatically (Identity's default `UserClaimsPrincipalFactory` adds role claims).
+Then assign roles to users via `UserManager.AddToRoleAsync()`. The roles will be
+included as claims in the JWT token automatically (Identity's default
+`UserClaimsPrincipalFactory` adds role claims).
 
 ## 3. Inject the User's Roles into the State Machine
 
-Give `LodStateMachine` a way to know the current user's roles. The cleanest approach is a simple interface:
+Give `LodStateMachine` a way to know the current user's roles. The cleanest
+approach is a simple interface:
 
 ```csharp
 public interface ICurrentUser
@@ -80,7 +86,10 @@ Add `ICurrentUser` as a dependency:
 ```csharp
 private readonly ICurrentUser _currentUser;
 
-public LodStateMachine(LineOfDutyCase lineOfDutyCase, IDataService dataService, ICurrentUser currentUser)
+public LodStateMachine(
+    LineOfDutyCase lineOfDutyCase,
+    IDataService dataService,
+    ICurrentUser currentUser)
 {
     _lineOfDutyCase = lineOfDutyCase;
     _dataService = dataService;
@@ -137,7 +146,8 @@ private bool CanCancelAsync()
 }
 ```
 
-For return triggers, you might require a different role — the *destination* state's owner:
+For return triggers, you might require a different role — the _destination_
+state's owner:
 
 ```csharp
 private bool CanReturnToMedicalTechnicianReviewAsync()
@@ -149,11 +159,15 @@ private bool CanReturnToMedicalTechnicianReviewAsync()
 
 ## 6. The UI Effect
 
-Since EditCase already calls `_stateMachine.GetPermittedTriggersAsync()` to determine which buttons are shown, **no UI changes are needed**. Guards that return `false` because the user lacks the role will automatically filter that trigger out of the permitted set. Buttons for unauthorized transitions simply won't appear.
+Since EditCase already calls `_stateMachine.GetPermittedTriggersAsync()` to
+determine which buttons are shown, **no UI changes are needed**. Guards that
+return `false` because the user lacks the role will automatically filter that
+trigger out of the permitted set. Buttons for unauthorized transitions simply
+won't appear.
 
 ## Architecture Summary
 
-```
+```text
 JWT Token (with role claims)
   ↓
 JwtAuthStateProvider (parses claims)
@@ -167,4 +181,8 @@ GetPermittedTriggersAsync() (only returns triggers passing guards)
 EditCase UI (only shows permitted action buttons)
 ```
 
-The key principle: **authorization is enforced at the guard level, not the UI level**. The UI is just a reflection of what the state machine permits. Even if someone manipulates the client, the API controllers already have `[Authorize]` — and you could add role-based `[Authorize(Roles = "...")]` on specific OData endpoints as a second layer.
+The key principle: **authorization is enforced at the guard level, not the UI
+level**. The UI is just a reflection of what the state machine permits. Even if
+someone manipulates the client, the API controllers already have `[Authorize]` —
+and you could add role-based `[Authorize(Roles = "...")]` on specific OData
+endpoints as a second layer.

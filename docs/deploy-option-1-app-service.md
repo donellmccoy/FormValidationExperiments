@@ -2,7 +2,7 @@
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │                   Azure App Service                  │
 │                                                      │
@@ -28,7 +28,8 @@
 - Azure CLI (`az`) installed
 - .NET 10 SDK installed
 - GitHub repo connected (for CI/CD)
-- Azure SQL Database already provisioned (`sql-ect-dev-cus.database.windows.net`)
+- Azure SQL Database already provisioned
+  (`sql-ect-dev-cus.database.windows.net`)
 
 ---
 
@@ -52,7 +53,8 @@ az appservice plan create \
   --is-linux
 ```
 
-> **Recommendation:** Use Linux for cost savings. Use `S1` or higher for deployment slots (required for Blue/Green).
+> **Recommendation:** Use Linux for cost savings. Use `S1` or higher for
+> deployment slots (required for Blue/Green).
 
 ### 1.3 Create Web App for API
 
@@ -74,7 +76,9 @@ az webapp create \
   --runtime "DOTNETCORE:10.0"
 ```
 
-> **Alternative:** Serve the Blazor WASM app as static files from the API project using `app.UseBlazorFrameworkFiles()` — reduces to a single App Service.
+> **Alternative:** Serve the Blazor WASM app as static files from the API
+> project using `app.UseBlazorFrameworkFiles()` — reduces to a single App
+> Service.
 
 ### 1.5 Enable Managed Identity on API App
 
@@ -104,8 +108,11 @@ az webapp config appsettings set \
   --name app-ectsystem-api-prod \
   --resource-group rg-ectsystem-prod \
   --settings \
-    "ConnectionStrings__DefaultConnection=Server=sql-ect-dev-cus.database.windows.net;Database=ECT;Authentication=Active Directory Default;" \
-    "ASPNETCORE_ENVIRONMENT=Production"
+    ASPNETCORE_ENVIRONMENT=Production \
+    "ConnectionStrings__DefaultConnection=\
+Server=sql-ect-dev-cus.database.windows.net;\
+Database=ECT;\
+Authentication=Active Directory Default;"
 ```
 
 ### 2.2 Web App Configuration
@@ -142,9 +149,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'ECTSystem.Api/**'
-      - 'ECTSystem.Persistence/**'
-      - 'ECTSystem.Shared/**'
+      - "ECTSystem.Api/**"
+      - "ECTSystem.Persistence/**"
+      - "ECTSystem.Shared/**"
 
 jobs:
   build-and-deploy:
@@ -155,10 +162,12 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Build
-        run: dotnet publish ECTSystem.Api/ECTSystem.Api.csproj -c Release -o ./publish
+        run:
+          dotnet publish ECTSystem.Api/ECTSystem.Api.csproj -c Release -o
+          ./publish
 
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
@@ -179,8 +188,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'ECTSystem.Web/**'
-      - 'ECTSystem.Shared/**'
+      - "ECTSystem.Web/**"
+      - "ECTSystem.Shared/**"
 
 jobs:
   build-and-deploy:
@@ -191,10 +200,12 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
       - name: Build
-        run: dotnet publish ECTSystem.Web/ECTSystem.Web.csproj -c Release -o ./publish
+        run:
+          dotnet publish ECTSystem.Web/ECTSystem.Web.csproj -c Release -o
+          ./publish
 
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
@@ -211,8 +222,14 @@ jobs:
 ### 4.1 Enable HTTPS Only
 
 ```bash
-az webapp update --name app-ectsystem-api-prod --resource-group rg-ectsystem-prod --https-only true
-az webapp update --name app-ectsystem-web-prod --resource-group rg-ectsystem-prod --https-only true
+az webapp update \
+  --name app-ectsystem-api-prod \
+  --resource-group rg-ectsystem-prod \
+  --https-only true
+az webapp update \
+  --name app-ectsystem-web-prod \
+  --resource-group rg-ectsystem-prod \
+  --https-only true
 ```
 
 ### 4.2 Configure Custom Domains (Optional)
@@ -243,7 +260,8 @@ ASPNETCORE_ENVIRONMENT=Production dotnet ef database update \
 
 ### 4.4 SPA Fallback Routing for Blazor WASM
 
-Add a `web.config` or configure the Linux startup to serve `index.html` for unmatched routes:
+Add a `web.config` or configure the Linux startup to serve `index.html` for
+unmatched routes:
 
 ```bash
 az webapp config set \
@@ -256,11 +274,14 @@ az webapp config set \
 
 ## Phase 5 — Blue/Green Deployments
 
-Blue/Green deployment eliminates downtime and reduces deployment risk by maintaining two identical production environments. Only one (the "active" slot) serves live traffic at any time. New releases are deployed to the inactive slot, validated, then swapped into production.
+Blue/Green deployment eliminates downtime and reduces deployment risk by
+maintaining two identical production environments. Only one (the "active" slot)
+serves live traffic at any time. New releases are deployed to the inactive slot,
+validated, then swapped into production.
 
 ### 5.1 Overview
 
-```
+```text
                     ┌─────────────────────────────┐
                     │      Azure App Service       │
                     │                               │
@@ -279,7 +300,8 @@ Blue/Green deployment eliminates downtime and reduces deployment risk by maintai
 
 ### 5.2 Prerequisites
 
-- **App Service Plan SKU S1 or higher** — deployment slots are not available on Free/Shared/Basic tiers.
+- **App Service Plan SKU S1 or higher** — deployment slots are not available on
+  Free/Shared/Basic tiers.
 - Upgrade if currently on B1:
 
 ```bash
@@ -307,7 +329,8 @@ az webapp deployment slot create \
 
 ### 5.4 Slot-Specific Configuration
 
-Mark settings that should **not** swap (e.g., connection strings pointing to staging databases, feature flags):
+Mark settings that should **not** swap (e.g., connection strings pointing to
+staging databases, feature flags):
 
 ```bash
 # Mark connection string as slot-specific (sticky to the slot)
@@ -316,7 +339,11 @@ az webapp config connection-string set \
   --resource-group rg-ectsystem-prod \
   --slot staging \
   --connection-string-type SQLAzure \
-  --settings DefaultConnection="Server=sql-ect-dev-cus.database.windows.net;Database=ECT_Staging;Authentication=Active Directory Default;"
+  --settings \
+    DefaultConnection="\
+Server=sql-ect-dev-cus.database.windows.net;\
+Database=ECT_Staging;\
+Authentication=Active Directory Default;"
 
 az webapp config appsettings set \
   --name app-ectsystem-api-prod \
@@ -325,7 +352,9 @@ az webapp config appsettings set \
   --slot-settings "ASPNETCORE_ENVIRONMENT=Staging"
 ```
 
-> **Slot settings (sticky)** remain with the slot during a swap. **Non-sticky settings** travel with the app code. Use sticky settings for anything environment-specific (connection strings, feature flags, logging levels).
+> **Slot settings (sticky)** remain with the slot during a swap. **Non-sticky
+> settings** travel with the app code. Use sticky settings for anything
+> environment-specific (connection strings, feature flags, logging levels).
 
 ### 5.5 Deploy to Staging Slot
 
@@ -386,11 +415,13 @@ az webapp deployment slot swap \
   --target-slot production
 ```
 
-> The previous production code is still running in the staging slot, so rollback is instantaneous.
+> The previous production code is still running in the staging slot, so rollback
+> is instantaneous.
 
 ### 5.9 Auto-Swap (Optional)
 
-Enable auto-swap to automatically promote staging to production after deployment:
+Enable auto-swap to automatically promote staging to production after
+deployment:
 
 ```bash
 az webapp deployment slot auto-swap \
@@ -399,7 +430,9 @@ az webapp deployment slot auto-swap \
   --slot staging
 ```
 
-> **Caution:** Only enable auto-swap if you have robust automated testing in your CI/CD pipeline. For the ECTSystem LOD workflow, manual swap after validation is recommended.
+> **Caution:** Only enable auto-swap if you have robust automated testing in
+> your CI/CD pipeline. For the ECTSystem LOD workflow, manual swap after
+> validation is recommended.
 
 ### 5.10 Full Blue/Green CI/CD Pipeline
 
@@ -409,7 +442,8 @@ name: Blue/Green Deploy API
 on:
   push:
     branches: [main]
-    paths: ['ECTSystem.Api/**', 'ECTSystem.Persistence/**', 'ECTSystem.Shared/**']
+    paths:
+      ["ECTSystem.Api/**", "ECTSystem.Persistence/**", "ECTSystem.Shared/**"]
 
 jobs:
   build:
@@ -418,8 +452,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
-      - run: dotnet publish ECTSystem.Api/ECTSystem.Api.csproj -c Release -o ./publish
+          dotnet-version: "10.0.x"
+      - run:
+          dotnet publish ECTSystem.Api/ECTSystem.Api.csproj -c Release -o
+          ./publish
       - uses: actions/upload-artifact@v4
         with:
           name: api-package
@@ -447,7 +483,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
       - name: Health Check
         run: |
           for i in {1..10}; do
@@ -464,7 +500,7 @@ jobs:
   swap-to-production:
     needs: validate-staging
     runs-on: ubuntu-latest
-    environment: production  # Requires manual approval in GitHub
+    environment: production # Requires manual approval in GitHub
     steps:
       - uses: azure/login@v2
         with:
@@ -481,26 +517,26 @@ jobs:
 ### 5.11 Blue/Green Best Practices for ECTSystem
 
 | Practice | Guidance |
-|----------|----------|
-| **Database migrations** | Run migrations **before** the swap. Both slots must be compatible with the new schema. Use backward-compatible migrations (add columns, don't rename/drop). |
-| **Warm-up** | Configure Application Initialization rules so the staging slot is warm before swap. Cold Blazor WASM + EF Core startup can take 10–15s. |
-| **Sticky settings** | Connection strings, `ASPNETCORE_ENVIRONMENT`, and feature flags should be slot-sticky. |
-| **Health checks** | Configure App Service health check endpoint (`/health`) to detect unhealthy instances post-swap. |
-| **Testing the swap** | Use `az webapp deployment slot swap --action preview` for a multi-phase swap that lets you validate with production settings before finalizing. |
-| **Monitoring** | Enable Application Insights on both slots to compare error rates pre/post-swap. |
+| --- | --- |
+| **DB migrations** | Run before swap. Use backward-compatible changes only. |
+| **Warm-up** | Configure App Init; cold starts take 10–15s. |
+| **Sticky settings** | Conn strings, `ASPNETCORE_ENVIRONMENT`, flags. |
+| **Health checks** | Use `/health` endpoint to detect issues post-swap. |
+| **Testing the swap** | Use `--action preview` for multi-phase validation. |
+| **Monitoring** | App Insights on both slots; compare error rates. |
 
 ---
 
 ## Cost Estimate
 
 | Resource | SKU | Monthly Cost (approx.) |
-|----------|-----|----------------------|
+| --- | --- | --- |
 | App Service Plan | S1 (with slots) | ~$73 |
 | App Service Plan | B1 (no slots) | ~$13 |
 | Azure SQL | Basic (5 DTU) | ~$5 |
 | Azure SQL | S0 (10 DTU) | ~$15 |
 | Custom Domain + TLS | App Service Managed Certificate | Free |
-| **Total (S1 + S0)** | | **~$88/month** |
+| **Total (S1 + S0)** | — | **~$88/month** |
 
 ---
 

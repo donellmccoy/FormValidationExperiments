@@ -2,7 +2,7 @@
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                     Azure Kubernetes Service                      │
 │                                                                  │
@@ -81,7 +81,9 @@ az aks get-credentials \
 
 ## Phase 2 — Create Dockerfiles
 
-Use the same Dockerfiles from [Option 3](deploy-option-3-container-apps.md), Phase 1:
+Use the same Dockerfiles from [Option 3](deploy-option-3-container-apps.md),
+Phase 1:
+
 - `ECTSystem.Api/Dockerfile` — multi-stage .NET build
 - `ECTSystem.Web/Dockerfile` — multi-stage build with nginx static serving
 - `ECTSystem.Web/nginx.conf` — SPA fallback routing
@@ -89,8 +91,14 @@ Use the same Dockerfiles from [Option 3](deploy-option-3-container-apps.md), Pha
 ### 2.1 Build and Push Images
 
 ```bash
-az acr build --registry acrectsystem --image ectsystem-api:v1 -f ECTSystem.Api/Dockerfile .
-az acr build --registry acrectsystem --image ectsystem-web:v1 -f ECTSystem.Web/Dockerfile .
+az acr build \
+  --registry acrectsystem \
+  --image ectsystem-api:v1 \
+  -f ECTSystem.Api/Dockerfile .
+az acr build \
+  --registry acrectsystem \
+  --image ectsystem-web:v1 \
+  -f ECTSystem.Web/Dockerfile .
 ```
 
 ---
@@ -241,12 +249,17 @@ spec:
 ### 3.6 Secrets
 
 ```bash
+CONN_STR="Server=sql-ect-dev-cus.database.windows.net;"
+CONN_STR+="Database=ECT;"
+CONN_STR+="Authentication=Active Directory Default;"
+
 kubectl create secret generic ectsystem-secrets \
   --namespace ectsystem \
-  --from-literal=sql-connection-string="Server=sql-ect-dev-cus.database.windows.net;Database=ECT;Authentication=Active Directory Default;"
+  --from-literal=sql-connection-string="$CONN_STR"
 ```
 
-> **Production:** Use Azure Key Vault with the Secrets Store CSI Driver instead of Kubernetes secrets.
+> **Production:** Use Azure Key Vault with the Secrets Store CSI Driver instead
+> of Kubernetes secrets.
 
 ---
 
@@ -372,10 +385,14 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Build API Image
-        run: az acr build --registry acrectsystem --image ectsystem-api:${{ github.sha }} -f ECTSystem.Api/Dockerfile .
+        run:
+          az acr build --registry acrectsystem --image ectsystem-api:${{
+          github.sha }} -f ECTSystem.Api/Dockerfile .
 
       - name: Build Web Image
-        run: az acr build --registry acrectsystem --image ectsystem-web:${{ github.sha }} -f ECTSystem.Web/Dockerfile .
+        run:
+          az acr build --registry acrectsystem --image ectsystem-web:${{
+          github.sha }} -f ECTSystem.Web/Dockerfile .
 
       - uses: azure/aks-set-context@v4
         with:
@@ -416,15 +433,16 @@ kubectl rollout undo deployment/ectsystem-api -n ectsystem --to-revision=3
 ## Cost Estimate
 
 | Resource | Configuration | Monthly Cost (approx.) |
-|----------|--------------|----------------------|
+| --- | --- | --- |
 | AKS Cluster | Free control plane | $0 |
 | Node Pool | 2x Standard_B2s | ~$62 |
 | Container Registry | Basic | ~$5 |
 | Load Balancer | Standard | ~$18 |
 | Azure SQL | S0 (10 DTU) | ~$15 |
-| **Total** | | **~$100/month** |
+| **Total** | — | **~$100/month** |
 
-> **Note:** AKS has a free control plane. Cost is primarily in worker nodes. Scale with additional nodes as load grows.
+> **Note:** AKS has a free control plane. Cost is primarily in worker nodes.
+> Scale with additional nodes as load grows.
 
 ---
 
