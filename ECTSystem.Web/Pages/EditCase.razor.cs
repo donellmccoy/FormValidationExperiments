@@ -348,6 +348,10 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             // Component disposed during load — silently ignore
         }
+        catch (ObjectDisposedException)
+        {
+            // CancellationTokenSource disposed during load — silently ignore
+        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to load case {CaseId}", CaseId);
@@ -360,7 +364,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 Duration = 5000
             });
 
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
         }
         finally
         {
@@ -439,6 +443,10 @@ public partial class EditCase : ComponentBase, IDisposable
         catch (OperationCanceledException)
         {
             // Component disposed — ignore
+        }
+        catch (ObjectDisposedException)
+        {
+            // CancellationTokenSource disposed — ignore
         }
         catch (Exception ex)
         {
@@ -549,11 +557,15 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             // Component disposed — ignore
         }
+        catch (ObjectDisposedException)
+        {
+            // CancellationTokenSource disposed — ignore
+        }
         catch (Exception ex)
         {
             if (generation == _trackingLoadGeneration)
             {
-                Logger.LogWarning(ex, "Failed to load tracking history for case {CaseId}", _lineOfDutyCase.Id);
+                Logger.LogWarning(ex, "Failed to load tracking history for case {CaseId}", _lineOfDutyCase?.Id);
                 _trackingData = null;
                 _trackingCount = 0;
             }
@@ -1183,6 +1195,10 @@ public partial class EditCase : ComponentBase, IDisposable
         catch (OperationCanceledException)
         {
             // Component disposed during save — silently ignore
+        }
+        catch (ObjectDisposedException)
+        {
+            // CancellationTokenSource disposed during save — silently ignore
         }
         catch (Exception ex)
         {

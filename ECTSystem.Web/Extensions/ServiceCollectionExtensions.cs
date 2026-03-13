@@ -60,14 +60,22 @@ public static class ServiceCollectionExtensions
         // Named HttpClient for general API calls (with auth + resilience)
         services.AddHttpClient("Api", client => client.BaseAddress = apiBaseAddress)
             .AddHttpMessageHandler<AuthorizationMessageHandler>()
-            .AddStandardResilienceHandler();
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
+            });
 
         // Named HttpClient for OData calls (with auth + resilience)
         services.AddTransient<ODataLoggingHandler>();
         services.AddHttpClient("OData", client => client.BaseAddress = odataBaseAddress)
             .AddHttpMessageHandler<AuthorizationMessageHandler>()
             .AddHttpMessageHandler<ODataLoggingHandler>()
-            .AddStandardResilienceHandler();
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
+            });
 
         // Default HttpClient resolves to the "Api" named client
         services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api"));
