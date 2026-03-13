@@ -103,7 +103,11 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("BlazorClient", policy =>
             {
-                policy.WithOrigins("https://localhost:7240", "http://localhost:5101")
+                policy.WithOrigins(
+                          "https://localhost:7240",
+                          "http://localhost:5101",
+                          "https://thankful-tree-039497510.6.azurestaticapps.net",
+                          "https://app-ectsystem-web-dev.azurewebsites.net")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials();
