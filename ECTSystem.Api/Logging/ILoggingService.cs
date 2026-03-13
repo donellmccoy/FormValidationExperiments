@@ -68,4 +68,12 @@ public interface ILoggingService
     void CreatingWorkflowStateHistoryBatch(int count, int caseId);
     void WorkflowStateHistoryBatchCreated(int count, int caseId);
     void WorkflowStateHistoryBatchEmpty();
+
+    // Case Checkout
+    void CheckingOutCase(int caseId);
+    void CaseCheckedOut(int caseId, string userName);
+    void CaseAlreadyCheckedOut(int caseId, string userName);
+    void CheckingInCase(int caseId);
+    void CaseCheckedIn(int caseId);
+    void CaseCheckedOutByAnother(int caseId, string userName);
 }

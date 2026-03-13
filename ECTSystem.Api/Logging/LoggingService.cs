@@ -180,4 +180,24 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
 
     [LoggerMessage(EventId = 706, Level = LogLevel.Warning, Message = "Empty batch submitted for workflow state history creation")]
     public partial void WorkflowStateHistoryBatchEmpty();
+
+    // Case Checkout (EventId 800–805)
+
+    [LoggerMessage(EventId = 800, Level = LogLevel.Information, Message = "Checking out LOD case {CaseId}")]
+    public partial void CheckingOutCase(int caseId);
+
+    [LoggerMessage(EventId = 801, Level = LogLevel.Information, Message = "LOD case {CaseId} checked out by {UserName}")]
+    public partial void CaseCheckedOut(int caseId, string userName);
+
+    [LoggerMessage(EventId = 802, Level = LogLevel.Warning, Message = "LOD case {CaseId} is already checked out by {UserName}")]
+    public partial void CaseAlreadyCheckedOut(int caseId, string userName);
+
+    [LoggerMessage(EventId = 803, Level = LogLevel.Information, Message = "Checking in LOD case {CaseId}")]
+    public partial void CheckingInCase(int caseId);
+
+    [LoggerMessage(EventId = 804, Level = LogLevel.Information, Message = "LOD case {CaseId} checked in")]
+    public partial void CaseCheckedIn(int caseId);
+
+    [LoggerMessage(EventId = 805, Level = LogLevel.Warning, Message = "LOD case {CaseId} is checked out by {UserName}, cannot check in")]
+    public partial void CaseCheckedOutByAnother(int caseId, string userName);
 }

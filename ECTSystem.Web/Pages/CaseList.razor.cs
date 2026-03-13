@@ -26,6 +26,9 @@ public partial class CaseList : ComponentBase, IDisposable
     private NotificationService NotificationService { get; set; }
 
     [Inject]
+    private DialogService DialogService { get; set; }
+
+    [Inject]
     private IJSRuntime JSRuntime { get; set; }
 
     private RadzenDataGrid<LineOfDutyCase> _grid;
@@ -239,6 +242,50 @@ public partial class CaseList : ComponentBase, IDisposable
         Navigation.NavigateTo("/case/new?from=cases");
     }
 
+    private async Task OnCaseClick(LineOfDutyCase lodCase)
+    {
+        if (lodCase.IsCheckedOut)
+        {
+            // Already checked out — open in read-only mode
+            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
+            return;
+        }
+
+        // Ask user whether to check out for editing or view read-only
+        var result = await DialogService.Confirm(
+            $"Do you want to check out Case {lodCase.CaseId} for editing?",
+            "Check Out Case",
+            new ConfirmOptions
+            {
+                OkButtonText = "Check Out",
+                CancelButtonText = "View Read-Only"
+            });
+
+        if (result == true)
+        {
+            var success = await CaseService.CheckOutCaseAsync(lodCase.Id);
+
+            if (success)
+            {
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=edit");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
+                // Refresh the grid to get latest checkout state
+                if (_lastArgs is not null)
+                {
+                    await LoadData(_lastArgs);
+                }
+            }
+        }
+        else if (result == false)
+        {
+            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
+        }
+        // result == null means dialog was dismissed (X button) — do nothing
+    }
+
     private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
     {
         _ = ShowContextMenuAsync(args);
@@ -277,7 +324,7 @@ public partial class CaseList : ComponentBase, IDisposable
                 switch (menuItem.Value?.ToString())
                 {
                     case "open":
-                        Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases");
+                        await OnCaseClick(lodCase);
                         break;
 
                     case "bookmark":

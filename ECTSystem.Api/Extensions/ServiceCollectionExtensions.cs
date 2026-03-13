@@ -125,6 +125,8 @@ public static class ServiceCollectionExtensions
         casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
 
         var caseType = casesEntitySet.EntityType;
+        caseType.Action("CheckOut");
+        caseType.Action("CheckIn");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);

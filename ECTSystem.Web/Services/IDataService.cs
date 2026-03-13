@@ -108,4 +108,14 @@ public interface IDataService
     /// Downloads the filled AF Form 348 PDF for the specified case.
     /// </summary>
     Task<byte[]> GetForm348PdfAsync(int caseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks out a LOD case so other users see it as read-only.
+    /// </summary>
+    Task<bool> CheckOutCaseAsync(int caseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks in a LOD case so it becomes available for editing.
+    /// </summary>
+    Task<bool> CheckInCaseAsync(int caseId, CancellationToken cancellationToken = default);
 }

@@ -185,6 +185,12 @@ public class LineOfDutyCase : AuditableEntity
     public INCAPDetails INCAP { get; set; } = new INCAPDetails();
     public bool MemberChoseMEDCON { get; set; } // If eligible for both
 
+    // Checkout
+    public bool IsCheckedOut { get; set; }
+    public string CheckedOutBy { get; set; } = string.Empty;
+    public string CheckedOutByName { get; set; } = string.Empty;
+    public DateTime? CheckedOutDate { get; set; }
+
     // Audit and Notes
     public bool IsAudited { get; set; }
     public List<string> AuditComments { get; set; } = [];

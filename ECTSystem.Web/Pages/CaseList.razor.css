@@ -5,6 +5,24 @@
     width: 100%;
 }
 
+::deep .case-id-cell .case-id-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--rz-primary);
+    text-decoration: none;
+}
+
+::deep .case-id-cell .case-id-link:hover {
+    text-decoration: underline;
+}
+
+::deep .case-id-cell .checkout-lock-icon {
+    font-size: 14px;
+    color: var(--rz-warning);
+}
+
 ::deep .case-id-cell .bookmark-btn {
     opacity: 0;
     transition: opacity 0.15s ease;

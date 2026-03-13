@@ -264,6 +264,94 @@ public class CasesController : ODataController
     }
 
     /// <summary>
+    /// Checks out a LOD case so other users see it as read-only.
+    /// Route: POST /odata/Cases({key})/CheckOut
+    /// </summary>
+    [HttpPost("/odata/Cases({key})/CheckOut")]
+    public async Task<IActionResult> CheckOut([FromRoute] int key, CancellationToken ct = default)
+    {
+        _loggingService.CheckingOutCase(key);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.Cases.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            _loggingService.CaseNotFound(key);
+            return NotFound();
+        }
+
+        if (existing.IsCheckedOut)
+        {
+            if (existing.CheckedOutBy == UserId)
+            {
+                // Already checked out by this user — return success
+                return Ok();
+            }
+
+            _loggingService.CaseAlreadyCheckedOut(key, existing.CheckedOutByName);
+            return Conflict(new { Message = $"Case is already checked out by {existing.CheckedOutByName}." });
+        }
+
+        var userName = User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue(ClaimTypes.Email) ?? UserId;
+
+        existing.IsCheckedOut = true;
+        existing.CheckedOutBy = UserId;
+        existing.CheckedOutByName = userName;
+        existing.CheckedOutDate = DateTime.UtcNow;
+
+        await context.SaveChangesAsync(ct);
+
+        _loggingService.CaseCheckedOut(key, userName);
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Checks in a LOD case so it becomes available for editing again.
+    /// Route: POST /odata/Cases({key})/CheckIn
+    /// </summary>
+    [HttpPost("/odata/Cases({key})/CheckIn")]
+    public async Task<IActionResult> CheckIn([FromRoute] int key, CancellationToken ct = default)
+    {
+        _loggingService.CheckingInCase(key);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.Cases.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            _loggingService.CaseNotFound(key);
+            return NotFound();
+        }
+
+        if (!existing.IsCheckedOut)
+        {
+            // Not checked out — nothing to do
+            return Ok();
+        }
+
+        if (existing.CheckedOutBy != UserId)
+        {
+            _loggingService.CaseCheckedOutByAnother(key, existing.CheckedOutByName);
+            return Conflict(new { Message = $"Case is checked out by {existing.CheckedOutByName}. Only that user can check it in." });
+        }
+
+        existing.IsCheckedOut = false;
+        existing.CheckedOutBy = string.Empty;
+        existing.CheckedOutByName = string.Empty;
+        existing.CheckedOutDate = null;
+
+        await context.SaveChangesAsync(ct);
+
+        _loggingService.CaseCheckedIn(key);
+
+        return Ok();
+    }
+
+    /// <summary>
     /// Deletes an LOD case and its related entities.
     /// OData route: DELETE /odata/Cases({key})
     /// </summary>

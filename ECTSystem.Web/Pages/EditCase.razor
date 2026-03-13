@@ -104,6 +104,20 @@ else
                         </RadzenStack>
                     </ChildContent>
                 </RadzenPanel>
+                @if (IsReadOnly && _lineOfDutyCase is not null)
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true" Icon="lock" AllowClose="false"
+                                 Style="width:1135px;" class="rz-border-radius-2">
+                        @if (_lineOfDutyCase.IsCheckedOut)
+                        {
+                            <text>This case is checked out by <strong>@_lineOfDutyCase.CheckedOutByName</strong>. You are viewing in read-only mode.</text>
+                        }
+                        else
+                        {
+                            <text>You are viewing this case in read-only mode.</text>
+                        }
+                    </RadzenAlert>
+                }
                 @* ─── Assessment Panel ─── *@
                 <RadzenPanel AllowCollapse="false" Style="width:1135px; height:950px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
                     <HeaderTemplate>
@@ -145,6 +159,13 @@ else
                                         <span class="material-symbols-outlined">note_add</span>
                                     </ChildContent>
                                 </RadzenButton>
+                                @if (IsCheckedOutByMe)
+                                {
+                                    <RadzenButton Text="Check In" Icon="lock_open" ButtonStyle="ButtonStyle.Warning"
+                                                  Variant="Variant.Outlined" Size="ButtonSize.Small"
+                                                  Click="@OnCheckInClick"
+                                                  title="Release the case so others can edit it" />
+                                }
                             </RadzenStack>
                         </RadzenStack>
                     </HeaderTemplate>

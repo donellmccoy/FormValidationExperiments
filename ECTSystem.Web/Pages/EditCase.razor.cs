@@ -139,11 +139,18 @@ public partial class EditCase : ComponentBase, IDisposable
     [SupplyParameterFromQuery(Name = "from")]
     public string FromPage { get; set; }
 
+    [SupplyParameterFromQuery(Name = "mode")]
+    public string Mode { get; set; }
+
     #endregion
 
     #region Properties & Fields
 
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
+
+    private bool IsReadOnly => string.Equals(Mode, "readonly", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsCheckedOutByMe => string.Equals(Mode, "edit", StringComparison.OrdinalIgnoreCase);
 
     private string NavigatedFromPath => FromPage?.ToLowerInvariant() switch
     {
@@ -833,6 +840,11 @@ public partial class EditCase : ComponentBase, IDisposable
         string notifySummary = "Line of Duty Case Updated",
         string notifyVerb = "updated")
     {
+        if (IsReadOnly)
+        {
+            return;
+        }
+
         var value = item?.Value;
 
         // Revert — restore snapshot without any state transition.
@@ -1091,6 +1103,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnApplyChangesClick(RadzenSplitButtonItem item)
     {
+        if (IsReadOnly)
+        {
+            return;
+        }
+
         if (item?.Value == "revert")
         {
             await OnRevertChanges();
@@ -1136,7 +1153,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task SaveTabFormDataAsync(string tabName)
     {
-        if (_lineOfDutyCase is null)
+        if (_lineOfDutyCase is null || IsReadOnly)
         {
             return;
         }
@@ -1242,6 +1259,46 @@ public partial class EditCase : ComponentBase, IDisposable
     private void OnCreateNewCase()
     {
         Navigation.NavigateTo("/case/new?from=case");
+    }
+
+    private async Task OnCheckInClick()
+    {
+        if (_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)
+        {
+            return;
+        }
+
+        var confirm = await DialogService.Confirm(
+            "Are you sure you want to check in this case? Other users will be able to edit it.",
+            "Check In Case",
+            new ConfirmOptions
+            {
+                OkButtonText = "Check In",
+                CancelButtonText = "Cancel"
+            });
+
+        if (confirm != true)
+        {
+            return;
+        }
+
+        var success = await CaseService.CheckInCaseAsync(_lineOfDutyCase.Id);
+
+        if (success)
+        {
+            _lineOfDutyCase.IsCheckedOut = false;
+            _lineOfDutyCase.CheckedOutBy = string.Empty;
+            _lineOfDutyCase.CheckedOutByName = string.Empty;
+            _lineOfDutyCase.CheckedOutDate = null;
+
+            NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {_lineOfDutyCase.CaseId} has been checked in.", closeOnClick: true);
+
+            Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=readonly");
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Check-In Failed", "Could not check in the case. Please try again.", closeOnClick: true);
+        }
     }
 
     #endregion

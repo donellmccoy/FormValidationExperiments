@@ -547,6 +547,26 @@ public class LineOfDutyCaseHttpService : IDataService
         return await _httpClient.GetByteArrayAsync($"api/cases/{caseId}/form348", cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<bool> CheckOutCaseAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var response = await _httpClient.PostAsync($"odata/Cases({caseId})/CheckOut", null, cancellationToken);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> CheckInCaseAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var response = await _httpClient.PostAsync($"odata/Cases({caseId})/CheckIn", null, cancellationToken);
+
+        return response.IsSuccessStatusCode;
+    }
+
     private class IsBookmarkedResponse
     {
         [JsonPropertyName("value")]
