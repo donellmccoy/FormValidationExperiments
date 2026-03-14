@@ -89,6 +89,45 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     [FormSection("MemberInfo")]
     public bool? IsRestrictedReport { get; set; }
 
+    [FormSection("MemberInfo")]
+    public string MemberOrdersStartTime { get; set; } = string.Empty;
+
+    [FormSection("MemberInfo")]
+    public DateTime? MemberOrdersEndDate { get; set; }
+
+    [FormSection("MemberInfo")]
+    public string MemberOrdersEndTime { get; set; } = string.Empty;
+
+    [FormSection("MemberInfo")]
+    public bool IsMTF { get; set; }
+
+    [FormSection("MemberInfo")]
+    public bool IsRMU { get; set; }
+
+    [FormSection("MemberInfo")]
+    public bool IsGMU { get; set; }
+
+    [FormSection("MemberInfo")]
+    public bool IsDeployedLocation { get; set; }
+
+    [FormSection("MemberInfo")]
+    public bool IsUSAFA { get; set; }
+
+    [FormSection("MemberInfo")]
+    public bool IsAFROTC { get; set; }
+
+    [FormSection("MemberInfo")]
+    public string FromLine { get; set; } = string.Empty;
+
+    [FormSection("MemberInfo")]
+    public ProcessType? ProcessType { get; set; }
+
+    [FormSection("MemberInfo")]
+    public bool IsInterimLOD { get; set; }
+
+    [FormSection("MemberInfo")]
+    public DateTime? InterimLODExpiration { get; set; }
+
     [FormSection("MedicalAssessment")]
     [Required(ErrorMessage = "Type of investigation is required.")]
     public IncidentType? InvestigationType { get; set; }
@@ -176,6 +215,12 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     [StringLength(4000)]
     public string MedicalRecommendation { get; set; } = string.Empty;
 
+    [FormSection("MedicalAssessment")]
+    public string ProviderDate { get; set; } = string.Empty;
+
+    [FormSection("MedicalAssessment")]
+    public string SARCCoordination { get; set; } = string.Empty;
+
     [FormSection("UnitCommander")]
     public bool MemberStatementReviewed { get; set; }
 
@@ -230,6 +275,60 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     [FormSection("UnitCommander")]
     public DateTime? CommanderSignatureDate { get; set; }
 
+    [FormSection("UnitCommander")]
+    public bool OsiReportsReviewed { get; set; }
+
+    [FormSection("UnitCommander")]
+    public bool MilitaryPoliceReportsReviewed { get; set; }
+
+    [FormSection("UnitCommander")]
+    public string CommanderToLine { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string CommanderFromLine { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public bool WasPresentForDuty { get; set; }
+
+    [FormSection("UnitCommander")]
+    public bool WasOnDuty { get; set; }
+
+    [FormSection("UnitCommander")]
+    public bool WasOnIDT { get; set; }
+
+    [FormSection("UnitCommander")]
+    public bool WasAbsentWithLeave { get; set; }
+
+    [FormSection("UnitCommander")]
+    public bool WasAbsentWithoutLeave { get; set; }
+
+    [FormSection("UnitCommander")]
+    public string AbsentWithoutLeaveDate1 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string AbsentWithoutLeaveTime1 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string AbsentWithoutLeaveDate2 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string AbsentWithoutLeaveTime2 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string WitnessNameAddress1 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string WitnessNameAddress2 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string WitnessNameAddress3 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string WitnessNameAddress4 { get; set; } = string.Empty;
+
+    [FormSection("UnitCommander")]
+    public string WitnessNameAddress5 { get; set; } = string.Empty;
+
     [FormSection("WingCommander")]
     public bool? IsLegallySufficient { get; set; }
 
@@ -253,6 +352,81 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
 
     [FormSection("WingCommander")]
     public DateTime? SJASignatureDate { get; set; }
+
+    [FormSection("WingCommander")]
+    public string WingCcSignature { get; set; } = string.Empty;
+
+    [FormSection("CaseInfo")]
+    public string PSCDocumentation { get; set; } = string.Empty;
+
+    [FormSection("CaseInfo")]
+    public bool EightYearRuleApplies { get; set; }
+
+    [FormSection("CaseInfo")]
+    public int YearsOfService { get; set; }
+
+    [FormSection("AppointingAuthority")]
+    public string AppointingAuthorityNameRank { get; set; } = string.Empty;
+
+    [FormSection("AppointingAuthority")]
+    public string AppointingAuthorityDate { get; set; } = string.Empty;
+
+    [FormSection("AppointingAuthority")]
+    public string AppointingAuthoritySignature { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string MedicalReviewText { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string MedicalReviewerNameRank { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string MedicalReviewDate { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string MedicalReviewerSignature { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LegalReviewText { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LegalReviewerNameRank { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LegalReviewDate { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LegalReviewerSignature { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LodBoardChairNameRank { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LodBoardChairDate { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public string LodBoardChairSignature { get; set; } = string.Empty;
+
+    [FormSection("Board")]
+    public LineOfDutyFinding? BoardFinding { get; set; }
+
+    [FormSection("Board")]
+    public bool BoardReferForFormal { get; set; }
+
+    [FormSection("ApprovingAuthority")]
+    public string ApprovingAuthorityNameRank { get; set; } = string.Empty;
+
+    [FormSection("ApprovingAuthority")]
+    public string ApprovingAuthorityDate { get; set; } = string.Empty;
+
+    [FormSection("ApprovingAuthority")]
+    public string ApprovingAuthoritySignature { get; set; } = string.Empty;
+
+    [FormSection("ApprovingAuthority")]
+    public LineOfDutyFinding? ApprovingFinding { get; set; }
+
+    [FormSection("ApprovingAuthority")]
+    public bool ApprovingReferForFormal { get; set; }
 
     public string MemberFullName
     {
@@ -284,6 +458,10 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     public bool ShowOtherSourceDescription => OtherSourcesReviewed == true;
 
     public bool ShowNonConcurrenceReason => ConcurWithRecommendation == false;
+
+    public bool ShowInterimLODExpiration => IsInterimLOD;
+
+    public bool ShowAbsentWithoutLeaveDetails => WasAbsentWithoutLeave;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

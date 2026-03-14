@@ -64,6 +64,20 @@ public static partial class LineOfDutyCaseMapper
             InvolvesSexualAssault = source.IsSexualAssaultCase,
             IsRestrictedReport = source.RestrictedReporting,
 
+            MemberOrdersStartTime = source.MemberOrdersStartTime ?? string.Empty,
+            MemberOrdersEndDate = source.MemberOrdersEndDate,
+            MemberOrdersEndTime = source.MemberOrdersEndTime ?? string.Empty,
+            IsMTF = source.IsMTF,
+            IsRMU = source.IsRMU,
+            IsGMU = source.IsGMU,
+            IsDeployedLocation = source.IsDeployedLocation,
+            IsUSAFA = source.IsUSAFA,
+            IsAFROTC = source.IsAFROTC,
+            FromLine = source.FromLine ?? string.Empty,
+            ProcessType = source.ProcessType,
+            IsInterimLOD = source.IsInterimLOD,
+            InterimLODExpiration = source.InterimLODExpiration,
+
             InvestigationType = source.IncidentType,
             IsMilitaryFacility = source.IsMilitaryFacility,
             TreatmentFacilityName = source.TreatmentFacilityName ?? string.Empty,
@@ -88,6 +102,8 @@ public static partial class LineOfDutyCaseMapper
             IsAtDeployedLocation = source.IsAtDeployedLocation,
             RequiresArcBoard = source.RequiresArcBoard,
             MedicalRecommendation = source.MedicalRecommendation ?? string.Empty,
+            ProviderDate = source.ProviderDate ?? string.Empty,
+            SARCCoordination = source.SARCCoordination ?? string.Empty,
 
             MemberStatementReviewed = source.MemberStatementReviewed,
             MedicalRecordsReviewed = source.MedicalRecordsReviewed,
@@ -96,6 +112,24 @@ public static partial class LineOfDutyCaseMapper
             CommanderReportReviewed = source.CommanderReportReviewed,
             OtherSourcesReviewed = source.OtherSourcesReviewed,
             OtherSourcesDescription = source.OtherSourcesDescription ?? string.Empty,
+            OsiReportsReviewed = source.OsiReportsReviewed,
+            MilitaryPoliceReportsReviewed = source.MilitaryPoliceReportsReviewed,
+            CommanderToLine = source.CommanderToLine ?? string.Empty,
+            CommanderFromLine = source.CommanderFromLine ?? string.Empty,
+            WasPresentForDuty = source.WasPresentForDuty,
+            WasOnDuty = source.WasOnDuty,
+            WasOnIDT = source.WasOnIDT,
+            WasAbsentWithLeave = source.WasAbsentWithLeave,
+            WasAbsentWithoutLeave = source.WasAbsentWithoutLeave,
+            AbsentWithoutLeaveDate1 = source.AbsentWithoutLeaveDate1 ?? string.Empty,
+            AbsentWithoutLeaveTime1 = source.AbsentWithoutLeaveTime1 ?? string.Empty,
+            AbsentWithoutLeaveDate2 = source.AbsentWithoutLeaveDate2 ?? string.Empty,
+            AbsentWithoutLeaveTime2 = source.AbsentWithoutLeaveTime2 ?? string.Empty,
+            WitnessNameAddress1 = source.WitnessNameAddress1 ?? string.Empty,
+            WitnessNameAddress2 = source.WitnessNameAddress2 ?? string.Empty,
+            WitnessNameAddress3 = source.WitnessNameAddress3 ?? string.Empty,
+            WitnessNameAddress4 = source.WitnessNameAddress4 ?? string.Empty,
+            WitnessNameAddress5 = source.WitnessNameAddress5 ?? string.Empty,
             DutyStatusAtTime = source.IncidentDutyStatus,
             NarrativeOfCircumstances = source.IncidentDescription ?? string.Empty,
             ResultOfMisconduct = source.FinalFinding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct ? true
@@ -117,6 +151,36 @@ public static partial class LineOfDutyCaseMapper
             SJARank = ParseMilitaryRank(sja?.Rank),
             SJAOrganization = sja?.Title ?? string.Empty,
             SJASignatureDate = sja?.ActionDate,
+
+            WingCcSignature = source.WingCcSignature ?? string.Empty,
+
+            PSCDocumentation = source.PSCDocumentation ?? string.Empty,
+            EightYearRuleApplies = source.EightYearRuleApplies,
+            YearsOfService = source.YearsOfService,
+
+            AppointingAuthorityNameRank = source.AppointingAuthorityNameRank ?? string.Empty,
+            AppointingAuthorityDate = source.AppointingAuthorityDate ?? string.Empty,
+            AppointingAuthoritySignature = source.AppointingAuthoritySignature ?? string.Empty,
+
+            MedicalReviewText = source.MedicalReviewText ?? string.Empty,
+            MedicalReviewerNameRank = source.MedicalReviewerNameRank ?? string.Empty,
+            MedicalReviewDate = source.MedicalReviewDate ?? string.Empty,
+            MedicalReviewerSignature = source.MedicalReviewerSignature ?? string.Empty,
+            LegalReviewText = source.LegalReviewText ?? string.Empty,
+            LegalReviewerNameRank = source.LegalReviewerNameRank ?? string.Empty,
+            LegalReviewDate = source.LegalReviewDate ?? string.Empty,
+            LegalReviewerSignature = source.LegalReviewerSignature ?? string.Empty,
+            LodBoardChairNameRank = source.LodBoardChairNameRank ?? string.Empty,
+            LodBoardChairDate = source.LodBoardChairDate ?? string.Empty,
+            LodBoardChairSignature = source.LodBoardChairSignature ?? string.Empty,
+            BoardFinding = source.BoardFinding,
+            BoardReferForFormal = source.BoardReferForFormal,
+
+            ApprovingAuthorityNameRank = source.ApprovingAuthorityNameRank ?? string.Empty,
+            ApprovingAuthorityDate = source.ApprovingAuthorityDate ?? string.Empty,
+            ApprovingAuthoritySignature = source.ApprovingAuthoritySignature ?? string.Empty,
+            ApprovingFinding = source.ApprovingFinding,
+            ApprovingReferForFormal = source.ApprovingReferForFormal,
         };
     }
 
@@ -158,6 +222,20 @@ public static partial class LineOfDutyCaseMapper
         target.IsSexualAssaultCase = model.InvolvesSexualAssault;
         target.RestrictedReporting = model.IsRestrictedReport;
 
+        target.MemberOrdersStartTime = model.MemberOrdersStartTime;
+        target.MemberOrdersEndDate = model.MemberOrdersEndDate;
+        target.MemberOrdersEndTime = model.MemberOrdersEndTime;
+        target.IsMTF = model.IsMTF;
+        target.IsRMU = model.IsRMU;
+        target.IsGMU = model.IsGMU;
+        target.IsDeployedLocation = model.IsDeployedLocation;
+        target.IsUSAFA = model.IsUSAFA;
+        target.IsAFROTC = model.IsAFROTC;
+        target.FromLine = model.FromLine;
+        target.ProcessType = model.ProcessType ?? target.ProcessType;
+        target.IsInterimLOD = model.IsInterimLOD;
+        target.InterimLODExpiration = model.InterimLODExpiration;
+
         target.IncidentType = model.InvestigationType ?? target.IncidentType;
         target.IsMilitaryFacility = model.IsMilitaryFacility;
         target.TreatmentFacilityName = model.TreatmentFacilityName;
@@ -189,6 +267,24 @@ public static partial class LineOfDutyCaseMapper
         target.CommanderReportReviewed = model.CommanderReportReviewed;
         target.OtherSourcesReviewed = model.OtherSourcesReviewed;
         target.OtherSourcesDescription = model.OtherSourcesDescription;
+        target.OsiReportsReviewed = model.OsiReportsReviewed;
+        target.MilitaryPoliceReportsReviewed = model.MilitaryPoliceReportsReviewed;
+        target.CommanderToLine = model.CommanderToLine;
+        target.CommanderFromLine = model.CommanderFromLine;
+        target.WasPresentForDuty = model.WasPresentForDuty;
+        target.WasOnDuty = model.WasOnDuty;
+        target.WasOnIDT = model.WasOnIDT;
+        target.WasAbsentWithLeave = model.WasAbsentWithLeave;
+        target.WasAbsentWithoutLeave = model.WasAbsentWithoutLeave;
+        target.AbsentWithoutLeaveDate1 = model.AbsentWithoutLeaveDate1;
+        target.AbsentWithoutLeaveTime1 = model.AbsentWithoutLeaveTime1;
+        target.AbsentWithoutLeaveDate2 = model.AbsentWithoutLeaveDate2;
+        target.AbsentWithoutLeaveTime2 = model.AbsentWithoutLeaveTime2;
+        target.WitnessNameAddress1 = model.WitnessNameAddress1;
+        target.WitnessNameAddress2 = model.WitnessNameAddress2;
+        target.WitnessNameAddress3 = model.WitnessNameAddress3;
+        target.WitnessNameAddress4 = model.WitnessNameAddress4;
+        target.WitnessNameAddress5 = model.WitnessNameAddress5;
         target.IncidentDutyStatus = model.DutyStatusAtTime ?? target.IncidentDutyStatus;
         target.IncidentDescription = model.NarrativeOfCircumstances;
         target.FinalFinding = model.Recommendation.HasValue ? MapRecommendationToFinding(model.Recommendation.Value) : target.FinalFinding;
@@ -240,6 +336,45 @@ public static partial class LineOfDutyCaseMapper
         target.SjaNameRank = FormatNameRank(model.SJAName, model.SJARank);
         target.SjaDate = model.SJASignatureDate?.ToString("yyyy-MM-dd") ?? string.Empty;
         target.SjaConcurs = model.ConcurWithRecommendation == true;
+
+        // Medical Assessment — Provider
+        target.ProviderDate = model.ProviderDate;
+        target.SARCCoordination = model.SARCCoordination;
+
+        // Wing CC
+        target.WingCcSignature = model.WingCcSignature;
+
+        // Case Info
+        target.PSCDocumentation = model.PSCDocumentation;
+        target.EightYearRuleApplies = model.EightYearRuleApplies;
+        target.YearsOfService = model.YearsOfService;
+
+        // Appointing Authority
+        target.AppointingAuthorityNameRank = model.AppointingAuthorityNameRank;
+        target.AppointingAuthorityDate = model.AppointingAuthorityDate;
+        target.AppointingAuthoritySignature = model.AppointingAuthoritySignature;
+
+        // Board
+        target.MedicalReviewText = model.MedicalReviewText;
+        target.MedicalReviewerNameRank = model.MedicalReviewerNameRank;
+        target.MedicalReviewDate = model.MedicalReviewDate;
+        target.MedicalReviewerSignature = model.MedicalReviewerSignature;
+        target.LegalReviewText = model.LegalReviewText;
+        target.LegalReviewerNameRank = model.LegalReviewerNameRank;
+        target.LegalReviewDate = model.LegalReviewDate;
+        target.LegalReviewerSignature = model.LegalReviewerSignature;
+        target.LodBoardChairNameRank = model.LodBoardChairNameRank;
+        target.LodBoardChairDate = model.LodBoardChairDate;
+        target.LodBoardChairSignature = model.LodBoardChairSignature;
+        target.BoardFinding = model.BoardFinding ?? target.BoardFinding;
+        target.BoardReferForFormal = model.BoardReferForFormal;
+
+        // Approving Authority
+        target.ApprovingAuthorityNameRank = model.ApprovingAuthorityNameRank;
+        target.ApprovingAuthorityDate = model.ApprovingAuthorityDate;
+        target.ApprovingAuthoritySignature = model.ApprovingAuthoritySignature;
+        target.ApprovingFinding = model.ApprovingFinding ?? target.ApprovingFinding;
+        target.ApprovingReferForFormal = model.ApprovingReferForFormal;
     }
 
     // ──────────────────────────── Helper Methods ────────────────────────────

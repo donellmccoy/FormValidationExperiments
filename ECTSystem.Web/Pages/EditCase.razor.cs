@@ -168,6 +168,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
 
+    private static readonly object[] _processTypeOptions = [.. Enum.GetValues<ProcessType>().Select(p => new { Text = p.ToString(), Value = (ProcessType?)p })];
+
     private readonly PageOperationState _page = new();
 
     private readonly BookmarkUiState _bookmark = new();

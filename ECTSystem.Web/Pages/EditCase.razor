@@ -333,21 +333,130 @@ else
                                             </RadzenStack>
                                         </RadzenFieldset>
 
-                                        @* ═══ Routing ═══ *@
-                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
-                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
-                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(item))" 
-                                                                    Text="Forward to Medical Technician" 
-                                                                    Icon="send" 
-                                                                    ButtonStyle="ButtonStyle.Primary" 
-                                                                    Variant="Variant.Outlined"
-                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician) == true)">
-                                                    <ChildContent>
-                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
-                                                    </ChildContent>
-                                                </RadzenSplitButton>
+                                        @* ═══ Orders / Duty Period ═══ *@
+                                        <RadzenFieldset Text="Orders / Duty Period" class="rz-mt-4">
+                                            <RadzenStack Gap="0.75rem">
+                                                <RadzenRow Gap="1rem">
+                                                    <RadzenColumn Size="4">
+                                                        <RadzenFormField Text="Orders Start Time (HHmm)" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenTextBox Value="@_viewModel.MemberOrdersStartTime" @oninput="@(args => _viewModel.MemberOrdersStartTime = args.Value?.ToString())" Placeholder="e.g. 0730" />
+                                                        </RadzenFormField>
+                                                    </RadzenColumn>
+                                                    <RadzenColumn Size="4">
+                                                        <RadzenFormField Text="Orders End Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenDatePicker @bind-Value="_viewModel.MemberOrdersEndDate" DateFormat="yyyy-MM-dd" class="rz-w-100" />
+                                                        </RadzenFormField>
+                                                    </RadzenColumn>
+                                                    <RadzenColumn Size="4">
+                                                        <RadzenFormField Text="Orders End Time (HHmm)" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenTextBox Value="@_viewModel.MemberOrdersEndTime" @oninput="@(args => _viewModel.MemberOrdersEndTime = args.Value?.ToString())" Placeholder="e.g. 1630" />
+                                                        </RadzenFormField>
+                                                    </RadzenColumn>
+                                                </RadzenRow>
                                             </RadzenStack>
                                         </RadzenFieldset>
+
+                                        @* ═══ Medical Unit & Component Type ═══ *@
+                                        <RadzenFieldset Text="Medical Unit & Component Type" class="rz-mt-4 arc-fieldset">
+                                            <RadzenStack Gap="0.75rem">
+                                                <RadzenLabel Text="Type of medical unit reporting:" class="fieldset-label" />
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                                                    <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                        <RadzenCheckBox @bind-Value="_viewModel.IsMTF" Name="chkMTF" />
+                                                        <RadzenLabel Text="MTF" Component="chkMTF" />
+                                                    </RadzenStack>
+                                                    <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                        <RadzenCheckBox @bind-Value="_viewModel.IsRMU" Name="chkRMU" />
+                                                        <RadzenLabel Text="RMU" Component="chkRMU" />
+                                                    </RadzenStack>
+                                                    <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                        <RadzenCheckBox @bind-Value="_viewModel.IsGMU" Name="chkGMU" />
+                                                        <RadzenLabel Text="GMU" Component="chkGMU" />
+                                                    </RadzenStack>
+                                                    <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                        <RadzenCheckBox @bind-Value="_viewModel.IsDeployedLocation" Name="chkDeployed" />
+                                                        <RadzenLabel Text="Deployed Location" Component="chkDeployed" />
+                                                    </RadzenStack>
+                                                </RadzenStack>
+                                                <RadzenLabel Text="Additional component designation:" class="fieldset-label rz-mt-2" />
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                        <RadzenCheckBox @bind-Value="_viewModel.IsUSAFA" Name="chkUSAFA" />
+                                                        <RadzenLabel Text="USAFA" Component="chkUSAFA" />
+                                                    </RadzenStack>
+                                                    <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                        <RadzenCheckBox @bind-Value="_viewModel.IsAFROTC" Name="chkAFROTC" />
+                                                        <RadzenLabel Text="AFROTC" Component="chkAFROTC" />
+                                                    </RadzenStack>
+                                                </RadzenStack>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+
+                                        @* ═══ Process Configuration ═══ *@
+                                        <RadzenFieldset Text="Process Configuration" class="rz-mt-4">
+                                            <RadzenStack Gap="0.75rem">
+                                                <RadzenFormField Text="FROM Line" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextBox Value="@_viewModel.FromLine" @oninput="@(args => _viewModel.FromLine = args.Value?.ToString())" />
+                                                </RadzenFormField>
+                                                <RadzenFormField Text="Process Type" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenDropDown @bind-Value="_viewModel.ProcessType" TValue="ProcessType?"
+                                                                    Data="@_processTypeOptions"
+                                                                    TextProperty="Text"
+                                                                    ValueProperty="Value"
+                                                                    Placeholder="Select process type..."
+                                                                    AllowClear="true"
+                                                                    class="rz-w-100" />
+                                                </RadzenFormField>
+                                                <div class="detail-section">
+                                                    <RadzenLabel Text="Is this an Interim LOD determination?" class="fieldset-label" />
+                                                    <RadzenRadioButtonList @bind-Value="_viewModel.IsInterimLOD" TValue="bool"
+                                                                            Orientation="Orientation.Horizontal" class="radio-list-styled">
+                                                        <Items>
+                                                            <RadzenRadioButtonListItem Text="Yes" Value="true" />
+                                                            <RadzenRadioButtonListItem Text="No" Value="false" />
+                                                        </Items>
+                                                    </RadzenRadioButtonList>
+                                                </div>
+                                                @if (_viewModel.ShowInterimLODExpiration)
+                                                {
+                                                    <div class="conditional-section">
+                                                        <RadzenFormField Text="Interim LOD Expiration Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenDatePicker @bind-Value="_viewModel.InterimLODExpiration" DateFormat="yyyy-MM-dd" class="rz-w-100" />
+                                                        </RadzenFormField>
+                                                    </div>
+                                                }
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+
+                                        @* ═══ Service / Administrative Data ═══ *@
+                                        <RadzenFieldset Text="Service / Administrative Data" class="rz-mt-4">
+                                            <RadzenStack Gap="1rem">
+                                                <RadzenRow Gap="1rem">
+                                                    <RadzenColumn Size="4">
+                                                        <RadzenFormField Text="Years of Service" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenNumeric @bind-Value="_viewModel.YearsOfService" TValue="int" class="rz-w-100" />
+                                                        </RadzenFormField>
+                                                    </RadzenColumn>
+                                                    <RadzenColumn Size="4">
+                                                        <div class="detail-section">
+                                                            <RadzenLabel Text="8-Year Rule Applies?" class="fieldset-label" />
+                                                            <RadzenRadioButtonList @bind-Value="_viewModel.EightYearRuleApplies" TValue="bool"
+                                                                                    Orientation="Orientation.Horizontal" class="radio-list-styled">
+                                                                <Items>
+                                                                    <RadzenRadioButtonListItem Text="Yes" Value="true" />
+                                                                    <RadzenRadioButtonListItem Text="No" Value="false" />
+                                                                </Items>
+                                                            </RadzenRadioButtonList>
+                                                        </div>
+                                                    </RadzenColumn>
+                                                </RadzenRow>
+                                                <RadzenFormField Text="PSC Documentation" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextArea Value="@_viewModel.PSCDocumentation" @oninput="@(args => _viewModel.PSCDocumentation = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                </RadzenFormField>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+
+                                        @* ═══ Routing ═══ *@
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
@@ -691,6 +800,24 @@ else
                                             </RadzenFormField>
                                         </RadzenFieldset>
 
+                                        @* ═══ Fieldset J: Provider / SARC ═══ *@
+                                        <RadzenFieldset Text="Provider / SARC Coordination" class="rz-mt-4">
+                                            <RadzenStack Gap="1rem">
+                                                <RadzenRow Gap="1rem">
+                                                    <RadzenColumn Size="6">
+                                                        <RadzenFormField Text="Provider Date (Item 15)" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenTextBox Value="@_viewModel.ProviderDate" @oninput="@(args => _viewModel.ProviderDate = args.Value?.ToString())" class="rz-w-100" />
+                                                        </RadzenFormField>
+                                                    </RadzenColumn>
+                                                    <RadzenColumn Size="6">
+                                                        <RadzenFormField Text="SARC Coordination" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                            <RadzenTextBox Value="@_viewModel.SARCCoordination" @oninput="@(args => _viewModel.SARCCoordination = args.Value?.ToString())" class="rz-w-100" />
+                                                        </RadzenFormField>
+                                                    </RadzenColumn>
+                                                </RadzenRow>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+
                                         @* ═══ Form Actions ═══ *@
                                         <div class="form-actions rz-mt-2">
                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
@@ -760,6 +887,14 @@ else
                                                     <RadzenLabel Text="Commander's Report of Investigation" Component="chkCdrReport" />
                                                 </RadzenStack>
                                                 <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.OsiReportsReviewed" Name="chkOsi" />
+                                                    <RadzenLabel Text="OSI Reports" Component="chkOsi" />
+                                                </RadzenStack>
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.MilitaryPoliceReportsReviewed" Name="chkMilPolice" />
+                                                    <RadzenLabel Text="Military Police Reports" Component="chkMilPolice" />
+                                                </RadzenStack>
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                                                     <RadzenCheckBox @bind-Value="_viewModel.OtherSourcesReviewed" Name="chkOther" />
                                                     <RadzenLabel Text="Other" Component="chkOther" />
                                                 </RadzenStack>
@@ -786,6 +921,99 @@ else
                                                                     Placeholder="Select duty status..."
                                                                     AllowClear="true"
                                                                     class="rz-w-100" />
+                                                </RadzenFormField>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+
+                                        @* ═══ TO / FROM Lines ═══ *@
+                                        <RadzenFieldset Text="TO / FROM" class="rz-mt-4">
+                                            <RadzenRow Gap="1rem">
+                                                <RadzenColumn Size="6">
+                                                    <RadzenFormField Text="Commander TO Line" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                        <RadzenTextBox Value="@_viewModel.CommanderToLine" @oninput="@(args => _viewModel.CommanderToLine = args.Value?.ToString())" />
+                                                    </RadzenFormField>
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="6">
+                                                    <RadzenFormField Text="Commander FROM Line" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                        <RadzenTextBox Value="@_viewModel.CommanderFromLine" @oninput="@(args => _viewModel.CommanderFromLine = args.Value?.ToString())" />
+                                                    </RadzenFormField>
+                                                </RadzenColumn>
+                                            </RadzenRow>
+                                        </RadzenFieldset>
+
+                                        @* ═══ Duty Status Flags ═══ *@
+                                        <RadzenFieldset Text="Member Duty Status Details" class="rz-mt-4 arc-fieldset">
+                                            <RadzenStack Gap="0.5rem">
+                                                <RadzenLabel Text="Check all that apply to the member's status at time of incident:" />
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.WasPresentForDuty" Name="chkPresentForDuty" />
+                                                    <RadzenLabel Text="Present for Duty" Component="chkPresentForDuty" />
+                                                </RadzenStack>
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.WasOnDuty" Name="chkOnDuty" />
+                                                    <RadzenLabel Text="On Duty" Component="chkOnDuty" />
+                                                </RadzenStack>
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.WasOnIDT" Name="chkOnIDT" />
+                                                    <RadzenLabel Text="On Inactive Duty Training (IDT)" Component="chkOnIDT" />
+                                                </RadzenStack>
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.WasAbsentWithLeave" Name="chkAbsentWithLeave" />
+                                                    <RadzenLabel Text="Absent With Leave" Component="chkAbsentWithLeave" />
+                                                </RadzenStack>
+                                                <RadzenStack Gap="0.5rem" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                                    <RadzenCheckBox @bind-Value="_viewModel.WasAbsentWithoutLeave" Name="chkAbsentWithoutLeave" />
+                                                    <RadzenLabel Text="Absent Without Leave (AWOL)" Component="chkAbsentWithoutLeave" />
+                                                </RadzenStack>
+
+                                                @if (_viewModel.ShowAbsentWithoutLeaveDetails)
+                                                {
+                                                    <div class="conditional-section">
+                                                        <RadzenRow Gap="1rem">
+                                                            <RadzenColumn Size="3">
+                                                                <RadzenFormField Text="AWOL Start Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveDate1" @oninput="@(args => _viewModel.AbsentWithoutLeaveDate1 = args.Value?.ToString())" />
+                                                                </RadzenFormField>
+                                                            </RadzenColumn>
+                                                            <RadzenColumn Size="3">
+                                                                <RadzenFormField Text="AWOL Start Time" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveTime1" @oninput="@(args => _viewModel.AbsentWithoutLeaveTime1 = args.Value?.ToString())" Placeholder="e.g. 0730" />
+                                                                </RadzenFormField>
+                                                            </RadzenColumn>
+                                                            <RadzenColumn Size="3">
+                                                                <RadzenFormField Text="AWOL End Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveDate2" @oninput="@(args => _viewModel.AbsentWithoutLeaveDate2 = args.Value?.ToString())" />
+                                                                </RadzenFormField>
+                                                            </RadzenColumn>
+                                                            <RadzenColumn Size="3">
+                                                                <RadzenFormField Text="AWOL End Time" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveTime2" @oninput="@(args => _viewModel.AbsentWithoutLeaveTime2 = args.Value?.ToString())" Placeholder="e.g. 1630" />
+                                                                </RadzenFormField>
+                                                            </RadzenColumn>
+                                                        </RadzenRow>
+                                                    </div>
+                                                }
+                                            </RadzenStack>
+                                        </RadzenFieldset>
+
+                                        @* ═══ Witnesses ═══ *@
+                                        <RadzenFieldset Text="Witnesses" class="rz-mt-4">
+                                            <RadzenStack Gap="0.75rem">
+                                                <RadzenLabel Text="Enter the name and address of any witnesses (up to 5):" />
+                                                <RadzenFormField Text="Witness 1 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress1" @oninput="@(args => _viewModel.WitnessNameAddress1 = args.Value?.ToString())" />
+                                                </RadzenFormField>
+                                                <RadzenFormField Text="Witness 2 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress2" @oninput="@(args => _viewModel.WitnessNameAddress2 = args.Value?.ToString())" />
+                                                </RadzenFormField>
+                                                <RadzenFormField Text="Witness 3 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress3" @oninput="@(args => _viewModel.WitnessNameAddress3 = args.Value?.ToString())" />
+                                                </RadzenFormField>
+                                                <RadzenFormField Text="Witness 4 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress4" @oninput="@(args => _viewModel.WitnessNameAddress4 = args.Value?.ToString())" />
+                                                </RadzenFormField>
+                                                <RadzenFormField Text="Witness 5 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress5" @oninput="@(args => _viewModel.WitnessNameAddress5 = args.Value?.ToString())" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1072,6 +1300,13 @@ else
                                                     <RadzenTextArea Value="@_viewModel.LegalRemarks" @oninput="@(args => _viewModel.LegalRemarks = args.Value?.ToString())" Rows="5" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
+                                        </RadzenFieldset>
+
+                                        @* ═══ Fieldset C: Wing CC Signature ═══ *@
+                                        <RadzenFieldset Text="Wing Commander Signature" class="rz-mt-4">
+                                            <RadzenFormField Text="Wing CC Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
+                                                <RadzenTextBox Value="@_viewModel.WingCcSignature" @oninput="@(args => _viewModel.WingCcSignature = args.Value?.ToString())" class="rz-w-100" />
+                                            </RadzenFormField>
                                         </RadzenFieldset>
 
                                         @* ═══ Form Actions ═══ *@
