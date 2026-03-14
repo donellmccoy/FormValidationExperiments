@@ -28,7 +28,8 @@ public static partial class LineOfDutyCaseMapper
         var parsedRank = ParseMilitaryRank(source.MemberRank);
         var hasToxReport = !string.IsNullOrWhiteSpace(source.ToxicologyReport)
                            && !source.ToxicologyReport.Equals("Not applicable", StringComparison.OrdinalIgnoreCase);
-        var isLegallySufficient = sja?.Recommendation?.Equals("Legally sufficient", StringComparison.OrdinalIgnoreCase) == true;
+        var isLegallySufficient = string.IsNullOrEmpty(sja?.Recommendation) ? (bool?)null
+            : sja!.Recommendation.Equals("Legally sufficient", StringComparison.OrdinalIgnoreCase);
 
         return new LineOfDutyViewModel
         {
@@ -144,7 +145,7 @@ public static partial class LineOfDutyCaseMapper
             CommanderOrganization = commander?.Title ?? string.Empty,
             CommanderSignatureDate = commander?.ActionDate,
 
-            IsLegallySufficient = sja != null ? isLegallySufficient : null,
+            IsLegallySufficient = isLegallySufficient,
             ConcurWithRecommendation = sja != null ? source.SjaConcurs : null,
             LegalRemarks = ExtractLegalRemarks(sja?.Comments),
             NonConcurrenceReason = ExtractNonConcurrenceReason(sja?.Comments),
@@ -310,7 +311,12 @@ public static partial class LineOfDutyCaseMapper
         sja.Rank = model.SJARank.HasValue ? model.SJARank.Value.ToString() : string.Empty;
         sja.ActionDate = model.SJASignatureDate;
         sja.Title = model.SJAOrganization;
-        sja.Recommendation = model.IsLegallySufficient == true ? "Legally sufficient" : "Legally insufficient";
+        sja.Recommendation = model.IsLegallySufficient switch
+        {
+            true => "Legally sufficient",
+            false => "Legally insufficient",
+            null => string.Empty
+        };
 
         var sjaRemarks = new List<string>();
         if (!string.IsNullOrWhiteSpace(model.LegalRemarks))

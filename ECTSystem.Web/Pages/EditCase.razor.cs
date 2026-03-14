@@ -1146,8 +1146,8 @@ public partial class EditCase : ComponentBase, IDisposable
             2 => TabNames.MedicalOfficer,
             3 => TabNames.UnitCommander,
             4 => TabNames.WingJudgeAdvocate,
-            5 => TabNames.WingCommander,
-            6 => TabNames.AppointingAuthority,
+            5 => TabNames.AppointingAuthority,
+            6 => TabNames.WingCommander,
             7 => TabNames.BoardTechnicianReview,
             8 => TabNames.BoardMedicalReview,
             9 => TabNames.BoardLegalReview,
@@ -1183,15 +1183,20 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
+            // Capture authorities before SaveCaseAsync replaces _lineOfDutyCase
+            // with the API PATCH response, which only contains the DB-persisted
+            // authorities and loses the in-memory changes from ApplyToCase.
+            var authoritiesToSave = _lineOfDutyCase.Authorities;
+
             _lineOfDutyCase = await CaseService.SaveCaseAsync(_lineOfDutyCase, _cts.Token);
 
             // Persist authority entries (commander, SJA, medical provider) via
             // the dedicated batch-upsert endpoint — the scalar PATCH body cannot
             // include navigation collections.
-            if (_lineOfDutyCase.Id > 0 && _lineOfDutyCase.Authorities.Count > 0)
+            if (_lineOfDutyCase.Id > 0 && authoritiesToSave.Count > 0)
             {
                 var savedAuthorities = await CaseService.SaveAuthoritiesAsync(
-                    _lineOfDutyCase.Id, _lineOfDutyCase.Authorities, _cts.Token);
+                    _lineOfDutyCase.Id, authoritiesToSave, _cts.Token);
 
                 _lineOfDutyCase.Authorities = savedAuthorities;
             }
