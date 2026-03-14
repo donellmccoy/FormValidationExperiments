@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Mapping;
@@ -169,6 +170,8 @@ public partial class EditCase : ComponentBase, IDisposable
     private static readonly object[] _dutyStatusOptions = [.. Enum.GetValues<DutyStatus>().Select(s => new { Text = s.ToDisplayString(), Value = (DutyStatus?)s })];
 
     private static readonly object[] _processTypeOptions = [.. Enum.GetValues<ProcessType>().Select(p => new { Text = p.ToString(), Value = (ProcessType?)p })];
+
+    private static readonly object[] _findingOptions = [.. Enum.GetValues<LineOfDutyFinding>().Select(f => new { Text = Regex.Replace(f.ToString(), "(\\B[A-Z])", " $1"), Value = (LineOfDutyFinding?)f })];
 
     private readonly PageOperationState _page = new();
 
