@@ -165,7 +165,7 @@ public class LineOfDutyCase : AuditableEntity
 
     // Documents and Evidence
     public ICollection<LineOfDutyDocument> Documents { get; set; } = new HashSet<LineOfDutyDocument>();
-    public List<string> WitnessStatements { get; set; } = [];
+    public ICollection<WitnessStatement> WitnessStatements { get; set; } = new HashSet<WitnessStatement>();
     public string ToxicologyReport { get; set; } = string.Empty;
 
     // Appeals
@@ -193,6 +193,6 @@ public class LineOfDutyCase : AuditableEntity
 
     // Audit and Notes
     public bool IsAudited { get; set; }
-    public List<string> AuditComments { get; set; } = [];
+    public ICollection<AuditComment> AuditComments { get; set; } = new HashSet<AuditComment>();
     public string PointOfContact { get; set; } = string.Empty; // e.g., AF/A1PP email
 }

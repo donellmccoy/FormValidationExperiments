@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace ECTSystem.Shared.Models;
 
 /// <summary>
@@ -9,8 +7,6 @@ public class LineOfDutyDocument : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }
-    [JsonIgnore]
-    public LineOfDutyCase LineOfDutyCase { get; set; }
     public string DocumentType { get; set; } = string.Empty; // e.g., AF Form 348, DD Form 261, Medical Records
     public string FileName { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty; // MIME type, e.g. "application/pdf"

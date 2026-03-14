@@ -230,10 +230,9 @@ public class CasesController : ODataController
         // Apply the workflow state change
         existing.WorkflowState = request.NewWorkflowState;
 
-        // Add history entries, clearing navigation properties to avoid re-inserting the parent
+        // Add history entries
         foreach (var entry in request.HistoryEntries)
         {
-            entry.LineOfDutyCase = null;
             entry.LineOfDutyCaseId = key;
             context.WorkflowStateHistories.Add(entry);
         }

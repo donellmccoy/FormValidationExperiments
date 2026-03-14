@@ -22,6 +22,8 @@ public static class LineOfDutyCaseQueryExtensions
             .Include(c => c.MEDCON)
             .Include(c => c.INCAP)
             .Include(c => c.Notifications)
-            .Include(c => c.WorkflowStateHistories);
+            .Include(c => c.WorkflowStateHistories)
+            .Include(c => c.WitnessStatements)
+            .Include(c => c.AuditComments);
     }
 }

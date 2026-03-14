@@ -12,7 +12,7 @@ public class WorkflowStateHistoryConfiguration : IEntityTypeConfiguration<Workfl
 
         builder.HasIndex(h => new { h.LineOfDutyCaseId, h.WorkflowState });
 
-        builder.HasOne(h => h.LineOfDutyCase)
+        builder.HasOne<LineOfDutyCase>()
                .WithMany(c => c.WorkflowStateHistories)
                .HasForeignKey(h => h.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.Cascade);

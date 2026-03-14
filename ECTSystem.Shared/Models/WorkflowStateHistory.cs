@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using ECTSystem.Shared.Enums;
 
 namespace ECTSystem.Shared.Models;
@@ -28,7 +27,4 @@ public class WorkflowStateHistory : AuditableEntity
     public string SignedBy { get; set; } = string.Empty;
 
     public string PerformedBy { get; set; } = string.Empty;
-
-    [JsonIgnore]
-    public LineOfDutyCase LineOfDutyCase { get; set; }
 }

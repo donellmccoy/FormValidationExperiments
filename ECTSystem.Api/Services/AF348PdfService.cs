@@ -323,7 +323,7 @@ public sealed class AF348PdfService
         SetText(fields, "ApprovingSignature35", c.ApprovingAuthoritySignature);
 
         // Part VIII: Remarks
-        SetText(fields, "part8Remarks", string.Join("\n", c.AuditComments ?? []));
+        SetText(fields, "part8Remarks", string.Join("\n", c.AuditComments?.Select(a => a.Text) ?? []));
 
         // Case number page 3
         SetText(fields, "lodCaseNumberP3", c.CaseId);

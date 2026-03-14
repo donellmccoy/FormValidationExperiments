@@ -56,7 +56,6 @@ public class WorkflowStateHistoriesController : ODataController
 
         _loggingService.CreatingWorkflowStateHistory(entry.LineOfDutyCaseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
         context.WorkflowStateHistories.Add(entry);
         await context.SaveChangesAsync(ct);
 
@@ -96,11 +95,6 @@ public class WorkflowStateHistoriesController : ODataController
 
         _loggingService.CreatingWorkflowStateHistoryBatch(entries.Count, caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        foreach (var entry in entries)
-        {
-            entry.LineOfDutyCase = null; // Avoid re-inserting the parent entity
-        }
 
         context.WorkflowStateHistories.AddRange(entries);
         await context.SaveChangesAsync(ct);

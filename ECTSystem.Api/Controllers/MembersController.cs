@@ -176,7 +176,7 @@ public class MembersController : ODataController
     [EnableQuery]
     public async Task<IActionResult> GetLineOfDutyCases([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingMemberNavigation(key, nameof(Member.LineOfDutyCases));
+        _loggingService.QueryingMemberNavigation(key, "LineOfDutyCases");
         var context = await CreateContextAsync(ct);
         return Ok(context.Cases.AsNoTracking().Where(c => c.MemberId == key));
     }

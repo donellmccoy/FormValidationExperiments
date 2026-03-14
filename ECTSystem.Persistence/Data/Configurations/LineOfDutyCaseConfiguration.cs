@@ -11,31 +11,33 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
         builder.HasKey(e => e.Id);
         builder.HasIndex(e => e.CaseId).IsUnique();
 
-        builder.Property(e => e.WitnessStatements)
-               .HasConversion(StringListConversion.Converter)
-               .Metadata.SetValueComparer(StringListConversion.Comparer);
+        builder.HasMany(e => e.WitnessStatements)
+               .WithOne()
+               .HasForeignKey(w => w.LineOfDutyCaseId)
+               .OnDelete(DeleteBehavior.ClientCascade);
 
-        builder.Property(e => e.AuditComments)
-               .HasConversion(StringListConversion.Converter)
-               .Metadata.SetValueComparer(StringListConversion.Comparer);
+        builder.HasMany(e => e.AuditComments)
+               .WithOne()
+               .HasForeignKey(a => a.LineOfDutyCaseId)
+               .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Documents)
-               .WithOne(d => d.LineOfDutyCase)
+               .WithOne()
                .HasForeignKey(d => d.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Appeals)
-               .WithOne(a => a.LineOfDutyCase)
+               .WithOne()
                .HasForeignKey(a => a.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Authorities)
-               .WithOne(a => a.LineOfDutyCase)
+               .WithOne()
                .HasForeignKey(a => a.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.ClientCascade);
 
         builder.HasMany(e => e.Notifications)
-               .WithOne(n => n.LineOfDutyCase)
+               .WithOne()
                .HasForeignKey(n => n.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.ClientCascade);
 
@@ -50,7 +52,7 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
                .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(e => e.Member)
-               .WithMany(m => m.LineOfDutyCases)
+               .WithMany()
                .HasForeignKey(e => e.MemberId)
                .OnDelete(DeleteBehavior.NoAction);
     }

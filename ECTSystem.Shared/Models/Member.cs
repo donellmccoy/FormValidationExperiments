@@ -13,6 +13,4 @@ public class Member : AuditableEntity
     public string Unit { get; set; } = string.Empty;
     public ServiceComponent Component { get; set; }
     public DateTime? DateOfBirth { get; set; }
-
-    public ICollection<LineOfDutyCase> LineOfDutyCases { get; set; } = new HashSet<LineOfDutyCase>();
 }

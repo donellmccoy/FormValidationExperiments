@@ -146,8 +146,8 @@ public static class EctDbSeeder
                 MemberChoseMEDCON = rng.Next(100) < 40,
                 IsAudited = rng.Next(100) < 15,
                 PointOfContact = $"{unit.Split(',')[0].ToLower().Replace(" ", "")}.a1@us.af.mil",
-                WitnessStatements = new List<string>(),
-                AuditComments = new List<string>(),
+                WitnessStatements = new List<WitnessStatement>(),
+                AuditComments = new List<AuditComment>(),
                 MEDCON = new MEDCONDetail
                 {
                     IsEligible = rng.Next(100) < 50,

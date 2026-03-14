@@ -147,6 +147,8 @@ public static class ServiceCollectionExtensions
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Notifications).AutomaticallyExpand(true);
         caseType.HasMany(c => c.WorkflowStateHistories).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.WitnessStatements).AutomaticallyExpand(true);
+        caseType.HasMany(c => c.AuditComments).AutomaticallyExpand(true);
         caseType.HasOptional(c => c.Member).AutomaticallyExpand(true);
         caseType.HasOptional(c => c.MEDCON).AutomaticallyExpand(true);
         caseType.HasOptional(c => c.INCAP).AutomaticallyExpand(true);
@@ -168,6 +170,8 @@ public static class ServiceCollectionExtensions
         caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked").Returns<bool>().Parameter<int>("caseId");
 
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
+        odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
+        odataBuilder.EntitySet<AuditComment>("AuditComments");
 
         return odataBuilder.GetEdmModel();
     }
