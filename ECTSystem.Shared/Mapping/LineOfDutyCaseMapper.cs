@@ -145,8 +145,9 @@ public static partial class LineOfDutyCaseMapper
             CommanderSignatureDate = commander?.ActionDate,
 
             IsLegallySufficient = sja != null ? isLegallySufficient : null,
-            ConcurWithRecommendation = sja != null ? true : null,
-            LegalRemarks = sja?.Comments != null ? string.Join(" ", sja.Comments) : string.Empty,
+            ConcurWithRecommendation = sja != null ? source.SjaConcurs : null,
+            LegalRemarks = ExtractLegalRemarks(sja?.Comments),
+            NonConcurrenceReason = ExtractNonConcurrenceReason(sja?.Comments),
             SJAName = sja?.Name ?? string.Empty,
             SJARank = ParseMilitaryRank(sja?.Rank),
             SJAOrganization = sja?.Title ?? string.Empty,
@@ -207,7 +208,8 @@ public static partial class LineOfDutyCaseMapper
         target.MemberName = string.Join(" ", nameParts);
         target.ServiceNumber = model.SSN ?? string.Empty;
         target.MemberDateOfBirth = model.DateOfBirth;
-        target.MemberRank = model.Rank ?? string.Empty;
+        var parsedRank = ParseMilitaryRank(model.Rank);
+        target.MemberRank = parsedRank?.ToString() ?? model.Rank ?? string.Empty;
         target.Unit = model.OrganizationUnit;
         target.InitiationDate = model.ReportDate ?? target.InitiationDate;
 
@@ -576,25 +578,25 @@ public static partial class LineOfDutyCaseMapper
         // Map common abbreviations / pay grades to enum values
         return rankString.Trim().ToUpperInvariant() switch
         {
-            "AB" or "E-1" => MilitaryRank.AB,
-            "AMN" or "E-2" => MilitaryRank.Amn,
-            "A1C" or "E-3" => MilitaryRank.A1C,
-            "SRA" or "E-4" => MilitaryRank.SrA,
-            "SSGT" or "E-5" => MilitaryRank.SSgt,
-            "TSGT" or "E-6" => MilitaryRank.TSgt,
-            "MSGT" or "E-7" => MilitaryRank.MSgt,
-            "SMSGT" or "E-8" => MilitaryRank.SMSgt,
-            "CMSGT" or "E-9" => MilitaryRank.CMSgt,
-            "2D LT" or "2LT" or "O-1" => MilitaryRank.SecondLt,
-            "1ST LT" or "1LT" or "O-2" => MilitaryRank.FirstLt,
-            "CAPT" or "O-3" => MilitaryRank.Capt,
-            "MAJ" or "O-4" => MilitaryRank.Maj,
-            "LT COL" or "O-5" => MilitaryRank.LtCol,
-            "COL" or "O-6" => MilitaryRank.Col,
-            "BRIG GEN" or "O-7" => MilitaryRank.BrigGen,
-            "MAJ GEN" or "O-8" => MilitaryRank.MajGen,
-            "LT GEN" or "O-9" => MilitaryRank.LtGen,
-            "GEN" or "O-10" => MilitaryRank.Gen,
+            "AB" or "E-1" or "AIRMAN BASIC" => MilitaryRank.AB,
+            "AMN" or "E-2" or "AIRMAN" => MilitaryRank.Amn,
+            "A1C" or "E-3" or "AIRMAN FIRST CLASS" => MilitaryRank.A1C,
+            "SRA" or "E-4" or "SENIOR AIRMAN" => MilitaryRank.SrA,
+            "SSGT" or "E-5" or "STAFF SERGEANT" => MilitaryRank.SSgt,
+            "TSGT" or "E-6" or "TECHNICAL SERGEANT" => MilitaryRank.TSgt,
+            "MSGT" or "E-7" or "MASTER SERGEANT" => MilitaryRank.MSgt,
+            "SMSGT" or "E-8" or "SENIOR MASTER SERGEANT" => MilitaryRank.SMSgt,
+            "CMSGT" or "E-9" or "CHIEF MASTER SERGEANT" => MilitaryRank.CMSgt,
+            "2D LT" or "2LT" or "O-1" or "SECOND LIEUTENANT" => MilitaryRank.SecondLt,
+            "1ST LT" or "1LT" or "O-2" or "FIRST LIEUTENANT" => MilitaryRank.FirstLt,
+            "CAPT" or "O-3" or "CAPTAIN" => MilitaryRank.Capt,
+            "MAJ" or "O-4" or "MAJOR" => MilitaryRank.Maj,
+            "LT COL" or "O-5" or "LIEUTENANT COLONEL" => MilitaryRank.LtCol,
+            "COL" or "O-6" or "COLONEL" => MilitaryRank.Col,
+            "BRIG GEN" or "O-7" or "BRIGADIER GENERAL" => MilitaryRank.BrigGen,
+            "MAJ GEN" or "O-8" or "MAJOR GENERAL" => MilitaryRank.MajGen,
+            "LT GEN" or "O-9" or "LIEUTENANT GENERAL" => MilitaryRank.LtGen,
+            "GEN" or "O-10" or "GENERAL" => MilitaryRank.Gen,
             _ => null
         };
     }
@@ -633,6 +635,35 @@ public static partial class LineOfDutyCaseMapper
         }
 
         return "In Progress";
+    }
+
+    private const string NonConcurrencePrefix = "Non-concurrence: ";
+
+    private static string ExtractLegalRemarks(List<string> comments)
+    {
+        if (comments is null || comments.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var remarks = comments
+            .Where(c => !c.StartsWith(NonConcurrencePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return remarks.Count > 0 ? string.Join(" ", remarks) : string.Empty;
+    }
+
+    private static string ExtractNonConcurrenceReason(List<string> comments)
+    {
+        if (comments is null || comments.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var entry = comments.FirstOrDefault(c =>
+            c.StartsWith(NonConcurrencePrefix, StringComparison.OrdinalIgnoreCase));
+
+        return entry is not null ? entry[NonConcurrencePrefix.Length..] : string.Empty;
     }
 
 }
