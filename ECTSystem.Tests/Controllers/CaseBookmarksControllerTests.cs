@@ -11,13 +11,39 @@ using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
 
+/// <summary>
+/// Unit tests for <see cref="CaseBookmarksController"/>, the OData controller that manages
+/// per-user case bookmarks (favorites) in the ECT System API.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Each test instance creates an isolated in-memory EF Core database and a
+/// <see cref="CaseBookmarksController"/> configured with a fake authenticated user
+/// (<see cref="ControllerTestBase.TestUserId"/>). The controller filters all queries
+/// and mutations by the current user's <c>NameIdentifier</c> claim.
+/// </para>
+/// <para>
+/// Tests are organized by controller action: <c>Get</c> (collection), <c>Post</c>
+/// (idempotent create), <c>DeleteByCaseId</c> (custom OData action), and
+/// <c>IsBookmarked</c> (custom OData function). Each section covers both success
+/// and not-found / duplicate scenarios.
+/// </para>
+/// </remarks>
 public class CaseBookmarksControllerTests : ControllerTestBase
 {
+    /// <summary>In-memory database options shared across seed, act, and verify phases.</summary>
     private readonly DbContextOptions<EctDbContext> _dbOptions;
+    /// <summary>Mocked logging service injected into the controller.</summary>
     private readonly Mock<ILoggingService> _mockLog;
+    /// <summary>Mocked context factory returning <see cref="EctDbContext"/> instances backed by the in-memory store.</summary>
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
+    /// <summary>System under test — the <see cref="CaseBookmarksController"/> instance.</summary>
     private readonly CaseBookmarksController _sut;
 
+    /// <summary>
+    /// Initializes the in-memory database, configures mocked dependencies, and creates
+    /// the <see cref="CaseBookmarksController"/> with a fake authenticated user context.
+    /// </summary>
     public CaseBookmarksControllerTests()
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
@@ -39,6 +65,11 @@ public class CaseBookmarksControllerTests : ControllerTestBase
 
     // ─────────────────────────── Get (collection) ────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CaseBookmarksController.Get()"/> returns an
+    /// <see cref="OkObjectResult"/> wrapping an <see cref="IQueryable{CaseBookmark}"/>
+    /// scoped to the authenticated user.
+    /// </summary>
     [Fact]
     public async Task Get_ReturnsOkWithBookmarksQueryable()
     {
@@ -49,6 +80,10 @@ public class CaseBookmarksControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Post ────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that posting a new bookmark creates it, stamps the current user's ID,
+    /// and returns <see cref="CreatedODataResult{CaseBookmark}"/>.
+    /// </summary>
     [Fact]
     public async Task Post_ReturnsCreatedWithBookmark()
     {
@@ -62,6 +97,10 @@ public class CaseBookmarksControllerTests : ControllerTestBase
         Assert.Equal(3, created.LineOfDutyCaseId);
     }
 
+    /// <summary>
+    /// Verifies idempotent bookmark creation: when a bookmark for the same user and case
+    /// already exists, <c>Post</c> returns the existing record instead of creating a duplicate.
+    /// </summary>
     [Fact]
     public async Task Post_DuplicateBookmark_ReturnsExisting()
     {
@@ -86,6 +125,10 @@ public class CaseBookmarksControllerTests : ControllerTestBase
 
     // ─────────────────────────── DeleteByCaseId ──────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CaseBookmarksController.DeleteByCaseId(ODataActionParameters)"/>
+    /// removes the matching bookmark and returns <see cref="NoContentResult"/>.
+    /// </summary>
     [Fact]
     public async Task DeleteByCaseId_WhenBookmarkExists_ReturnsNoContent()
     {
@@ -105,6 +148,10 @@ public class CaseBookmarksControllerTests : ControllerTestBase
         Assert.IsType<NoContentResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>DeleteByCaseId</c> returns <see cref="NotFoundResult"/> when no
+    /// bookmark for the specified case ID exists for the current user.
+    /// </summary>
     [Fact]
     public async Task DeleteByCaseId_WhenBookmarkNotFound_ReturnsNotFound()
     {
@@ -115,6 +162,11 @@ public class CaseBookmarksControllerTests : ControllerTestBase
 
     // ─────────────────────────── IsBookmarked ────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CaseBookmarksController.IsBookmarked(int)"/> returns
+    /// <see cref="OkObjectResult"/> with a <c>Value</c> of <see langword="true"/> when
+    /// a bookmark exists for the current user and the specified case.
+    /// </summary>
     [Fact]
     public async Task IsBookmarked_WhenBookmarkExists_ReturnsTrue()
     {
@@ -137,6 +189,11 @@ public class CaseBookmarksControllerTests : ControllerTestBase
         Assert.Equal(true, value);
     }
 
+    /// <summary>
+    /// Verifies that <c>IsBookmarked</c> returns <see cref="OkObjectResult"/> with a
+    /// <c>Value</c> of <see langword="false"/> when no bookmark exists for the current
+    /// user and the specified case.
+    /// </summary>
     [Fact]
     public async Task IsBookmarked_WhenBookmarkNotFound_ReturnsFalse()
     {

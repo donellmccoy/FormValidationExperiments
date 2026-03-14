@@ -11,13 +11,39 @@ using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
 
+/// <summary>
+/// Unit tests for <see cref="WorkflowStateHistoriesController"/>, the OData controller that
+/// creates workflow state transition history records — both individually (<c>Post</c>) and
+/// in atomic batches (<c>Batch</c>).
+/// </summary>
+/// <remarks>
+/// <para>
+/// Workflow state histories are append-only audit records that capture each transition in
+/// the LOD determination workflow (state, action taken, and resulting status). The controller
+/// does not support update or delete operations.
+/// </para>
+/// <para>
+/// The in-memory database is configured to suppress <c>TransactionIgnoredWarning</c> because
+/// the <c>Batch</c> endpoint uses explicit transactions that the in-memory provider does not
+/// support. Tests verify both API return types and persistence side-effects.
+/// </para>
+/// </remarks>
 public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 {
+    /// <summary>Mocked context factory returning <see cref="EctDbContext"/> instances backed by the in-memory store.</summary>
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
+    /// <summary>In-memory database options shared across seed, act, and verify phases.</summary>
     private readonly DbContextOptions<EctDbContext>        _dbOptions;
+    /// <summary>Mocked logging service injected into the controller.</summary>
     private readonly Mock<ILoggingService>                  _mockLog;
+    /// <summary>System under test — the <see cref="WorkflowStateHistoriesController"/> instance.</summary>
     private readonly WorkflowStateHistoriesController       _sut;
 
+    /// <summary>
+    /// Initializes the in-memory database (with transaction-warning suppression),
+    /// configures mocked dependencies, and creates the
+    /// <see cref="WorkflowStateHistoriesController"/> with a fake authenticated user context.
+    /// </summary>
     public WorkflowStateHistoriesControllerTests()
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
@@ -43,6 +69,11 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Post ────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="WorkflowStateHistoriesController.Post"/> returns
+    /// <see cref="CreatedODataResult{WorkflowStateHistory}"/> with the submitted entry
+    /// when the model is valid.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelValid_ReturnsCreatedWithEntry()
     {
@@ -54,6 +85,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.Equal(entry, r.Value);
     }
 
+    /// <summary>
+    /// Verifies that <c>Post</c> returns <see cref="BadRequestObjectResult"/> when the
+    /// model state contains validation errors.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelInvalid_ReturnsBadRequest()
     {
@@ -64,6 +99,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that a valid <c>Post</c> call persists the entry in the database with
+    /// the correct <see cref="WorkflowStateHistory.LineOfDutyCaseId"/>.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelValid_InvokesServiceWithEntry()
     {
@@ -77,6 +116,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.Equal(entry.LineOfDutyCaseId, saved.LineOfDutyCaseId);
     }
 
+    /// <summary>
+    /// Verifies that an invalid <c>Post</c> call does not persist any data, ensuring
+    /// model validation gates the database write.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelInvalid_DoesNotInvokeService()
     {
@@ -91,6 +134,11 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Batch ─────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="WorkflowStateHistoriesController.Batch"/> returns
+    /// <see cref="OkObjectResult"/> containing all entries with server-assigned IDs
+    /// when the input list is valid.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenValidEntries_ReturnsOkWithEntries()
     {
@@ -104,6 +152,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.All(returned, e => Assert.True(e.Id > 0));
     }
 
+    /// <summary>
+    /// Verifies that a valid batch call persists all entries atomically — the total
+    /// count in the database matches the number of entries submitted.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenValidEntries_PersistsAllAtomically()
     {
@@ -116,6 +168,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.Equal(3, count);
     }
 
+    /// <summary>
+    /// Verifies that <c>Batch</c> returns <see cref="BadRequestODataResult"/> when an
+    /// empty list is submitted, rejecting no-op bulk operations.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenEmptyList_ReturnsBadRequest()
     {
@@ -124,6 +180,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.IsType<BadRequestODataResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>Batch</c> returns <see cref="BadRequestObjectResult"/> when the
+    /// model state is invalid.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenModelInvalid_ReturnsBadRequest()
     {
@@ -134,6 +194,10 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that an invalid-model <c>Batch</c> call does not persist any records,
+    /// ensuring validation gates the entire batch write.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenModelInvalid_DoesNotPersist()
     {
@@ -146,6 +210,11 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.Equal(0, count);
     }
 
+    /// <summary>
+    /// Verifies that <c>Batch</c> returns <see cref="BadRequestODataResult"/> when any
+    /// entry in the list has an invalid <c>LineOfDutyCaseId</c> (e.g., zero), rejecting
+    /// the entire batch.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenEntryHasInvalidCaseId_ReturnsBadRequest()
     {
@@ -166,6 +235,11 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         Assert.IsType<BadRequestODataResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that when a batch contains an entry with an invalid case ID, no records
+    /// are persisted — even valid entries in the same batch are rolled back, preserving
+    /// atomicity.
+    /// </summary>
     [Fact]
     public async Task Batch_WhenEntryHasInvalidCaseId_DoesNotPersist()
     {
@@ -190,6 +264,12 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Helpers ─────────────────────────────────
 
+    /// <summary>
+    /// Builds a <see cref="WorkflowStateHistory"/> test entity representing an initial
+    /// entry into the <see cref="WorkflowState.MemberInformationEntry"/> state with
+    /// <see cref="TransitionAction.Enter"/> and <see cref="WorkflowStepStatus.InProgress"/>.
+    /// </summary>
+    /// <returns>A populated <see cref="WorkflowStateHistory"/> instance with <c>LineOfDutyCaseId = 1</c>.</returns>
     private static WorkflowStateHistory BuildEntry() => new WorkflowStateHistory
     {
         LineOfDutyCaseId = 1,

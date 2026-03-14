@@ -12,17 +12,37 @@ using Xunit;
 namespace ECTSystem.Tests.Controllers;
 
 /// <summary>
-/// Controller unit tests for <see cref="MembersController"/>.
-/// Uses an in-memory EF Core database (same pattern as DataServiceTestBase) because
-/// MembersController injects IDbContextFactory directly rather than a service interface.
+/// Unit tests for <see cref="MembersController"/>, the OData controller managing military
+/// member records (service member identification data) in the ECT System API.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Each test instance creates an isolated in-memory EF Core database. Unlike most other
+/// controllers in the system, <see cref="MembersController"/> supports the full CRUD
+/// surface including <c>Put</c> (full replace) in addition to <c>Patch</c> (delta update).
+/// </para>
+/// <para>
+/// Tests are organized by controller action: <c>Get</c> (collection and single),
+/// <c>Post</c>, <c>Put</c>, <c>Patch</c>, and <c>Delete</c>. Persistence is verified
+/// by opening a separate <see cref="EctDbContext"/> against the shared in-memory store
+/// after each mutating operation.
+/// </para>
+/// </remarks>
 public class MembersControllerTests : ControllerTestBase
 {
+    /// <summary>In-memory database options shared across seed, act, and verify phases.</summary>
     private readonly DbContextOptions<EctDbContext> _dbOptions;
+    /// <summary>Mocked context factory returning <see cref="EctDbContext"/> instances backed by the in-memory store.</summary>
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockFactory;
+    /// <summary>Mocked logging service injected into the controller.</summary>
     private readonly Mock<ILoggingService>  _mockLog;
+    /// <summary>System under test — the <see cref="MembersController"/> instance.</summary>
     private readonly MembersController    _sut;
 
+    /// <summary>
+    /// Initializes the in-memory database, configures mocked dependencies, and creates
+    /// the <see cref="MembersController"/> with a fake authenticated user context.
+    /// </summary>
     public MembersControllerTests()
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
@@ -41,8 +61,19 @@ public class MembersControllerTests : ControllerTestBase
         _sut.ControllerContext = CreateControllerContext();
     }
 
+    /// <summary>
+    /// Creates a new <see cref="EctDbContext"/> for seeding or verifying data in the in-memory store.
+    /// </summary>
+    /// <returns>A fresh context instance sharing the same <see cref="_dbOptions"/>.</returns>
     private EctDbContext CreateSeedContext() => new EctDbContext(_dbOptions);
 
+    /// <summary>
+    /// Builds a <see cref="Member"/> test entity with sensible military defaults (SSgt / 99 ABW).
+    /// </summary>
+    /// <param name="id">The entity ID. Use <c>0</c> for new inserts (auto-generated key).</param>
+    /// <param name="firstName">Member first name. Defaults to "John".</param>
+    /// <param name="lastName">Member last name. Defaults to "Doe".</param>
+    /// <returns>A populated <see cref="Member"/> instance.</returns>
     private static Member BuildMember(int id = 0, string firstName = "John", string lastName = "Doe") => new Member
     {
         Id        = id,
@@ -54,6 +85,10 @@ public class MembersControllerTests : ControllerTestBase
 
     // ─────────────────────────── Get (collection) ────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="MembersController.Get()"/> returns an
+    /// <see cref="OkObjectResult"/> wrapping an <see cref="IQueryable{Member}"/>.
+    /// </summary>
     [Fact]
     public async Task Get_ReturnsOkWithMembersQueryable()
     {
@@ -64,6 +99,10 @@ public class MembersControllerTests : ControllerTestBase
 
     // ─────────────────────────── Get (by key) ────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="MembersController.Get(int)"/> returns <see cref="OkObjectResult"/>
+    /// with the matching <see cref="Member"/> when the member exists.
+    /// </summary>
     [Fact]
     public async Task GetByKey_WhenMemberExists_ReturnsOkWithMember()
     {
@@ -78,6 +117,10 @@ public class MembersControllerTests : ControllerTestBase
         Assert.Equal(1, member.Id);
     }
 
+    /// <summary>
+    /// Verifies that <c>Get</c> returns <see cref="NotFoundResult"/> when no member
+    /// with the specified key exists.
+    /// </summary>
     [Fact]
     public async Task GetByKey_WhenMemberNotFound_ReturnsNotFound()
     {
@@ -88,6 +131,11 @@ public class MembersControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Post ────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="MembersController.Post(Member)"/> persists the member in the
+    /// database and returns <see cref="CreatedODataResult{Member}"/>. Persistence is confirmed
+    /// via a separate database context read.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelValid_PersistsMemberAndReturnsCreated()
     {
@@ -101,6 +149,10 @@ public class MembersControllerTests : ControllerTestBase
         Assert.True(await verifyCtx.Members.AnyAsync(m => m.LastName == "Recruit"));
     }
 
+    /// <summary>
+    /// Verifies that <c>Post</c> returns <see cref="BadRequestObjectResult"/> when the
+    /// model state is invalid, without persisting any data.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelInvalid_ReturnsBadRequest()
     {
@@ -113,6 +165,11 @@ public class MembersControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Put ─────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="MembersController.Put(int, Member)"/> fully replaces the
+    /// existing member's properties and returns <see cref="UpdatedODataResult{Member}"/>.
+    /// Persistence is confirmed via a separate database context read.
+    /// </summary>
     [Fact]
     public async Task Put_WhenMemberExists_UpdatesMemberAndReturnsUpdated()
     {
@@ -133,6 +190,10 @@ public class MembersControllerTests : ControllerTestBase
         Assert.Equal("TSgt",  saved.Rank);
     }
 
+    /// <summary>
+    /// Verifies that <c>Put</c> returns <see cref="NotFoundResult"/> when no member
+    /// with the specified key exists.
+    /// </summary>
     [Fact]
     public async Task Put_WhenMemberNotFound_ReturnsNotFound()
     {
@@ -141,6 +202,10 @@ public class MembersControllerTests : ControllerTestBase
         Assert.IsType<NotFoundResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>Put</c> returns <see cref="BadRequestObjectResult"/> when the
+    /// model state is invalid, without attempting database access.
+    /// </summary>
     [Fact]
     public async Task Put_WhenModelInvalid_ReturnsBadRequest()
     {
@@ -153,6 +218,11 @@ public class MembersControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Patch ───────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="MembersController.Patch(int, Delta{Member})"/> applies only
+    /// the changed properties from the delta, leaving other properties unchanged, and returns
+    /// <see cref="UpdatedODataResult{Member}"/>.
+    /// </summary>
     [Fact]
     public async Task Patch_WhenMemberExists_AppliesDeltaAndReturnsUpdated()
     {
@@ -173,6 +243,10 @@ public class MembersControllerTests : ControllerTestBase
         Assert.Equal("Doe",     saved.LastName);  // unchanged
     }
 
+    /// <summary>
+    /// Verifies that <c>Patch</c> returns <see cref="NotFoundResult"/> when no member
+    /// with the specified key exists.
+    /// </summary>
     [Fact]
     public async Task Patch_WhenMemberNotFound_ReturnsNotFound()
     {
@@ -186,6 +260,11 @@ public class MembersControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Delete ──────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="MembersController.Delete(int)"/> removes the member from the
+    /// store and returns <see cref="NoContentResult"/>. Deletion is confirmed via a separate
+    /// database context read.
+    /// </summary>
     [Fact]
     public async Task Delete_WhenMemberExists_RemovesMemberAndReturnsNoContent()
     {
@@ -201,6 +280,10 @@ public class MembersControllerTests : ControllerTestBase
         Assert.Null(await verifyCtx.Members.FindAsync(1));
     }
 
+    /// <summary>
+    /// Verifies that <c>Delete</c> returns <see cref="NotFoundResult"/> when no member
+    /// with the specified key exists.
+    /// </summary>
     [Fact]
     public async Task Delete_WhenMemberNotFound_ReturnsNotFound()
     {

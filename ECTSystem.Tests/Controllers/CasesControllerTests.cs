@@ -14,14 +14,44 @@ using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
 
+/// <summary>
+/// Unit tests for <see cref="CasesController"/>, the primary OData controller managing
+/// Line of Duty (LOD) case records in the ECT System API.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Each test instance creates an isolated in-memory EF Core database with a pre-seeded
+/// <see cref="ECTSystem.Shared.Models.Member"/> (Id&nbsp;=&nbsp;1) to satisfy foreign-key
+/// constraints when cases are inserted. The <see cref="CasesController"/> is instantiated
+/// with a mocked <see cref="ILoggingService"/>, a factory that produces
+/// <see cref="EctDbContext"/> instances backed by that in-memory store, and an
+/// <see cref="AF348PdfService"/> wired to a mocked <see cref="IWebHostEnvironment"/>.
+/// </para>
+/// <para>
+/// Tests are organized by controller action: <c>Get</c> (collection and single),
+/// <c>Post</c>, <c>Patch</c>, <c>Delete</c>, and the custom <c>SaveAuthorities</c>
+/// endpoint. Each section validates both the happy path and relevant error/edge cases
+/// (not-found, invalid model state, null input).
+/// </para>
+/// </remarks>
 public class CasesControllerTests : ControllerTestBase
 {
+    /// <summary>Mocked logging service injected into the controller; verifies no unexpected log interactions.</summary>
     private readonly Mock<ILoggingService>       _mockLog;
+    /// <summary>Mocked EDM model (unused by current tests but required by the controller constructor).</summary>
     private readonly Mock<IEdmModel>            _mockEdmModel;
+    /// <summary>Mocked context factory that returns <see cref="EctDbContext"/> instances against the in-memory store.</summary>
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
+    /// <summary>In-memory database options shared by seed, act, and verify phases within a single test.</summary>
     private readonly DbContextOptions<EctDbContext>        _dbOptions;
+    /// <summary>System under test — the <see cref="CasesController"/> instance.</summary>
     private readonly CasesController            _sut;
 
+    /// <summary>
+    /// Initializes the in-memory database, seeds a default <see cref="ECTSystem.Shared.Models.Member"/>,
+    /// configures the mocked dependencies, and creates the <see cref="CasesController"/> with a
+    /// fake authenticated user context.
+    /// </summary>
     public CasesControllerTests()
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
@@ -60,8 +90,17 @@ public class CasesControllerTests : ControllerTestBase
         _sut.ControllerContext = CreateControllerContext();
     }
 
+    /// <summary>
+    /// Creates a new <see cref="EctDbContext"/> for seeding or verifying data in the in-memory store.
+    /// </summary>
+    /// <returns>A fresh context instance sharing the same <see cref="_dbOptions"/>.</returns>
     private EctDbContext CreateSeedContext() => new EctDbContext(_dbOptions);
 
+    /// <summary>
+    /// Creates an <see cref="AF348PdfService"/> backed by a mocked <see cref="IWebHostEnvironment"/>
+    /// whose <c>ContentRootPath</c> points to the test's base directory.
+    /// </summary>
+    /// <returns>An <see cref="AF348PdfService"/> suitable for controller construction.</returns>
     private static AF348PdfService CreatePdfService()
     {
         var mockEnv = new Mock<IWebHostEnvironment>();
@@ -69,6 +108,10 @@ public class CasesControllerTests : ControllerTestBase
         return new AF348PdfService(mockEnv.Object);
     }
 
+    /// <summary>
+    /// Seeds a <see cref="LineOfDutyCase"/> into the in-memory database for test arrangement.
+    /// </summary>
+    /// <param name="lodCase">The case entity to persist.</param>
     private void SeedCase(LineOfDutyCase lodCase)
     {
         using var ctx = CreateSeedContext();
@@ -78,6 +121,10 @@ public class CasesControllerTests : ControllerTestBase
 
     // ─────────────────────────── Get (collection) ────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Get()"/> returns an <see cref="OkObjectResult"/>
+    /// wrapping an <see cref="IQueryable{LineOfDutyCase}"/> when cases exist in the store.
+    /// </summary>
     [Fact]
     public async Task Get_ReturnsOkContainingCasesQueryable()
     {
@@ -90,6 +137,10 @@ public class CasesControllerTests : ControllerTestBase
 
     // ─────────────────────────── Get (by key) ────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Get(int)"/> returns <see cref="OkObjectResult"/>
+    /// with the matching <see cref="LineOfDutyCase"/> when the case exists.
+    /// </summary>
     [Fact]
     public async Task GetByKey_WhenCaseExists_ReturnsOkWithCase()
     {
@@ -102,6 +153,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.Equal(1, returned.Id);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Get(int)"/> returns <see cref="NotFoundResult"/>
+    /// when no case with the specified key exists in the store.
+    /// </summary>
     [Fact]
     public async Task GetByKey_WhenCaseNotFound_ReturnsNotFound()
     {
@@ -112,6 +167,11 @@ public class CasesControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Post ────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Post(LineOfDutyCase)"/> returns a
+    /// <see cref="CreatedODataResult{LineOfDutyCase}"/> and auto-generates a case ID
+    /// matching the <c>YYYYMMDD-NNN</c> pattern.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelValid_ReturnsCreatedWithCase()
     {
@@ -124,6 +184,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.Matches(@"^\d{8}-\d{3}$", created.Entity.CaseId);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Post(LineOfDutyCase)"/> returns
+    /// <see cref="BadRequestObjectResult"/> when the model state contains validation errors.
+    /// </summary>
     [Fact]
     public async Task Post_WhenModelInvalid_ReturnsBadRequest()
     {
@@ -134,6 +198,11 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that two sequentially posted cases receive incrementing daily suffixes
+    /// (<c>-001</c>, <c>-002</c>) within the same UTC date according to the server's
+    /// auto-ID generation logic.
+    /// </summary>
     [Fact]
     public async Task Post_SequentialCases_GetIncrementingSuffix()
     {
@@ -154,6 +223,10 @@ public class CasesControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Patch ───────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Patch(int, Delta{LineOfDutyCase})"/> applies the
+    /// delta and returns <see cref="UpdatedODataResult{LineOfDutyCase}"/> when the case exists.
+    /// </summary>
     [Fact]
     public async Task Patch_WhenCaseExists_ReturnsUpdated()
     {
@@ -166,6 +239,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<UpdatedODataResult<LineOfDutyCase>>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>Patch</c> returns <see cref="NotFoundResult"/> when the target case
+    /// does not exist in the store.
+    /// </summary>
     [Fact]
     public async Task Patch_WhenCaseNotFound_ReturnsNotFound()
     {
@@ -176,6 +253,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<NotFoundResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>Patch</c> returns <see cref="BadRequestObjectResult"/> when a
+    /// <c>null</c> delta is provided, guarding against missing request body.
+    /// </summary>
     [Fact]
     public async Task Patch_WhenDeltaIsNull_ReturnsBadRequest()
     {
@@ -184,6 +265,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>Patch</c> returns <see cref="BadRequestObjectResult"/> when the
+    /// model state is invalid, without attempting database access.
+    /// </summary>
     [Fact]
     public async Task Patch_WhenModelStateInvalid_ReturnsBadRequest()
     {
@@ -197,6 +282,10 @@ public class CasesControllerTests : ControllerTestBase
 
     // ─────────────────────────────── Delete ──────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.Delete(int)"/> returns <see cref="NoContentResult"/>
+    /// and removes the case from the store when it exists.
+    /// </summary>
     [Fact]
     public async Task Delete_WhenCaseExists_ReturnsNoContent()
     {
@@ -207,6 +296,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<NoContentResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that <c>Delete</c> returns <see cref="NotFoundResult"/> when no case
+    /// with the specified key exists.
+    /// </summary>
     [Fact]
     public async Task Delete_WhenCaseNotFound_ReturnsNotFound()
     {
@@ -217,6 +310,10 @@ public class CasesControllerTests : ControllerTestBase
 
     // ────────────────────────── SaveAuthorities ──────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="CasesController.SaveAuthorities(int, List{LineOfDutyAuthority})"/>
+    /// inserts new authority entries and associates them with the specified case.
+    /// </summary>
     [Fact]
     public async Task SaveAuthorities_WhenCaseExists_InsertsNewAuthorities()
     {
@@ -236,6 +333,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.All(saved, a => Assert.Equal(1, a.LineOfDutyCaseId));
     }
 
+    /// <summary>
+    /// Verifies that <c>SaveAuthorities</c> returns <see cref="NotFoundResult"/> when the
+    /// target case does not exist, preventing orphaned authority records.
+    /// </summary>
     [Fact]
     public async Task SaveAuthorities_WhenCaseNotFound_ReturnsNotFound()
     {
@@ -249,6 +350,11 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<NotFoundResult>(result);
     }
 
+    /// <summary>
+    /// Verifies that calling <c>SaveAuthorities</c> with an authority whose <c>Role</c>
+    /// already exists updates the existing record's <c>Name</c> and <c>Rank</c> rather
+    /// than creating a duplicate entry.
+    /// </summary>
     [Fact]
     public async Task SaveAuthorities_UpdatesExistingByRole()
     {
@@ -275,6 +381,11 @@ public class CasesControllerTests : ControllerTestBase
         Assert.Equal("BGen", saved[0].Rank);
     }
 
+    /// <summary>
+    /// Verifies that roles omitted from a subsequent <c>SaveAuthorities</c> call are
+    /// removed from the database, ensuring the stored authorities always match the
+    /// submitted set (full replacement semantics).
+    /// </summary>
     [Fact]
     public async Task SaveAuthorities_RemovesRolesNotInRequest()
     {
@@ -301,6 +412,10 @@ public class CasesControllerTests : ControllerTestBase
         Assert.Equal("Commander", saved[0].Role);
     }
 
+    /// <summary>
+    /// Verifies that <c>SaveAuthorities</c> returns <see cref="BadRequestObjectResult"/>
+    /// when a <c>null</c> authority list is provided.
+    /// </summary>
     [Fact]
     public async Task SaveAuthorities_WhenNullBody_ReturnsBadRequest()
     {
