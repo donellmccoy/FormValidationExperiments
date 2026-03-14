@@ -69,7 +69,7 @@ public class CaseBookmarksController : ODataController
         if (existing is not null)
         {
             _loggingService.BookmarkAlreadyExists(bookmark.LineOfDutyCaseId);
-            return Created(existing);
+            return Ok(existing);
         }
 
         var newBookmark = new CaseBookmark

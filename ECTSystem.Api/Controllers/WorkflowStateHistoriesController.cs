@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Formatter;
+using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
@@ -35,11 +37,41 @@ public class WorkflowStateHistoriesController : ODataController
     }
 
     /// <summary>
+    /// Returns an IQueryable of workflow state history entries for OData query composition.
+    /// OData route: GET /odata/WorkflowStateHistories
+    /// </summary>
+    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    public async Task<IActionResult> Get(CancellationToken ct = default)
+    {
+        var context = await CreateContextAsync(ct);
+        return Ok(context.WorkflowStateHistories.AsNoTracking());
+    }
+
+    /// <summary>
+    /// Returns a single workflow state history entry by key.
+    /// OData route: GET /odata/WorkflowStateHistories({key})
+    /// </summary>
+    [EnableQuery]
+    public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var entry = await context.WorkflowStateHistories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(h => h.Id == key, ct);
+
+        if (entry is null)
+            return NotFound();
+
+        return Ok(entry);
+    }
+
+    /// <summary>
     /// Creates a new workflow state history entry for the specified case.
     /// OData route: POST /odata/WorkflowStateHistories
     /// </summary>
     /// <param name="entry">The workflow state history entry to persist.</param>
     /// <param name="ct">Cancellation token.</param>
+    [EnableQuery]
     public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -70,7 +102,7 @@ public class WorkflowStateHistoriesController : ODataController
     /// </summary>
     /// <param name="entries">The list of workflow state history entries to persist.</param>
     /// <param name="ct">Cancellation token.</param>
-    [HttpPost("/odata/WorkflowStateHistories/Batch")]
+    [HttpPost]
     public async Task<IActionResult> Batch([FromBody] List<WorkflowStateHistory> entries, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -101,5 +133,18 @@ public class WorkflowStateHistoriesController : ODataController
 
         _loggingService.WorkflowStateHistoryBatchCreated(entries.Count, caseId);
         return Ok(entries);
+    }
+
+    /// <summary>
+    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
+    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
+    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
+    {
+        var context = await _contextFactory.CreateDbContextAsync(ct);
+        HttpContext.Response.RegisterForDispose(context);
+        return context;
     }
 }

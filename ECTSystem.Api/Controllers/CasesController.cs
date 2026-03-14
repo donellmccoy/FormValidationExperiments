@@ -204,8 +204,8 @@ public class CasesController : ODataController
     /// associated history entries in a single database transaction.
     /// Route: POST /odata/Cases({key})/Transition
     /// </summary>
-    [HttpPost("/odata/Cases({key})/Transition")]
-    public async Task<IActionResult> Transition([FromRoute] int key, [FromBody] CaseTransitionRequest request, CancellationToken ct = default)
+    [HttpPost]
+    public async Task<IActionResult> Transition([FromODataUri] int key, [FromBody] CaseTransitionRequest request, CancellationToken ct = default)
     {
         if (request is null || !ModelState.IsValid)
         {
@@ -266,8 +266,8 @@ public class CasesController : ODataController
     /// Checks out a LOD case so other users see it as read-only.
     /// Route: POST /odata/Cases({key})/CheckOut
     /// </summary>
-    [HttpPost("/odata/Cases({key})/CheckOut")]
-    public async Task<IActionResult> CheckOut([FromRoute] int key, CancellationToken ct = default)
+    [HttpPost]
+    public async Task<IActionResult> CheckOut([FromODataUri] int key, CancellationToken ct = default)
     {
         _loggingService.CheckingOutCase(key);
 
@@ -311,8 +311,8 @@ public class CasesController : ODataController
     /// Checks in a LOD case so it becomes available for editing again.
     /// Route: POST /odata/Cases({key})/CheckIn
     /// </summary>
-    [HttpPost("/odata/Cases({key})/CheckIn")]
-    public async Task<IActionResult> CheckIn([FromRoute] int key, CancellationToken ct = default)
+    [HttpPost]
+    public async Task<IActionResult> CheckIn([FromODataUri] int key, CancellationToken ct = default)
     {
         _loggingService.CheckingInCase(key);
 
@@ -593,9 +593,7 @@ public class CasesController : ODataController
     {
         var context = await _contextFactory.CreateDbContextAsync(ct);
 
-        context.TrackDisposable(ControllerContext);
-
-        //HttpContext.Response.RegisterForDispose(context);
+        HttpContext.Response.RegisterForDispose(context);
 
         return context;
     }

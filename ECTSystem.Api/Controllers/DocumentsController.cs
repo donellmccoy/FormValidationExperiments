@@ -45,20 +45,7 @@ public class DocumentsController : ODataController
     {
         _loggingService.QueryingDocuments();
         var context = await CreateContextAsync(ct);
-        return Ok(context.Documents
-            .AsNoTracking()
-            .Select(d => new LineOfDutyDocument
-            {
-                Id = d.Id,
-                LineOfDutyCaseId = d.LineOfDutyCaseId,
-                DocumentType = d.DocumentType,
-                FileName = d.FileName,
-                ContentType = d.ContentType,
-                FileSize = d.FileSize,
-                UploadDate = d.UploadDate,
-                Description = d.Description
-                // Content intentionally omitted — use the download endpoint for file bytes
-            }));
+        return Ok(context.Documents.AsNoTracking());
     }
 
     /// <summary>
@@ -67,25 +54,13 @@ public class DocumentsController : ODataController
     /// </summary>
     /// <param name="key">The document identifier.</param>
     /// <param name="ct">Cancellation token.</param>
+    [EnableQuery]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
         var document = await context.Documents
             .AsNoTracking()
-            .Where(d => d.Id == key)
-            .Select(d => new LineOfDutyDocument
-            {
-                Id = d.Id,
-                LineOfDutyCaseId = d.LineOfDutyCaseId,
-                DocumentType = d.DocumentType,
-                FileName = d.FileName,
-                ContentType = d.ContentType,
-                FileSize = d.FileSize,
-                UploadDate = d.UploadDate,
-                Description = d.Description
-                // Content intentionally omitted — use the download endpoint for file bytes
-            })
-            .FirstOrDefaultAsync(ct);
+            .FirstOrDefaultAsync(d => d.Id == key, ct);
 
         if (document is null)
         {

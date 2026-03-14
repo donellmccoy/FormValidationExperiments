@@ -142,6 +142,7 @@ public static class ServiceCollectionExtensions
         var caseType = casesEntitySet.EntityType;
         caseType.Action("CheckOut");
         caseType.Action("CheckIn");
+        caseType.Action("Transition");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
@@ -170,6 +171,7 @@ public static class ServiceCollectionExtensions
         caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked").Returns<bool>().Parameter<int>("caseId");
 
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
+        odataBuilder.EntityType<WorkflowStateHistory>().Collection.Action("Batch");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
         odataBuilder.EntitySet<AuditComment>("AuditComments");
 

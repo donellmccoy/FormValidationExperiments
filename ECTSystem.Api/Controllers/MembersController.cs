@@ -51,6 +51,7 @@ public class MembersController : ODataController
     /// Returns a single Member by key with navigation properties.
     /// OData route: GET /odata/Members({key})
     /// </summary>
+    [EnableQuery]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         _loggingService.RetrievingMember(key);
@@ -72,6 +73,7 @@ public class MembersController : ODataController
     /// Creates a new Member.
     /// OData route: POST /odata/Members
     /// </summary>
+    [EnableQuery]
     public async Task<IActionResult> Post([FromBody] Member member, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -92,6 +94,7 @@ public class MembersController : ODataController
     /// Fully replaces an existing Member.
     /// OData route: PUT /odata/Members({key})
     /// </summary>
+    [EnableQuery]
     public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] Member update, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -121,6 +124,7 @@ public class MembersController : ODataController
     /// Partially updates an existing Member.
     /// OData route: PATCH /odata/Members({key})
     /// </summary>
+    [EnableQuery]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<Member> delta, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
