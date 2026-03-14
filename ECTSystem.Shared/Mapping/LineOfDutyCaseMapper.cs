@@ -226,9 +226,33 @@ public static partial class LineOfDutyCaseMapper
         }
 
         sja.Comments = sjaRemarks;
+
+        // ── Populate scalar signature fields so they're included in the PATCH body ──
+
+        // Part II — Medical Provider (Item 15)
+        target.ProviderNameRank = model.MedicalProvider ?? string.Empty;
+
+        // Part III — Commander (Item 23)
+        target.CommanderNameRank = FormatNameRank(model.CommanderName, model.CommanderRank);
+        target.CommanderDate = model.CommanderSignatureDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+
+        // Part IV — SJA/Legal Review (Items 24–25)
+        target.SjaNameRank = FormatNameRank(model.SJAName, model.SJARank);
+        target.SjaDate = model.SJASignatureDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+        target.SjaConcurs = model.ConcurWithRecommendation == true;
     }
 
     // ──────────────────────────── Helper Methods ────────────────────────────
+
+    private static string FormatNameRank(string name, MilitaryRank? rank)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.Empty;
+        }
+
+        return rank.HasValue ? $"{rank.Value} {name}" : name;
+    }
 
     private static LineOfDutyAuthority FindOrCreateAuthority(LineOfDutyCase source, string role)
     {

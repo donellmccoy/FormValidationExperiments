@@ -181,6 +181,14 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 706, Level = LogLevel.Warning, Message = "Empty batch submitted for workflow state history creation")]
     public partial void WorkflowStateHistoryBatchEmpty();
 
+    // Authorities (EventId 900–901)
+
+    [LoggerMessage(EventId = 900, Level = LogLevel.Information, Message = "Saving {Count} authorities for LOD case {CaseId}")]
+    public partial void SavingAuthorities(int caseId, int count);
+
+    [LoggerMessage(EventId = 901, Level = LogLevel.Information, Message = "Saved {Count} authorities for LOD case {CaseId}")]
+    public partial void AuthoritiesSaved(int caseId, int count);
+
     // Case Checkout (EventId 800–805)
 
     [LoggerMessage(EventId = 800, Level = LogLevel.Information, Message = "Checking out LOD case {CaseId}")]

@@ -31,9 +31,17 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("EctDatabase");
 
         services.AddPooledDbContextFactory<EctDbContext>(options =>
-            options.UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)), poolSize: 32);
+            options.UseSqlServer(connectionString, sql =>
+            {
+                sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+            }), poolSize: 32);
 
-        services.AddPooledDbContextFactory<EctIdentityDbContext>(options => options.UseSqlServer(connectionString), poolSize: 32);
+        services.AddPooledDbContextFactory<EctIdentityDbContext>(options =>
+            options.UseSqlServer(connectionString, sql =>
+            {
+                sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+            }), poolSize: 32);
 
         return services;
     }
@@ -127,6 +135,7 @@ public static class ServiceCollectionExtensions
         var caseType = casesEntitySet.EntityType;
         caseType.Action("CheckOut");
         caseType.Action("CheckIn");
+        caseType.Action("SaveAuthorities");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);

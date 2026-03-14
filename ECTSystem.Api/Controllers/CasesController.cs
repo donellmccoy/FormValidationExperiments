@@ -352,6 +352,77 @@ public class CasesController : ODataController
     }
 
     /// <summary>
+    /// Batch-upserts authority entries for a LOD case. Existing authorities matching
+    /// by Role are updated; new roles are inserted; roles not present in the request
+    /// are removed.
+    /// Route: POST /odata/Cases({key})/SaveAuthorities
+    /// </summary>
+    [HttpPost("/odata/Cases({key})/SaveAuthorities")]
+    public async Task<IActionResult> SaveAuthorities([FromRoute] int key, [FromBody] List<LineOfDutyAuthority> authorities, CancellationToken ct = default)
+    {
+        if (authorities is null || !ModelState.IsValid)
+        {
+            _loggingService.InvalidModelState("SaveAuthorities");
+            return BadRequest(ModelState);
+        }
+
+        _loggingService.SavingAuthorities(key, authorities.Count);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.Cases.AnyAsync(c => c.Id == key, ct);
+
+        if (!existing)
+        {
+            _loggingService.CaseNotFound(key);
+            return NotFound();
+        }
+
+        var existingAuthorities = await context.Authorities
+            .Where(a => a.LineOfDutyCaseId == key)
+            .ToListAsync(ct);
+
+        // Remove authorities whose role is not in the incoming list
+        var incomingRoles = authorities.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var toRemove = existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)).ToList();
+        context.Authorities.RemoveRange(toRemove);
+
+        // Upsert: update existing or add new
+        foreach (var incoming in authorities)
+        {
+            var match = existingAuthorities.FirstOrDefault(
+                a => string.Equals(a.Role, incoming.Role, StringComparison.OrdinalIgnoreCase));
+
+            if (match is not null)
+            {
+                match.Name = incoming.Name;
+                match.Rank = incoming.Rank;
+                match.Title = incoming.Title;
+                match.ActionDate = incoming.ActionDate;
+                match.Recommendation = incoming.Recommendation;
+                match.Comments = incoming.Comments;
+            }
+            else
+            {
+                incoming.LineOfDutyCaseId = key;
+                incoming.Id = 0;
+                context.Authorities.Add(incoming);
+            }
+        }
+
+        await context.SaveChangesAsync(ct);
+
+        var saved = await context.Authorities
+            .Where(a => a.LineOfDutyCaseId == key)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        _loggingService.AuthoritiesSaved(key, saved.Count);
+
+        return Ok(saved);
+    }
+
+    /// <summary>
     /// Deletes an LOD case and its related entities.
     /// OData route: DELETE /odata/Cases({key})
     /// </summary>

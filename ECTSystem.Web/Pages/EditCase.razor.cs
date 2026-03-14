@@ -1180,6 +1180,17 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _lineOfDutyCase = await CaseService.SaveCaseAsync(_lineOfDutyCase, _cts.Token);
 
+            // Persist authority entries (commander, SJA, medical provider) via
+            // the dedicated batch-upsert endpoint — the scalar PATCH body cannot
+            // include navigation collections.
+            if (_lineOfDutyCase.Id > 0 && _lineOfDutyCase.Authorities.Count > 0)
+            {
+                var savedAuthorities = await CaseService.SaveAuthoritiesAsync(
+                    _lineOfDutyCase.Id, _lineOfDutyCase.Authorities, _cts.Token);
+
+                _lineOfDutyCase.Authorities = savedAuthorities;
+            }
+
             _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
             TakeSnapshots();

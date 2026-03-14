@@ -227,6 +227,21 @@ public class LineOfDutyCaseHttpService : IDataService
         return (await response.Content.ReadFromJsonAsync<CaseTransitionResponse>(ODataJsonOptions, cancellationToken))!;
     }
 
+    /// <inheritdoc />
+    public async Task<List<LineOfDutyAuthority>> SaveAuthoritiesAsync(int caseId, ICollection<LineOfDutyAuthority> authorities, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+        ArgumentNullException.ThrowIfNull(authorities);
+
+        var response = await _httpClient.PostAsJsonAsync($"odata/Cases({caseId})/SaveAuthorities", authorities.ToList(), ODataJsonOptions, cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ODataResponse<LineOfDutyAuthority>>(ODataJsonOptions, cancellationToken);
+
+        return result?.Value ?? [];
+    }
+
     /// <summary>
     /// Evaluates partial text logic via OData search, comparing rank matching and service component enumerations.
     /// </summary>

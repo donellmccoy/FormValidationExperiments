@@ -214,4 +214,98 @@ public class CasesControllerTests : ControllerTestBase
 
         Assert.IsType<NotFoundResult>(result);
     }
+
+    // ────────────────────────── SaveAuthorities ──────────────────────────────
+
+    [Fact]
+    public async Task SaveAuthorities_WhenCaseExists_InsertsNewAuthorities()
+    {
+        SeedCase(BuildCase(1));
+
+        var authorities = new List<LineOfDutyAuthority>
+        {
+            new() { Role = "Commander", Name = "Smith, John", Rank = "Col" },
+            new() { Role = "SJA", Name = "Jones, Jane", Rank = "Maj" }
+        };
+
+        var result = await _sut.SaveAuthorities(1, authorities);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
+        Assert.Equal(2, saved.Count);
+        Assert.All(saved, a => Assert.Equal(1, a.LineOfDutyCaseId));
+    }
+
+    [Fact]
+    public async Task SaveAuthorities_WhenCaseNotFound_ReturnsNotFound()
+    {
+        var authorities = new List<LineOfDutyAuthority>
+        {
+            new() { Role = "Commander", Name = "Smith, John", Rank = "Col" }
+        };
+
+        var result = await _sut.SaveAuthorities(999, authorities);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task SaveAuthorities_UpdatesExistingByRole()
+    {
+        SeedCase(BuildCase(1));
+
+        // First save
+        var initial = new List<LineOfDutyAuthority>
+        {
+            new() { Role = "Commander", Name = "Old Name", Rank = "Col" }
+        };
+        await _sut.SaveAuthorities(1, initial);
+
+        // Second save updates the same role
+        var updated = new List<LineOfDutyAuthority>
+        {
+            new() { Role = "Commander", Name = "New Name", Rank = "BGen" }
+        };
+        var result = await _sut.SaveAuthorities(1, updated);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
+        Assert.Single(saved);
+        Assert.Equal("New Name", saved[0].Name);
+        Assert.Equal("BGen", saved[0].Rank);
+    }
+
+    [Fact]
+    public async Task SaveAuthorities_RemovesRolesNotInRequest()
+    {
+        SeedCase(BuildCase(1));
+
+        // Save two authorities
+        var initial = new List<LineOfDutyAuthority>
+        {
+            new() { Role = "Commander", Name = "Cmd Name", Rank = "Col" },
+            new() { Role = "SJA", Name = "SJA Name", Rank = "Maj" }
+        };
+        await _sut.SaveAuthorities(1, initial);
+
+        // Save with only one — the other should be removed
+        var reduced = new List<LineOfDutyAuthority>
+        {
+            new() { Role = "Commander", Name = "Cmd Name", Rank = "Col" }
+        };
+        var result = await _sut.SaveAuthorities(1, reduced);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
+        Assert.Single(saved);
+        Assert.Equal("Commander", saved[0].Role);
+    }
+
+    [Fact]
+    public async Task SaveAuthorities_WhenNullBody_ReturnsBadRequest()
+    {
+        var result = await _sut.SaveAuthorities(1, null!);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

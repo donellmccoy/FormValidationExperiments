@@ -29,6 +29,12 @@ public interface IDataService
     Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Batch-upserts authority entries for a LOD case. Existing authorities matching
+    /// by Role are updated; new roles are inserted; roles absent from the list are removed.
+    /// </summary>
+    Task<List<LineOfDutyAuthority>> SaveAuthoritiesAsync(int caseId, ICollection<LineOfDutyAuthority> authorities, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Atomically transitions a LOD case to a new workflow state and persists the
     /// associated history entries in a single server-side transaction.
     /// Returns the updated case and server-persisted history entries.
