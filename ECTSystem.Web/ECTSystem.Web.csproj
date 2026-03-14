@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ECTSystem.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ECTSystem.Shared\ECTSystem.Shared.csproj" />
   </ItemGroup>
 

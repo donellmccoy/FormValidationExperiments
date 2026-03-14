@@ -9,7 +9,7 @@ using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Xunit;
 
-namespace ECTSystem.Tests;
+namespace ECTSystem.Tests.Controllers;
 
 public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 {

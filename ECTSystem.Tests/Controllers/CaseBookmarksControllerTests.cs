@@ -9,7 +9,7 @@ using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
 
-namespace ECTSystem.Tests;
+namespace ECTSystem.Tests.Controllers;
 
 public class CaseBookmarksControllerTests : ControllerTestBase
 {

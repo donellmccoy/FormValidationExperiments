@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using ECTSystem.Shared.ViewModels;
 using Xunit;
 
-namespace ECTSystem.Tests;
+namespace ECTSystem.Tests.ViewModels;
 
 public class DirtyTrackingTests
 {

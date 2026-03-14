@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using ECTSystem.Shared.Models;
 
-namespace ECTSystem.Tests;
+namespace ECTSystem.Tests.Controllers;
 
 /// <summary>
 /// Base class for controller unit tests. Provides a fake authenticated user context
