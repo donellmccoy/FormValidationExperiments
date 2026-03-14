@@ -77,7 +77,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(edmModel);
 
         // Delta<LineOfDutyCase> uses the entity type directly — no ComplexType registration needed.
-        services.AddControllers()
+        // The project uses <Nullable>disable</Nullable>, so reference type properties are
+        // nullable-oblivious. Without this flag, MVC treats them as implicitly [Required],
+        // which breaks endpoints that receive entities with null navigation properties
+        // (e.g., SaveAuthorities receiving LineOfDutyAuthority without LineOfDutyCase).
+        services.AddControllers(options =>
+            {
+                options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+            })
             .AddOData(options =>
             {
                 options.RouteOptions.EnableUnqualifiedOperationCall = true;
