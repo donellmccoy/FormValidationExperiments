@@ -144,7 +144,7 @@ public static class ServiceCollectionExtensions
         caseType.Action("CheckIn");
         caseType.Action("Transition");
         var saveAuthoritiesAction = caseType.Action("SaveAuthorities");
-        saveAuthoritiesAction.CollectionParameter<LineOfDutyAuthority>("Authorities");
+        saveAuthoritiesAction.CollectionEntityParameter<LineOfDutyAuthority>("Authorities");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
