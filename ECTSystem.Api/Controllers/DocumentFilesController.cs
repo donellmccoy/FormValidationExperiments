@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 
@@ -34,15 +35,20 @@ public class DocumentFilesController : ControllerBase
     /// <summary>Service used for structured logging.</summary>
     private readonly ILoggingService _loggingService;
 
+    /// <summary>Service for generating filled AF Form 348 PDFs.</summary>
+    private readonly AF348PdfService _pdfService;
+
     /// <summary>
     /// Initializes a new instance of <see cref="DocumentFilesController"/>.
     /// </summary>
     /// <param name="contextFactory">The EF Core context factory.</param>
     /// <param name="loggingService">The structured logging service.</param>
-    public DocumentFilesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
+    /// <param name="pdfService">The AF Form 348 PDF generation service.</param>
+    public DocumentFilesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, AF348PdfService pdfService)
     {
         _contextFactory = contextFactory;
         _loggingService = loggingService;
+        _pdfService = pdfService;
     }
 
     /// <summary>
@@ -192,5 +198,26 @@ public class DocumentFilesController : ControllerBase
         await context.SaveChangesAsync(ct);
         _loggingService.DocumentDeleted(key, document.LineOfDutyCaseId);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Generates a filled AF Form 348 PDF for the specified case.
+    /// REST route: GET /api/cases/{caseId}/form348
+    /// </summary>
+    /// <param name="caseId">The LOD case identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    [HttpGet("{caseId:int}/form348")]
+    public async Task<IActionResult> GetForm348([FromRoute] int caseId, CancellationToken ct = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        var lodCase = await context.Cases.AsNoTracking()
+            .Include(c => c.Member)
+            .FirstOrDefaultAsync(c => c.Id == caseId, ct);
+
+        if (lodCase is null)
+            return NotFound();
+
+        var pdfBytes = _pdfService.GenerateFilledForm(lodCase);
+        return File(pdfBytes, "application/pdf", $"AF348_{lodCase.CaseId}.pdf");
     }
 }

@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using ECTSystem.Api.Services;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Tests.Controllers;
@@ -109,4 +112,15 @@ public abstract class ControllerTestBase
         WitnessStatements   = [],
         AuditComments       = []
     };
+
+    /// <summary>
+    /// Creates an <see cref="AF348PdfService"/> backed by a mocked <see cref="IWebHostEnvironment"/>
+    /// whose <c>ContentRootPath</c> points to the test's base directory.
+    /// </summary>
+    protected static AF348PdfService CreatePdfService()
+    {
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        mockEnv.Setup(e => e.ContentRootPath).Returns(AppContext.BaseDirectory);
+        return new AF348PdfService(mockEnv.Object);
+    }
 }

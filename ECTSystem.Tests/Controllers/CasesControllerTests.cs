@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Results;
+using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
-using Microsoft.AspNetCore.Hosting;
 using Moq;
 using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
-using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
@@ -84,8 +84,7 @@ public class CasesControllerTests : ControllerTestBase
 
         _sut = new CasesController(
             _mockLog.Object,
-            _mockContextFactory.Object,
-            CreatePdfService());
+            _mockContextFactory.Object);
 
         _sut.ControllerContext = CreateControllerContext();
     }
@@ -97,15 +96,12 @@ public class CasesControllerTests : ControllerTestBase
     private EctDbContext CreateSeedContext() => new EctDbContext(_dbOptions);
 
     /// <summary>
-    /// Creates an <see cref="AF348PdfService"/> backed by a mocked <see cref="IWebHostEnvironment"/>
-    /// whose <c>ContentRootPath</c> points to the test's base directory.
+    /// Creates an <see cref="ODataActionParameters"/> containing the given authorities
+    /// under the key "Authorities", matching the EDM action parameter name.
     /// </summary>
-    /// <returns>An <see cref="AF348PdfService"/> suitable for controller construction.</returns>
-    private static AF348PdfService CreatePdfService()
+    private static ODataActionParameters CreateAuthorityParams(List<LineOfDutyAuthority> authorities)
     {
-        var mockEnv = new Mock<IWebHostEnvironment>();
-        mockEnv.Setup(e => e.ContentRootPath).Returns(AppContext.BaseDirectory);
-        return new AF348PdfService(mockEnv.Object);
+        return new ODataActionParameters { ["Authorities"] = authorities };
     }
 
     /// <summary>
@@ -325,7 +321,7 @@ public class CasesControllerTests : ControllerTestBase
             new() { Role = "SJA", Name = "Jones, Jane", Rank = "Maj" }
         };
 
-        var result = await _sut.SaveAuthorities(1, authorities);
+        var result = await _sut.SaveAuthorities(1, CreateAuthorityParams(authorities));
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
@@ -345,7 +341,7 @@ public class CasesControllerTests : ControllerTestBase
             new() { Role = "Commander", Name = "Smith, John", Rank = "Col" }
         };
 
-        var result = await _sut.SaveAuthorities(999, authorities);
+        var result = await _sut.SaveAuthorities(999, CreateAuthorityParams(authorities));
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -365,14 +361,14 @@ public class CasesControllerTests : ControllerTestBase
         {
             new() { Role = "Commander", Name = "Old Name", Rank = "Col" }
         };
-        await _sut.SaveAuthorities(1, initial);
+        await _sut.SaveAuthorities(1, CreateAuthorityParams(initial));
 
         // Second save updates the same role
         var updated = new List<LineOfDutyAuthority>
         {
             new() { Role = "Commander", Name = "New Name", Rank = "BGen" }
         };
-        var result = await _sut.SaveAuthorities(1, updated);
+        var result = await _sut.SaveAuthorities(1, CreateAuthorityParams(updated));
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
@@ -397,14 +393,14 @@ public class CasesControllerTests : ControllerTestBase
             new() { Role = "Commander", Name = "Cmd Name", Rank = "Col" },
             new() { Role = "SJA", Name = "SJA Name", Rank = "Maj" }
         };
-        await _sut.SaveAuthorities(1, initial);
+        await _sut.SaveAuthorities(1, CreateAuthorityParams(initial));
 
         // Save with only one — the other should be removed
         var reduced = new List<LineOfDutyAuthority>
         {
             new() { Role = "Commander", Name = "Cmd Name", Rank = "Col" }
         };
-        var result = await _sut.SaveAuthorities(1, reduced);
+        var result = await _sut.SaveAuthorities(1, CreateAuthorityParams(reduced));
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
@@ -421,6 +417,6 @@ public class CasesControllerTests : ControllerTestBase
     {
         var result = await _sut.SaveAuthorities(1, null!);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.IsType<BadRequestResult>(result);
     }
 }

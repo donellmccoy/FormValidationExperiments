@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
-using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using System.Text.Json.Serialization;
@@ -32,16 +31,12 @@ public class CasesController : ODataController
     /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
-    private readonly AF348PdfService _pdfService;
-
     public CasesController(
         ILoggingService loggingService,
-        IDbContextFactory<EctDbContext> contextFactory,
-        AF348PdfService pdfService)
+        IDbContextFactory<EctDbContext> contextFactory)
     {
         _loggingService = loggingService;
         _contextFactory = contextFactory;
-        _pdfService = pdfService;
     }
 
     /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
@@ -354,12 +349,15 @@ public class CasesController : ODataController
     /// Batch-upserts authority entries for a LOD case. Existing authorities matching
     /// by Role are updated; new roles are inserted; roles not present in the request
     /// are removed.
-    /// Route: POST /api/cases/{key}/save-authorities
+    /// OData route: POST /odata/Cases({key})/SaveAuthorities
     /// </summary>
-    [HttpPost("/api/cases/{key}/save-authorities")]
-    public async Task<IActionResult> SaveAuthorities([FromRoute] int key, [FromBody] List<LineOfDutyAuthority> authorities, CancellationToken ct = default)
+    [HttpPost]
+    public async Task<IActionResult> SaveAuthorities([FromODataUri] int key, ODataActionParameters parameters, CancellationToken ct = default)
     {
-        if (authorities is null || !ModelState.IsValid)
+        if (parameters is null)
+            return BadRequest();
+
+        if (!ModelState.IsValid)
         {
             foreach (var entry in ModelState.Where(e => e.Value?.Errors.Count > 0))
             {
@@ -376,7 +374,14 @@ public class CasesController : ODataController
             return BadRequest(ModelState);
         }
 
-        _loggingService.SavingAuthorities(key, authorities.Count);
+        if (!parameters.TryGetValue("Authorities", out var authoritiesObj) || authoritiesObj is not IEnumerable<LineOfDutyAuthority> authorities)
+        {
+            return BadRequest("Missing or invalid 'Authorities' parameter.");
+        }
+
+        var authoritiesList = authorities.ToList();
+
+        _loggingService.SavingAuthorities(key, authoritiesList.Count);
 
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
@@ -393,12 +398,12 @@ public class CasesController : ODataController
             .ToListAsync(ct);
 
         // Remove authorities whose role is not in the incoming list
-        var incomingRoles = authorities.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var incomingRoles = authoritiesList.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var toRemove = existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)).ToList();
         context.Authorities.RemoveRange(toRemove);
 
         // Upsert: update existing or add new
-        foreach (var incoming in authorities)
+        foreach (var incoming in authoritiesList)
         {
             var match = existingAuthorities.FirstOrDefault(
                 a => string.Equals(a.Role, incoming.Role, StringComparison.OrdinalIgnoreCase));
@@ -560,25 +565,6 @@ public class CasesController : ODataController
         var context = await CreateContextAsync(ct);
 
         return SingleResult.Create(context.Cases.AsNoTracking().Where(c => c.Id == key).Select(c => c.INCAP));
-    }
-
-    /// <summary>
-    /// Generates a filled AF Form 348 PDF for the specified case.
-    /// Standard MVC route: GET /api/cases/{key}/form348
-    /// </summary>
-    [HttpGet("api/cases/{key:int}/form348")]
-    public async Task<IActionResult> GetForm348([FromRoute] int key, CancellationToken ct = default)
-    {
-        var context = await CreateContextAsync(ct);
-        var lodCase = await context.Cases.AsNoTracking()
-            .Include(c => c.Member)
-            .FirstOrDefaultAsync(c => c.Id == key, ct);
-
-        if (lodCase is null)
-            return NotFound();
-
-        var pdfBytes = _pdfService.GenerateFilledForm(lodCase);
-        return File(pdfBytes, "application/pdf", $"AF348_{lodCase.CaseId}.pdf");
     }
 
     // ── Private helpers ─────────────────────────────────────────────────

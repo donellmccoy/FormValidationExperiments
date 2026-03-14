@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
@@ -61,7 +63,7 @@ public class DocumentFilesControllerTests : ControllerTestBase
 
         _mockLog = new Mock<ILoggingService>();
 
-        _sut = new DocumentFilesController(_mockContextFactory.Object, _mockLog.Object);
+        _sut = new DocumentFilesController(_mockContextFactory.Object, _mockLog.Object, CreatePdfService());
         _sut.ControllerContext = CreateControllerContext();
     }
 

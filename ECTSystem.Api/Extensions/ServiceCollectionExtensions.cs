@@ -143,6 +143,8 @@ public static class ServiceCollectionExtensions
         caseType.Action("CheckOut");
         caseType.Action("CheckIn");
         caseType.Action("Transition");
+        var saveAuthoritiesAction = caseType.Action("SaveAuthorities");
+        saveAuthoritiesAction.CollectionParameter<LineOfDutyAuthority>("Authorities");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
