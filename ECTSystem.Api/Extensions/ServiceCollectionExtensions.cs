@@ -142,7 +142,6 @@ public static class ServiceCollectionExtensions
         var caseType = casesEntitySet.EntityType;
         caseType.Action("CheckOut");
         caseType.Action("CheckIn");
-        caseType.Action("SaveAuthorities");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);

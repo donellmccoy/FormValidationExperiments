@@ -355,14 +355,25 @@ public class CasesController : ODataController
     /// Batch-upserts authority entries for a LOD case. Existing authorities matching
     /// by Role are updated; new roles are inserted; roles not present in the request
     /// are removed.
-    /// Route: POST /odata/Cases({key})/SaveAuthorities
+    /// Route: POST /api/cases/{key}/save-authorities
     /// </summary>
-    [HttpPost("/odata/Cases({key})/SaveAuthorities")]
+    [HttpPost("/api/cases/{key}/save-authorities")]
     public async Task<IActionResult> SaveAuthorities([FromRoute] int key, [FromBody] List<LineOfDutyAuthority> authorities, CancellationToken ct = default)
     {
         if (authorities is null || !ModelState.IsValid)
         {
-            _loggingService.InvalidModelState("SaveAuthorities");
+            foreach (var entry in ModelState.Where(e => e.Value?.Errors.Count > 0))
+            {
+                foreach (var error in entry.Value.Errors)
+                {
+                    if (!string.IsNullOrEmpty(error.ErrorMessage))
+                        _loggingService.ModelStatePropertyError("SaveAuthorities", entry.Key, error.ErrorMessage);
+
+                    if (error.Exception is not null)
+                        _loggingService.ModelStateExceptionError("SaveAuthorities", entry.Key, error.Exception.Message);
+                }
+            }
+
             return BadRequest(ModelState);
         }
 

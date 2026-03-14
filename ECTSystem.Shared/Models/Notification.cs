@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace ECTSystem.Shared.Models;
 
 public class Notification : AuditableEntity
 {
     public int Id { get; set; }
     public int LineOfDutyCaseId { get; set; }
+    [JsonIgnore]
     public LineOfDutyCase LineOfDutyCase { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;

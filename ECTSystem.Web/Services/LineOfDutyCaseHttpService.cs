@@ -233,13 +233,13 @@ public class LineOfDutyCaseHttpService : IDataService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentNullException.ThrowIfNull(authorities);
 
-        var response = await _httpClient.PostAsJsonAsync($"odata/Cases({caseId})/SaveAuthorities", authorities.ToList(), ODataJsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync($"api/cases/{caseId}/save-authorities", authorities.ToList(), ODataJsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<ODataResponse<LineOfDutyAuthority>>(ODataJsonOptions, cancellationToken);
+        var result = await response.Content.ReadFromJsonAsync<List<LineOfDutyAuthority>>(ODataJsonOptions, cancellationToken);
 
-        return result?.Value ?? [];
+        return result ?? [];
     }
 
     /// <summary>
