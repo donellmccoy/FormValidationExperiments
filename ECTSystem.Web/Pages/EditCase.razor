@@ -339,7 +339,7 @@ else
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="4">
                                                         <RadzenFormField Text="Orders Start Time (HHmm)" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.MemberOrdersStartTime" @oninput="@(args => _viewModel.MemberOrdersStartTime = args.Value?.ToString())" Placeholder="e.g. 0730" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.MemberOrdersStartTime" Placeholder="e.g. 0730" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="4">
@@ -349,7 +349,7 @@ else
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="4">
                                                         <RadzenFormField Text="Orders End Time (HHmm)" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.MemberOrdersEndTime" @oninput="@(args => _viewModel.MemberOrdersEndTime = args.Value?.ToString())" Placeholder="e.g. 1630" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.MemberOrdersEndTime" Placeholder="e.g. 1630" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                 </RadzenRow>
@@ -396,7 +396,7 @@ else
                                         <RadzenFieldset Text="Process Configuration" class="rz-mt-4">
                                             <RadzenStack Gap="0.75rem">
                                                 <RadzenFormField Text="FROM Line" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.FromLine" @oninput="@(args => _viewModel.FromLine = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.FromLine" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Process Type" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
                                                     <RadzenDropDown @bind-Value="_viewModel.ProcessType" TValue="ProcessType?"
@@ -451,7 +451,7 @@ else
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                                 <RadzenFormField Text="PSC Documentation" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea Value="@_viewModel.PSCDocumentation" @oninput="@(args => _viewModel.PSCDocumentation = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="@_viewModel.PSCDocumentation" Rows="3" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -554,7 +554,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Facility Name" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.TreatmentFacilityName" @oninput="@(args => _viewModel.TreatmentFacilityName = args.Value?.ToString())" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.TreatmentFacilityName" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -578,10 +578,10 @@ else
                                         <RadzenFieldset Text="Clinical Diagnosis" class="rz-mt-4">
                                             <RadzenStack Gap="1rem">
                                                 <RadzenFormField Text="Clinical Diagnosis" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.ClinicalDiagnosis" @oninput="@(args => _viewModel.ClinicalDiagnosis = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.ClinicalDiagnosis" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Medical Findings" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea Value="@_viewModel.MedicalFindings" @oninput="@(args => _viewModel.MedicalFindings = args.Value?.ToString())" Rows="4" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="@_viewModel.MedicalFindings" Rows="4" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -637,7 +637,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Toxicology Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextArea Value="@_viewModel.ToxicologyTestResults" @oninput="@(args => _viewModel.ToxicologyTestResults = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                            <RadzenTextArea @bind-Value="@_viewModel.ToxicologyTestResults" Rows="3" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -675,7 +675,7 @@ else
                                                                                     AllowInput="false" ShowTime="true" class="rz-w-100" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                             </RadzenFormField>
                                                             <RadzenFormField Text="Evaluation Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextArea Value="@_viewModel.PsychiatricEvalResults" @oninput="@(args => _viewModel.PsychiatricEvalResults = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                                <RadzenTextArea @bind-Value="@_viewModel.PsychiatricEvalResults" Rows="3" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenStack>
                                                     </div>
@@ -684,7 +684,7 @@ else
                                                 @* ── Item 14b: Other relevant conditions ── *@
                                                 <div class="detail-section">
                                                     <RadzenFormField Text="Other Relevant Medical Conditions" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextArea Value="@_viewModel.OtherRelevantConditions" @oninput="@(args => _viewModel.OtherRelevantConditions = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                        <RadzenTextArea @bind-Value="@_viewModel.OtherRelevantConditions" Rows="3" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </div>
 
@@ -709,7 +709,7 @@ else
                                                                                     AllowInput="false" ShowTime="true" class="rz-w-100" DateFormat="MM/dd/yyyy hh:mm tt" />
                                                             </RadzenFormField>
                                                             <RadzenFormField Text="Test Results" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextArea Value="@_viewModel.OtherTestResults" @oninput="@(args => _viewModel.OtherTestResults = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                                <RadzenTextArea @bind-Value="@_viewModel.OtherTestResults" Rows="3" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenStack>
                                                     </div>
@@ -796,7 +796,7 @@ else
                                         @* ═══ Fieldset I: Medical Recommendation ═══ *@
                                         <RadzenFieldset Text="Medical Recommendation" class="rz-mt-4">
                                             <RadzenFormField Text="Medical Recommendation" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                <RadzenTextArea Value="@_viewModel.MedicalRecommendation" @oninput="@(args => _viewModel.MedicalRecommendation = args.Value?.ToString())" Rows="5" class="rz-w-100" />
+                                                <RadzenTextArea @bind-Value="@_viewModel.MedicalRecommendation" Rows="5" class="rz-w-100" />
                                             </RadzenFormField>
                                         </RadzenFieldset>
 
@@ -806,12 +806,12 @@ else
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="6">
                                                         <RadzenFormField Text="Provider Date (Item 15)" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.ProviderDate" @oninput="@(args => _viewModel.ProviderDate = args.Value?.ToString())" class="rz-w-100" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.ProviderDate" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="6">
                                                         <RadzenFormField Text="SARC Coordination" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.SARCCoordination" @oninput="@(args => _viewModel.SARCCoordination = args.Value?.ToString())" class="rz-w-100" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.SARCCoordination" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                 </RadzenRow>
@@ -903,7 +903,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Describe Other Sources" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.OtherSourcesDescription" @oninput="@(args => _viewModel.OtherSourcesDescription = args.Value?.ToString())" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.OtherSourcesDescription" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -930,12 +930,12 @@ else
                                             <RadzenRow Gap="1rem">
                                                 <RadzenColumn Size="6">
                                                     <RadzenFormField Text="Commander TO Line" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox Value="@_viewModel.CommanderToLine" @oninput="@(args => _viewModel.CommanderToLine = args.Value?.ToString())" />
+                                                        <RadzenTextBox @bind-Value="@_viewModel.CommanderToLine" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="6">
                                                     <RadzenFormField Text="Commander FROM Line" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox Value="@_viewModel.CommanderFromLine" @oninput="@(args => _viewModel.CommanderFromLine = args.Value?.ToString())" />
+                                                        <RadzenTextBox @bind-Value="@_viewModel.CommanderFromLine" />
                                                     </RadzenFormField>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -972,22 +972,22 @@ else
                                                         <RadzenRow Gap="1rem">
                                                             <RadzenColumn Size="3">
                                                                 <RadzenFormField Text="AWOL Start Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveDate1" @oninput="@(args => _viewModel.AbsentWithoutLeaveDate1 = args.Value?.ToString())" />
+                                                                    <RadzenTextBox @bind-Value="@_viewModel.AbsentWithoutLeaveDate1" />
                                                                 </RadzenFormField>
                                                             </RadzenColumn>
                                                             <RadzenColumn Size="3">
                                                                 <RadzenFormField Text="AWOL Start Time" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveTime1" @oninput="@(args => _viewModel.AbsentWithoutLeaveTime1 = args.Value?.ToString())" Placeholder="e.g. 0730" />
+                                                                    <RadzenTextBox @bind-Value="@_viewModel.AbsentWithoutLeaveTime1" Placeholder="e.g. 0730" />
                                                                 </RadzenFormField>
                                                             </RadzenColumn>
                                                             <RadzenColumn Size="3">
                                                                 <RadzenFormField Text="AWOL End Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveDate2" @oninput="@(args => _viewModel.AbsentWithoutLeaveDate2 = args.Value?.ToString())" />
+                                                                    <RadzenTextBox @bind-Value="@_viewModel.AbsentWithoutLeaveDate2" />
                                                                 </RadzenFormField>
                                                             </RadzenColumn>
                                                             <RadzenColumn Size="3">
                                                                 <RadzenFormField Text="AWOL End Time" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                    <RadzenTextBox Value="@_viewModel.AbsentWithoutLeaveTime2" @oninput="@(args => _viewModel.AbsentWithoutLeaveTime2 = args.Value?.ToString())" Placeholder="e.g. 1630" />
+                                                                    <RadzenTextBox @bind-Value="@_viewModel.AbsentWithoutLeaveTime2" Placeholder="e.g. 1630" />
                                                                 </RadzenFormField>
                                                             </RadzenColumn>
                                                         </RadzenRow>
@@ -1001,19 +1001,19 @@ else
                                             <RadzenStack Gap="0.75rem">
                                                 <RadzenLabel Text="Enter the name and address of any witnesses (up to 5):" />
                                                 <RadzenFormField Text="Witness 1 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress1" @oninput="@(args => _viewModel.WitnessNameAddress1 = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.WitnessNameAddress1" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Witness 2 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress2" @oninput="@(args => _viewModel.WitnessNameAddress2 = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.WitnessNameAddress2" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Witness 3 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress3" @oninput="@(args => _viewModel.WitnessNameAddress3 = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.WitnessNameAddress3" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Witness 4 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress4" @oninput="@(args => _viewModel.WitnessNameAddress4 = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.WitnessNameAddress4" />
                                                 </RadzenFormField>
                                                 <RadzenFormField Text="Witness 5 — Name & Address" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.WitnessNameAddress5" @oninput="@(args => _viewModel.WitnessNameAddress5 = args.Value?.ToString())" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.WitnessNameAddress5" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1022,7 +1022,7 @@ else
                                         <RadzenFieldset Text="Narrative of Circumstances" class="rz-mt-4">
                                             <RadzenStack Gap="1rem">
                                                 <RadzenFormField Text="Brief Narrative" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea Value="@_viewModel.NarrativeOfCircumstances" @oninput="@(args => _viewModel.NarrativeOfCircumstances = args.Value?.ToString())" Rows="6" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="@_viewModel.NarrativeOfCircumstances" Rows="6" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1045,7 +1045,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Misconduct Explanation" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextArea Value="@_viewModel.MisconductExplanation" @oninput="@(args => _viewModel.MisconductExplanation = args.Value?.ToString())" Rows="4" class="rz-w-100" />
+                                                            <RadzenTextArea @bind-Value="@_viewModel.MisconductExplanation" Rows="4" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -1056,7 +1056,7 @@ else
                                         <RadzenFieldset Text="Proximate Cause" class="rz-mt-4">
                                             <RadzenStack Gap="1rem">
                                                 <RadzenFormField Text="Proximate Cause of Injury / Disease / Death" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea Value="@_viewModel.ProximateCause" @oninput="@(args => _viewModel.ProximateCause = args.Value?.ToString())" Rows="4" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="@_viewModel.ProximateCause" Rows="4" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1118,7 +1118,7 @@ else
                                                 </div>
 
                                                 <RadzenFormField Text="Recommendation Remarks" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea Value="@_viewModel.RecommendationRemarks" @oninput="@(args => _viewModel.RecommendationRemarks = args.Value?.ToString())" Rows="3" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="@_viewModel.RecommendationRemarks" Rows="3" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1215,17 +1215,17 @@ else
                                                 <RadzenRow Gap="1rem">
                                                     <RadzenColumn Size="6">
                                                         <RadzenFormField Text="Name / Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.AppointingAuthorityNameRank" @oninput="@(args => _viewModel.AppointingAuthorityNameRank = args.Value?.ToString())" class="rz-w-100" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.AppointingAuthorityNameRank" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                     <RadzenColumn Size="6">
                                                         <RadzenFormField Text="Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextBox Value="@_viewModel.AppointingAuthorityDate" @oninput="@(args => _viewModel.AppointingAuthorityDate = args.Value?.ToString())" class="rz-w-100" />
+                                                            <RadzenTextBox @bind-Value="@_viewModel.AppointingAuthorityDate" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </RadzenColumn>
                                                 </RadzenRow>
                                                 <RadzenFormField Text="Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextBox Value="@_viewModel.AppointingAuthoritySignature" @oninput="@(args => _viewModel.AppointingAuthoritySignature = args.Value?.ToString())" class="rz-w-100" />
+                                                    <RadzenTextBox @bind-Value="@_viewModel.AppointingAuthoritySignature" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1304,7 +1304,7 @@ else
                                                 {
                                                     <div class="conditional-section">
                                                         <RadzenFormField Text="Basis for Non-Concurrence" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                            <RadzenTextArea Value="@_viewModel.NonConcurrenceReason" @oninput="@(args => _viewModel.NonConcurrenceReason = args.Value?.ToString())" Rows="4" class="rz-w-100" />
+                                                            <RadzenTextArea @bind-Value="@_viewModel.NonConcurrenceReason" Rows="4" class="rz-w-100" />
                                                         </RadzenFormField>
                                                     </div>
                                                 }
@@ -1315,7 +1315,7 @@ else
                                         <RadzenFieldset Text="Legal Remarks" class="rz-mt-4">
                                             <RadzenStack Gap="1rem">
                                                 <RadzenFormField Text="SJA Remarks / Legal Opinion" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                    <RadzenTextArea Value="@_viewModel.LegalRemarks" @oninput="@(args => _viewModel.LegalRemarks = args.Value?.ToString())" Rows="5" class="rz-w-100" />
+                                                    <RadzenTextArea @bind-Value="@_viewModel.LegalRemarks" Rows="5" class="rz-w-100" />
                                                 </RadzenFormField>
                                             </RadzenStack>
                                         </RadzenFieldset>
@@ -1323,7 +1323,7 @@ else
                                         @* ═══ Fieldset C: Wing CC Signature ═══ *@
                                         <RadzenFieldset Text="Wing Commander Signature" class="rz-mt-4">
                                             <RadzenFormField Text="Wing CC Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                <RadzenTextBox Value="@_viewModel.WingCcSignature" @oninput="@(args => _viewModel.WingCcSignature = args.Value?.ToString())" class="rz-w-100" />
+                                                <RadzenTextBox @bind-Value="@_viewModel.WingCcSignature" class="rz-w-100" />
                                             </RadzenFormField>
                                         </RadzenFieldset>
 
@@ -1425,22 +1425,22 @@ else
                                             <RadzenFieldset Text="Medical Review">
                                                 <RadzenStack Gap="1rem">
                                                     <RadzenFormField Text="Medical Review" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextArea Value="@_viewModel.MedicalReviewText" @oninput="@(args => _viewModel.MedicalReviewText = args.Value?.ToString())" Rows="5" class="rz-w-100" />
+                                                        <RadzenTextArea @bind-Value="@_viewModel.MedicalReviewText" Rows="5" class="rz-w-100" />
                                                     </RadzenFormField>
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Reviewer Name / Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.MedicalReviewerNameRank" @oninput="@(args => _viewModel.MedicalReviewerNameRank = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.MedicalReviewerNameRank" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Review Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.MedicalReviewDate" @oninput="@(args => _viewModel.MedicalReviewDate = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.MedicalReviewDate" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                     </RadzenRow>
                                                     <RadzenFormField Text="Reviewer Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox Value="@_viewModel.MedicalReviewerSignature" @oninput="@(args => _viewModel.MedicalReviewerSignature = args.Value?.ToString())" class="rz-w-100" />
+                                                        <RadzenTextBox @bind-Value="@_viewModel.MedicalReviewerSignature" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </RadzenStack>
                                             </RadzenFieldset>
@@ -1496,22 +1496,22 @@ else
                                             <RadzenFieldset Text="Legal Review">
                                                 <RadzenStack Gap="1rem">
                                                     <RadzenFormField Text="Legal Review" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextArea Value="@_viewModel.LegalReviewText" @oninput="@(args => _viewModel.LegalReviewText = args.Value?.ToString())" Rows="5" class="rz-w-100" />
+                                                        <RadzenTextArea @bind-Value="@_viewModel.LegalReviewText" Rows="5" class="rz-w-100" />
                                                     </RadzenFormField>
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Reviewer Name / Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.LegalReviewerNameRank" @oninput="@(args => _viewModel.LegalReviewerNameRank = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.LegalReviewerNameRank" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Review Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.LegalReviewDate" @oninput="@(args => _viewModel.LegalReviewDate = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.LegalReviewDate" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                     </RadzenRow>
                                                     <RadzenFormField Text="Reviewer Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox Value="@_viewModel.LegalReviewerSignature" @oninput="@(args => _viewModel.LegalReviewerSignature = args.Value?.ToString())" class="rz-w-100" />
+                                                        <RadzenTextBox @bind-Value="@_viewModel.LegalReviewerSignature" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </RadzenStack>
                                             </RadzenFieldset>
@@ -1584,17 +1584,17 @@ else
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Board Chair Name / Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.LodBoardChairNameRank" @oninput="@(args => _viewModel.LodBoardChairNameRank = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.LodBoardChairNameRank" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.LodBoardChairDate" @oninput="@(args => _viewModel.LodBoardChairDate = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.LodBoardChairDate" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                     </RadzenRow>
                                                     <RadzenFormField Text="Board Chair Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox Value="@_viewModel.LodBoardChairSignature" @oninput="@(args => _viewModel.LodBoardChairSignature = args.Value?.ToString())" class="rz-w-100" />
+                                                        <RadzenTextBox @bind-Value="@_viewModel.LodBoardChairSignature" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </RadzenStack>
                                             </RadzenFieldset>
@@ -1614,17 +1614,17 @@ else
                                                     <RadzenRow Gap="1rem">
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Approving Authority Name / Rank" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.ApprovingAuthorityNameRank" @oninput="@(args => _viewModel.ApprovingAuthorityNameRank = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.ApprovingAuthorityNameRank" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                         <RadzenColumn Size="6">
                                                             <RadzenFormField Text="Date" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                                <RadzenTextBox Value="@_viewModel.ApprovingAuthorityDate" @oninput="@(args => _viewModel.ApprovingAuthorityDate = args.Value?.ToString())" class="rz-w-100" />
+                                                                <RadzenTextBox @bind-Value="@_viewModel.ApprovingAuthorityDate" class="rz-w-100" />
                                                             </RadzenFormField>
                                                         </RadzenColumn>
                                                     </RadzenRow>
                                                     <RadzenFormField Text="Approving Authority Signature" AllowFloatingLabel="false" Variant="Variant.Outlined" class="rz-w-100">
-                                                        <RadzenTextBox Value="@_viewModel.ApprovingAuthoritySignature" @oninput="@(args => _viewModel.ApprovingAuthoritySignature = args.Value?.ToString())" class="rz-w-100" />
+                                                        <RadzenTextBox @bind-Value="@_viewModel.ApprovingAuthoritySignature" class="rz-w-100" />
                                                     </RadzenFormField>
                                                 </RadzenStack>
                                             </RadzenFieldset>
