@@ -28,7 +28,7 @@ public static partial class LineOfDutyCaseMapper
         var parsedRank = ParseMilitaryRank(source.MemberRank);
         var hasToxReport = !string.IsNullOrWhiteSpace(source.ToxicologyReport)
                            && !source.ToxicologyReport.Equals("Not applicable", StringComparison.OrdinalIgnoreCase);
-        var isLegallySufficient = sja?.Recommendation?.Contains("sufficient", StringComparison.OrdinalIgnoreCase) == true;
+        var isLegallySufficient = sja?.Recommendation?.Equals("Legally sufficient", StringComparison.OrdinalIgnoreCase) == true;
 
         return new LineOfDutyViewModel
         {
