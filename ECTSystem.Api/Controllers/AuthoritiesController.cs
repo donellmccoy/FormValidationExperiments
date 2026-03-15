@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -16,22 +15,18 @@ namespace ECTSystem.Api.Controllers;
 /// OData route prefix: /odata/Authorities
 /// </summary>
 [Authorize]
-public class AuthoritiesController : ODataController
+public class AuthoritiesController : ODataControllerBase
 {
-    private readonly IDbContextFactory<EctDbContext> _contextFactory;
-    private readonly ILoggingService _loggingService;
-
     public AuthoritiesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
+        : base(contextFactory, loggingService)
     {
-        _contextFactory = contextFactory;
-        _loggingService = loggingService;
     }
 
     /// <summary>
     /// Returns an IQueryable of authorities for OData query composition.
     /// OData route: GET /odata/Authorities
     /// </summary>
-    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         var context = await CreateContextAsync(ct);
@@ -42,10 +37,10 @@ public class AuthoritiesController : ODataController
     /// Returns a single authority by key.
     /// OData route: GET /odata/Authorities({key})
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
         var authority = await context.Authorities.AsNoTracking().FirstOrDefaultAsync(a => a.Id == key, ct);
 
         if (authority is null)
@@ -58,7 +53,7 @@ public class AuthoritiesController : ODataController
     /// Creates a new authority entry.
     /// OData route: POST /odata/Authorities
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Post([FromBody] LineOfDutyAuthority authority, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -67,7 +62,15 @@ public class AuthoritiesController : ODataController
         if (authority.LineOfDutyCaseId is null or <= 0)
             return BadRequest("LineOfDutyCaseId is required.");
 
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+
+        // Over-posting guard: reset server-managed fields
+        authority.Id = 0;
+        authority.CreatedBy = string.Empty;
+        authority.CreatedDate = default;
+        authority.ModifiedBy = string.Empty;
+        authority.ModifiedDate = default;
+
         context.Authorities.Add(authority);
         await context.SaveChangesAsync(ct);
 
@@ -78,20 +81,31 @@ public class AuthoritiesController : ODataController
     /// Partially updates an existing authority using OData Delta semantics.
     /// OData route: PATCH /odata/Authorities({key})
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyAuthority> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
             return BadRequest(ModelState);
 
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
         var existing = await context.Authorities.FindAsync([key], ct);
 
         if (existing is null)
             return NotFound();
 
         delta.Patch(existing);
-        await context.SaveChangesAsync(ct);
+
+        // Use client-provided RowVersion for optimistic concurrency check
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict();
+        }
 
         return Updated(existing);
     }
@@ -102,7 +116,7 @@ public class AuthoritiesController : ODataController
     /// </summary>
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
         var authority = await context.Authorities.FindAsync([key], ct);
 
         if (authority is null)
@@ -112,12 +126,5 @@ public class AuthoritiesController : ODataController
         await context.SaveChangesAsync(ct);
 
         return NoContent();
-    }
-
-    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
-    {
-        var context = await _contextFactory.CreateDbContextAsync(ct);
-        HttpContext.Response.RegisterForDispose(context);
-        return context;
     }
 }

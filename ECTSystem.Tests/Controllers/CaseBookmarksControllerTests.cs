@@ -57,7 +57,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _sut = new CaseBookmarksController(_mockLog.Object, _mockContextFactory.Object);
+        _sut = new CaseBookmarksController(_mockContextFactory.Object, _mockLog.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 

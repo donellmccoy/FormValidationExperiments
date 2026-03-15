@@ -82,8 +82,8 @@ public class CasesControllerTests : ControllerTestBase
             .Returns(() => new EctDbContext(_dbOptions));
 
         _sut = new CasesController(
-            _mockLog.Object,
-            _mockContextFactory.Object);
+            _mockContextFactory.Object,
+            _mockLog.Object);
 
         _sut.ControllerContext = CreateControllerContext();
     }

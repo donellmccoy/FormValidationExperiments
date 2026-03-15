@@ -138,18 +138,6 @@ public static class ServiceCollectionExtensions
 
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
 
-        var caseType = casesEntitySet.EntityType;
-        caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.Notifications).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.WorkflowStateHistories).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.WitnessStatements).AutomaticallyExpand(true);
-        caseType.HasMany(c => c.AuditComments).AutomaticallyExpand(true);
-        caseType.HasOptional(c => c.Member).AutomaticallyExpand(true);
-        caseType.HasOptional(c => c.MEDCON).AutomaticallyExpand(true);
-        caseType.HasOptional(c => c.INCAP).AutomaticallyExpand(true);
-
         odataBuilder.EntitySet<Member>("Members");
         odataBuilder.EntitySet<Notification>("Notifications");
         odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");

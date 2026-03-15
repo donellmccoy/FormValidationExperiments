@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
-using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -21,20 +20,13 @@ namespace ECTSystem.Api.Controllers;
 /// Named "CasesController" to match the OData entity set "Cases" (convention routing).
 /// </summary>
 [Authorize]
-public class CasesController : ODataController
+public class CasesController : ODataControllerBase
 {
-    /// <summary>Service used for structured logging.</summary>
-    private readonly ILoggingService _loggingService;
-
-    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
-    private readonly IDbContextFactory<EctDbContext> _contextFactory;
-
     public CasesController(
-        ILoggingService loggingService,
-        IDbContextFactory<EctDbContext> contextFactory)
+        IDbContextFactory<EctDbContext> contextFactory,
+        ILoggingService loggingService)
+        : base(contextFactory, loggingService)
     {
-        _loggingService = loggingService;
-        _contextFactory = contextFactory;
     }
 
     /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
@@ -46,10 +38,10 @@ public class CasesController : ODataController
     /// The [EnableQuery] attribute lets the OData middleware apply $filter, $orderby,
     /// $top, $skip, and $count automatically against the IQueryable.
     /// </summary>
-    [EnableQuery(MaxTop = 100, PageSize = 50, MaxNodeCount = 500)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        _loggingService.QueryingCases();
+        LoggingService.QueryingCases();
 
         var context = await CreateContextAsync(ct);
 
@@ -60,18 +52,18 @@ public class CasesController : ODataController
     /// Returns a single LOD case by key with all navigation properties.
     /// OData route: GET /odata/Cases({key})
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.RetrievingCase(key);
+        LoggingService.RetrievingCase(key);
 
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var lodCase = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstOrDefaultAsync(c => c.Id == key, ct);
 
         if (lodCase is null)
         {
-            _loggingService.CaseNotFound(key);
+            LoggingService.CaseNotFound(key);
 
             return NotFound();
         }
@@ -84,27 +76,53 @@ public class CasesController : ODataController
     /// in YYYYMMDD-XXX format (001–999 sequential suffix per date).
     /// OData route: POST /odata/Cases
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Post([FromBody] LineOfDutyCase lodCase, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
-            _loggingService.InvalidModelState("Post");
+            LoggingService.InvalidModelState("Post");
 
             return BadRequest(ModelState);
         }
 
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+
+        // Over-posting guard: reset server-managed fields
+        lodCase.Id = 0;
+        lodCase.CreatedBy = string.Empty;
+        lodCase.CreatedDate = default;
+        lodCase.ModifiedBy = string.Empty;
+        lodCase.ModifiedDate = default;
 
         lodCase.CaseId = await GenerateCaseIdAsync(context, ct);
 
-        context.Cases.Add(lodCase);
+        // Retry loop: CaseId suffix is generated from MAX() and concurrent inserts
+        // can race to the same value, violating the unique index on CaseId.
+        const int maxRetries = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                context.Cases.Add(lodCase);
 
-        await context.SaveChangesAsync(ct);
+                await context.SaveChangesAsync(ct);
+
+                break;
+            }
+            catch (DbUpdateException) when (attempt < maxRetries)
+            {
+                // Detach the failed entity so EF doesn't try to re-insert it
+                context.Entry(lodCase).State = EntityState.Detached;
+
+                // Re-generate a new CaseId suffix
+                lodCase.CaseId = await GenerateCaseIdAsync(context, ct);
+            }
+        }
 
         var created = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == lodCase.Id, ct);
 
-        _loggingService.CaseCreated(lodCase.Id);
+        LoggingService.CaseCreated(lodCase.Id);
 
         return Created(created);
     }
@@ -141,25 +159,25 @@ public class CasesController : ODataController
     /// deserialization. [FromBody] would route through SystemTextJsonInputFormatter
     /// which cannot construct a Delta instance.
     /// </remarks>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyCase> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
         {
-            _loggingService.InvalidModelState("Patch");
+            LoggingService.InvalidModelState("Patch");
 
             return BadRequest(ModelState);
         }
 
-        _loggingService.PatchingCase(key);
+        LoggingService.PatchingCase(key);
 
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var existing = await context.Cases.FindAsync([key], ct);
 
         if (existing is null)
         {
-            _loggingService.CaseNotFound(key);
+            LoggingService.CaseNotFound(key);
 
             return NotFound();
         }
@@ -187,11 +205,21 @@ public class CasesController : ODataController
             }
         }
 
-        await context.SaveChangesAsync(ct);
+        // Use client-provided RowVersion for optimistic concurrency check
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict();
+        }
 
         var patched = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
 
-        _loggingService.CasePatched(key);
+        LoggingService.CasePatched(key);
 
         return Updated(patched);
     }
@@ -202,15 +230,15 @@ public class CasesController : ODataController
     /// </summary>
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.DeletingCase(key);
+        LoggingService.DeletingCase(key);
 
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var lodCase = await context.Cases.IncludeAllNavigations().FirstOrDefaultAsync(c => c.Id == key, ct);
 
         if (lodCase is null)
         {
-            _loggingService.CaseNotFound(key);
+            LoggingService.CaseNotFound(key);
 
             return NotFound();
         }
@@ -231,7 +259,7 @@ public class CasesController : ODataController
 
         await context.SaveChangesAsync(ct);
 
-        _loggingService.CaseDeleted(key);
+        LoggingService.CaseDeleted(key);
 
         return NoContent();
     }
@@ -244,10 +272,10 @@ public class CasesController : ODataController
     /// Returns documents for a specific case.
     /// OData route: GET /odata/Cases({key})/Documents
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> GetDocuments([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
+        LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
 
         var context = await CreateContextAsync(ct);
 
@@ -258,10 +286,10 @@ public class CasesController : ODataController
     /// Returns notifications for a specific case.
     /// OData route: GET /odata/Cases({key})/Notifications
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> GetNotifications([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
+        LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
 
         var context = await CreateContextAsync(ct);
 
@@ -272,10 +300,10 @@ public class CasesController : ODataController
     /// Returns workflow state histories for a specific case.
     /// OData route: GET /odata/Cases({key})/WorkflowStateHistories
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> GetWorkflowStateHistories([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));
+        LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));
 
         var context = await CreateContextAsync(ct);
 
@@ -288,10 +316,10 @@ public class CasesController : ODataController
     /// Returns the member associated with a specific case.
     /// OData route: GET /odata/Cases({key})/Member
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<SingleResult<Member>> GetMember([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Member));
+        LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Member));
 
         var context = await CreateContextAsync(ct);
 
@@ -302,10 +330,10 @@ public class CasesController : ODataController
     /// Returns the MEDCON detail for a specific case.
     /// OData route: GET /odata/Cases({key})/MEDCON
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<SingleResult<MEDCONDetail>> GetMEDCON([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.MEDCON));
+        LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.MEDCON));
 
         var context = await CreateContextAsync(ct);
 
@@ -316,30 +344,13 @@ public class CasesController : ODataController
     /// Returns the INCAP detail for a specific case.
     /// OData route: GET /odata/Cases({key})/INCAP
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<SingleResult<INCAPDetails>> GetINCAP([FromODataUri] int key, CancellationToken ct = default)
     {
-        _loggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.INCAP));
+        LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.INCAP));
 
         var context = await CreateContextAsync(ct);
 
         return SingleResult.Create(context.Cases.AsNoTracking().Where(c => c.Id == key).Select(c => c.INCAP));
-    }
-
-    // ── Private helpers ─────────────────────────────────────────────────
-
-    /// <summary>
-    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
-    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
-    /// </summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
-    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
-    {
-        var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        HttpContext.Response.RegisterForDispose(context);
-
-        return context;
     }
 }

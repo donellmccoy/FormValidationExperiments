@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -17,30 +16,18 @@ namespace ECTSystem.Api.Controllers;
 /// (same pattern as CasesController.Post).
 /// </summary>
 [Authorize]
-public class WorkflowStateHistoriesController : ODataController
+public class WorkflowStateHistoriesController : ODataControllerBase
 {
-    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
-    private readonly IDbContextFactory<EctDbContext> _contextFactory;
-
-    /// <summary>Service used for structured logging.</summary>
-    private readonly ILoggingService _loggingService;
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="WorkflowStateHistoriesController"/>.
-    /// </summary>
-    /// <param name="contextFactory">The EF Core context factory.</param>
-    /// <param name="loggingService">The structured logging service.</param>
     public WorkflowStateHistoriesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
+        : base(contextFactory, loggingService)
     {
-        _contextFactory = contextFactory;
-        _loggingService = loggingService;
     }
 
     /// <summary>
     /// Returns an IQueryable of workflow state history entries for OData query composition.
     /// OData route: GET /odata/WorkflowStateHistories
     /// </summary>
-    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         var context = await CreateContextAsync(ct);
@@ -51,10 +38,10 @@ public class WorkflowStateHistoriesController : ODataController
     /// Returns a single workflow state history entry by key.
     /// OData route: GET /odata/WorkflowStateHistories({key})
     /// </summary>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
         var entry = await context.WorkflowStateHistories
             .AsNoTracking()
             .FirstOrDefaultAsync(h => h.Id == key, ct);
@@ -71,40 +58,34 @@ public class WorkflowStateHistoriesController : ODataController
     /// </summary>
     /// <param name="entry">The workflow state history entry to persist.</param>
     /// <param name="ct">Cancellation token.</param>
-    [EnableQuery]
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
-            _loggingService.WorkflowStateHistoryInvalidModelState();
+            LoggingService.WorkflowStateHistoryInvalidModelState();
             return BadRequest(ModelState);
         }
 
         if (entry.LineOfDutyCaseId <= 0)
         {
-            _loggingService.WorkflowStateHistoryInvalidCaseId(entry.LineOfDutyCaseId);
+            LoggingService.WorkflowStateHistoryInvalidCaseId(entry.LineOfDutyCaseId);
             return BadRequest("LineOfDutyCaseId is required.");
         }
 
-        _loggingService.CreatingWorkflowStateHistory(entry.LineOfDutyCaseId);
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        // Over-posting guard: reset server-managed fields
+        entry.Id = 0;
+        entry.CreatedBy = string.Empty;
+        entry.CreatedDate = default;
+        entry.ModifiedBy = string.Empty;
+        entry.ModifiedDate = default;
+
+        LoggingService.CreatingWorkflowStateHistory(entry.LineOfDutyCaseId);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.Add(entry);
         await context.SaveChangesAsync(ct);
 
-        _loggingService.WorkflowStateHistoryCreated(entry.Id, entry.LineOfDutyCaseId);
+        LoggingService.WorkflowStateHistoryCreated(entry.Id, entry.LineOfDutyCaseId);
         return Created(entry);
-    }
-
-    /// <summary>
-    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
-    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
-    /// </summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
-    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
-    {
-        var context = await _contextFactory.CreateDbContextAsync(ct);
-        HttpContext.Response.RegisterForDispose(context);
-        return context;
     }
 }

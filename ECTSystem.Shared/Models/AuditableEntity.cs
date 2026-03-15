@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ECTSystem.Shared.Models;
 
 public abstract class AuditableEntity
@@ -6,4 +8,7 @@ public abstract class AuditableEntity
     public DateTime CreatedDate { get; set; }
     public string ModifiedBy { get; set; } = string.Empty;
     public DateTime ModifiedDate { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = [];
 }

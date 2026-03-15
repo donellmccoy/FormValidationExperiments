@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -16,23 +15,11 @@ namespace ECTSystem.Api.Controllers;
 /// Named "CaseBookmarksController" to match the OData entity set "CaseBookmarks" (convention routing).
 /// </summary>
 [Authorize]
-public class CaseBookmarksController : ODataController
+public class CaseBookmarksController : ODataControllerBase
 {
-    /// <summary>Service used for structured logging.</summary>
-    private readonly ILoggingService _loggingService;
-
-    /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
-    private readonly IDbContextFactory<EctDbContext> _contextFactory;
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="CaseBookmarksController"/>.
-    /// </summary>
-    /// <param name="loggingService">The structured logging service.</param>
-    /// <param name="contextFactory">The EF Core context factory.</param>
-    public CaseBookmarksController(ILoggingService loggingService, IDbContextFactory<EctDbContext> contextFactory)
+    public CaseBookmarksController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
+        : base(contextFactory, loggingService)
     {
-        _loggingService = loggingService;
-        _contextFactory = contextFactory;
     }
 
     /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
@@ -44,10 +31,10 @@ public class CaseBookmarksController : ODataController
     /// OData route: GET /odata/CaseBookmarks
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
-    [EnableQuery(MaxTop = 100, PageSize = 50)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        _loggingService.QueryingBookmarks();
+        LoggingService.QueryingBookmarks();
         var context = await CreateContextAsync(ct);
         return Ok(context.CaseBookmarks.AsNoTracking().Where(b => b.UserId == UserId));
     }
@@ -61,14 +48,14 @@ public class CaseBookmarksController : ODataController
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark, CancellationToken ct = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var existing = await context.CaseBookmarks
             .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
 
         if (existing is not null)
         {
-            _loggingService.BookmarkAlreadyExists(bookmark.LineOfDutyCaseId);
+            LoggingService.BookmarkAlreadyExists(bookmark.LineOfDutyCaseId);
             return Ok(existing);
         }
 
@@ -81,7 +68,7 @@ public class CaseBookmarksController : ODataController
 
         context.CaseBookmarks.Add(newBookmark);
         await context.SaveChangesAsync(ct);
-        _loggingService.BookmarkCreated(bookmark.LineOfDutyCaseId);
+        LoggingService.BookmarkCreated(bookmark.LineOfDutyCaseId);
         return Created(newBookmark);
     }
 
@@ -93,7 +80,7 @@ public class CaseBookmarksController : ODataController
     /// <param name="ct">Cancellation token.</param>
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
         var bookmark = await context.CaseBookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == UserId, ct);
 
         if (bookmark is null)
@@ -101,23 +88,10 @@ public class CaseBookmarksController : ODataController
             return NotFound();
         }
 
-        _loggingService.DeletingBookmark(bookmark.LineOfDutyCaseId);
+        LoggingService.DeletingBookmark(bookmark.LineOfDutyCaseId);
         context.CaseBookmarks.Remove(bookmark);
         await context.SaveChangesAsync(ct);
-        _loggingService.BookmarkDeleted(bookmark.LineOfDutyCaseId);
+        LoggingService.BookmarkDeleted(bookmark.LineOfDutyCaseId);
         return NoContent();
-    }
-
-    /// <summary>
-    /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.
-    /// Use this helper when returning an <see cref="IQueryable"/> so the context remains alive during serialization.
-    /// </summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A <see cref="EctDbContext"/> registered for response-lifetime disposal.</returns>
-    private async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
-    {
-        var context = await _contextFactory.CreateDbContextAsync(ct);
-        HttpContext.Response.RegisterForDispose(context);
-        return context;
     }
 }
