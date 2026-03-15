@@ -475,6 +475,7 @@ public class LineOfDutyCaseHttpService : IDataService
 
     /// <summary>
     /// Removes a case from the current user's bookmarks list.
+    /// Queries for the bookmark by case ID, then issues a standard OData DELETE by key.
     /// </summary>
     /// <param name="caseId">The numeric identifier of the case to remove from bookmarks.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
@@ -482,13 +483,24 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.PostAsJsonAsync("odata/CaseBookmarks/DeleteByCaseId", new { caseId }, ODataJsonOptions, cancellationToken);
+        var bookmarks = await _httpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
+            $"odata/CaseBookmarks?$filter=LineOfDutyCaseId eq {caseId}&$top=1&$select=Id",
+            ODataJsonOptions, cancellationToken);
 
+        var bookmarkId = bookmarks?.Value?.FirstOrDefault()?.Id;
+
+        if (bookmarkId is null or 0)
+        {
+            return;
+        }
+
+        var response = await _httpClient.DeleteAsync($"odata/CaseBookmarks({bookmarkId})", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
     /// <summary>
     /// Checks to see if a given case is already bookmarked by the current user.
+    /// Uses a standard OData query with $filter and $count instead of a custom function.
     /// </summary>
     /// <param name="caseId">The numeric identifier of the case to verify.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
@@ -497,10 +509,11 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.GetFromJsonAsync<IsBookmarkedResponse>(
-            $"odata/CaseBookmarks/IsBookmarked(caseId={caseId})", ODataJsonOptions, cancellationToken);
+        var bookmarks = await _httpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
+            $"odata/CaseBookmarks?$filter=LineOfDutyCaseId eq {caseId}&$top=1&$select=Id",
+            ODataJsonOptions, cancellationToken);
 
-        return response?.Value ?? false;
+        return bookmarks?.Value is { Count: > 0 };
     }
 
     /// <summary>
@@ -655,12 +668,15 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        var list = entries as List<WorkflowStateHistory> ?? entries.ToList();
-        var response = await _httpClient.PostAsJsonAsync("odata/WorkflowStateHistories/Batch", list, ODataJsonOptions, cancellationToken);
+        var results = new List<WorkflowStateHistory>();
 
-        response.EnsureSuccessStatusCode();
+        foreach (var entry in entries)
+        {
+            var saved = await AddHistoryEntryAsync(entry, cancellationToken);
+            results.Add(saved);
+        }
 
-        return (await response.Content.ReadFromJsonAsync<List<WorkflowStateHistory>>(ODataJsonOptions, cancellationToken))!;
+        return results;
     }
 
     /// <inheritdoc />
@@ -691,12 +707,6 @@ public class LineOfDutyCaseHttpService : IDataService
         var response = await _httpClient.PatchAsync($"odata/Cases({caseId})", content, cancellationToken);
 
         return response.IsSuccessStatusCode;
-    }
-
-    private class IsBookmarkedResponse
-    {
-        [JsonPropertyName("value")]
-        public bool Value { get; set; }
     }
 
     private class ODataCountResponse<T>

@@ -162,12 +162,9 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
         odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 
-        var caseBookmarksEntitySet = odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
-        caseBookmarksEntitySet.EntityType.Collection.Action("DeleteByCaseId").Parameter<int>("caseId");
-        caseBookmarksEntitySet.EntityType.Collection.Function("IsBookmarked").Returns<bool>().Parameter<int>("caseId");
+        odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
 
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
-        odataBuilder.EntityType<WorkflowStateHistory>().Collection.Action("Batch");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
         odataBuilder.EntitySet<AuditComment>("AuditComments");
 

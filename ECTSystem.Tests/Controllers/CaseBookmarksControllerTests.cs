@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -24,8 +23,7 @@ namespace ECTSystem.Tests.Controllers;
 /// </para>
 /// <para>
 /// Tests are organized by controller action: <c>Get</c> (collection), <c>Post</c>
-/// (idempotent create), <c>DeleteByCaseId</c> (custom OData action), and
-/// <c>IsBookmarked</c> (custom OData function). Each section covers both success
+/// (idempotent create), and <c>Delete</c> (by key). Each section covers both success
 /// and not-found / duplicate scenarios.
 /// </para>
 /// </remarks>
@@ -123,85 +121,48 @@ public class CaseBookmarksControllerTests : ControllerTestBase
         Assert.Equal(5, existing.LineOfDutyCaseId);
     }
 
-    // ─────────────────────────── DeleteByCaseId ──────────────────────────────
+    // ──────────────────────────── Delete (key) ─────────────────────────────
 
     /// <summary>
-    /// Verifies that <see cref="CaseBookmarksController.DeleteByCaseId(ODataActionParameters)"/>
+    /// Verifies that <see cref="CaseBookmarksController.Delete(int, CancellationToken)"/>
     /// removes the matching bookmark and returns <see cref="NoContentResult"/>.
     /// </summary>
     [Fact]
-    public async Task DeleteByCaseId_WhenBookmarkExists_ReturnsNoContent()
+    public async Task Delete_WhenBookmarkExists_ReturnsNoContent()
     {
+        int bookmarkId;
         using (var ctx = new EctDbContext(_dbOptions))
         {
-            ctx.CaseBookmarks.Add(new CaseBookmark
+            var bm = new CaseBookmark
             {
                 UserId = TestUserId,
                 LineOfDutyCaseId = 1,
                 BookmarkedDate = DateTime.UtcNow
-            });
+            };
+            ctx.CaseBookmarks.Add(bm);
             ctx.SaveChanges();
+            bookmarkId = bm.Id;
         }
 
-        var result = await _sut.DeleteByCaseId(new ODataActionParameters { { "caseId", 1 } });
+        var result = await _sut.Delete(bookmarkId);
 
         Assert.IsType<NoContentResult>(result);
-    }
 
-    /// <summary>
-    /// Verifies that <c>DeleteByCaseId</c> returns <see cref="NotFoundResult"/> when no
-    /// bookmark for the specified case ID exists for the current user.
-    /// </summary>
-    [Fact]
-    public async Task DeleteByCaseId_WhenBookmarkNotFound_ReturnsNotFound()
-    {
-        var result = await _sut.DeleteByCaseId(new ODataActionParameters { { "caseId", 999 } });
-
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    // ─────────────────────────── IsBookmarked ────────────────────────────────
-
-    /// <summary>
-    /// Verifies that <see cref="CaseBookmarksController.IsBookmarked(int)"/> returns
-    /// <see cref="OkObjectResult"/> with a <c>Value</c> of <see langword="true"/> when
-    /// a bookmark exists for the current user and the specified case.
-    /// </summary>
-    [Fact]
-    public async Task IsBookmarked_WhenBookmarkExists_ReturnsTrue()
-    {
         using (var ctx = new EctDbContext(_dbOptions))
         {
-            ctx.CaseBookmarks.Add(new CaseBookmark
-            {
-                UserId = TestUserId,
-                LineOfDutyCaseId = 1,
-                BookmarkedDate = DateTime.UtcNow
-            });
-            ctx.SaveChanges();
+            Assert.Empty(ctx.CaseBookmarks);
         }
-
-        var result = await _sut.IsBookmarked(1);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(ok.Value);
-        var value = ok.Value.GetType().GetProperty("Value")!.GetValue(ok.Value);
-        Assert.Equal(true, value);
     }
 
     /// <summary>
-    /// Verifies that <c>IsBookmarked</c> returns <see cref="OkObjectResult"/> with a
-    /// <c>Value</c> of <see langword="false"/> when no bookmark exists for the current
-    /// user and the specified case.
+    /// Verifies that <c>Delete</c> returns <see cref="NotFoundResult"/> when no
+    /// bookmark with the specified key exists for the current user.
     /// </summary>
     [Fact]
-    public async Task IsBookmarked_WhenBookmarkNotFound_ReturnsFalse()
+    public async Task Delete_WhenBookmarkNotFound_ReturnsNotFound()
     {
-        var result = await _sut.IsBookmarked(1);
+        var result = await _sut.Delete(999);
 
-        var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(ok.Value);
-        var value = ok.Value.GetType().GetProperty("Value")!.GetValue(ok.Value);
-        Assert.Equal(false, value);
+        Assert.IsType<NotFoundResult>(result);
     }
 }

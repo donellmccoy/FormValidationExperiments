@@ -13,8 +13,7 @@ namespace ECTSystem.Tests.Controllers;
 
 /// <summary>
 /// Unit tests for <see cref="WorkflowStateHistoriesController"/>, the OData controller that
-/// creates workflow state transition history records — both individually (<c>Post</c>) and
-/// in atomic batches (<c>Batch</c>).
+/// creates workflow state transition history records individually via <c>Post</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,9 +22,7 @@ namespace ECTSystem.Tests.Controllers;
 /// does not support update or delete operations.
 /// </para>
 /// <para>
-/// The in-memory database is configured to suppress <c>TransactionIgnoredWarning</c> because
-/// the <c>Batch</c> endpoint uses explicit transactions that the in-memory provider does not
-/// support. Tests verify both API return types and persistence side-effects.
+/// The in-memory database is used to verify both API return types and persistence side-effects.
 /// </para>
 /// </remarks>
 public class WorkflowStateHistoriesControllerTests : ControllerTestBase
@@ -48,7 +45,6 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         _mockContextFactory = new Mock<IDbContextFactory<EctDbContext>>();
@@ -126,136 +122,6 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         _sut.ModelState.AddModelError("key", "error");
 
         await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
-
-        using var ctx = new EctDbContext(_dbOptions);
-        var count = await ctx.WorkflowStateHistories.CountAsync();
-        Assert.Equal(0, count);
-    }
-
-    // ─────────────────────────────── Batch ─────────────────────────────────────
-
-    /// <summary>
-    /// Verifies that <see cref="WorkflowStateHistoriesController.Batch"/> returns
-    /// <see cref="OkObjectResult"/> containing all entries with server-assigned IDs
-    /// when the input list is valid.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenValidEntries_ReturnsOkWithEntries()
-    {
-        var entries = new List<WorkflowStateHistory> { BuildEntry(), BuildEntry() };
-
-        var result = await _sut.Batch(entries, CancellationToken.None);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var returned = Assert.IsType<List<WorkflowStateHistory>>(ok.Value);
-        Assert.Equal(2, returned.Count);
-        Assert.All(returned, e => Assert.True(e.Id > 0));
-    }
-
-    /// <summary>
-    /// Verifies that a valid batch call persists all entries atomically — the total
-    /// count in the database matches the number of entries submitted.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenValidEntries_PersistsAllAtomically()
-    {
-        var entries = new List<WorkflowStateHistory> { BuildEntry(), BuildEntry(), BuildEntry() };
-
-        await _sut.Batch(entries, CancellationToken.None);
-
-        using var ctx = new EctDbContext(_dbOptions);
-        var count = await ctx.WorkflowStateHistories.CountAsync();
-        Assert.Equal(3, count);
-    }
-
-    /// <summary>
-    /// Verifies that <c>Batch</c> returns <see cref="BadRequestODataResult"/> when an
-    /// empty list is submitted, rejecting no-op bulk operations.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenEmptyList_ReturnsBadRequest()
-    {
-        var result = await _sut.Batch(new List<WorkflowStateHistory>(), CancellationToken.None);
-
-        Assert.IsType<BadRequestODataResult>(result);
-    }
-
-    /// <summary>
-    /// Verifies that <c>Batch</c> returns <see cref="BadRequestObjectResult"/> when the
-    /// model state is invalid.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenModelInvalid_ReturnsBadRequest()
-    {
-        _sut.ModelState.AddModelError("key", "error");
-
-        var result = await _sut.Batch(new List<WorkflowStateHistory> { BuildEntry() }, CancellationToken.None);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    /// <summary>
-    /// Verifies that an invalid-model <c>Batch</c> call does not persist any records,
-    /// ensuring validation gates the entire batch write.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenModelInvalid_DoesNotPersist()
-    {
-        _sut.ModelState.AddModelError("key", "error");
-
-        await _sut.Batch(new List<WorkflowStateHistory> { BuildEntry() }, CancellationToken.None);
-
-        using var ctx = new EctDbContext(_dbOptions);
-        var count = await ctx.WorkflowStateHistories.CountAsync();
-        Assert.Equal(0, count);
-    }
-
-    /// <summary>
-    /// Verifies that <c>Batch</c> returns <see cref="BadRequestODataResult"/> when any
-    /// entry in the list has an invalid <c>LineOfDutyCaseId</c> (e.g., zero), rejecting
-    /// the entire batch.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenEntryHasInvalidCaseId_ReturnsBadRequest()
-    {
-        var entries = new List<WorkflowStateHistory>
-        {
-            BuildEntry(),
-            new WorkflowStateHistory
-            {
-                LineOfDutyCaseId = 0,
-                WorkflowState = WorkflowState.MemberInformationEntry,
-                Action = TransitionAction.Enter,
-                Status = WorkflowStepStatus.InProgress,
-            }
-        };
-
-        var result = await _sut.Batch(entries, CancellationToken.None);
-
-        Assert.IsType<BadRequestODataResult>(result);
-    }
-
-    /// <summary>
-    /// Verifies that when a batch contains an entry with an invalid case ID, no records
-    /// are persisted — even valid entries in the same batch are rolled back, preserving
-    /// atomicity.
-    /// </summary>
-    [Fact]
-    public async Task Batch_WhenEntryHasInvalidCaseId_DoesNotPersist()
-    {
-        var entries = new List<WorkflowStateHistory>
-        {
-            BuildEntry(),
-            new WorkflowStateHistory
-            {
-                LineOfDutyCaseId = 0,
-                WorkflowState = WorkflowState.MemberInformationEntry,
-                Action = TransitionAction.Enter,
-                Status = WorkflowStepStatus.InProgress,
-            }
-        };
-
-        await _sut.Batch(entries, CancellationToken.None);
 
         using var ctx = new EctDbContext(_dbOptions);
         var count = await ctx.WorkflowStateHistories.CountAsync();
