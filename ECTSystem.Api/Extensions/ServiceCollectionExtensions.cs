@@ -137,14 +137,8 @@ public static class ServiceCollectionExtensions
         var odataBuilder = new ODataConventionModelBuilder();
 
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
-        casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
 
         var caseType = casesEntitySet.EntityType;
-        caseType.Action("CheckOut");
-        caseType.Action("CheckIn");
-        caseType.Action("Transition");
-        var saveAuthoritiesAction = caseType.Action("SaveAuthorities");
-        saveAuthoritiesAction.CollectionEntityParameter<LineOfDutyAuthority>("Authorities");
         caseType.HasMany(c => c.Documents).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Authorities).AutomaticallyExpand(true);
         caseType.HasMany(c => c.Appeals).AutomaticallyExpand(true);

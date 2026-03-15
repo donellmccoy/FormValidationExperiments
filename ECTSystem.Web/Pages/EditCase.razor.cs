@@ -230,7 +230,7 @@ public partial class EditCase : ComponentBase, IDisposable
     private CancellationTokenSource _previousCasesSearchCts = new();
     private int _previousCasesLoadGeneration;
     private int _previousCasesMemberId;
-    private readonly HashSet<int> _previousCasesBookmarkedIds = [];
+    private HashSet<int> _previousCasesBookmarkedIds = [];
     private readonly HashSet<int> _previousCasesAnimatingIds = [];
     private IList<LineOfDutyCase> _selectedPreviousCase;
 
@@ -325,16 +325,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
             _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
 
-            try
-            {
-                _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lineOfDutyCase.Id);
-            }
+            // Run bookmark check and previous cases load concurrently — they're independent
+            var bookmarkTask = CheckBookmarkAsync();
+            var previousCasesTask = LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
 
-            await LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
+            await Task.WhenAll(bookmarkTask, previousCasesTask);
 
             _loadedCaseId = CaseId;
 
@@ -377,6 +372,18 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
+    private async Task CheckBookmarkAsync()
+    {
+        try
+        {
+            _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to check bookmark status for case {CaseId}", _lineOfDutyCase.Id);
+        }
+    }
+
     private async Task LoadPreviousCasesAsync(int memberId)
     {
         _previousCasesMemberId = memberId;
@@ -413,6 +420,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 top: args.Top,
                 skip: args.Skip,
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
+                select: "Id,CaseId,Unit,WorkflowState,InitiationDate,CompletionDate,MemberId",
                 count: true,
                 cancellationToken: _cts.Token);
 
@@ -431,18 +439,13 @@ public partial class EditCase : ComponentBase, IDisposable
 
             if (_previousCases is not null)
             {
-                foreach (var lodCase in _previousCases)
+                if (generation != _previousCasesLoadGeneration)
                 {
-                    if (generation != _previousCasesLoadGeneration)
-                    {
-                        return;
-                    }
-
-                    if (await CaseService.IsBookmarkedAsync(lodCase.Id, _cts.Token))
-                    {
-                        _previousCasesBookmarkedIds.Add(lodCase.Id);
-                    }
+                    return;
                 }
+
+                var ids = _previousCases.Select(c => c.Id).ToArray();
+                _previousCasesBookmarkedIds = await CaseService.GetBookmarkedCaseIdsAsync(ids, _cts.Token);
             }
         }
         catch (OperationCanceledException)

@@ -7,11 +7,9 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OData.Edm;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
-using System.Text.Json.Serialization;
 using ECTSystem.Api.Extensions;
 
 namespace ECTSystem.Api.Controllers;
@@ -56,23 +54,6 @@ public class CasesController : ODataController
         var context = await CreateContextAsync(ct);
 
         return Ok(context.Cases.AsNoTracking());
-    }
-
-    /// <summary>
-    /// Returns LOD cases bookmarked by the current user as an OData-formatted response.
-    /// Route: GET /odata/Cases/Bookmarked
-    /// </summary>
-    [HttpGet]
-    [EnableQuery(MaxTop = 100, PageSize = 50, MaxNodeCount = 500)]
-    public async Task<IActionResult> Bookmarked(CancellationToken ct = default)
-    {
-        _loggingService.QueryingBookmarkedCases();
-
-        var context = await CreateContextAsync(ct);
-
-        var query = context.Cases.AsNoTracking().Where(c => context.CaseBookmarks.Any(b => b.UserId == UserId && b.LineOfDutyCaseId == c.Id));
-
-        return Ok(query);
     }
 
     /// <summary>
@@ -185,6 +166,27 @@ public class CasesController : ODataController
 
         delta.Patch(existing);
 
+        // Server-side enrichment: when IsCheckedOut changes, fill in (or clear)
+        // the user-identity fields from the JWT so the client cannot impersonate.
+        if (delta.GetChangedPropertyNames().Contains(nameof(LineOfDutyCase.IsCheckedOut)))
+        {
+            if (existing.IsCheckedOut)
+            {
+                var userName = User.FindFirstValue(ClaimTypes.Name)
+                             ?? User.FindFirstValue(ClaimTypes.Email)
+                             ?? UserId;
+                existing.CheckedOutBy = UserId;
+                existing.CheckedOutByName = userName;
+                existing.CheckedOutDate = DateTime.UtcNow;
+            }
+            else
+            {
+                existing.CheckedOutBy = string.Empty;
+                existing.CheckedOutByName = string.Empty;
+                existing.CheckedOutDate = null;
+            }
+        }
+
         await context.SaveChangesAsync(ct);
 
         var patched = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
@@ -192,249 +194,6 @@ public class CasesController : ODataController
         _loggingService.CasePatched(key);
 
         return Updated(patched);
-    }
-
-    /// <summary>
-    /// Atomically transitions a LOD case to a new workflow state and persists the
-    /// associated history entries in a single database transaction.
-    /// Route: POST /odata/Cases({key})/Transition
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> Transition([FromODataUri] int key, [FromBody] CaseTransitionRequest request, CancellationToken ct = default)
-    {
-        if (request is null || !ModelState.IsValid)
-        {
-            _loggingService.InvalidModelState("Transition");
-
-            return BadRequest(ModelState);
-        }
-
-        _loggingService.TransitioningCase(key);
-
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        var existing = await context.Cases.FindAsync([key], ct);
-
-        if (existing is null)
-        {
-            _loggingService.CaseNotFound(key);
-
-            return NotFound();
-        }
-
-        // Apply the workflow state change
-        existing.WorkflowState = request.NewWorkflowState;
-
-        // Add history entries
-        foreach (var entry in request.HistoryEntries)
-        {
-            entry.LineOfDutyCaseId = key;
-            context.WorkflowStateHistories.Add(entry);
-        }
-
-        // Single SaveChangesAsync — both the case update and history entries
-        // are committed atomically within EF Core's implicit transaction.
-        await context.SaveChangesAsync(ct);
-
-        // Re-fetch with all navigations for a complete response
-        var updated = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
-
-        // Extract the saved history entries with their server-assigned IDs
-        var savedEntries = await context.WorkflowStateHistories
-            .Where(h => h.LineOfDutyCaseId == key)
-            .OrderByDescending(h => h.Id)
-            .Take(request.HistoryEntries.Count)
-            .OrderBy(h => h.Id)
-            .AsNoTracking()
-            .ToListAsync(ct);
-
-        _loggingService.CaseTransitioned(key, savedEntries.Count);
-
-        return Ok(new CaseTransitionResponse
-        {
-            Case = updated,
-            HistoryEntries = savedEntries
-        });
-    }
-
-    /// <summary>
-    /// Checks out a LOD case so other users see it as read-only.
-    /// Route: POST /odata/Cases({key})/CheckOut
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> CheckOut([FromODataUri] int key, CancellationToken ct = default)
-    {
-        _loggingService.CheckingOutCase(key);
-
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        var existing = await context.Cases.FindAsync([key], ct);
-
-        if (existing is null)
-        {
-            _loggingService.CaseNotFound(key);
-            return NotFound();
-        }
-
-        if (existing.IsCheckedOut)
-        {
-            if (existing.CheckedOutBy == UserId)
-            {
-                // Already checked out by this user — return success
-                return Ok();
-            }
-
-            _loggingService.CaseAlreadyCheckedOut(key, existing.CheckedOutByName);
-            return Conflict(new { Message = $"Case is already checked out by {existing.CheckedOutByName}." });
-        }
-
-        var userName = User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue(ClaimTypes.Email) ?? UserId;
-
-        existing.IsCheckedOut = true;
-        existing.CheckedOutBy = UserId;
-        existing.CheckedOutByName = userName;
-        existing.CheckedOutDate = DateTime.UtcNow;
-
-        await context.SaveChangesAsync(ct);
-
-        _loggingService.CaseCheckedOut(key, userName);
-
-        return Ok();
-    }
-
-    /// <summary>
-    /// Checks in a LOD case so it becomes available for editing again.
-    /// Route: POST /odata/Cases({key})/CheckIn
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> CheckIn([FromODataUri] int key, CancellationToken ct = default)
-    {
-        _loggingService.CheckingInCase(key);
-
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        var existing = await context.Cases.FindAsync([key], ct);
-
-        if (existing is null)
-        {
-            _loggingService.CaseNotFound(key);
-            return NotFound();
-        }
-
-        if (!existing.IsCheckedOut)
-        {
-            // Not checked out — nothing to do
-            return Ok();
-        }
-
-        if (existing.CheckedOutBy != UserId)
-        {
-            _loggingService.CaseCheckedOutByAnother(key, existing.CheckedOutByName);
-            return Conflict(new { Message = $"Case is checked out by {existing.CheckedOutByName}. Only that user can check it in." });
-        }
-
-        existing.IsCheckedOut = false;
-        existing.CheckedOutBy = string.Empty;
-        existing.CheckedOutByName = string.Empty;
-        existing.CheckedOutDate = null;
-
-        await context.SaveChangesAsync(ct);
-
-        _loggingService.CaseCheckedIn(key);
-
-        return Ok();
-    }
-
-    /// <summary>
-    /// Batch-upserts authority entries for a LOD case. Existing authorities matching
-    /// by Role are updated; new roles are inserted; roles not present in the request
-    /// are removed.
-    /// OData route: POST /odata/Cases({key})/SaveAuthorities
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> SaveAuthorities([FromODataUri] int key, ODataActionParameters parameters, CancellationToken ct = default)
-    {
-        if (parameters is null)
-            return BadRequest();
-
-        if (!ModelState.IsValid)
-        {
-            foreach (var entry in ModelState.Where(e => e.Value?.Errors.Count > 0))
-            {
-                foreach (var error in entry.Value.Errors)
-                {
-                    if (!string.IsNullOrEmpty(error.ErrorMessage))
-                        _loggingService.ModelStatePropertyError("SaveAuthorities", entry.Key, error.ErrorMessage);
-
-                    if (error.Exception is not null)
-                        _loggingService.ModelStateExceptionError("SaveAuthorities", entry.Key, error.Exception.Message);
-                }
-            }
-
-            return BadRequest(ModelState);
-        }
-
-        if (!parameters.TryGetValue("Authorities", out var authoritiesObj) || authoritiesObj is not IEnumerable<LineOfDutyAuthority> authorities)
-        {
-            return BadRequest("Missing or invalid 'Authorities' parameter.");
-        }
-
-        var authoritiesList = authorities.ToList();
-
-        _loggingService.SavingAuthorities(key, authoritiesList.Count);
-
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-
-        var existing = await context.Cases.AnyAsync(c => c.Id == key, ct);
-
-        if (!existing)
-        {
-            _loggingService.CaseNotFound(key);
-            return NotFound();
-        }
-
-        var existingAuthorities = await context.Authorities
-            .Where(a => a.LineOfDutyCaseId == key)
-            .ToListAsync(ct);
-
-        // Remove authorities whose role is not in the incoming list
-        var incomingRoles = authoritiesList.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var toRemove = existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)).ToList();
-        context.Authorities.RemoveRange(toRemove);
-
-        // Upsert: update existing or add new
-        foreach (var incoming in authoritiesList)
-        {
-            var match = existingAuthorities.FirstOrDefault(
-                a => string.Equals(a.Role, incoming.Role, StringComparison.OrdinalIgnoreCase));
-
-            if (match is not null)
-            {
-                match.Name = incoming.Name;
-                match.Rank = incoming.Rank;
-                match.Title = incoming.Title;
-                match.ActionDate = incoming.ActionDate;
-                match.Recommendation = incoming.Recommendation;
-                match.Comments = incoming.Comments;
-            }
-            else
-            {
-                incoming.LineOfDutyCaseId = key;
-                incoming.Id = 0;
-                context.Authorities.Add(incoming);
-            }
-        }
-
-        await context.SaveChangesAsync(ct);
-
-        var saved = await context.Authorities
-            .Where(a => a.LineOfDutyCaseId == key)
-            .AsNoTracking()
-            .ToListAsync(ct);
-
-        _loggingService.AuthoritiesSaved(key, saved.Count);
-
-        return Ok(saved);
     }
 
     /// <summary>

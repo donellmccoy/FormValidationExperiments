@@ -86,48 +86,26 @@ public class CaseBookmarksController : ODataController
     }
 
     /// <summary>
-    /// Removes the current user's bookmark for the specified case.
-    /// OData action route: POST /odata/CaseBookmarks/DeleteByCaseId
+    /// Deletes a bookmark by its primary key.
+    /// OData route: DELETE /odata/CaseBookmarks({key})
     /// </summary>
-    /// <param name="parameters">OData action parameters; must contain integer <c>caseId</c>.</param>
+    /// <param name="key">The bookmark identifier.</param>
     /// <param name="ct">Cancellation token.</param>
-    [HttpPost]
-    public async Task<IActionResult> DeleteByCaseId(ODataActionParameters parameters, CancellationToken ct = default)
+    public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        if (!parameters.TryGetValue("caseId", out var caseIdObj) || caseIdObj is not int caseId)
-        {
-            return BadRequest("caseId is required.");
-        }
-
-        _loggingService.DeletingBookmark(caseId);
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var bookmark = await context.CaseBookmarks.FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
+        var bookmark = await context.CaseBookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == UserId, ct);
 
         if (bookmark is null)
         {
-            _loggingService.BookmarkNotFound(caseId);
             return NotFound();
         }
 
+        _loggingService.DeletingBookmark(bookmark.LineOfDutyCaseId);
         context.CaseBookmarks.Remove(bookmark);
         await context.SaveChangesAsync(ct);
-        _loggingService.BookmarkDeleted(caseId);
+        _loggingService.BookmarkDeleted(bookmark.LineOfDutyCaseId);
         return NoContent();
-    }
-
-    /// <summary>
-    /// Returns whether the current user has bookmarked the specified case.
-    /// OData function route: GET /odata/CaseBookmarks/IsBookmarked(caseId={caseId})
-    /// </summary>
-    /// <param name="caseId">The LOD case identifier to check.</param>
-    /// <param name="ct">Cancellation token.</param>
-    [HttpGet]
-    public async Task<IActionResult> IsBookmarked([FromODataUri] int caseId, CancellationToken ct = default)
-    {
-        _loggingService.CheckingBookmark(caseId);
-        await using var context = await _contextFactory.CreateDbContextAsync(ct);
-        var isBookmarked = await context.CaseBookmarks.AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == caseId, ct);
-        return Ok(new { Value = isBookmarked });
     }
 
     /// <summary>

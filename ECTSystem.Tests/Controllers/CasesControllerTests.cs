@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
-using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -29,8 +28,8 @@ namespace ECTSystem.Tests.Controllers;
 /// </para>
 /// <para>
 /// Tests are organized by controller action: <c>Get</c> (collection and single),
-/// <c>Post</c>, <c>Patch</c>, <c>Delete</c>, and the custom <c>SaveAuthorities</c>
-/// endpoint. Each section validates both the happy path and relevant error/edge cases
+/// <c>Post</c>, <c>Patch</c>, and <c>Delete</c>.
+/// Each section validates both the happy path and relevant error/edge cases
 /// (not-found, invalid model state, null input).
 /// </para>
 /// </remarks>
@@ -94,15 +93,6 @@ public class CasesControllerTests : ControllerTestBase
     /// </summary>
     /// <returns>A fresh context instance sharing the same <see cref="_dbOptions"/>.</returns>
     private EctDbContext CreateSeedContext() => new EctDbContext(_dbOptions);
-
-    /// <summary>
-    /// Creates an <see cref="ODataActionParameters"/> containing the given authorities
-    /// under the key "Authorities", matching the EDM action parameter name.
-    /// </summary>
-    private static ODataActionParameters CreateAuthorityParams(List<LineOfDutyAuthority> authorities)
-    {
-        return new ODataActionParameters { ["Authorities"] = authorities };
-    }
 
     /// <summary>
     /// Seeds a <see cref="LineOfDutyCase"/> into the in-memory database for test arrangement.
@@ -304,119 +294,4 @@ public class CasesControllerTests : ControllerTestBase
         Assert.IsType<NotFoundResult>(result);
     }
 
-    // ────────────────────────── SaveAuthorities ──────────────────────────────
-
-    /// <summary>
-    /// Verifies that <see cref="CasesController.SaveAuthorities(int, List{LineOfDutyAuthority})"/>
-    /// inserts new authority entries and associates them with the specified case.
-    /// </summary>
-    [Fact]
-    public async Task SaveAuthorities_WhenCaseExists_InsertsNewAuthorities()
-    {
-        SeedCase(BuildCase(1));
-
-        var authorities = new List<LineOfDutyAuthority>
-        {
-            new() { Role = "Commander", Name = "Smith, John", Rank = "Col" },
-            new() { Role = "SJA", Name = "Jones, Jane", Rank = "Maj" }
-        };
-
-        var result = await _sut.SaveAuthorities(1, CreateAuthorityParams(authorities));
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
-        Assert.Equal(2, saved.Count);
-        Assert.All(saved, a => Assert.Equal(1, a.LineOfDutyCaseId));
-    }
-
-    /// <summary>
-    /// Verifies that <c>SaveAuthorities</c> returns <see cref="NotFoundResult"/> when the
-    /// target case does not exist, preventing orphaned authority records.
-    /// </summary>
-    [Fact]
-    public async Task SaveAuthorities_WhenCaseNotFound_ReturnsNotFound()
-    {
-        var authorities = new List<LineOfDutyAuthority>
-        {
-            new() { Role = "Commander", Name = "Smith, John", Rank = "Col" }
-        };
-
-        var result = await _sut.SaveAuthorities(999, CreateAuthorityParams(authorities));
-
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    /// <summary>
-    /// Verifies that calling <c>SaveAuthorities</c> with an authority whose <c>Role</c>
-    /// already exists updates the existing record's <c>Name</c> and <c>Rank</c> rather
-    /// than creating a duplicate entry.
-    /// </summary>
-    [Fact]
-    public async Task SaveAuthorities_UpdatesExistingByRole()
-    {
-        SeedCase(BuildCase(1));
-
-        // First save
-        var initial = new List<LineOfDutyAuthority>
-        {
-            new() { Role = "Commander", Name = "Old Name", Rank = "Col" }
-        };
-        await _sut.SaveAuthorities(1, CreateAuthorityParams(initial));
-
-        // Second save updates the same role
-        var updated = new List<LineOfDutyAuthority>
-        {
-            new() { Role = "Commander", Name = "New Name", Rank = "BGen" }
-        };
-        var result = await _sut.SaveAuthorities(1, CreateAuthorityParams(updated));
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
-        Assert.Single(saved);
-        Assert.Equal("New Name", saved[0].Name);
-        Assert.Equal("BGen", saved[0].Rank);
-    }
-
-    /// <summary>
-    /// Verifies that roles omitted from a subsequent <c>SaveAuthorities</c> call are
-    /// removed from the database, ensuring the stored authorities always match the
-    /// submitted set (full replacement semantics).
-    /// </summary>
-    [Fact]
-    public async Task SaveAuthorities_RemovesRolesNotInRequest()
-    {
-        SeedCase(BuildCase(1));
-
-        // Save two authorities
-        var initial = new List<LineOfDutyAuthority>
-        {
-            new() { Role = "Commander", Name = "Cmd Name", Rank = "Col" },
-            new() { Role = "SJA", Name = "SJA Name", Rank = "Maj" }
-        };
-        await _sut.SaveAuthorities(1, CreateAuthorityParams(initial));
-
-        // Save with only one — the other should be removed
-        var reduced = new List<LineOfDutyAuthority>
-        {
-            new() { Role = "Commander", Name = "Cmd Name", Rank = "Col" }
-        };
-        var result = await _sut.SaveAuthorities(1, CreateAuthorityParams(reduced));
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var saved = Assert.IsType<List<LineOfDutyAuthority>>(ok.Value);
-        Assert.Single(saved);
-        Assert.Equal("Commander", saved[0].Role);
-    }
-
-    /// <summary>
-    /// Verifies that <c>SaveAuthorities</c> returns <see cref="BadRequestObjectResult"/>
-    /// when a <c>null</c> authority list is provided.
-    /// </summary>
-    [Fact]
-    public async Task SaveAuthorities_WhenNullBody_ReturnsBadRequest()
-    {
-        var result = await _sut.SaveAuthorities(1, null!);
-
-        Assert.IsType<BadRequestResult>(result);
-    }
 }

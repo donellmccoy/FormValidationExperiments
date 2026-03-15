@@ -128,6 +128,7 @@ public class LineOfDutyCaseHttpService : IDataService
         int? top = null,
         int? skip = null,
         string? orderby = null,
+        string? select = null,
         bool? count = null,
         CancellationToken cancellationToken = default)
     {
@@ -151,6 +152,11 @@ public class LineOfDutyCaseHttpService : IDataService
         if (!string.IsNullOrEmpty(orderby))
         {
             query = query.OrderBy(orderby);
+        }
+
+        if (!string.IsNullOrEmpty(select))
+        {
+            query = query.Select(select);
         }
 
         if (count == true)
@@ -220,11 +226,37 @@ public class LineOfDutyCaseHttpService : IDataService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentNullException.ThrowIfNull(request);
 
-        var response = await _httpClient.PostAsJsonAsync($"odata/Cases({caseId})/Transition", request, ODataJsonOptions, cancellationToken);
+        // Step 1: PATCH the WorkflowState on the case.
+        var patchContent = JsonContent.Create(
+            new { WorkflowState = request.NewWorkflowState },
+            options: ODataJsonOptions);
 
-        response.EnsureSuccessStatusCode();
+        var patchResponse = await _httpClient.PatchAsync($"odata/Cases({caseId})", patchContent, cancellationToken);
+        patchResponse.EnsureSuccessStatusCode();
 
-        return (await response.Content.ReadFromJsonAsync<CaseTransitionResponse>(ODataJsonOptions, cancellationToken))!;
+        var updatedCase = (await patchResponse.Content.ReadFromJsonAsync<LineOfDutyCase>(ODataJsonOptions, cancellationToken))!;
+
+        // Step 2: POST each history entry individually.
+        var savedEntries = new List<WorkflowStateHistory>(request.HistoryEntries.Count);
+
+        foreach (var entry in request.HistoryEntries)
+        {
+            var postResponse = await _httpClient.PostAsJsonAsync(
+                "odata/WorkflowStateHistories", entry, ODataJsonOptions, cancellationToken);
+            postResponse.EnsureSuccessStatusCode();
+
+            var saved = await postResponse.Content.ReadFromJsonAsync<WorkflowStateHistory>(ODataJsonOptions, cancellationToken);
+            if (saved is not null)
+            {
+                savedEntries.Add(saved);
+            }
+        }
+
+        return new CaseTransitionResponse
+        {
+            Case = updatedCase,
+            HistoryEntries = savedEntries
+        };
     }
 
     /// <inheritdoc />
@@ -233,17 +265,60 @@ public class LineOfDutyCaseHttpService : IDataService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentNullException.ThrowIfNull(authorities);
 
-        var response = await _httpClient.PostAsJsonAsync(
-            $"odata/Cases({caseId})/SaveAuthorities",
-            new { Authorities = authorities.ToList() },
-            ODataJsonOptions,
-            cancellationToken);
+        // Step 1: Get existing authorities for this case.
+        var existingResponse = await _httpClient.GetFromJsonAsync<ODataResponse<LineOfDutyAuthority>>(
+            $"odata/Authorities?$filter=LineOfDutyCaseId eq {caseId}", ODataJsonOptions, cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        var existingAuthorities = existingResponse?.Value ?? [];
+        var incomingList = authorities.ToList();
+        var incomingRoles = incomingList.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var result = await response.Content.ReadFromJsonAsync<List<LineOfDutyAuthority>>(ODataJsonOptions, cancellationToken);
+        // Step 2: Delete authorities whose role is not in the incoming list.
+        foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
+        {
+            var deleteResponse = await _httpClient.DeleteAsync($"odata/Authorities({toRemove.Id})", cancellationToken);
+            deleteResponse.EnsureSuccessStatusCode();
+        }
 
-        return result ?? [];
+        // Step 3: Upsert — PATCH existing or POST new.
+        var savedAuthorities = new List<LineOfDutyAuthority>();
+
+        foreach (var incoming in incomingList)
+        {
+            var match = existingAuthorities.FirstOrDefault(
+                a => string.Equals(a.Role, incoming.Role, StringComparison.OrdinalIgnoreCase));
+
+            if (match is not null)
+            {
+                // PATCH existing authority.
+                var patchBody = new
+                {
+                    incoming.Name,
+                    incoming.Rank,
+                    incoming.Title,
+                    incoming.ActionDate,
+                    incoming.Recommendation,
+                    incoming.Comments
+                };
+                var patchContent = JsonContent.Create(patchBody, options: ODataJsonOptions);
+                var patchResponse = await _httpClient.PatchAsync($"odata/Authorities({match.Id})", patchContent, cancellationToken);
+                patchResponse.EnsureSuccessStatusCode();
+                var patched = await patchResponse.Content.ReadFromJsonAsync<LineOfDutyAuthority>(ODataJsonOptions, cancellationToken);
+                if (patched is not null) savedAuthorities.Add(patched);
+            }
+            else
+            {
+                // POST new authority.
+                incoming.LineOfDutyCaseId = caseId;
+                incoming.Id = 0;
+                var postResponse = await _httpClient.PostAsJsonAsync("odata/Authorities", incoming, ODataJsonOptions, cancellationToken);
+                postResponse.EnsureSuccessStatusCode();
+                var created = await postResponse.Content.ReadFromJsonAsync<LineOfDutyAuthority>(ODataJsonOptions, cancellationToken);
+                if (created is not null) savedAuthorities.Add(created);
+            }
+        }
+
+        return savedAuthorities;
     }
 
     /// <summary>
@@ -320,6 +395,7 @@ public class LineOfDutyCaseHttpService : IDataService
 
     /// <summary>
     /// Retrieves a paginated and filtered list of cases specifically bookmarked by the current user.
+    /// Uses a two-step approach: fetches bookmarked case IDs from CaseBookmarks, then queries Cases.
     /// </summary>
     /// <param name="filter">Optional OData filter string.</param>
     /// <param name="top">Optional maximum number of records to return.</param>
@@ -333,12 +409,24 @@ public class LineOfDutyCaseHttpService : IDataService
         string? orderby = null, bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        var parts = new List<string>();
+        // Step 1: Get all bookmarked case IDs for the current user.
+        // The CaseBookmarksController.Get() already filters by UserId on the server.
+        var bookmarkResponse = await _httpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
+            "odata/CaseBookmarks?$select=LineOfDutyCaseId", ODataJsonOptions, cancellationToken);
 
-        if (!string.IsNullOrEmpty(filter))
+        var bookmarkedIds = bookmarkResponse?.Value.Select(b => b.LineOfDutyCaseId).ToList() ?? [];
+
+        if (bookmarkedIds.Count == 0)
         {
-            parts.Add($"$filter={filter}");
+            return new ODataServiceResult<LineOfDutyCase> { Value = [], Count = 0 };
         }
+
+        // Step 2: Query Cases filtered to the bookmarked IDs, applying the caller's
+        // filter, paging, ordering, and count parameters.
+        var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
+        var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
+
+        var parts = new List<string> { $"$filter={combinedFilter}" };
 
         if (top.HasValue)
         {
@@ -360,11 +448,9 @@ public class LineOfDutyCaseHttpService : IDataService
             parts.Add("$count=true");
         }
 
-        var url = parts.Count > 0
-            ? $"odata/Cases/Bookmarked()?{string.Join("&", parts)}"
-            : "odata/Cases/Bookmarked()";
-
-        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>( url, ODataJsonOptions, cancellationToken);
+        var url = $"odata/Cases?{string.Join("&", parts)}";
+        var response = await _httpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(
+            url, ODataJsonOptions, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
@@ -415,6 +501,25 @@ public class LineOfDutyCaseHttpService : IDataService
             $"odata/CaseBookmarks/IsBookmarked(caseId={caseId})", ODataJsonOptions, cancellationToken);
 
         return response?.Value ?? false;
+    }
+
+    /// <summary>
+    /// Returns the set of case IDs (from the supplied list) that the current user has bookmarked.
+    /// Single OData query replaces per-case IsBookmarked round-trips.
+    /// </summary>
+    public async Task<HashSet<int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default)
+    {
+        if (caseIds is { Length: 0 })
+        {
+            return [];
+        }
+
+        var ids = string.Join(",", caseIds);
+        var response = await _httpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
+            $"odata/CaseBookmarks?$filter=LineOfDutyCaseId in ({ids})&$select=LineOfDutyCaseId",
+            ODataJsonOptions, cancellationToken);
+
+        return response?.Value?.Select(b => b.LineOfDutyCaseId).ToHashSet() ?? [];
     }
 
     /// <summary>
@@ -571,7 +676,8 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.PostAsync($"odata/Cases({caseId})/CheckOut", null, cancellationToken);
+        var content = JsonContent.Create(new { IsCheckedOut = true }, options: ODataJsonOptions);
+        var response = await _httpClient.PatchAsync($"odata/Cases({caseId})", content, cancellationToken);
 
         return response.IsSuccessStatusCode;
     }
@@ -581,7 +687,8 @@ public class LineOfDutyCaseHttpService : IDataService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await _httpClient.PostAsync($"odata/Cases({caseId})/CheckIn", null, cancellationToken);
+        var content = JsonContent.Create(new { IsCheckedOut = false }, options: ODataJsonOptions);
+        var response = await _httpClient.PatchAsync($"odata/Cases({caseId})", content, cancellationToken);
 
         return response.IsSuccessStatusCode;
     }

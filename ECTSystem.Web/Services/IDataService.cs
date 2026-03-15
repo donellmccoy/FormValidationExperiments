@@ -15,7 +15,7 @@ public interface IDataService
     /// </summary>
     Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
-        string? orderby = null, bool? count = null,
+        string? orderby = null, string? select = null, bool? count = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -68,6 +68,11 @@ public interface IDataService
     /// Checks whether the current user has bookmarked the given case.
     /// </summary>
     Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the set of case IDs (from the supplied list) that the current user has bookmarked.
+    /// </summary>
+    Task<HashSet<int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fetches all documents for the given case.
