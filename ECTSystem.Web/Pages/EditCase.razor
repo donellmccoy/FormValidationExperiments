@@ -456,7 +456,34 @@ else
                                             </RadzenStack>
                                         </RadzenFieldset>
 
+                                        @* ═══ Form Actions ═══ *@
+                                        <div class="form-actions rz-mt-2">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+                                                <RadzenSplitButton Click="@OnApplyChangesClick" Text="Apply Changes" Icon="save"
+                                                                    Variant="Variant.Outlined" ButtonStyle="ButtonStyle.Primary"
+                                                                    Disabled="@(!HasAnyChanges)">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Revert Changes" Icon="undo" Value="revert" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
+                                            </RadzenStack>
+                                        </div>
+
                                         @* ═══ Routing ═══ *@
+                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
+                                                <RadzenSplitButton Click="@(item => OnMemberForwardClick(item))"
+                                                                    Text="Forward to Medical Technician"
+                                                                    Icon="send"
+                                                                    ButtonStyle="ButtonStyle.Primary"
+                                                                    Variant="Variant.Outlined"
+                                                                    Disabled="@(!_stateMachine?.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician) == true)">
+                                                    <ChildContent>
+                                                        <RadzenSplitButtonItem Text="Cancel Investigation" Icon="cancel" Value="cancel" />
+                                                    </ChildContent>
+                                                </RadzenSplitButton>
+                                            </RadzenStack>
+                                        </RadzenFieldset>
 
                                     </RadzenTemplateForm>
                                 </ChildContent>
