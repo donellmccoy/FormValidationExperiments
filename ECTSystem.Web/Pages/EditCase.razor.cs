@@ -1279,6 +1279,7 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 await BookmarkService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
                 await BookmarkCountService.RefreshAsync(_cts.Token);
+                NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {_viewModel?.CaseNumber} added to bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)
             {
