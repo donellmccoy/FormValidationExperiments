@@ -77,7 +77,7 @@ public partial class EditCase
     }
 
     /// <summary>
-    /// Debounces user input and performs a member search via <see cref="IDataService.SearchMembersAsync"/>.
+    /// Debounces user input and performs a member search via <see cref="IMemberService.SearchMembersAsync"/>.
     /// Opens or closes the popup based on input and populates <see cref="MemberSearchUiState.Results"/>.
     /// </summary>
     private async Task OnMemberSearchInput(ChangeEventArgs args)
@@ -123,7 +123,7 @@ public partial class EditCase
 
         try
         {
-            _memberSearch.Results = await CaseService.SearchMembersAsync(_memberSearch.Text, token);
+            _memberSearch.Results = await MemberService.SearchMembersAsync(_memberSearch.Text, token);
             var first = _memberSearch.Results.FirstOrDefault();
             _memberSearchSelection = first is not null ? [first] : [];
         }

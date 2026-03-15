@@ -32,7 +32,7 @@ public partial class EditCase
         {
             var filter = CombineDocumentsFilters(args.Filter, BuildDocumentsSearchFilter(_documentsSearchText));
 
-            var result = await CaseService.GetDocumentsAsync(
+            var result = await DocumentService.GetDocumentsAsync(
                 caseId: _lineOfDutyCase.Id,
                 filter: filter,
                 top: args.Top,
@@ -265,7 +265,7 @@ public partial class EditCase
 
     /// <summary>
     /// Confirms and deletes the specified document via
-    /// <see cref="IDataService.DeleteDocumentAsync"/>, then refreshes the paged list.
+    /// <see cref="IDocumentService.DeleteDocumentAsync"/>, then refreshes the paged list.
     /// </summary>
     private async Task OnDeleteDocumentAsync(LineOfDutyDocument doc)
     {
@@ -286,7 +286,7 @@ public partial class EditCase
 
         try
         {
-            await CaseService.DeleteDocumentAsync(_lineOfDutyCase.Id, doc.Id, _cts.Token);
+            await DocumentService.DeleteDocumentAsync(_lineOfDutyCase.Id, doc.Id, _cts.Token);
 
             _documentsGrid?.Reload();
 

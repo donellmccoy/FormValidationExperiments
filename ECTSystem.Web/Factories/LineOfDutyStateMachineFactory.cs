@@ -7,16 +7,16 @@ namespace ECTSystem.Web.Factories;
 
 /// <summary>
 /// Factory for creating <see cref="LineOfDutyStateMachine"/> instances.
-/// Registered as a scoped service so that <see cref="IDataService"/> and
+/// Registered as a scoped service so that <see cref="ICaseService"/> and
 /// <see cref="ILogger"/> are injected once and reused for every state machine
 /// created during the component's lifetime.
 /// </summary>
 internal class LineOfDutyStateMachineFactory
 {
-    private readonly IDataService _dataService;
+    private readonly ICaseService _dataService;
     private readonly ILogger<LineOfDutyStateMachineFactory> _logger;
 
-    public LineOfDutyStateMachineFactory(IDataService dataService, ILogger<LineOfDutyStateMachineFactory> logger)
+    public LineOfDutyStateMachineFactory(ICaseService dataService, ILogger<LineOfDutyStateMachineFactory> logger)
     {
         _dataService = dataService;
         _logger = logger;

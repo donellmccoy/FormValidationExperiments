@@ -6,13 +6,13 @@ namespace ECTSystem.Web.Services;
 /// </summary>
 public class BookmarkCountService
 {
-    private readonly IDataService _dataService;
+    private readonly IBookmarkService _dataService;
 
     public int Count { get; private set; }
 
     public event Action OnCountChanged;
 
-    public BookmarkCountService(IDataService dataService)
+    public BookmarkCountService(IBookmarkService dataService)
     {
         _dataService = dataService;
     }

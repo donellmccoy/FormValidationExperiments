@@ -16,7 +16,7 @@ namespace ECTSystem.Web.StateMachines;
 /// Manages all valid transitions between <see cref="WorkflowState"/> values via
 /// <see cref="LineOfDutyTrigger"/> actions and persists transition side-effects (workflow state
 /// history entries, case state updates, and timeline step activation) through
-/// <see cref="IDataService"/>.
+/// <see cref="ICaseService"/>.
 /// </summary>
 internal class LineOfDutyStateMachine
 {
@@ -56,7 +56,7 @@ internal class LineOfDutyStateMachine
     /// The data service used to persist all transition side-effects, including
     /// workflow state history entries, updated case state, and timeline step activation.
     /// </summary>
-    private readonly IDataService _dataService;
+    private readonly ICaseService _dataService;
 
     /// <summary>
     /// Stores the result of the most recent entry handler invocation, allowing the
@@ -209,7 +209,7 @@ internal class LineOfDutyStateMachine
     /// The data service used to persist history entries, save case state, and
     /// start timeline steps during transitions.
     /// </param>
-    public LineOfDutyStateMachine(LineOfDutyCase lineOfDutyCase, IDataService dataService)
+    public LineOfDutyStateMachine(LineOfDutyCase lineOfDutyCase, ICaseService dataService)
     {
         _lineOfDutyCase = lineOfDutyCase;
         _dataService = dataService;
@@ -233,7 +233,7 @@ internal class LineOfDutyStateMachine
     /// The data service used to persist history entries, save case state, and
     /// start timeline steps during transitions.
     /// </param>
-    public LineOfDutyStateMachine(IDataService dataService)
+    public LineOfDutyStateMachine(ICaseService dataService)
     {
         _dataService = dataService;
         _lineOfDutyCase = new LineOfDutyCase();

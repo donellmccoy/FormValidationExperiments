@@ -11,7 +11,10 @@ namespace ECTSystem.Web.Pages;
 public partial class CaseList : ComponentBase, IDisposable
 {
     [Inject]
-    private IDataService CaseService { get; set; }
+    private ICaseService CaseService { get; set; }
+
+    [Inject]
+    private IBookmarkService BookmarkService { get; set; }
 
     [Inject]
     private NavigationManager Navigation { get; set; }
@@ -121,7 +124,7 @@ public partial class CaseList : ComponentBase, IDisposable
         foreach (var lodCase in cases)
         {
             ct.ThrowIfCancellationRequested();
-            if (await CaseService.IsBookmarkedAsync(lodCase.Id, ct))
+            if (await BookmarkService.IsBookmarkedAsync(lodCase.Id, ct))
             {
                 bookmarkedCaseIds.Add(lodCase.Id);
             }
@@ -134,13 +137,13 @@ public partial class CaseList : ComponentBase, IDisposable
 
         if (isBookmarked)
         {
-            await CaseService.RemoveBookmarkAsync(lodCase.Id);
+            await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Remove(lodCase.Id);
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }
         else
         {
-            await CaseService.AddBookmarkAsync(lodCase.Id);
+            await BookmarkService.AddBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Add(lodCase.Id);
             NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
         }
@@ -294,7 +297,7 @@ public partial class CaseList : ComponentBase, IDisposable
     private async Task ShowContextMenuAsync(DataGridCellMouseEventArgs<LineOfDutyCase> args)
     {
         var lodCase = args.Data;
-        var isBookmarked = await CaseService.IsBookmarkedAsync(lodCase.Id);
+        var isBookmarked = await BookmarkService.IsBookmarkedAsync(lodCase.Id);
 
         ContextMenuService.Open(args,
             [

@@ -10,7 +10,10 @@ namespace ECTSystem.Web.Pages;
 public partial class Dashboard : ComponentBase
 {
     [Inject]
-    private IDataService CaseService { get; set; }
+    private ICaseService CaseService { get; set; }
+
+    [Inject]
+    private IBookmarkService BookmarkService { get; set; }
 
     [Inject]
     private NavigationManager Navigation { get; set; }
@@ -66,7 +69,7 @@ public partial class Dashboard : ComponentBase
         try
         {
             // Load Bookmarked Cases
-            var bookmarksResult = await CaseService.GetBookmarkedCasesAsync(top: 5, orderby: "Id desc", count: true);
+            var bookmarksResult = await BookmarkService.GetBookmarkedCasesAsync(top: 5, orderby: "Id desc", count: true);
             bookmarkedCases = bookmarksResult.Value;
             bookmarkedCount = bookmarksResult.Count;
 

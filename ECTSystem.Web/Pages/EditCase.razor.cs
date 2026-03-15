@@ -98,7 +98,22 @@ public partial class EditCase : ComponentBase, IDisposable
     #region Injected Services
 
     [Inject]
-    private IDataService CaseService { get; set; }
+    private ICaseService CaseService { get; set; }
+
+    [Inject]
+    private IBookmarkService BookmarkService { get; set; }
+
+    [Inject]
+    private IAuthorityService AuthorityService { get; set; }
+
+    [Inject]
+    private IDocumentService DocumentService { get; set; }
+
+    [Inject]
+    private IMemberService MemberService { get; set; }
+
+    [Inject]
+    private IWorkflowHistoryService WorkflowHistoryService { get; set; }
 
     [Inject]
     private LineOfDutyStateMachineFactory StateMachineFactory { get; set; }
@@ -376,7 +391,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         try
         {
-            _bookmark.IsBookmarked = await CaseService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
+            _bookmark.IsBookmarked = await BookmarkService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
         }
         catch (Exception ex)
         {
@@ -445,7 +460,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 }
 
                 var ids = _previousCases.Select(c => c.Id).ToArray();
-                _previousCasesBookmarkedIds = await CaseService.GetBookmarkedCaseIdsAsync(ids, _cts.Token);
+                _previousCasesBookmarkedIds = await BookmarkService.GetBookmarkedCaseIdsAsync(ids, _cts.Token);
             }
         }
         catch (OperationCanceledException)
@@ -540,7 +555,7 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             var filter = CombineTrackingFilters(args.Filter, BuildTrackingSearchFilter(_trackingSearchText));
 
-            var result = await CaseService.GetWorkflowStateHistoriesAsync(
+            var result = await WorkflowHistoryService.GetWorkflowStateHistoriesAsync(
                 caseId: _lineOfDutyCase.Id,
                 filter: filter,
                 top: args.Top,
@@ -637,7 +652,7 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             try
             {
-                await CaseService.RemoveBookmarkAsync(lodCase.Id);
+                await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
                 _previousCasesBookmarkedIds.Remove(lodCase.Id);
                 await BookmarkCountService.RefreshAsync();
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
@@ -654,7 +669,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await CaseService.AddBookmarkAsync(lodCase.Id);
+                await BookmarkService.AddBookmarkAsync(lodCase.Id);
                 _previousCasesBookmarkedIds.Add(lodCase.Id);
                 await BookmarkCountService.RefreshAsync();
                 NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
@@ -1198,7 +1213,7 @@ public partial class EditCase : ComponentBase, IDisposable
             // include navigation collections.
             if (_lineOfDutyCase.Id > 0 && authoritiesToSave.Count > 0)
             {
-                var savedAuthorities = await CaseService.SaveAuthoritiesAsync(
+                var savedAuthorities = await AuthorityService.SaveAuthoritiesAsync(
                     _lineOfDutyCase.Id, authoritiesToSave, _cts.Token);
 
                 _lineOfDutyCase.Authorities = savedAuthorities;
@@ -1262,7 +1277,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await CaseService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
+                await BookmarkService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
                 await BookmarkCountService.RefreshAsync(_cts.Token);
             }
             catch (Exception ex)
@@ -1278,7 +1293,7 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             try
             {
-                await CaseService.RemoveBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
+                await BookmarkService.RemoveBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
                 await BookmarkCountService.RefreshAsync(_cts.Token);
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_viewModel?.CaseNumber} removed from bookmarks.", closeOnClick: true);
             }

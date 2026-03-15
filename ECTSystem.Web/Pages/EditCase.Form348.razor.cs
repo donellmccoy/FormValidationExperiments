@@ -70,7 +70,7 @@ public partial class EditCase
                 form348BlobUrl = null;
             }
 
-            var pdfBytes = await CaseService.GetForm348PdfAsync(_lineOfDutyCase.Id, _cts.Token);
+            var pdfBytes = await DocumentService.GetForm348PdfAsync(_lineOfDutyCase.Id, _cts.Token);
             var base64 = Convert.ToBase64String(pdfBytes);
 
             // Pass iframe selector so JS sets the src directly — works around

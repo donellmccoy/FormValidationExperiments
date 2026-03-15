@@ -10,7 +10,7 @@ namespace ECTSystem.Web.Pages;
 public partial class MyBookmarks : ComponentBase, IDisposable
 {
     [Inject]
-    private IDataService CaseService { get; set; }
+    private IBookmarkService CaseService { get; set; }
 
     [Inject]
     private NavigationManager Navigation { get; set; }

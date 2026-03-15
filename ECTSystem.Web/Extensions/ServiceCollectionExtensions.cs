@@ -118,7 +118,12 @@ public static class ServiceCollectionExtensions
     {
         services.AddRadzenComponents();
         services.AddScoped<BookmarkCountService>();
-        services.AddScoped<IDataService, LineOfDutyCaseHttpService>();
+        services.AddScoped<ICaseService, CaseHttpService>();
+        services.AddScoped<IBookmarkService, BookmarkHttpService>();
+        services.AddScoped<IDocumentService, DocumentHttpService>();
+        services.AddScoped<IWorkflowHistoryService, WorkflowHistoryHttpService>();
+        services.AddScoped<IMemberService, MemberHttpService>();
+        services.AddScoped<IAuthorityService, AuthorityHttpService>();
         services.AddScoped<LineOfDutyStateMachineFactory>();
 
         return services;

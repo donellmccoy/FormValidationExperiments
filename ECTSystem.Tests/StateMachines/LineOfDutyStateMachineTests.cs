@@ -49,7 +49,7 @@ namespace ECTSystem.Tests.StateMachines;
 ///   <item><description><b>GetPermittedTriggersAsync Tests</b> — Validates the set of allowed triggers at each state.</description></item>
 ///   <item><description><b>Board Lateral Routing</b> — Tests all valid lateral transitions between board-level states.</description></item>
 ///   <item><description><b>Return Trigger</b> — Tests backward transitions from review states to earlier workflow stages.</description></item>
-///   <item><description><b>Persistence Verification</b> — Validates that <see cref="IDataService.TransitionCaseAsync"/> is invoked correctly during transitions.</description></item>
+///   <item><description><b>Persistence Verification</b> — Validates that <see cref="ICaseService.TransitionCaseAsync"/> is invoked correctly during transitions.</description></item>
 ///   <item><description><b>Error Handling</b> — Tests state machine revert behavior when persistence fails.</description></item>
 ///   <item><description><b>Invalid Transition Tests</b> — Verifies that illegal triggers throw <see cref="InvalidOperationException"/>.</description></item>
 ///   <item><description><b>Return Availability</b> — Theory-based tests for Return trigger availability across states.</description></item>
@@ -60,8 +60,8 @@ namespace ECTSystem.Tests.StateMachines;
 /// </summary>
 /// <remarks>
 /// <para>
-/// All tests use <see cref="Moq"/> to mock the <see cref="IDataService"/> dependency. The standard mock
-/// setup pattern configures <see cref="IDataService.TransitionCaseAsync"/> to return a
+/// All tests use <see cref="Moq"/> to mock the <see cref="ICaseService"/> dependency. The standard mock
+/// setup pattern configures <see cref="ICaseService.TransitionCaseAsync"/> to return a
 /// <see cref="CaseTransitionResponse"/> containing the updated case and empty history entries list,
 /// simulating a successful server-side persist operation. This is encapsulated in the
 /// <see cref="SetupTransitionSuccess"/> helper method.
@@ -80,11 +80,11 @@ namespace ECTSystem.Tests.StateMachines;
 public class LineOfDutyStateMachineTests
 {
     /// <summary>
-    /// Mocked <see cref="IDataService"/> used to isolate the state machine from actual API calls.
+    /// Mocked <see cref="ICaseService"/> used to isolate the state machine from actual API calls.
     /// Configured per-test via <see cref="SetupTransitionSuccess"/> or <see cref="SetupTransitionFailure"/>
     /// to simulate successful persistence or server-side errors, respectively.
     /// </summary>
-    private readonly Mock<IDataService> _dataServiceMock = new();
+    private readonly Mock<ICaseService> _dataServiceMock = new();
 
     #region Helpers
 
@@ -109,7 +109,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Configures <see cref="_dataServiceMock"/> so that any call to
-    /// <see cref="IDataService.TransitionCaseAsync"/> succeeds, returning a
+    /// <see cref="ICaseService.TransitionCaseAsync"/> succeeds, returning a
     /// <see cref="CaseTransitionResponse"/> whose <see cref="CaseTransitionResponse.Case"/>
     /// has the specified <paramref name="targetState"/> and whose
     /// <see cref="CaseTransitionResponse.HistoryEntries"/> is empty.
@@ -140,7 +140,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Configures <see cref="_dataServiceMock"/> so that any call to
-    /// <see cref="IDataService.TransitionCaseAsync"/> throws an <see cref="Exception"/>
+    /// <see cref="ICaseService.TransitionCaseAsync"/> throws an <see cref="Exception"/>
     /// with the message <c>"Save failed"</c>.
     /// <para>
     /// This simulates a server-side persistence failure (e.g., network timeout, database error,
@@ -171,7 +171,7 @@ public class LineOfDutyStateMachineTests
     /// </summary>
     /// <remarks>
     /// This tests the primary constructor overload that accepts both a <see cref="LineOfDutyCase"/>
-    /// and an <see cref="IDataService"/>. The state machine should always initialize to the
+    /// and an <see cref="ICaseService"/>. The state machine should always initialize to the
     /// case's current workflow state, which is the starting point for all subsequent transitions.
     /// </remarks>
     [Fact]
@@ -203,7 +203,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that the parameterless constructor overload (which only takes an
-    /// <see cref="IDataService"/>) initializes the state machine to
+    /// <see cref="ICaseService"/>) initializes the state machine to
     /// <see cref="WorkflowState.Draft"/>.
     /// </summary>
     /// <remarks>
@@ -232,7 +232,7 @@ public class LineOfDutyStateMachineTests
     /// <remarks>
     /// This is the very first transition in the LOD workflow — initiating the case from its
     /// draft state into active processing. The state machine's <c>SaveAndNotifyAsync</c> method
-    /// persists the transition via <see cref="IDataService.TransitionCaseAsync"/>, creating
+    /// persists the transition via <see cref="ICaseService.TransitionCaseAsync"/>, creating
     /// workflow state history entries to track the progression. This test validates both the
     /// state change and the success status of the returned result, confirming that the mock
     /// persistence layer accepted the transition.
@@ -1132,7 +1132,7 @@ public class LineOfDutyStateMachineTests
     #region Persistence Verification
 
     /// <summary>
-    /// Verifies that <see cref="IDataService.TransitionCaseAsync"/> is invoked exactly once
+    /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked exactly once
     /// when a forward transition is fired from <see cref="WorkflowState.Draft"/> to
     /// <see cref="WorkflowState.MemberInformationEntry"/>.
     /// </summary>
@@ -1165,7 +1165,7 @@ public class LineOfDutyStateMachineTests
     /// </summary>
     /// <remarks>
     /// The <c>SaveAndNotifyAsync</c> method replaces the internal <c>_lineOfDutyCase</c>
-    /// reference with the case returned by <see cref="IDataService.TransitionCaseAsync"/>.
+    /// reference with the case returned by <see cref="ICaseService.TransitionCaseAsync"/>.
     /// This ensures the state machine always holds the server-canonical version of the case,
     /// including any server-assigned values (timestamps, IDs, computed fields).
     /// </remarks>
@@ -1182,7 +1182,7 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="IDataService.TransitionCaseAsync"/> is invoked with a
+    /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked with a
     /// <see cref="CaseTransitionRequest"/> whose <see cref="CaseTransitionRequest.NewWorkflowState"/>
     /// matches the expected target state of the transition.
     /// </summary>
@@ -1218,7 +1218,7 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="IDataService.TransitionCaseAsync"/> is invoked with a
+    /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked with a
     /// <see cref="CaseTransitionRequest"/> whose <see cref="CaseTransitionRequest.HistoryEntries"/>
     /// collection is not empty, confirming that workflow state history entries are generated
     /// and sent to the server during transitions.
@@ -1259,7 +1259,7 @@ public class LineOfDutyStateMachineTests
     #region Error Handling
 
     /// <summary>
-    /// Verifies that when <see cref="IDataService.TransitionCaseAsync"/> throws an exception,
+    /// Verifies that when <see cref="ICaseService.TransitionCaseAsync"/> throws an exception,
     /// the state machine reverts to the previous state (Draft) rather than advancing to the
     /// target state (MemberInformationEntry).
     /// </summary>
