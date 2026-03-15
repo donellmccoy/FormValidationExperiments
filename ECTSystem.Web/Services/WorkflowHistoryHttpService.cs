@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using PanoramicData.OData.Client;
 using Radzen;
@@ -24,13 +23,23 @@ public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryServ
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var url = BuildNavigationPropertyUrl($"odata/Cases({caseId})/WorkflowStateHistories", filter, top, skip, orderby, count);
-        var response = await HttpClient.GetFromJsonAsync<ODataCountResponse<WorkflowStateHistory>>(url, ODataJsonOptions, cancellationToken);
+        var caseFilter = $"LineOfDutyCaseId eq {caseId}";
+        var combinedFilter = string.IsNullOrEmpty(filter) ? caseFilter : $"({caseFilter}) and ({filter})";
+
+        var query = Client.For<WorkflowStateHistory>("WorkflowStateHistories")
+            .Filter(combinedFilter);
+
+        if (top.HasValue) query = query.Top(top.Value);
+        if (skip.HasValue) query = query.Skip(skip.Value);
+        if (!string.IsNullOrEmpty(orderby)) query = query.OrderBy(orderby);
+        if (count == true) query = query.Count();
+
+        var response = await Client.GetAsync(query, cancellationToken);
 
         return new ODataServiceResult<WorkflowStateHistory>
         {
-            Value = response?.Value?.ToList() ?? [],
-            Count = response?.Count ?? 0
+            Value = response.Value?.ToList() ?? [],
+            Count = (int)(response.Count ?? 0)
         };
     }
 
@@ -39,10 +48,9 @@ public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryServ
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistories", entry, ODataJsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var created = await Client.CreateAsync("WorkflowStateHistories", entry, null, cancellationToken);
 
-        return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(ODataJsonOptions, cancellationToken))!;
+        return created ?? entry;
     }
 
     /// <inheritdoc />

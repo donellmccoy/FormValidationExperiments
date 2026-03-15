@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using PanoramicData.OData.Client;
 using Radzen;
@@ -23,10 +22,12 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         CancellationToken cancellationToken = default)
     {
         // Step 1: Get all bookmarked case IDs for the current user.
-        var bookmarkResponse = await HttpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
-            "odata/CaseBookmarks?$select=LineOfDutyCaseId", ODataJsonOptions, cancellationToken);
+        var bookmarkQuery = Client.For<CaseBookmark>("CaseBookmarks")
+            .Select("LineOfDutyCaseId");
 
-        var bookmarkedIds = bookmarkResponse?.Value.Select(b => b.LineOfDutyCaseId).ToList() ?? [];
+        var bookmarkResponse = await Client.GetAsync(bookmarkQuery, cancellationToken);
+
+        var bookmarkedIds = bookmarkResponse.Value?.Select(b => b.LineOfDutyCaseId).ToList() ?? [];
 
         if (bookmarkedIds.Count == 0)
         {
@@ -37,36 +38,20 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
         var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
 
-        var parts = new List<string> { $"$filter={combinedFilter}" };
+        var caseQuery = Client.For<LineOfDutyCase>("Cases")
+            .Filter(combinedFilter);
 
-        if (top.HasValue)
-        {
-            parts.Add($"$top={top.Value}");
-        }
+        if (top.HasValue) caseQuery = caseQuery.Top(top.Value);
+        if (skip.HasValue) caseQuery = caseQuery.Skip(skip.Value);
+        if (!string.IsNullOrEmpty(orderby)) caseQuery = caseQuery.OrderBy(orderby);
+        if (count == true) caseQuery = caseQuery.Count();
 
-        if (skip.HasValue)
-        {
-            parts.Add($"$skip={skip.Value}");
-        }
-
-        if (!string.IsNullOrEmpty(orderby))
-        {
-            parts.Add($"$orderby={orderby}");
-        }
-
-        if (count == true)
-        {
-            parts.Add("$count=true");
-        }
-
-        var url = $"odata/Cases?{string.Join("&", parts)}";
-        var response = await HttpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(
-            url, ODataJsonOptions, cancellationToken);
+        var response = await Client.GetAsync(caseQuery, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
-            Value = response?.Value ?? [],
-            Count = response?.Count ?? 0
+            Value = response.Value?.ToList() ?? [],
+            Count = (int)(response.Count ?? 0)
         };
     }
 
@@ -75,9 +60,8 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await HttpClient.PostAsJsonAsync("odata/CaseBookmarks", new { LineOfDutyCaseId = caseId }, ODataJsonOptions, cancellationToken);
-
-        response.EnsureSuccessStatusCode();
+        await Client.CreateAsync("CaseBookmarks",
+            new CaseBookmark { LineOfDutyCaseId = caseId }, null, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -85,19 +69,21 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var bookmarks = await HttpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
-            $"odata/CaseBookmarks?$filter=LineOfDutyCaseId eq {caseId}&$top=1&$select=Id",
-            ODataJsonOptions, cancellationToken);
+        var query = Client.For<CaseBookmark>("CaseBookmarks")
+            .Filter($"LineOfDutyCaseId eq {caseId}")
+            .Top(1)
+            .Select("Id");
 
-        var bookmarkId = bookmarks?.Value?.FirstOrDefault()?.Id;
+        var response = await Client.GetAsync(query, cancellationToken);
+
+        var bookmarkId = response.Value?.FirstOrDefault()?.Id;
 
         if (bookmarkId is null or 0)
         {
             return;
         }
 
-        var response = await HttpClient.DeleteAsync($"odata/CaseBookmarks({bookmarkId})", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await Client.DeleteAsync("CaseBookmarks", bookmarkId, null, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -105,11 +91,14 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var bookmarks = await HttpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
-            $"odata/CaseBookmarks?$filter=LineOfDutyCaseId eq {caseId}&$top=1&$select=Id",
-            ODataJsonOptions, cancellationToken);
+        var query = Client.For<CaseBookmark>("CaseBookmarks")
+            .Filter($"LineOfDutyCaseId eq {caseId}")
+            .Top(1)
+            .Select("Id");
 
-        return bookmarks?.Value is { Count: > 0 };
+        var response = await Client.GetAsync(query, cancellationToken);
+
+        return response.Value?.Any() == true;
     }
 
     /// <inheritdoc />
@@ -121,10 +110,12 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         }
 
         var ids = string.Join(",", caseIds);
-        var response = await HttpClient.GetFromJsonAsync<ODataResponse<CaseBookmark>>(
-            $"odata/CaseBookmarks?$filter=LineOfDutyCaseId in ({ids})&$select=LineOfDutyCaseId",
-            ODataJsonOptions, cancellationToken);
+        var query = Client.For<CaseBookmark>("CaseBookmarks")
+            .Filter($"LineOfDutyCaseId in ({ids})")
+            .Select("LineOfDutyCaseId");
 
-        return response?.Value?.Select(b => b.LineOfDutyCaseId).ToHashSet() ?? [];
+        var response = await Client.GetAsync(query, cancellationToken);
+
+        return response.Value?.Select(b => b.LineOfDutyCaseId).ToHashSet() ?? [];
     }
 }

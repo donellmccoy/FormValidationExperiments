@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using PanoramicData.OData.Client;
 
@@ -22,17 +21,18 @@ public class AuthorityHttpService : ODataServiceBase, IAuthorityService
         ArgumentNullException.ThrowIfNull(authorities);
 
         // Step 1: Get existing authorities for this case.
-        var existingResponse = await HttpClient.GetFromJsonAsync<ODataResponse<LineOfDutyAuthority>>(
-            $"odata/Authorities?$filter=LineOfDutyCaseId eq {caseId}", ODataJsonOptions, cancellationToken);
+        var query = Client.For<LineOfDutyAuthority>("Authorities")
+            .Filter($"LineOfDutyCaseId eq {caseId}");
 
-        var existingAuthorities = existingResponse?.Value ?? [];
+        var existingResponse = await Client.GetAsync(query, cancellationToken);
+
+        var existingAuthorities = existingResponse.Value?.ToList() ?? [];
         var incomingRoles = authorities.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // Step 2: Delete authorities whose role is not in the incoming list.
         foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
         {
-            var deleteResponse = await HttpClient.DeleteAsync($"odata/Authorities({toRemove.Id})", cancellationToken);
-            deleteResponse.EnsureSuccessStatusCode();
+            await Client.DeleteAsync("Authorities", toRemove.Id, null, cancellationToken);
         }
 
         // Step 3: Upsert — PATCH existing or POST new.
@@ -46,19 +46,19 @@ public class AuthorityHttpService : ODataServiceBase, IAuthorityService
             if (match is not null)
             {
                 // PATCH existing authority.
-                var patchBody = new
+                var patchBody = new Dictionary<string, object?>
                 {
-                    incoming.Name,
-                    incoming.Rank,
-                    incoming.Title,
-                    incoming.ActionDate,
-                    incoming.Recommendation,
-                    incoming.Comments
+                    ["Name"] = incoming.Name,
+                    ["Rank"] = incoming.Rank,
+                    ["Title"] = incoming.Title,
+                    ["ActionDate"] = incoming.ActionDate,
+                    ["Recommendation"] = incoming.Recommendation,
+                    ["Comments"] = incoming.Comments
                 };
-                var patchContent = JsonContent.Create(patchBody, options: ODataJsonOptions);
-                var patchResponse = await HttpClient.PatchAsync($"odata/Authorities({match.Id})", patchContent, cancellationToken);
-                patchResponse.EnsureSuccessStatusCode();
-                var patched = await patchResponse.Content.ReadFromJsonAsync<LineOfDutyAuthority>(ODataJsonOptions, cancellationToken);
+
+                var patched = await Client.UpdateAsync<LineOfDutyAuthority>(
+                    "Authorities", match.Id, patchBody, null, cancellationToken);
+
                 if (patched is not null) savedAuthorities.Add(patched);
             }
             else
@@ -66,9 +66,10 @@ public class AuthorityHttpService : ODataServiceBase, IAuthorityService
                 // POST new authority.
                 incoming.LineOfDutyCaseId = caseId;
                 incoming.Id = 0;
-                var postResponse = await HttpClient.PostAsJsonAsync("odata/Authorities", incoming, ODataJsonOptions, cancellationToken);
-                postResponse.EnsureSuccessStatusCode();
-                var created = await postResponse.Content.ReadFromJsonAsync<LineOfDutyAuthority>(ODataJsonOptions, cancellationToken);
+
+                var created = await Client.CreateAsync(
+                    "Authorities", incoming, null, cancellationToken);
+
                 if (created is not null) savedAuthorities.Add(created);
             }
         }

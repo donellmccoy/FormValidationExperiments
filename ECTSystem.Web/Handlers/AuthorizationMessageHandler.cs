@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Blazored.LocalStorage;
+using ECTSystem.Web.Providers;
+using ECTSystem.Web.Services;
 
-namespace ECTSystem.Web.Services;
+namespace ECTSystem.Web.Handlers;
 
 /// <summary>
 /// Holds the API base address so <see cref="AuthorizationMessageHandler"/> can

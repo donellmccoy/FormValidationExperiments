@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
@@ -72,10 +71,6 @@ public class MemberHttpService : ODataServiceBase, IMemberService
     public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)
     {
         // OData string literals escape single quotes by doubling them ('').
-        // Do NOT use Uri.EscapeDataString here — the outer Uri.EscapeDataString(filter)
-        // call below handles URL encoding. Applying it here creates double-encoding
-        // that causes OData to misinterpret %27 as a literal ' inside the string,
-        // producing a malformed filter and a 400 for names like O'Brien.
         var literal = searchText.Replace("'", "''");
         var filter = $"contains(tolower(LastName),tolower('{literal}'))" +
                      $" or contains(tolower(FirstName),tolower('{literal}'))" +
@@ -111,8 +106,13 @@ public class MemberHttpService : ODataServiceBase, IMemberService
             filter += $" or {string.Join(" or ", matchingComponents.Select(c => $"Component eq ECTSystem.Shared.Enums.ServiceComponent'{c}'"))}";
         }
 
-        var response = await HttpClient.GetFromJsonAsync<ODataResponse<Member>>((string?)$"odata/Members?$filter={Uri.EscapeDataString(filter)}&$top=25&$orderby=LastName,FirstName", ODataJsonOptions, cancellationToken);
+        var query = Client.For<Member>("Members")
+            .Filter(filter)
+            .Top(25)
+            .OrderBy("LastName,FirstName");
 
-        return response?.Value ?? [];
+        var response = await Client.GetAsync(query, cancellationToken);
+
+        return response.Value?.ToList().ToList().ToList() ?? [];
     }
 }

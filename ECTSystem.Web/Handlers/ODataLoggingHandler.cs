@@ -1,4 +1,4 @@
-namespace ECTSystem.Web.Services;
+namespace ECTSystem.Web.Handlers;
 
 /// <summary>
 /// Logs the full request URL and response body when the server returns a non-success status code.

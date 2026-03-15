@@ -3,7 +3,7 @@ using System.Security.Claims;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace ECTSystem.Web.Services;
+namespace ECTSystem.Web.Providers;
 
 public class JwtAuthStateProvider : AuthenticationStateProvider
 {
