@@ -8,10 +8,18 @@ namespace ECTSystem.Web.Services;
 
 /// <summary>
 /// OData HTTP service for case bookmark operations.
-/// Maps to <c>CaseBookmarksController</c>.
+/// Implements <see cref="IBookmarkService"/> using the <c>CaseBookmarks</c> OData entity set.
+/// Bookmark queries are two-phase: first fetches the user's bookmarked case IDs from
+/// <c>CaseBookmarks</c>, then queries <c>Cases</c> filtered to those IDs with
+/// any additional user-supplied OData filters.
 /// </summary>
 public class BookmarkHttpService : ODataServiceBase, IBookmarkService
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BookmarkHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The typed OData client for CRUD operations against <c>CaseBookmarks</c> and <c>Cases</c> entity sets.</param>
+    /// <param name="httpClient">The raw HTTP client for any non-OData REST calls.</param>
     public BookmarkHttpService(ODataClient client, HttpClient httpClient)
         : base(client, httpClient) { }
 

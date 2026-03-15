@@ -156,6 +156,10 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
         odataBuilder.EntitySet<AuditComment>("AuditComments");
 
+        // Bound actions: POST /odata/Cases({key})/Checkout, /Checkin
+        casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+        casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+
         return odataBuilder.GetEdmModel();
     }
 }

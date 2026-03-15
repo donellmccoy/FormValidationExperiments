@@ -11,15 +11,21 @@ namespace ECTSystem.Web.Services;
 
 /// <summary>
 /// OData HTTP service for LOD case CRUD operations.
-/// Maps to <c>CasesController</c>.
+/// Implements <see cref="ICaseService"/> using the <c>Cases</c> OData entity set.
+/// Uses a scalar-only PATCH strategy for updates: reflects <see cref="LineOfDutyCase"/>
+/// properties at startup to identify primitives, strings, enums, and date types, then
+/// sends only those properties in PATCH requests to avoid OData <c>Delta&lt;T&gt;</c>
+/// binding failures when navigation properties are present.
 /// </summary>
 public class CaseHttpService : ODataServiceBase, ICaseService
 {
     /// <summary>
     /// Cached array of <see cref="LineOfDutyCase"/> properties that are scalar
     /// (primitive, string, enum, DateTime, DateTimeOffset, Guid, decimal).
+    /// Built once via reflection at class load time and reused for every PATCH request.
     /// Used by <see cref="BuildScalarPatchBody"/> to produce a PATCH body
-    /// that excludes navigation properties and collections.
+    /// that excludes navigation properties and collections, preventing OData model
+    /// validation errors.
     /// </summary>
     private static readonly PropertyInfo[] ScalarProperties = typeof(LineOfDutyCase)
         .GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -32,6 +38,11 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         })
         .ToArray();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CaseHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The typed OData client for CRUD operations against the <c>Cases</c> entity set.</param>
+    /// <param name="httpClient">The raw HTTP client used for custom REST endpoints (e.g., case transitions, check-out/check-in).</param>
     public CaseHttpService(ODataClient client, HttpClient httpClient)
         : base(client, httpClient) { }
 
@@ -158,8 +169,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var content = JsonContent.Create(new { IsCheckedOut = true }, options: ODataJsonOptions);
-        var response = await HttpClient.PatchAsync($"odata/Cases({caseId})", content, cancellationToken);
+        var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Checkout", null, cancellationToken);
 
         return response.IsSuccessStatusCode;
     }
@@ -169,8 +179,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var content = JsonContent.Create(new { IsCheckedOut = false }, options: ODataJsonOptions);
-        var response = await HttpClient.PatchAsync($"odata/Cases({caseId})", content, cancellationToken);
+        var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Checkin", null, cancellationToken);
 
         return response.IsSuccessStatusCode;
     }

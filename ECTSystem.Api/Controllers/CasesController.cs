@@ -184,27 +184,6 @@ public class CasesController : ODataControllerBase
 
         delta.Patch(existing);
 
-        // Server-side enrichment: when IsCheckedOut changes, fill in (or clear)
-        // the user-identity fields from the JWT so the client cannot impersonate.
-        if (delta.GetChangedPropertyNames().Contains(nameof(LineOfDutyCase.IsCheckedOut)))
-        {
-            if (existing.IsCheckedOut)
-            {
-                var userName = User.FindFirstValue(ClaimTypes.Name)
-                             ?? User.FindFirstValue(ClaimTypes.Email)
-                             ?? UserId;
-                existing.CheckedOutBy = UserId;
-                existing.CheckedOutByName = userName;
-                existing.CheckedOutDate = DateTime.UtcNow;
-            }
-            else
-            {
-                existing.CheckedOutBy = string.Empty;
-                existing.CheckedOutByName = string.Empty;
-                existing.CheckedOutDate = null;
-            }
-        }
-
         // Use client-provided RowVersion for optimistic concurrency check
         context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
 
@@ -222,6 +201,83 @@ public class CasesController : ODataControllerBase
         LoggingService.CasePatched(key);
 
         return Updated(patched);
+    }
+
+    /// <summary>
+    /// Checks out a case, recording the current user's identity.
+    /// OData route: POST /odata/Cases({key})/Checkout
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Checkout([FromODataUri] int key, CancellationToken ct = default)
+    {
+        LoggingService.CheckingOutCase(key);
+
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.Cases.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            LoggingService.CaseNotFound(key);
+
+            return NotFound();
+        }
+
+        if (existing.IsCheckedOut)
+        {
+            LoggingService.CaseAlreadyCheckedOut(key, existing.CheckedOutByName);
+
+            return Conflict();
+        }
+
+        var userName = User.FindFirstValue(ClaimTypes.Name)
+                     ?? User.FindFirstValue(ClaimTypes.Email)
+                     ?? UserId;
+
+        existing.IsCheckedOut = true;
+        existing.CheckedOutBy = UserId;
+        existing.CheckedOutByName = userName;
+        existing.CheckedOutDate = DateTime.UtcNow;
+
+        await context.SaveChangesAsync(ct);
+
+        LoggingService.CaseCheckedOut(key, userName);
+
+        var updated = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
+
+        return Ok(updated);
+    }
+
+    /// <summary>
+    /// Checks in a case, clearing the checkout fields.
+    /// OData route: POST /odata/Cases({key})/Checkin
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Checkin([FromODataUri] int key, CancellationToken ct = default)
+    {
+        LoggingService.CheckingInCase(key);
+
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.Cases.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            LoggingService.CaseNotFound(key);
+
+            return NotFound();
+        }
+
+        existing.IsCheckedOut = false;
+        existing.CheckedOutBy = string.Empty;
+        existing.CheckedOutByName = string.Empty;
+        existing.CheckedOutDate = null;
+
+        await context.SaveChangesAsync(ct);
+
+        LoggingService.CaseCheckedIn(key);
+
+        return NoContent();
     }
 
     /// <summary>
@@ -243,6 +299,14 @@ public class CasesController : ODataControllerBase
             return NotFound();
         }
 
+        // Prevent deletion of a case that is currently checked out
+        if (lodCase.IsCheckedOut)
+        {
+            LoggingService.CaseCheckedOutByAnother(key, lodCase.CheckedOutByName);
+
+            return Conflict();
+        }
+
         // ClientCascade handles tracked child collections automatically
         context.Cases.Remove(lodCase);
 
@@ -257,7 +321,17 @@ public class CasesController : ODataControllerBase
             context.INCAPDetails.Remove(lodCase.INCAP);
         }
 
-        await context.SaveChangesAsync(ct);
+        // Use client-provided RowVersion for optimistic concurrency check
+        context.Entry(lodCase).Property(e => e.RowVersion).OriginalValue = lodCase.RowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict();
+        }
 
         LoggingService.CaseDeleted(key);
 

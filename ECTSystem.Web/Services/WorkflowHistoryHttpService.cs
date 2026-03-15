@@ -8,10 +8,18 @@ namespace ECTSystem.Web.Services;
 
 /// <summary>
 /// OData HTTP service for workflow state history operations.
-/// Maps to <c>WorkflowStateHistoriesController</c>.
+/// Implements <see cref="IWorkflowHistoryService"/> using the <c>WorkflowStateHistories</c> OData entity set.
+/// Supports querying history entries scoped to a single case (filters by <c>LineOfDutyCaseId</c>)
+/// and creating new entries individually or in bulk. History entries record workflow state
+/// transitions, actions, and status snapshots for the LOD determination audit trail.
 /// </summary>
 public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryService
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WorkflowHistoryHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The typed OData client for CRUD operations against the <c>WorkflowStateHistories</c> entity set.</param>
+    /// <param name="httpClient">The raw HTTP client for any non-OData REST calls.</param>
     public WorkflowHistoryHttpService(ODataClient client, HttpClient httpClient)
         : base(client, httpClient) { }
 

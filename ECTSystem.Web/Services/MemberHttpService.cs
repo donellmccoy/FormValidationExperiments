@@ -9,11 +9,22 @@ namespace ECTSystem.Web.Services;
 
 /// <summary>
 /// OData HTTP service for member search operations.
-/// Maps to <c>MembersController</c>.
+/// Implements <see cref="IMemberService"/> using the <c>Members</c> OData entity set.
+/// Provides fuzzy search capabilities by expanding text queries to include:
+/// <list type="bullet">
+///   <item><description>Rank title/abbreviation to pay grade mapping (e.g., "SSgt" also matches "E-5").</description></item>
+///   <item><description>Service component enum matching by raw name or display name (e.g., "Reserve" matches <c>AirForceReserve</c>).</description></item>
+/// </list>
 /// </summary>
 public class MemberHttpService : ODataServiceBase, IMemberService
 {
-    // Multiple keys can map to the same pay grade (e.g., "Major" and "Maj" both → "O-4").
+    /// <summary>
+    /// Static lookup table mapping military rank titles and abbreviations to their corresponding
+    /// pay grade strings (e.g., "Staff Sergeant" → "E-5", "Col" → "O-6").
+    /// Multiple keys can map to the same pay grade to support both full titles and common abbreviations.
+    /// Used during search to expand a rank-related query term into an additional <c>Rank eq '{payGrade}'</c>
+    /// OData filter clause, since the database stores ranks as pay grade strings.
+    /// </summary>
     private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
     {
         // Enlisted
@@ -64,6 +75,11 @@ public class MemberHttpService : ODataServiceBase, IMemberService
         ["Gen"] = "O-10",
     };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MemberHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The typed OData client for query operations against the <c>Members</c> entity set.</param>
+    /// <param name="httpClient">The raw HTTP client for any non-OData REST calls.</param>
     public MemberHttpService(ODataClient client, HttpClient httpClient)
         : base(client, httpClient) { }
 

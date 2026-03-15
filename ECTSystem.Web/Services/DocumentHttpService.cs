@@ -9,10 +9,20 @@ namespace ECTSystem.Web.Services;
 
 /// <summary>
 /// OData HTTP service for LOD case document operations.
-/// Maps to <c>DocumentsController</c> and <c>DocumentFilesController</c>.
+/// Implements <see cref="IDocumentService"/> by combining two API surfaces:
+/// <list type="bullet">
+///   <item><description>OData navigation property queries via <c>Cases({id})/Documents</c> for metadata retrieval.</description></item>
+///   <item><description>REST endpoints on <c>DocumentFilesController</c> (<c>api/cases/{id}/documents</c>) for file upload, download, and deletion.</description></item>
+/// </list>
+/// Document queries explicitly select metadata columns and exclude binary <c>FileContent</c> to minimize payload size.
 /// </summary>
 public class DocumentHttpService : ODataServiceBase, IDocumentService
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DocumentHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The typed OData client for navigation property queries against <c>Cases({id})/Documents</c>.</param>
+    /// <param name="httpClient">The raw HTTP client for REST file operations via <c>DocumentFilesController</c>.</param>
     public DocumentHttpService(ODataClient client, HttpClient httpClient)
         : base(client, httpClient) { }
 

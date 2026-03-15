@@ -7,10 +7,18 @@ namespace ECTSystem.Web.Services;
 
 /// <summary>
 /// OData HTTP service for LOD authority (reviewing official) operations.
-/// Maps to the Authorities OData entity set.
+/// Implements <see cref="IAuthorityService"/> using the <c>Authorities</c> OData entity set.
+/// Performs upsert-and-prune logic: matches incoming authorities to existing ones by
+/// <see cref="LineOfDutyAuthority.Role"/>, patches matches, creates new entries, and deletes
+/// any server-side entries whose roles are absent from the incoming collection.
 /// </summary>
 public class AuthorityHttpService : ODataServiceBase, IAuthorityService
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthorityHttpService"/> class.
+    /// </summary>
+    /// <param name="client">The typed OData client for CRUD operations against the <c>Authorities</c> entity set.</param>
+    /// <param name="httpClient">The raw HTTP client for any non-OData REST calls.</param>
     public AuthorityHttpService(ODataClient client, HttpClient httpClient)
         : base(client, httpClient) { }
 
