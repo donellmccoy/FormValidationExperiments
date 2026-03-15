@@ -92,7 +92,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         var query = Client.For<LineOfDutyCase>("Cases")
             .Filter($"CaseId eq '{caseId}'")
             .Top(1)
-            .Expand("Documents,Authorities," +
+            .Expand("Authorities," +
                     "Appeals($expand=AppellateAuthority)," +
                     "Member,MEDCON,INCAP,Notifications,WorkflowStateHistories");
 

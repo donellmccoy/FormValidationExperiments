@@ -31,10 +31,11 @@ public abstract class ODataServiceBase
     }
 
     protected static string BuildNavigationPropertyUrl(
-        string basePath, string? filter, int? top, int? skip, string? orderby, bool? count)
+        string basePath, string? filter, int? top, int? skip, string? orderby, bool? count, string? select = null)
     {
         var parts = new List<string>();
 
+        if (!string.IsNullOrEmpty(select)) parts.Add($"$select={select}");
         if (!string.IsNullOrEmpty(filter)) parts.Add($"$filter={filter}");
         if (top.HasValue) parts.Add($"$top={top.Value}");
         if (skip.HasValue) parts.Add($"$skip={skip.Value}");

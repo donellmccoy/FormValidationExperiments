@@ -21,8 +21,9 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
+        const string select = "Id,LineOfDutyCaseId,DocumentType,FileName,ContentType,FileSize,UploadDate,Description,CreatedBy,CreatedDate,ModifiedBy,ModifiedDate,RowVersion";
         var response = await HttpClient.GetFromJsonAsync<ODataResponse<LineOfDutyDocument>>(
-            $"odata/Cases({caseId})/Documents", ODataJsonOptions, cancellationToken);
+            $"odata/Cases({caseId})/Documents?$select={select}", ODataJsonOptions, cancellationToken);
 
         return response?.Value ?? [];
     }
@@ -35,7 +36,8 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var url = BuildNavigationPropertyUrl($"odata/Cases({caseId})/Documents", filter, top, skip, orderby, count);
+        const string select = "Id,LineOfDutyCaseId,DocumentType,FileName,ContentType,FileSize,UploadDate,Description,CreatedBy,CreatedDate,ModifiedBy,ModifiedDate,RowVersion";
+        var url = BuildNavigationPropertyUrl($"odata/Cases({caseId})/Documents", filter, top, skip, orderby, count, select);
         var response = await HttpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyDocument>>(url, ODataJsonOptions, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyDocument>
