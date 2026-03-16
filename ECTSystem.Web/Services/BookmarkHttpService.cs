@@ -1,41 +1,27 @@
 using ECTSystem.Shared.Models;
-using PanoramicData.OData.Client;
+using Microsoft.OData.Client;
 using Radzen;
 
 #nullable enable
 
 namespace ECTSystem.Web.Services;
 
-/// <summary>
-/// OData HTTP service for case bookmark operations.
-/// Implements <see cref="IBookmarkService"/> using the <c>CaseBookmarks</c> OData entity set.
-/// Bookmark queries are two-phase: first fetches the user's bookmarked case IDs from
-/// <c>CaseBookmarks</c>, then queries <c>Cases</c> filtered to those IDs with
-/// any additional user-supplied OData filters.
-/// </summary>
 public class BookmarkHttpService : ODataServiceBase, IBookmarkService
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="BookmarkHttpService"/> class.
-    /// </summary>
-    /// <param name="client">The typed OData client for CRUD operations against <c>CaseBookmarks</c> and <c>Cases</c> entity sets.</param>
-    /// <param name="httpClient">The raw HTTP client for any non-OData REST calls.</param>
-    public BookmarkHttpService(ODataClient client, HttpClient httpClient)
-        : base(client, httpClient) { }
+    public BookmarkHttpService(EctODataContext context, HttpClient httpClient)
+        : base(context, httpClient) { }
 
-    /// <inheritdoc />
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, bool? count = null,
         CancellationToken cancellationToken = default)
     {
         // Step 1: Get all bookmarked case IDs for the current user.
-        var bookmarkQuery = Client.For<CaseBookmark>("CaseBookmarks")
-            .Select("LineOfDutyCaseId");
+        var bookmarkQuery = Context.CaseBookmarks
+            .AddQueryOption("$select", "LineOfDutyCaseId");
 
-        var bookmarkResponse = await Client.GetAsync(bookmarkQuery, cancellationToken);
-
-        var bookmarkedIds = bookmarkResponse.Value?.Select(b => b.LineOfDutyCaseId).ToList() ?? [];
+        var bookmarks = await ExecuteQueryAsync(bookmarkQuery, cancellationToken);
+        var bookmarkedIds = bookmarks.Select(b => b.LineOfDutyCaseId).ToList();
 
         if (bookmarkedIds.Count == 0)
         {
@@ -46,70 +32,85 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
         var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
 
-        var caseQuery = Client.For<LineOfDutyCase>("Cases")
-            .Filter(combinedFilter);
+        var caseQuery = Context.Cases
+            .AddQueryOption("$filter", combinedFilter);
 
-        if (top.HasValue) caseQuery = caseQuery.Top(top.Value);
-        if (skip.HasValue) caseQuery = caseQuery.Skip(skip.Value);
-        if (!string.IsNullOrEmpty(orderby)) caseQuery = caseQuery.OrderBy(orderby);
-        if (count == true) caseQuery = caseQuery.Count();
+        if (top.HasValue)
+            caseQuery = caseQuery.AddQueryOption("$top", top.Value);
 
-        var response = await Client.GetAsync(caseQuery, cancellationToken);
+        if (skip.HasValue)
+            caseQuery = caseQuery.AddQueryOption("$skip", skip.Value);
+
+        if (!string.IsNullOrEmpty(orderby))
+            caseQuery = caseQuery.AddQueryOption("$orderby", orderby);
+
+        if (count == true)
+        {
+            var (items, totalCount) = await ExecutePagedQueryAsync(caseQuery, cancellationToken);
+
+            return new ODataServiceResult<LineOfDutyCase>
+            {
+                Value = items,
+                Count = totalCount
+            };
+        }
+
+        var results = await ExecuteQueryAsync(caseQuery, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
-            Value = response.Value?.ToList() ?? [],
-            Count = (int)(response.Count ?? 0)
+            Value = results,
+            Count = results.Count
         };
     }
 
-    /// <inheritdoc />
     public async Task AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        await Client.CreateAsync("CaseBookmarks",
-            new CaseBookmark { LineOfDutyCaseId = caseId }, null, cancellationToken);
+        var bookmark = new CaseBookmark { LineOfDutyCaseId = caseId };
+        Context.AddObject("CaseBookmarks", bookmark);
+        await Context.SaveChangesAsync(cancellationToken);
+        Context.Detach(bookmark);
     }
 
-    /// <inheritdoc />
     public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var query = Client.For<CaseBookmark>("CaseBookmarks")
-            .Filter($"LineOfDutyCaseId eq {caseId}")
-            .Top(1)
-            .Select("Id");
+        var query = Context.CaseBookmarks
+            .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}")
+            .AddQueryOption("$top", 1)
+            .AddQueryOption("$select", "Id");
 
-        var response = await Client.GetAsync(query, cancellationToken);
+        var bookmarks = await ExecuteQueryAsync(query, cancellationToken);
+        var bookmark = bookmarks.FirstOrDefault();
 
-        var bookmarkId = response.Value?.FirstOrDefault()?.Id;
-
-        if (bookmarkId is null or 0)
+        if (bookmark is null || bookmark.Id == 0)
         {
             return;
         }
 
-        await Client.DeleteAsync("CaseBookmarks", bookmarkId, null, cancellationToken);
+        Context.AttachTo("CaseBookmarks", bookmark);
+        Context.DeleteObject(bookmark);
+        await Context.SaveChangesAsync(cancellationToken);
+        Context.Detach(bookmark);
     }
 
-    /// <inheritdoc />
     public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var query = Client.For<CaseBookmark>("CaseBookmarks")
-            .Filter($"LineOfDutyCaseId eq {caseId}")
-            .Top(1)
-            .Select("Id");
+        var query = Context.CaseBookmarks
+            .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}")
+            .AddQueryOption("$top", 1)
+            .AddQueryOption("$select", "Id");
 
-        var response = await Client.GetAsync(query, cancellationToken);
+        var bookmarks = await ExecuteQueryAsync(query, cancellationToken);
 
-        return response.Value?.Any() == true;
+        return bookmarks.Count > 0;
     }
 
-    /// <inheritdoc />
     public async Task<HashSet<int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default)
     {
         if (caseIds is { Length: 0 })
@@ -118,12 +119,12 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         }
 
         var ids = string.Join(",", caseIds);
-        var query = Client.For<CaseBookmark>("CaseBookmarks")
-            .Filter($"LineOfDutyCaseId in ({ids})")
-            .Select("LineOfDutyCaseId");
+        var query = Context.CaseBookmarks
+            .AddQueryOption("$filter", $"LineOfDutyCaseId in ({ids})")
+            .AddQueryOption("$select", "LineOfDutyCaseId");
 
-        var response = await Client.GetAsync(query, cancellationToken);
+        var bookmarks = await ExecuteQueryAsync(query, cancellationToken);
 
-        return response.Value?.Select(b => b.LineOfDutyCaseId).ToHashSet() ?? [];
+        return bookmarks.Select(b => b.LineOfDutyCaseId).ToHashSet();
     }
 }

@@ -1,30 +1,13 @@
 using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
-using PanoramicData.OData.Client;
 
 #nullable enable
 
 namespace ECTSystem.Web.Services;
 
-/// <summary>
-/// OData HTTP service for member search operations.
-/// Implements <see cref="IMemberService"/> using the <c>Members</c> OData entity set.
-/// Provides fuzzy search capabilities by expanding text queries to include:
-/// <list type="bullet">
-///   <item><description>Rank title/abbreviation to pay grade mapping (e.g., "SSgt" also matches "E-5").</description></item>
-///   <item><description>Service component enum matching by raw name or display name (e.g., "Reserve" matches <c>AirForceReserve</c>).</description></item>
-/// </list>
-/// </summary>
 public class MemberHttpService : ODataServiceBase, IMemberService
 {
-    /// <summary>
-    /// Static lookup table mapping military rank titles and abbreviations to their corresponding
-    /// pay grade strings (e.g., "Staff Sergeant" → "E-5", "Col" → "O-6").
-    /// Multiple keys can map to the same pay grade to support both full titles and common abbreviations.
-    /// Used during search to expand a rank-related query term into an additional <c>Rank eq '{payGrade}'</c>
-    /// OData filter clause, since the database stores ranks as pay grade strings.
-    /// </summary>
     private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
     {
         // Enlisted
@@ -75,15 +58,9 @@ public class MemberHttpService : ODataServiceBase, IMemberService
         ["Gen"] = "O-10",
     };
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MemberHttpService"/> class.
-    /// </summary>
-    /// <param name="client">The typed OData client for query operations against the <c>Members</c> entity set.</param>
-    /// <param name="httpClient">The raw HTTP client for any non-OData REST calls.</param>
-    public MemberHttpService(ODataClient client, HttpClient httpClient)
-        : base(client, httpClient) { }
+    public MemberHttpService(EctODataContext context, HttpClient httpClient)
+        : base(context, httpClient) { }
 
-    /// <inheritdoc />
     public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)
     {
         // OData string literals escape single quotes by doubling them ('').
@@ -122,13 +99,11 @@ public class MemberHttpService : ODataServiceBase, IMemberService
             filter += $" or {string.Join(" or ", matchingComponents.Select(c => $"Component eq ECTSystem.Shared.Enums.ServiceComponent'{c}'"))}";
         }
 
-        var query = Client.For<Member>("Members")
-            .Filter(filter)
-            .Top(25)
-            .OrderBy("LastName,FirstName");
+        var query = Context.Members
+            .AddQueryOption("$filter", filter)
+            .AddQueryOption("$top", 25)
+            .AddQueryOption("$orderby", "LastName,FirstName");
 
-        var response = await Client.GetAsync(query, cancellationToken);
-
-        return response.Value?.ToList().ToList().ToList() ?? [];
+        return await ExecuteQueryAsync(query, cancellationToken);
     }
 }

@@ -1,54 +1,22 @@
 using System.Net.Http.Json;
-using System.Reflection;
 using System.Text.Json;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
-using PanoramicData.OData.Client;
+using Microsoft.OData.Client;
 using Radzen;
 
 #nullable enable
 
 namespace ECTSystem.Web.Services;
 
-/// <summary>
-/// OData HTTP service for LOD case CRUD operations.
-/// Implements <see cref="ICaseService"/> using the <c>Cases</c> OData entity set.
-/// Uses a scalar-only PATCH strategy for updates: reflects <see cref="LineOfDutyCase"/>
-/// properties at startup to identify primitives, strings, enums, and date types, then
-/// sends only those properties in PATCH requests to avoid OData <c>Delta&lt;T&gt;</c>
-/// binding failures when navigation properties are present.
-/// </summary>
 public class CaseHttpService : ODataServiceBase, ICaseService
 {
-    /// <summary>
-    /// Cached array of <see cref="LineOfDutyCase"/> properties that are scalar
-    /// (primitive, string, enum, DateTime, DateTimeOffset, Guid, decimal).
-    /// Built once via reflection at class load time and reused for every PATCH request.
-    /// Used by <see cref="BuildScalarPatchBody"/> to produce a PATCH body
-    /// that excludes navigation properties and collections, preventing OData model
-    /// validation errors.
-    /// </summary>
-    private static readonly PropertyInfo[] ScalarProperties = typeof(LineOfDutyCase)
-        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-        .Where(p =>
-        {
-            if (!p.CanWrite) return false;
-            var t = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
-            return t.IsPrimitive || t == typeof(string) || t.IsEnum
-                || t == typeof(DateTime) || t == typeof(DateTimeOffset)
-                || t == typeof(Guid) || t == typeof(decimal);
-        })
-        .ToArray();
+    private const string FullExpand =
+        "Authorities,Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications,WorkflowStateHistories";
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CaseHttpService"/> class.
-    /// </summary>
-    /// <param name="client">The typed OData client for CRUD operations against the <c>Cases</c> entity set.</param>
-    /// <param name="httpClient">The raw HTTP client used for custom REST endpoints (e.g., case transitions, check-out/check-in).</param>
-    public CaseHttpService(ODataClient client, HttpClient httpClient)
-        : base(client, httpClient) { }
+    public CaseHttpService(EctODataContext context, HttpClient httpClient)
+        : base(context, httpClient) { }
 
-    /// <inheritdoc />
     public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null,
         int? top = null,
@@ -58,48 +26,43 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        var query = Client.For<LineOfDutyCase>("Cases");
+        var query = Context.Cases as DataServiceQuery<LineOfDutyCase>;
 
         if (!string.IsNullOrEmpty(filter))
-        {
-            query = query.Filter(filter);
-        }
+            query = query.AddQueryOption("$filter", filter);
 
         if (top.HasValue)
-        {
-            query = query.Top(top.Value);
-        }
+            query = query.AddQueryOption("$top", top.Value);
 
         if (skip.HasValue)
-        {
-            query = query.Skip(skip.Value);
-        }
+            query = query.AddQueryOption("$skip", skip.Value);
 
         if (!string.IsNullOrEmpty(orderby))
-        {
-            query = query.OrderBy(orderby);
-        }
+            query = query.AddQueryOption("$orderby", orderby);
 
         if (!string.IsNullOrEmpty(select))
-        {
-            query = query.Select(select);
-        }
+            query = query.AddQueryOption("$select", select);
 
         if (count == true)
         {
-            query = query.Count();
+            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
+
+            return new ODataServiceResult<LineOfDutyCase>
+            {
+                Value = items,
+                Count = totalCount
+            };
         }
 
-        var response = await Client.GetAsync(query, cancellationToken);
+        var results = await ExecuteQueryAsync(query, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
-            Value = response.Value?.ToList() ?? [],
-            Count = (int)(response.Count ?? 0)
+            Value = results,
+            Count = results.Count
         };
     }
 
-    /// <inheritdoc />
     public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesByCurrentStateAsync(
         WorkflowState[]? includeStates = null,
         WorkflowState[]? excludeStates = null,
@@ -123,7 +86,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         var httpResponse = await HttpClient.GetAsync(url, cancellationToken);
         httpResponse.EnsureSuccessStatusCode();
 
-        var data = await httpResponse.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(ODataJsonOptions, cancellationToken);
+        var data = await httpResponse.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(JsonOptions, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
@@ -132,107 +95,115 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         };
     }
 
-    /// <inheritdoc />
     public async Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default)
     {
-        var query = Client.For<LineOfDutyCase>("Cases")
-            .Filter($"CaseId eq '{caseId}'")
-            .Top(1)
-            .Expand("Authorities," +
-                    "Appeals($expand=AppellateAuthority)," +
-                    "Member,MEDCON,INCAP,Notifications,WorkflowStateHistories");
+        var query = Context.Cases
+            .AddQueryOption("$filter", $"CaseId eq '{caseId}'")
+            .AddQueryOption("$top", 1)
+            .AddQueryOption("$expand", FullExpand);
 
-        var response = await Client.GetAsync(query, cancellationToken);
+        var results = await ExecuteQueryAsync(query, cancellationToken);
 
-        return response.Value?.FirstOrDefault();
+        return results.FirstOrDefault();
     }
 
-    /// <inheritdoc />
     public async Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default)
     {
         if (lodCase.Id == 0)
         {
-            return await Client.CreateAsync("Cases", lodCase, null, cancellationToken) ?? lodCase;
-        }
-        else
-        {
-            var updated = await Client.UpdateAsync<LineOfDutyCase>("Cases", lodCase.Id, BuildScalarPatchBody(lodCase), null, cancellationToken);
+            Context.AddObject("Cases", lodCase);
+            await Context.SaveChangesAsync(cancellationToken);
 
-            return updated ?? lodCase;
+            Context.Detach(lodCase);
+
+            return lodCase;
         }
+
+        Context.AttachTo("Cases", lodCase);
+        Context.UpdateObject(lodCase);
+        await Context.SaveChangesAsync(cancellationToken);
+
+        Context.Detach(lodCase);
+
+        return lodCase;
     }
 
-    /// <inheritdoc />
     public async Task<CaseTransitionResponse> TransitionCaseAsync(int caseId, CaseTransitionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentNullException.ThrowIfNull(request);
 
-        var postResponse = await HttpClient.PostAsJsonAsync(
-            "odata/WorkflowStateHistories/Batch", request.HistoryEntries, ODataJsonOptions, cancellationToken);
-        postResponse.EnsureSuccessStatusCode();
+        foreach (var entry in request.HistoryEntries)
+        {
+            Context.AddObject("WorkflowStateHistories", entry);
+        }
 
-        var savedEntries = await postResponse.Content.ReadFromJsonAsync<List<WorkflowStateHistory>>(ODataJsonOptions, cancellationToken)
-            ?? [];
+        var response = await Context.SaveChangesAsync(
+            SaveChangesOptions.BatchWithSingleChangeset | SaveChangesOptions.UseJsonBatch,
+            cancellationToken);
 
-        // Re-fetch the case with expanded WorkflowStateHistories so
-        // CurrentWorkflowState computes correctly from the latest history.
-        // Use Filter/Top instead of Key() because Key() returns a single entity
-        // (not wrapped in OData's "value" array), which the OData client's
-        // response.Value collection cannot deserialize.
-        var query = Client.For<LineOfDutyCase>("Cases")
-            .Filter($"Id eq {caseId}")
-            .Top(1)
-            .Expand("Authorities," +
-                    "Appeals($expand=AppellateAuthority)," +
-                    "Member,MEDCON,INCAP,Notifications,WorkflowStateHistories");
+        var savedEntries = response
+            .OfType<ChangeOperationResponse>()
+            .Select(r => (r.Descriptor as EntityDescriptor)?.Entity as WorkflowStateHistory)
+            .Where(e => e is not null)
+            .Cast<WorkflowStateHistory>()
+            .ToList();
 
-        var response = await Client.GetAsync(query, cancellationToken);
-        var updatedCase = response.Value?.FirstOrDefault()
-            ?? throw new InvalidOperationException(
-                $"Case {caseId} could not be retrieved after transitioning workflow state.");
+        foreach (var entry in savedEntries)
+        {
+            Context.Detach(entry);
+        }
+
+        // Re-fetch the case with all expansions so CurrentWorkflowState computes correctly
+        var query = Context.Cases
+            .AddQueryOption("$filter", $"Id eq {caseId}")
+            .AddQueryOption("$top", 1)
+            .AddQueryOption("$expand", FullExpand);
+
+        var results = await ExecuteQueryAsync(query, cancellationToken);
 
         return new CaseTransitionResponse
         {
-            Case = updatedCase,
+            Case = results.FirstOrDefault()
+                ?? throw new InvalidOperationException(
+                    $"Case {caseId} could not be retrieved after transitioning workflow state."),
             HistoryEntries = savedEntries
         };
     }
 
-    /// <inheritdoc />
     public async Task<bool> CheckOutCaseAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Checkout", null, cancellationToken);
+        var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkout");
 
-        return response.IsSuccessStatusCode;
+        try
+        {
+            await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", cancellationToken);
+
+            return true;
+        }
+        catch (DataServiceRequestException)
+        {
+            return false;
+        }
     }
 
-    /// <inheritdoc />
     public async Task<bool> CheckInCaseAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Checkin", null, cancellationToken);
+        var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkin");
 
-        return response.IsSuccessStatusCode;
-    }
-
-    /// <summary>
-    /// Builds a dictionary containing only scalar property values from the entity.
-    /// This prevents navigation properties and collections from being serialized
-    /// into the PATCH body, which would cause OData Delta&lt;T&gt; binding failures.
-    /// </summary>
-    private static Dictionary<string, object?> BuildScalarPatchBody(LineOfDutyCase lodCase)
-    {
-        var dict = new Dictionary<string, object?>(ScalarProperties.Length);
-
-        foreach (var prop in ScalarProperties)
+        try
         {
-            dict[prop.Name] = prop.GetValue(lodCase);
-        }
+            await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", cancellationToken);
 
-        return dict;
+            return true;
+        }
+        catch (DataServiceRequestException)
+        {
+            return false;
+        }
     }
 }

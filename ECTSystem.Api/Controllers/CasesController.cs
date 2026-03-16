@@ -244,9 +244,7 @@ public class CasesController : ODataControllerBase
 
         LoggingService.CaseCheckedOut(key, userName);
 
-        var updated = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
-
-        return Ok(updated);
+        return NoContent();
     }
 
     /// <summary>

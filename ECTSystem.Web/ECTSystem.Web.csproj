@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.3" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.3.0" />
-    <PackageReference Include="PanoramicData.OData.Client" Version="10.0.55" />
+    <PackageReference Include="Microsoft.OData.Client" Version="8.2.2" />
     <PackageReference Include="Radzen.Blazor" Version="9.0.5" />
     <PackageReference Include="Stateless" Version="5.20.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0" />

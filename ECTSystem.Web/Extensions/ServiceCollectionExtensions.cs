@@ -3,13 +3,13 @@ using System.Text.Json.Serialization;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.OData.Client;
+using Microsoft.OData.Edm;
 using ECTSystem.Web.Factories;
 using ECTSystem.Web.Handlers;
 using ECTSystem.Web.Providers;
 using ECTSystem.Web.StateMachines;
 using ECTSystem.Web.Services;
-using PanoramicData.OData.Client;
-using PanoramicData.OData.Client.Converters;
 using Radzen;
 
 namespace ECTSystem.Web.Extensions;
@@ -23,10 +23,11 @@ public static class ServiceCollectionExtensions
         var apiBaseAddress = new Uri(apiBase);
         var odataBaseAddress = new Uri(apiBaseAddress, "odata/");
 
-        services.AddJsonSerializerOptions()
+        services.AddRadzenComponents()
+                .AddJsonSerializerOptions()
                 .AddAuthenticationServices()
                 .AddHttpClients(apiBaseAddress, odataBaseAddress)
-                .AddODataClient(odataBaseAddress)
+                .AddODataContext(odataBaseAddress)
                 .AddDomainServices();
 
         return services;
@@ -87,47 +88,90 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddODataClient(this IServiceCollection services, Uri odataBaseAddress)
+    private static IServiceCollection AddDomainServices(this IServiceCollection services)
     {
-        // PanoramicData OData client — uses the "OData" named HttpClient (WASM-safe)
+        services.AddScoped<ICaseService, CaseHttpService>();
+        services.AddScoped<IAuthorityService, AuthorityHttpService>();
+        services.AddScoped<IMemberService, MemberHttpService>();
+        services.AddScoped<IDocumentService, DocumentHttpService>();
+        services.AddScoped<IWorkflowHistoryService, WorkflowHistoryHttpService>();
+        services.AddScoped<IBookmarkService, BookmarkHttpService>();
+        services.AddScoped<BookmarkCountService>();
+        services.AddScoped<LineOfDutyStateMachineFactory>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddODataContext(this IServiceCollection services, Uri odataBaseAddress)
+    {
+        var clientEdmModel = BuildClientEdmModel();
+
         services.AddScoped(sp =>
         {
             var factory = sp.GetRequiredService<IHttpClientFactory>();
-            return new ODataClient(new ODataClientOptions
+            var httpClient = factory.CreateClient("OData");
+
+            var context = new EctODataContext(odataBaseAddress);
+
+            // Provide a minimal client-side EDM model for @odata.context URI parsing.
+            // We cannot fetch $metadata from the server because the synchronous
+            // Monitor.Wait in LoadServiceModelFromNetwork is not supported in
+            // Blazor WASM's single-threaded runtime.
+            context.Format.LoadServiceModel = () => clientEdmModel;
+
+            context.Configurations.RequestPipeline.OnMessageCreating = args =>
             {
-                BaseUrl = odataBaseAddress.ToString(),
-                HttpClient = factory.CreateClient("OData"),
-                JsonSerializerOptions = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = null,
-                    Converters =
-                    {
-                        new JsonStringEnumConverter(),
-                        new ODataDateTimeConverter(),
-                        new ODataNullableDateTimeConverter()
-                    },
-                    ReferenceHandler = ReferenceHandler.IgnoreCycles,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                }
-            });
+                var requestArgs = new DataServiceClientRequestMessageArgs(
+                    args.Method,
+                    args.RequestUri,
+                    args.UsePostTunneling,
+                    args.Headers,
+                    new SingleHttpClientFactory(httpClient));
+
+                return new HttpClientRequestMessage(requestArgs);
+            };
+
+            return context;
         });
 
         return services;
     }
 
-    private static IServiceCollection AddDomainServices(this IServiceCollection services)
+    private static IEdmModel BuildClientEdmModel()
     {
-        services.AddRadzenComponents();
-        services.AddScoped<BookmarkCountService>();
-        services.AddScoped<ICaseService, CaseHttpService>();
-        services.AddScoped<IBookmarkService, BookmarkHttpService>();
-        services.AddScoped<IDocumentService, DocumentHttpService>();
-        services.AddScoped<IWorkflowHistoryService, WorkflowHistoryHttpService>();
-        services.AddScoped<IMemberService, MemberHttpService>();
-        services.AddScoped<IAuthorityService, AuthorityHttpService>();
-        services.AddScoped<LineOfDutyStateMachineFactory>();
+        var model = new EdmModel();
+        var container = new EdmEntityContainer("Default", "Container");
+        model.AddElement(container);
 
-        return services;
+        AddEntitySet(model, container, "Cases", "LineOfDutyCase");
+        AddEntitySet(model, container, "Members", "Member");
+        AddEntitySet(model, container, "Authorities", "LineOfDutyAuthority");
+        AddEntitySet(model, container, "Documents", "LineOfDutyDocument");
+        AddEntitySet(model, container, "WorkflowStateHistories", "WorkflowStateHistory");
+        AddEntitySet(model, container, "CaseBookmarks", "CaseBookmark");
+        AddEntitySet(model, container, "Notifications", "Notification");
+        AddEntitySet(model, container, "Appeals", "LineOfDutyAppeal");
+        AddEntitySet(model, container, "WitnessStatements", "WitnessStatement");
+        AddEntitySet(model, container, "AuditComments", "AuditComment");
+        AddEntitySet(model, container, "MEDCONDetails", "MEDCONDetail");
+        AddEntitySet(model, container, "INCAPDetails", "INCAPDetails");
+
+        return model;
+    }
+
+    private static void AddEntitySet(EdmModel model, EdmEntityContainer container, string setName, string typeName)
+    {
+        // Mark types as open so the OData JSON reader treats undeclared properties
+        // (everything beyond Id) as dynamic — allowing the materializer to map them
+        // to CLR properties via reflection without type-mismatch errors.
+        var entityType = new EdmEntityType("ECTSystem.Shared.Models", typeName, baseType: null, isAbstract: false, isOpen: true);
+        entityType.AddKeys(entityType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32));
+        model.AddElement(entityType);
+        container.AddEntitySet(setName, entityType);
+    }
+
+    private sealed class SingleHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => httpClient;
     }
 }
