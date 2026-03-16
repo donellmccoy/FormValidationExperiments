@@ -168,24 +168,29 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentNullException.ThrowIfNull(request);
 
-        var savedEntries = new List<WorkflowStateHistory>(request.HistoryEntries.Count);
+        var postResponse = await HttpClient.PostAsJsonAsync(
+            "odata/WorkflowStateHistories/Batch", request.HistoryEntries, ODataJsonOptions, cancellationToken);
+        postResponse.EnsureSuccessStatusCode();
 
-        foreach (var entry in request.HistoryEntries)
-        {
-            var postResponse = await HttpClient.PostAsJsonAsync(
-                "odata/WorkflowStateHistories", entry, ODataJsonOptions, cancellationToken);
-            postResponse.EnsureSuccessStatusCode();
-
-            var saved = await postResponse.Content.ReadFromJsonAsync<WorkflowStateHistory>(ODataJsonOptions, cancellationToken);
-            if (saved is not null)
-            {
-                savedEntries.Add(saved);
-            }
-        }
+        var savedEntries = await postResponse.Content.ReadFromJsonAsync<List<WorkflowStateHistory>>(ODataJsonOptions, cancellationToken)
+            ?? [];
 
         // Re-fetch the case with expanded WorkflowStateHistories so
         // CurrentWorkflowState computes correctly from the latest history.
-        var updatedCase = await GetCaseAsync(caseId.ToString(), cancellationToken);
+        // Use Filter/Top instead of Key() because Key() returns a single entity
+        // (not wrapped in OData's "value" array), which the OData client's
+        // response.Value collection cannot deserialize.
+        var query = Client.For<LineOfDutyCase>("Cases")
+            .Filter($"Id eq {caseId}")
+            .Top(1)
+            .Expand("Authorities," +
+                    "Appeals($expand=AppellateAuthority)," +
+                    "Member,MEDCON,INCAP,Notifications,WorkflowStateHistories");
+
+        var response = await Client.GetAsync(query, cancellationToken);
+        var updatedCase = response.Value?.FirstOrDefault()
+            ?? throw new InvalidOperationException(
+                $"Case {caseId} could not be retrieved after transitioning workflow state.");
 
         return new CaseTransitionResponse
         {

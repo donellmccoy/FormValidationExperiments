@@ -435,7 +435,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 top: args.Top,
                 skip: args.Skip,
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
-                select: "Id,CaseId,Unit,WorkflowState,InitiationDate,CompletionDate,MemberId",
+                select: "Id,CaseId,Unit,InitiationDate,CompletionDate,MemberId",
                 count: true,
                 cancellationToken: _cts.Token);
 
