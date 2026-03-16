@@ -27,6 +27,7 @@ public class MembersController : ODataControllerBase
     /// OData route: GET /odata/Members
     /// </summary>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         LoggingService.QueryingMembers();
@@ -39,6 +40,7 @@ public class MembersController : ODataControllerBase
     /// OData route: GET /odata/Members({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.RetrievingMember(key);
@@ -195,6 +197,7 @@ public class MembersController : ODataControllerBase
     /// OData route: GET /odata/Members({key})/LineOfDutyCases
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> GetLineOfDutyCases([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingMemberNavigation(key, "LineOfDutyCases");

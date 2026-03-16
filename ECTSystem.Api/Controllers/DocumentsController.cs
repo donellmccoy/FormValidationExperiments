@@ -28,6 +28,7 @@ public class DocumentsController : ODataControllerBase
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         LoggingService.QueryingDocuments();
@@ -42,6 +43,7 @@ public class DocumentsController : ODataControllerBase
     /// <param name="key">The document identifier.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);

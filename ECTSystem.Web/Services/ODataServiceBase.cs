@@ -50,11 +50,11 @@ public abstract class ODataServiceBase
     {
         var parts = new List<string>();
 
-        if (!string.IsNullOrEmpty(select)) parts.Add($"$select={select}");
-        if (!string.IsNullOrEmpty(filter)) parts.Add($"$filter={filter}");
+        if (!string.IsNullOrEmpty(select)) parts.Add($"$select={Uri.EscapeDataString(select)}");
+        if (!string.IsNullOrEmpty(filter)) parts.Add($"$filter={Uri.EscapeDataString(filter)}");
         if (top.HasValue) parts.Add($"$top={top.Value}");
         if (skip.HasValue) parts.Add($"$skip={skip.Value}");
-        if (!string.IsNullOrEmpty(orderby)) parts.Add($"$orderby={orderby}");
+        if (!string.IsNullOrEmpty(orderby)) parts.Add($"$orderby={Uri.EscapeDataString(orderby)}");
         if (count == true) parts.Add("$count=true");
 
         return parts.Count > 0 ? $"{basePath}?{string.Join("&", parts)}" : basePath;

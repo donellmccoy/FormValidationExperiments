@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
@@ -21,7 +22,8 @@ public static class ServiceCollectionExtensions
                 .AddODataControllers()
                 .AddPdfServices()
                 .AddCorsPolicy()
-                .AddOpenApi();
+                .AddOpenApi()
+                .AddApiRateLimiting();
 
         return services;
     }
@@ -127,6 +129,38 @@ public static class ServiceCollectionExtensions
                       .AllowAnyMethod()
                       .AllowCredentials();
             });
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddApiRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            {
+                var userId = context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+
+                return RateLimitPartition.GetSlidingWindowLimiter(userId, _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 4,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                });
+            });
+
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.Headers.RetryAfter = "60";
+
+                await context.HttpContext.Response.WriteAsync(
+                    "Rate limit exceeded. Try again later.", cancellationToken);
+            };
         });
 
         return services;

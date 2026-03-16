@@ -40,6 +40,7 @@ public class CasesController : ODataControllerBase
     /// $top, $skip, and $count automatically against the IQueryable.
     /// </summary>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         LoggingService.QueryingCases();
@@ -52,6 +53,7 @@ public class CasesController : ODataControllerBase
     /// <summary>
     /// Returns a single LOD case by key with all navigation properties.
     /// OData route: GET /odata/Cases({key})
+    /// Supports conditional GET via ETag (RowVersion) — returns 304 when unmodified.
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
@@ -68,6 +70,16 @@ public class CasesController : ODataControllerBase
 
             return NotFound();
         }
+
+        var etag = $"\"{ Convert.ToBase64String(lodCase.RowVersion)}\"";
+
+        if (Request.Headers.IfNoneMatch.ToString() == etag)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        Response.Headers.ETag = etag;
+        Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
         return Ok(lodCase);
     }
@@ -131,17 +143,24 @@ public class CasesController : ODataControllerBase
     /// <summary>
     /// Generates a case ID in YYYYMMDD-XXX format where XXX is a sequential
     /// number (001–999) based on existing cases for today's date.
+    /// Uses UPDLOCK to serialize concurrent suffix generation and prevent races.
     /// </summary>
     private static async Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
     {
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
         var prefix = $"{today}-";
 
-        var maxSuffix = await context.Cases
-            .Where(c => c.CaseId.StartsWith(prefix))
-            .Select(c => c.CaseId.Substring(prefix.Length))
-            .MaxAsync(ct)
-            .ConfigureAwait(false);
+        // UPDLOCK serializes concurrent readers on the same date prefix so two
+        // callers cannot both compute the same MAX suffix before either inserts.
+        var maxSuffix = await context.Database
+            .SqlQueryRaw<string>(
+                """
+                SELECT MAX(SUBSTRING(CaseId, LEN(@p0) + 1, LEN(CaseId) - LEN(@p0))) AS [Value]
+                FROM Cases WITH (UPDLOCK, HOLDLOCK)
+                WHERE CaseId LIKE @p0 + '%'
+                """,
+                prefix)
+            .FirstOrDefaultAsync(ct);
 
         var next = maxSuffix is not null && int.TryParse(maxSuffix, out var current)
             ? current + 1
@@ -396,6 +415,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})/Documents
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> GetDocuments([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
@@ -410,6 +430,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})/Notifications
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> GetNotifications([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
@@ -424,6 +445,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})/WorkflowStateHistories
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> GetWorkflowStateHistories([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));

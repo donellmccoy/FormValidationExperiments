@@ -11,6 +11,12 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
         builder.HasKey(e => e.Id);
         builder.HasIndex(e => e.CaseId).IsUnique();
 
+        // Indexes for common query patterns
+        builder.HasIndex(e => e.MemberId);
+        builder.HasIndex(e => e.CreatedDate);
+        builder.HasIndex(e => new { e.MemberId, e.CreatedDate })
+               .HasDatabaseName("IX_Cases_MemberId_CreatedDate");
+
         // CurrentWorkflowState is a computed CLR property — not a database column
         builder.Ignore(e => e.CurrentWorkflowState);
 
