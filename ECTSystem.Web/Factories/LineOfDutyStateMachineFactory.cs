@@ -25,14 +25,14 @@ internal class LineOfDutyStateMachineFactory
     /// <summary>
     /// Creates a new <see cref="LineOfDutyStateMachine"/> initialized with the specified
     /// LOD case. The state machine starts in the case's current
-    /// <see cref="LineOfDutyCase.WorkflowState"/>.
+    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/>.
     /// </summary>
     /// <param name="lineOfDutyCase">The LOD case to manage.</param>
     /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/>.</returns>
     public LineOfDutyStateMachine Create(LineOfDutyCase lineOfDutyCase)
     {
         _logger.LogDebug("Creating state machine for case {CaseId} in state {State}",
-            lineOfDutyCase.CaseId, lineOfDutyCase.WorkflowState);
+            lineOfDutyCase.CaseId, lineOfDutyCase.CurrentWorkflowState);
 
         return new LineOfDutyStateMachine(lineOfDutyCase, _dataService);
     }

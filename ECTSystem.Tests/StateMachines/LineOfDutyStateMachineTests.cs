@@ -94,17 +94,32 @@ public class LineOfDutyStateMachineTests
     /// at any specific point in the workflow without needing to traverse earlier states.
     /// </summary>
     /// <param name="state">
-    /// The <see cref="WorkflowState"/> to assign to the case. Determines both the case's
-    /// <see cref="LineOfDutyCase.WorkflowState"/> property and the initial state of any
+    /// The <see cref="WorkflowState"/> to assign to the case. Determines the case's
+    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> computed property and the initial state of any
     /// <see cref="LineOfDutyStateMachine"/> constructed with this case.
     /// </param>
     /// <returns>
     /// A new <see cref="LineOfDutyCase"/> with <see cref="LineOfDutyCase.Id"/> set to 1 and
-    /// <see cref="LineOfDutyCase.WorkflowState"/> set to <paramref name="state"/>.
+    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> reflecting <paramref name="state"/>.
     /// </returns>
     private static LineOfDutyCase BuildCase(WorkflowState state)
     {
-        return new LineOfDutyCase { Id = 1, WorkflowState = state };
+        var lodCase = new LineOfDutyCase { Id = 1 };
+        if (state != WorkflowState.Draft)
+        {
+            lodCase.WorkflowStateHistories =
+            [
+                new WorkflowStateHistory
+                {
+                    LineOfDutyCaseId = 1,
+                    WorkflowState = state,
+                    Action = TransitionAction.Enter,
+                    Status = WorkflowStepStatus.InProgress,
+                    CreatedDate = DateTime.UtcNow
+                }
+            ];
+        }
+        return lodCase;
     }
 
     /// <summary>
@@ -133,7 +148,7 @@ public class LineOfDutyStateMachineTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CaseTransitionResponse
             {
-                Case = new LineOfDutyCase { Id = 1, WorkflowState = targetState },
+                Case = BuildCase(targetState),
                 HistoryEntries = []
             });
     }
@@ -165,7 +180,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that constructing a <see cref="LineOfDutyStateMachine"/> with a
-    /// <see cref="LineOfDutyCase"/> whose <see cref="LineOfDutyCase.WorkflowState"/> is
+    /// <see cref="LineOfDutyCase"/> whose <see cref="LineOfDutyCase.CurrentWorkflowState"/> is
     /// <see cref="WorkflowState.Draft"/> results in the state machine's
     /// <see cref="LineOfDutyStateMachine.State"/> property reflecting <see cref="WorkflowState.Draft"/>.
     /// </summary>
@@ -1178,21 +1193,20 @@ public class LineOfDutyStateMachineTests
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        Assert.Equal(WorkflowState.MemberInformationEntry, sm.Case.WorkflowState);
+        Assert.Equal(WorkflowState.MemberInformationEntry, sm.Case.CurrentWorkflowState);
     }
 
     /// <summary>
     /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked with a
-    /// <see cref="CaseTransitionRequest"/> whose <see cref="CaseTransitionRequest.NewWorkflowState"/>
-    /// matches the expected target state of the transition.
+    /// <see cref="CaseTransitionRequest"/> whose <see cref="CaseTransitionRequest.HistoryEntries"/>
+    /// contains an entry with the expected target workflow state.
     /// </summary>
     /// <remarks>
     /// This test captures the actual <see cref="CaseTransitionRequest"/> passed to the data
     /// service mock using Moq's <c>Callback</c> mechanism. It then verifies that the request
-    /// specifies <see cref="WorkflowState.MemberInformationEntry"/> as the new workflow state,
+    /// contains a history entry for <see cref="WorkflowState.MemberInformationEntry"/>,
     /// confirming that the state machine correctly communicates the intended destination to
-    /// the persistence layer. This is critical because the server uses this field to update
-    /// the case's <see cref="LineOfDutyCase.WorkflowState"/> in the database.
+    /// the persistence layer via workflow state history entries.
     /// </remarks>
     [Fact]
     public async Task FireAsync_Draft_ToMemberInfo_SendsCorrectWorkflowState()
@@ -1206,7 +1220,7 @@ public class LineOfDutyStateMachineTests
             .Callback<int, CaseTransitionRequest, CancellationToken>((_, req, _) => capturedRequest = req)
             .ReturnsAsync(new CaseTransitionResponse
             {
-                Case = new LineOfDutyCase { Id = 1, WorkflowState = WorkflowState.MemberInformationEntry },
+                Case = BuildCase(WorkflowState.MemberInformationEntry),
                 HistoryEntries = []
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
@@ -1214,7 +1228,7 @@ public class LineOfDutyStateMachineTests
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
         Assert.NotNull(capturedRequest);
-        Assert.Equal(WorkflowState.MemberInformationEntry, capturedRequest.NewWorkflowState);
+        Assert.Contains(capturedRequest.HistoryEntries, e => e.WorkflowState == WorkflowState.MemberInformationEntry);
     }
 
     /// <summary>
@@ -1243,7 +1257,7 @@ public class LineOfDutyStateMachineTests
             .Callback<int, CaseTransitionRequest, CancellationToken>((_, req, _) => capturedRequest = req)
             .ReturnsAsync(new CaseTransitionResponse
             {
-                Case = new LineOfDutyCase { Id = 1, WorkflowState = WorkflowState.MemberInformationEntry },
+                Case = BuildCase(WorkflowState.MemberInformationEntry),
                 HistoryEntries = []
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
@@ -1265,7 +1279,7 @@ public class LineOfDutyStateMachineTests
     /// </summary>
     /// <remarks>
     /// The <c>SaveAndNotifyAsync</c> method wraps the persistence call in a try-catch block.
-    /// When the save fails, it restores the case's <see cref="LineOfDutyCase.WorkflowState"/>
+    /// When the save fails, the case's <see cref="LineOfDutyCase.CurrentWorkflowState"/>
     /// to the value it held before the transition attempt and sets <c>_lastTransitionResult</c>
     /// to a failure result. Because the Stateless library's internal state has already moved
     /// to the new state by the time the entry handler executes, the state machine's
@@ -1310,17 +1324,15 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that when persistence fails, the in-memory <see cref="LineOfDutyCase.WorkflowState"/>
-    /// on the state machine's <see cref="LineOfDutyStateMachine.Case"/> property is reverted
-    /// to the original state (Draft), ensuring the case object remains consistent even though
+    /// Verifies that when persistence fails, the in-memory <see cref="LineOfDutyCase.CurrentWorkflowState"/>
+    /// on the state machine's <see cref="LineOfDutyStateMachine.Case"/> property reflects
+    /// the original state (Draft), ensuring the case object remains consistent even though
     /// the Stateless library's internal state may have advanced.
     /// </summary>
     /// <remarks>
-    /// This is a critical safety check: the <c>SaveAndNotifyAsync</c> catch block explicitly
-    /// sets <c>_lineOfDutyCase.WorkflowState = previousState</c> to undo the state change
-    /// that was optimistically applied before the persistence attempt. Without this revert,
-    /// the case object would show the new state even though the database still holds the old
-    /// state, leading to a desynchronization between client and server state.
+    /// Since <see cref="LineOfDutyCase.CurrentWorkflowState"/> is derived from
+    /// <see cref="LineOfDutyCase.WorkflowStateHistories"/>, a failed save means no new
+    /// history entries were persisted, so the computed state remains at the original value.
     /// </remarks>
     [Fact]
     public async Task FireAsync_WhenPersistenceFails_CaseWorkflowStateIsReverted()
@@ -1331,7 +1343,7 @@ public class LineOfDutyStateMachineTests
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        Assert.Equal(WorkflowState.Draft, sm.Case.WorkflowState);
+        Assert.Equal(WorkflowState.Draft, sm.Case.CurrentWorkflowState);
     }
 
     #endregion

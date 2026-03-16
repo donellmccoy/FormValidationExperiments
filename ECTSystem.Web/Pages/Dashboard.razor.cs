@@ -75,8 +75,8 @@ public partial class Dashboard : ComponentBase
 
             // Load Action Required Cases (Mocking this for now by fetching cases in specific states)
             // In a real app, this would filter by the user's role and the case's workflow state
-            var actionRequiredResult = await CaseService.GetCasesAsync(
-                filter: $"WorkflowState eq '{WorkflowState.UnitCommanderReview}' or WorkflowState eq '{WorkflowState.MedicalTechnicianReview}'", 
+            var actionRequiredResult = await CaseService.GetCasesByCurrentStateAsync(
+                includeStates: [WorkflowState.UnitCommanderReview, WorkflowState.MedicalTechnicianReview],
                 top: 5, 
                 orderby: "Id desc", 
                 count: true);
@@ -85,14 +85,15 @@ public partial class Dashboard : ComponentBase
 
             // Load My Active Cases (Mocking this by fetching cases where MemberName contains the user's name)
             // In a real app, this would filter by MemberId or ServiceNumber matching the logged-in user
-            var myActiveCasesResult = await CaseService.GetCasesAsync(
-                filter: $"contains(MemberName, '{userName}') and WorkflowState ne '{WorkflowState.Completed}' and WorkflowState ne '{WorkflowState.Closed}' and WorkflowState ne '{WorkflowState.Cancelled}'",
+            var myActiveCasesResult = await CaseService.GetCasesByCurrentStateAsync(
+                excludeStates: [WorkflowState.Completed, WorkflowState.Closed, WorkflowState.Cancelled],
+                filter: $"contains(MemberName, '{userName}')",
                 top: 1,
                 count: true);
             myActiveCasesCount = myActiveCasesResult.Count;
 
-            var completedCasesResult = await CaseService.GetCasesAsync(
-                filter: $"WorkflowState eq '{WorkflowState.Completed}'",
+            var completedCasesResult = await CaseService.GetCasesByCurrentStateAsync(
+                includeStates: [WorkflowState.Completed],
                 top: 1,
                 count: true);
             completedCasesCount = completedCasesResult.Count;

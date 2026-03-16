@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Extensions;
@@ -25,5 +26,39 @@ public static class LineOfDutyCaseQueryExtensions
             .Include(c => c.WorkflowStateHistories)
             .Include(c => c.WitnessStatements)
             .Include(c => c.AuditComments);
+    }
+
+    /// <summary>
+    /// Filters cases whose current workflow state (the most recent <see cref="WorkflowStateHistory"/>
+    /// entry by <c>CreatedDate</c> then <c>Id</c>) is one of the specified <paramref name="states"/>.
+    /// Translates to a SQL subquery and is fully composable with additional OData query options.
+    /// </summary>
+    public static IQueryable<LineOfDutyCase> WhereCurrentWorkflowStateIn(
+        this IQueryable<LineOfDutyCase> query,
+        params WorkflowState[] states)
+    {
+        return query.Where(c => states.Contains(
+            c.WorkflowStateHistories
+                .OrderByDescending(h => h.CreatedDate)
+                .ThenByDescending(h => h.Id)
+                .Select(h => h.WorkflowState)
+                .FirstOrDefault()));
+    }
+
+    /// <summary>
+    /// Filters cases whose current workflow state (the most recent <see cref="WorkflowStateHistory"/>
+    /// entry by <c>CreatedDate</c> then <c>Id</c>) is NOT one of the specified <paramref name="states"/>.
+    /// Translates to a SQL subquery and is fully composable with additional OData query options.
+    /// </summary>
+    public static IQueryable<LineOfDutyCase> WhereCurrentWorkflowStateNotIn(
+        this IQueryable<LineOfDutyCase> query,
+        params WorkflowState[] states)
+    {
+        return query.Where(c => !states.Contains(
+            c.WorkflowStateHistories
+                .OrderByDescending(h => h.CreatedDate)
+                .ThenByDescending(h => h.Id)
+                .Select(h => h.WorkflowState)
+                .FirstOrDefault()));
     }
 }

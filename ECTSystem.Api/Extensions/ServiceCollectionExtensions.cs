@@ -160,6 +160,12 @@ public static class ServiceCollectionExtensions
         casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
         casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
 
+        // Bound collection function: GET /odata/Cases/ByCurrentState(includeStates='...',excludeStates='...')
+        var byCurrentState = casesEntitySet.EntityType.Collection.Function("ByCurrentState")
+            .ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+        byCurrentState.Parameter<string>("includeStates").Optional();
+        byCurrentState.Parameter<string>("excludeStates").Optional();
+
         return odataBuilder.GetEdmModel();
     }
 }

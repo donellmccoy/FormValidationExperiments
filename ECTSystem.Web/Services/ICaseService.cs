@@ -1,3 +1,4 @@
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Radzen;
 
@@ -27,6 +28,30 @@ public interface ICaseService
     Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queries LOD cases filtered by their current workflow state using the server-side
+    /// <c>ByCurrentState</c> OData function. The current state is computed from the most recent
+    /// <see cref="WorkflowStateHistory"/> entry. Standard OData query options compose on top.
+    /// </summary>
+    /// <param name="includeStates">Workflow states to include (only cases in these states are returned), or <c>null</c> to skip include filtering.</param>
+    /// <param name="excludeStates">Workflow states to exclude (cases in these states are omitted), or <c>null</c> to skip exclude filtering.</param>
+    /// <param name="filter">An additional OData <c>$filter</c> expression to compose on top of the state filter, or <c>null</c>.</param>
+    /// <param name="top">The maximum number of cases to return (<c>$top</c>), or <c>null</c> for the server default.</param>
+    /// <param name="skip">The number of cases to skip for paging (<c>$skip</c>), or <c>null</c> for no offset.</param>
+    /// <param name="orderby">An OData <c>$orderby</c> expression, or <c>null</c> for default ordering.</param>
+    /// <param name="count">If <c>true</c>, requests an inline count of total matching records for paging UI.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>An <see cref="ODataServiceResult{T}"/> containing the matching cases and optional total count.</returns>
+    Task<ODataServiceResult<LineOfDutyCase>> GetCasesByCurrentStateAsync(
+        WorkflowState[]? includeStates = null,
+        WorkflowState[]? excludeStates = null,
+        string? filter = null,
+        int? top = null,
+        int? skip = null,
+        string? orderby = null,
+        bool? count = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

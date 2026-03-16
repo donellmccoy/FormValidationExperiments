@@ -75,7 +75,6 @@ public static class EctDbSeeder
             var finding = PickRandom(rng, LineOfDutyFinding.InLineOfDuty, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.ExistingPriorToServiceNotAggravated);
             var wasUnderInfluence = rng.Next(100) < 15;
             var isInterim = processType == ProcessType.Informal && rng.Next(100) < 40;
-            var workflowState = WorkflowState.MemberInformationEntry;
             var rank = Ranks[rng.Next(Ranks.Length)];
             var (firstName, lastName) = Names[rng.Next(Names.Length)];
             var memberName = $"{firstName} {MiddleInitials[rng.Next(MiddleInitials.Length)]}. {lastName}";
@@ -87,7 +86,6 @@ public static class EctDbSeeder
                 CaseId = $"{dateKey}-{currentCount:D3}",
                 MemberId = members[i % members.Count].Id,
                 ProcessType = processType,
-                WorkflowState = workflowState,
                 Component = component,
                 MemberName = memberName,
                 MemberRank = rank,

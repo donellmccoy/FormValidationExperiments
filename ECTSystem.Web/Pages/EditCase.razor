@@ -1921,9 +1921,9 @@ else
                                                         </Template>
                                                     </RadzenDataGridColumn>
                                                     <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" />
-                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="WorkflowState" Title="Status">
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CurrentWorkflowState" Title="Status">
                                                         <Template Context="lodCase">
-                                                            @lodCase.WorkflowState.ToDisplayString()
+                                                            @lodCase.CurrentWorkflowState.ToDisplayString()
                                                         </Template>
                                                     </RadzenDataGridColumn>
                                                     <RadzenDataGridColumn TItem="LineOfDutyCase" Property="InitiationDate" Title="Created" FormatString="{0:yyyy-MM-dd}" Width="120px" />

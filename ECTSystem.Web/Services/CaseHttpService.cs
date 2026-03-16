@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using PanoramicData.OData.Client;
 using Radzen;
@@ -31,6 +32,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         .GetProperties(BindingFlags.Public | BindingFlags.Instance)
         .Where(p =>
         {
+            if (!p.CanWrite) return false;
             var t = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
             return t.IsPrimitive || t == typeof(string) || t.IsEnum
                 || t == typeof(DateTime) || t == typeof(DateTimeOffset)
@@ -98,6 +100,39 @@ public class CaseHttpService : ODataServiceBase, ICaseService
     }
 
     /// <inheritdoc />
+    public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesByCurrentStateAsync(
+        WorkflowState[]? includeStates = null,
+        WorkflowState[]? excludeStates = null,
+        string? filter = null,
+        int? top = null,
+        int? skip = null,
+        string? orderby = null,
+        bool? count = null,
+        CancellationToken cancellationToken = default)
+    {
+        var includeCsv = includeStates is { Length: > 0 }
+            ? string.Join(",", includeStates)
+            : "";
+        var excludeCsv = excludeStates is { Length: > 0 }
+            ? string.Join(",", excludeStates)
+            : "";
+
+        var basePath = $"odata/Cases/ByCurrentState(includeStates='{includeCsv}',excludeStates='{excludeCsv}')";
+        var url = BuildNavigationPropertyUrl(basePath, filter, top, skip, orderby, count);
+
+        var httpResponse = await HttpClient.GetAsync(url, cancellationToken);
+        httpResponse.EnsureSuccessStatusCode();
+
+        var data = await httpResponse.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(ODataJsonOptions, cancellationToken);
+
+        return new ODataServiceResult<LineOfDutyCase>
+        {
+            Value = data?.Value ?? [],
+            Count = data?.Count ?? 0
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default)
     {
         var query = Client.For<LineOfDutyCase>("Cases")
@@ -133,15 +168,6 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentNullException.ThrowIfNull(request);
 
-        var patchContent = JsonContent.Create(
-            new { WorkflowState = request.NewWorkflowState },
-            options: ODataJsonOptions);
-
-        var patchResponse = await HttpClient.PatchAsync($"odata/Cases({caseId})", patchContent, cancellationToken);
-        patchResponse.EnsureSuccessStatusCode();
-
-        var updatedCase = (await patchResponse.Content.ReadFromJsonAsync<LineOfDutyCase>(ODataJsonOptions, cancellationToken))!;
-
         var savedEntries = new List<WorkflowStateHistory>(request.HistoryEntries.Count);
 
         foreach (var entry in request.HistoryEntries)
@@ -156,6 +182,10 @@ public class CaseHttpService : ODataServiceBase, ICaseService
                 savedEntries.Add(saved);
             }
         }
+
+        // Re-fetch the case with expanded WorkflowStateHistories so
+        // CurrentWorkflowState computes correctly from the latest history.
+        var updatedCase = await GetCaseAsync(caseId.ToString(), cancellationToken);
 
         return new CaseTransitionResponse
         {

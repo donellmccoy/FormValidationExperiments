@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using ECTSystem.Api.Extensions;
@@ -336,6 +337,56 @@ public class CasesController : ODataControllerBase
         LoggingService.CaseDeleted(key);
 
         return NoContent();
+    }
+
+    // ── Collection-bound OData functions ───────────────────────────────
+
+    /// <summary>
+    /// Returns cases filtered by their current workflow state — the most recent
+    /// <see cref="WorkflowStateHistory"/> entry by <c>CreatedDate</c>/<c>Id</c>.
+    /// Accepts comma-separated state names in <paramref name="includeStates"/> (include mode)
+    /// or <paramref name="excludeStates"/> (exclude mode). Standard OData query options
+    /// (<c>$filter</c>, <c>$orderby</c>, <c>$top</c>, <c>$skip</c>, <c>$count</c>) compose on top.
+    /// OData route: GET /odata/Cases/ByCurrentState(includeStates='...',excludeStates='...')
+    /// </summary>
+    [HttpGet]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
+    public async Task<IActionResult> ByCurrentState(
+        [FromODataUri] string includeStates = "",
+        [FromODataUri] string excludeStates = "",
+        CancellationToken ct = default)
+    {
+        LoggingService.QueryingCases();
+
+        var context = await CreateContextAsync(ct);
+
+        IQueryable<LineOfDutyCase> query = context.Cases.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(includeStates))
+        {
+            var states = ParseWorkflowStates(includeStates);
+            query = query.WhereCurrentWorkflowStateIn(states);
+        }
+
+        if (!string.IsNullOrWhiteSpace(excludeStates))
+        {
+            var states = ParseWorkflowStates(excludeStates);
+            query = query.WhereCurrentWorkflowStateNotIn(states);
+        }
+
+        return Ok(query);
+    }
+
+    /// <summary>
+    /// Parses a comma-separated string of <see cref="WorkflowState"/> names into an array.
+    /// Invalid names are silently skipped.
+    /// </summary>
+    private static WorkflowState[] ParseWorkflowStates(string csv)
+    {
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(s => Enum.TryParse<WorkflowState>(s, ignoreCase: true, out _))
+            .Select(s => Enum.Parse<WorkflowState>(s, ignoreCase: true))
+            .ToArray();
     }
 
     // ── Collection navigation properties ────────────────────────────────

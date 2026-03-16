@@ -12,7 +12,6 @@ public class LineOfDutyCase : AuditableEntity
     // Basic Case Information
     public string CaseId { get; set; } = string.Empty;
     public ProcessType ProcessType { get; set; } // Informal or Formal
-    public WorkflowState WorkflowState { get; set; } = WorkflowState.Draft;
     public ServiceComponent Component { get; set; } // RegAF, AFR, etc.
     public string MemberName { get; set; } = string.Empty;
     public string MemberRank { get; set; } = string.Empty;
@@ -102,6 +101,18 @@ public class LineOfDutyCase : AuditableEntity
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
     public ICollection<LineOfDutyAuthority> Authorities { get; set; } = new HashSet<LineOfDutyAuthority>();
     public ICollection<WorkflowStateHistory> WorkflowStateHistories { get; set; } = new HashSet<WorkflowStateHistory>();
+
+    /// <summary>
+    /// Derives the current workflow state from the most recent <see cref="WorkflowStateHistory"/>
+    /// entry by <see cref="AuditableEntity.CreatedDate"/>, with <see cref="WorkflowStateHistory.Id"/>
+    /// as a tiebreaker. Returns <see cref="WorkflowState.Draft"/> if no history exists.
+    /// </summary>
+    public WorkflowState CurrentWorkflowState =>
+        WorkflowStateHistories?
+            .OrderByDescending(h => h.CreatedDate)
+            .ThenByDescending(h => h.Id)
+            .Select(h => h.WorkflowState)
+            .FirstOrDefault() ?? WorkflowState.Draft;
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }

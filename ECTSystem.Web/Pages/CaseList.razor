@@ -100,9 +100,9 @@ else
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="85px" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit"  />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="WorkflowState" Title="Status">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Status" Sortable="false" Filterable="false">
             <Template Context="lodCase">
-                @lodCase.WorkflowState.ToDisplayString()
+                @lodCase.CurrentWorkflowState.ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">

@@ -1,16 +1,12 @@
-using ECTSystem.Shared.Enums;
-
 namespace ECTSystem.Shared.Models;
 
 /// <summary>
-/// Request payload for atomically transitioning a LOD case to a new workflow state
-/// and persisting the associated history entries in a single database transaction.
+/// Request payload for persisting workflow state history entries during a LOD case
+/// state transition. The current workflow state is derived from the most recent
+/// history entry — no explicit state property is needed.
 /// </summary>
 public class CaseTransitionRequest
 {
-    /// <summary>The new workflow state the case is transitioning to.</summary>
-    public WorkflowState NewWorkflowState { get; set; }
-
     /// <summary>The workflow state history entries to persist alongside the state change.</summary>
     public List<WorkflowStateHistory> HistoryEntries { get; set; } = [];
 }

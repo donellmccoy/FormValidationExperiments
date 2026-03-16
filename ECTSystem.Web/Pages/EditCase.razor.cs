@@ -281,7 +281,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (IsNewCase)
         {
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.CurrentWorkflowState ?? WorkflowState.Draft);
 
             TakeSnapshots();
         }
@@ -338,7 +338,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             TakeSnapshots();
 
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState);
 
             // Run bookmark check and previous cases load concurrently — they're independent
             var bookmarkTask = CheckBookmarkAsync();
@@ -379,7 +379,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 Duration = 5000
             });
 
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.CurrentWorkflowState ?? WorkflowState.Draft);
         }
         finally
         {
@@ -1031,7 +1031,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool IsTabDisabled(int tabIndex)
     {
-        return WorkflowTabHelper.IsTabDisabled(tabIndex, _lineOfDutyCase?.WorkflowState ?? WorkflowState.Draft);
+        return WorkflowTabHelper.IsTabDisabled(tabIndex, _lineOfDutyCase?.CurrentWorkflowState ?? WorkflowState.Draft);
     }
 
     #endregion

@@ -1,3 +1,4 @@
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Shared.Extensions;
@@ -21,27 +22,29 @@ public static class LineOfDutyExtensions
 
     /// <summary>
     /// Creates and adds an <see cref="Enums.TransitionAction.Enter"/> history entry
-    /// for the case's current <see cref="LineOfDutyCase.WorkflowState"/>.
+    /// for the specified <paramref name="state"/>.
     /// </summary>
     /// <param name="lodCase">The LOD case to add the history entry to.</param>
+    /// <param name="state">The workflow state to record in the history entry.</param>
     /// <param name="startDate">
     /// The start date for the workflow step. Defaults to <see cref="AuditableEntity.CreatedDate"/> if not specified.
     /// </param>
-    public static void AddInitialHistory(this LineOfDutyCase lodCase, DateTime? startDate = null)
+    public static void AddInitialHistory(this LineOfDutyCase lodCase, WorkflowState state, DateTime? startDate = null)
     {
-        lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(lodCase.Id, lodCase.WorkflowState, startDate ?? lodCase.CreatedDate));
+        lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(lodCase.Id, state, startDate ?? lodCase.CreatedDate));
     }
 
     /// <summary>
     /// Creates and adds a <see cref="Enums.TransitionAction.Signed"/> history entry
-    /// for the case's current <see cref="LineOfDutyCase.WorkflowState"/>.
+    /// for the specified <paramref name="state"/>.
     /// </summary>
     /// <param name="lodCase">The LOD case to add the history entry to.</param>
+    /// <param name="state">The workflow state to record in the history entry.</param>
     /// <param name="stepStartDate">The date the current workflow step started.</param>
     /// <param name="signedDate">The date the step was digitally signed.</param>
     /// <param name="signedBy">The name or identifier of the person who signed.</param>
-    public static void AddSignedHistory(this LineOfDutyCase lodCase, DateTime? stepStartDate, DateTime? signedDate, string signedBy)
+    public static void AddSignedHistory(this LineOfDutyCase lodCase, WorkflowState state, DateTime? stepStartDate, DateTime? signedDate, string signedBy)
     {
-        lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateSigned(lodCase.Id, lodCase.WorkflowState, stepStartDate, signedDate, signedBy));
+        lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateSigned(lodCase.Id, state, stepStartDate, signedDate, signedBy));
     }
 }

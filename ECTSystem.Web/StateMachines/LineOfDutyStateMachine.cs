@@ -1,6 +1,5 @@
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
-using ECTSystem.Web.Extensions;
 using ECTSystem.Web.Helpers;
 using ECTSystem.Web.Services;
 using ECTSystem.Web.ViewModels;
@@ -99,7 +98,7 @@ internal class LineOfDutyStateMachine
 
     /// <summary>
     /// Shared helper invoked by every entry handler. Stores the incoming case reference,
-    /// applies the workflow state change, records history entries via
+    /// records history entries via
     /// <see cref="WorkflowStateHistoryFactory"/>, and persists the case.
     /// <para>
     /// For <b>forward</b> transitions: creates a <c>Completed</c> history entry for the
@@ -110,8 +109,7 @@ internal class LineOfDutyStateMachine
     /// state from the source down to <paramref name="targetState"/> + 1 (marking them as
     /// "never happened"), plus an <c>InProgress</c> entry for <paramref name="targetState"/>.
     /// </para>
-    /// If the save fails, all newly added history entries are removed and the in-memory
-    /// state is reverted.
+    /// If the save fails, the error is captured and no history entries are persisted.
     /// </summary>
     /// <param name="lineOfDutyCase">The LOD case received from the parameterized trigger.</param>
     /// <param name="targetState">The <see cref="WorkflowState"/> the case is transitioning to.</param>
@@ -122,9 +120,7 @@ internal class LineOfDutyStateMachine
     {
         _lineOfDutyCase = lineOfDutyCase;
 
-        var previousState = _lineOfDutyCase.WorkflowState;
-
-        _lineOfDutyCase.UpdateWorkflowState(targetState);
+        var previousState = _lineOfDutyCase.CurrentWorkflowState;
 
         // Build the list of history entries to persist.
         var entriesToSave = new List<WorkflowStateHistory>();
@@ -156,12 +152,10 @@ internal class LineOfDutyStateMachine
 
         try
         {
-            // Atomically persist both the WorkflowState change and the history
-            // entries in a single server-side transaction. This prevents the case
-            // from being left in an inconsistent state if the history write fails.
+            // Persist the history entries. The current workflow state is derived
+            // from the most recent history entry — no separate PATCH needed.
             var request = new CaseTransitionRequest
             {
-                NewWorkflowState = targetState,
                 HistoryEntries = entriesToSave
             };
 
@@ -169,25 +163,16 @@ internal class LineOfDutyStateMachine
 
             saved = response.Case;
 
-            // Attach the server-returned entries (with proper IDs) to the saved case
-            // so the sidebar can render them immediately without a re-fetch.
-            foreach (var entry in response.HistoryEntries)
-            {
-                saved.WorkflowStateHistories.Add(entry);
-            }
-
             _lineOfDutyCase = saved;
         }
         catch (Exception ex)
         {
-            _lineOfDutyCase.WorkflowState = previousState;
-
             _lastTransitionResult = StateMachineResult.Fail(ex.Message);
 
             return;
         }
 
-        _lastTransitionResult = StateMachineResult.Ok(saved, WorkflowTabHelper.GetTabIndexForState(saved.WorkflowState));
+        _lastTransitionResult = StateMachineResult.Ok(saved, WorkflowTabHelper.GetTabIndexForState(saved.CurrentWorkflowState));
     }
 
     #endregion
@@ -197,13 +182,13 @@ internal class LineOfDutyStateMachine
     /// <summary>
     /// Initializes a new <see cref="LineOfDutyStateMachine"/> for the specified LOD case.
     /// The state machine starts in <paramref name="lineOfDutyCase"/>'s current
-    /// <see cref="LineOfDutyCase.WorkflowState"/>, registers
-    /// <see cref="HandleTransitionAsync"/> as the post-transition callback for
+    /// workflow state (derived from the most recent <see cref="WorkflowStateHistory"/> entry),
+    /// registers <see cref="HandleTransitionAsync"/> as the post-transition callback for
     /// persistence, and configures all permitted state transitions via <see cref="Configure"/>.
     /// </summary>
     /// <param name="lineOfDutyCase">
     /// The LOD case to manage. Must not be <c>null</c>. The case's
-    /// <see cref="LineOfDutyCase.WorkflowState"/> determines the initial state.
+    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> determines the initial state.
     /// </param>
     /// <param name="dataService">
     /// The data service used to persist history entries, save case state, and
@@ -214,7 +199,7 @@ internal class LineOfDutyStateMachine
         _lineOfDutyCase = lineOfDutyCase;
         _dataService = dataService;
 
-        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.WorkflowState, FiringMode.Queued);
+        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.CurrentWorkflowState, FiringMode.Queued);
 
         _returnTrigger = _sm.SetTriggerParameters<LineOfDutyCase, WorkflowState>(LineOfDutyTrigger.Return);
 
@@ -1014,7 +999,7 @@ internal class LineOfDutyStateMachine
 
         await _sm.FireAsync(trigger);
 
-        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState));
     }
 
     /// <summary>
@@ -1042,7 +1027,7 @@ internal class LineOfDutyStateMachine
 
         await _sm.FireAsync(paramTrigger, newCase);
 
-        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState));
     }
 
     /// <summary>
@@ -1062,7 +1047,7 @@ internal class LineOfDutyStateMachine
 
         await _sm.FireAsync(_returnTrigger, lodCase, targetState);
 
-        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.WorkflowState));
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState));
     }
 
     /// <summary>

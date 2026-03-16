@@ -1,27 +1,19 @@
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
-using ECTSystem.Web.Extensions;
 using Xunit;
 
 namespace ECTSystem.Tests.Extensions;
 
 /// <summary>
-/// Unit tests for the <see cref="Shared.Extensions.LineOfDutyExtensions"/> (Shared) and
-/// <see cref="Web.Extensions.LineOfDutyExtensions"/> (Web) extension methods that manage
-/// workflow state history entries and state transitions on <see cref="LineOfDutyCase"/>.
+/// Unit tests for the <see cref="LineOfDutyExtensions"/> extension methods that manage
+/// workflow state history entries on <see cref="LineOfDutyCase"/>.
 /// </summary>
 /// <remarks>
-/// <para>
 /// The Shared extensions provide three methods for managing workflow history:
-/// <see cref="Shared.Extensions.LineOfDutyExtensions.AddHistoryEntry"/>,
-/// <see cref="Shared.Extensions.LineOfDutyExtensions.AddInitialHistory"/>, and
-/// <see cref="Shared.Extensions.LineOfDutyExtensions.AddSignedHistory"/>.
-/// </para>
-/// <para>
-/// The Web extension provides <see cref="Web.Extensions.LineOfDutyExtensions.UpdateWorkflowState"/>
-/// for conditionally updating the case workflow state with timestamp tracking.
-/// </para>
+/// <see cref="LineOfDutyExtensions.AddHistoryEntry"/>,
+/// <see cref="LineOfDutyExtensions.AddInitialHistory"/>, and
+/// <see cref="LineOfDutyExtensions.AddSignedHistory"/>.
 /// </remarks>
 public class LineOfDutyExtensionsTests
 {
@@ -99,11 +91,10 @@ public class LineOfDutyExtensionsTests
         var lodCase = new LineOfDutyCase
         {
             Id = 42,
-            WorkflowState = WorkflowState.MemberInformationEntry,
             CreatedDate = createdDate
         };
 
-        lodCase.AddInitialHistory();
+        lodCase.AddInitialHistory(WorkflowState.MemberInformationEntry);
 
         Assert.Single(lodCase.WorkflowStateHistories);
         var entry = lodCase.WorkflowStateHistories.First();
@@ -126,11 +117,10 @@ public class LineOfDutyExtensionsTests
         var lodCase = new LineOfDutyCase
         {
             Id = 42,
-            WorkflowState = WorkflowState.Draft,
             CreatedDate = createdDate
         };
 
-        lodCase.AddInitialHistory(explicitStart);
+        lodCase.AddInitialHistory(WorkflowState.Draft, explicitStart);
 
         var entry = lodCase.WorkflowStateHistories.First();
         Assert.Equal(explicitStart, entry.StartDate);
@@ -149,11 +139,10 @@ public class LineOfDutyExtensionsTests
         var signedDate = new DateTime(2024, 3, 5, 14, 30, 0, DateTimeKind.Utc);
         var lodCase = new LineOfDutyCase
         {
-            Id = 10,
-            WorkflowState = WorkflowState.UnitCommanderReview
+            Id = 10
         };
 
-        lodCase.AddSignedHistory(stepStart, signedDate, "Col Johnson");
+        lodCase.AddSignedHistory(WorkflowState.UnitCommanderReview, stepStart, signedDate, "Col Johnson");
 
         Assert.Single(lodCase.WorkflowStateHistories);
         var entry = lodCase.WorkflowStateHistories.First();
@@ -174,11 +163,10 @@ public class LineOfDutyExtensionsTests
     {
         var lodCase = new LineOfDutyCase
         {
-            Id = 5,
-            WorkflowState = WorkflowState.WingJudgeAdvocateReview
+            Id = 5
         };
 
-        lodCase.AddSignedHistory(null, null, "Maj Smith");
+        lodCase.AddSignedHistory(WorkflowState.WingJudgeAdvocateReview, null, null, "Maj Smith");
 
         var entry = lodCase.WorkflowStateHistories.First();
         Assert.Null(entry.StartDate);
@@ -186,47 +174,4 @@ public class LineOfDutyExtensionsTests
         Assert.Equal("Maj Smith", entry.SignedBy);
     }
 
-    // ── UpdateWorkflowState Tests (Web Extension) ───────────────────────────
-
-    /// <summary>
-    /// Verifies that <see cref="Web.Extensions.LineOfDutyExtensions.UpdateWorkflowState"/>
-    /// updates the workflow state and sets <see cref="AuditableEntity.ModifiedDate"/> when
-    /// the new state differs from the current state.
-    /// </summary>
-    [Fact]
-    public void UpdateWorkflowState_DifferentState_UpdatesStateAndModifiedDate()
-    {
-        var lodCase = new LineOfDutyCase
-        {
-            WorkflowState = WorkflowState.Draft,
-            ModifiedDate = DateTime.MinValue
-        };
-        var beforeUpdate = DateTime.UtcNow;
-
-        lodCase.UpdateWorkflowState(WorkflowState.MemberInformationEntry);
-
-        Assert.Equal(WorkflowState.MemberInformationEntry, lodCase.WorkflowState);
-        Assert.True(lodCase.ModifiedDate >= beforeUpdate, "ModifiedDate should be set to approximately now");
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="Web.Extensions.LineOfDutyExtensions.UpdateWorkflowState"/>
-    /// does not update <see cref="AuditableEntity.ModifiedDate"/> when the new state is the
-    /// same as the current state.
-    /// </summary>
-    [Fact]
-    public void UpdateWorkflowState_SameState_DoesNotUpdateModifiedDate()
-    {
-        var originalDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var lodCase = new LineOfDutyCase
-        {
-            WorkflowState = WorkflowState.UnitCommanderReview,
-            ModifiedDate = originalDate
-        };
-
-        lodCase.UpdateWorkflowState(WorkflowState.UnitCommanderReview);
-
-        Assert.Equal(WorkflowState.UnitCommanderReview, lodCase.WorkflowState);
-        Assert.Equal(originalDate, lodCase.ModifiedDate);
-    }
 }
