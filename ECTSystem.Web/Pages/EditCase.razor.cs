@@ -258,6 +258,7 @@ public partial class EditCase : ComponentBase, IDisposable
     private ODataEnumerable<WorkflowStateHistory> _trackingData;
     private int _trackingCount;
     private int _trackingLoadGeneration;
+    private bool _trackingPreloaded;
 
     private async Task RefreshCaseHistoryGrid()
     {
@@ -339,6 +340,13 @@ public partial class EditCase : ComponentBase, IDisposable
             TakeSnapshots();
 
             _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState);
+
+            // Pre-populate tracking data from $expand to avoid a duplicate HTTP request
+            // when the tracking tab is first opened
+            if (_lineOfDutyCase.WorkflowStateHistories is { Count: > 0 })
+            {
+                _trackingPreloaded = true;
+            }
 
             // Run bookmark check and previous cases load concurrently — they're independent
             var bookmarkTask = CheckBookmarkAsync();
@@ -544,6 +552,29 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (_lineOfDutyCase?.Id is null or 0)
         {
+            return;
+        }
+
+        // On the first grid load, use the histories already fetched via $expand
+        // to avoid a duplicate HTTP request
+        if (_trackingPreloaded && string.IsNullOrEmpty(_trackingSearchText))
+        {
+            _trackingPreloaded = false;
+            var allHistories = _lineOfDutyCase.WorkflowStateHistories
+                .OrderByDescending(h => h.CreatedDate)
+                .ThenByDescending(h => h.Id)
+                .ToList();
+
+            _trackingCount = allHistories.Count;
+
+            IEnumerable<WorkflowStateHistory> paged = allHistories;
+            if (args.Skip.HasValue) paged = paged.Skip(args.Skip.Value);
+            if (args.Top.HasValue) paged = paged.Take(args.Top.Value);
+
+            _trackingData = paged.ToList().AsODataEnumerable();
+            _selectedTrackingEntry = _trackingData?.FirstOrDefault() is { } first
+                ? new List<WorkflowStateHistory> { first }
+                : null;
             return;
         }
 

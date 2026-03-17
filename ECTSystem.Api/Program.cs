@@ -46,7 +46,45 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
+            app.UseDeveloperExceptionPage();
         }
+        else
+        {
+            app.UseExceptionHandler(errorApp =>
+            {
+                errorApp.Run(async context =>
+                {
+                    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                    var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
+                    if (exceptionFeature?.Error is not null)
+                    {
+                        logger.LogError(exceptionFeature.Error, "Unhandled exception on {Method} {Path}",
+                            context.Request.Method, context.Request.Path);
+                    }
+
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    context.Response.ContentType = "application/problem+json";
+                    await context.Response.WriteAsJsonAsync(new
+                    {
+                        type = "https://tools.ietf.org/html/rfc7807",
+                        title = "An unexpected error occurred",
+                        status = 500
+                    });
+                });
+            });
+        }
+
+        // Security response headers
+        app.Use(async (context, next) =>
+        {
+            context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            context.Response.Headers["X-Frame-Options"] = "DENY";
+            context.Response.Headers["X-XSS-Protection"] = "0";
+            context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'";
+            await next();
+        });
 
         app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<OperationCancelledMiddleware>();

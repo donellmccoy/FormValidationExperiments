@@ -29,6 +29,28 @@ public class DocumentFilesController : ControllerBase
         ".txt", ".rtf"
     };
 
+    /// <summary>
+    /// Maps file extensions to their expected magic byte signatures.
+    /// Extensions not listed here (e.g. .txt, .rtf) are validated by extension only.
+    /// </summary>
+    private static readonly Dictionary<string, byte[][]> FileSignatures = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { ".pdf",  [new byte[] { 0x25, 0x50, 0x44, 0x46 }] },                         // %PDF
+        { ".jpg",  [new byte[] { 0xFF, 0xD8, 0xFF }] },                                  // JPEG
+        { ".jpeg", [new byte[] { 0xFF, 0xD8, 0xFF }] },                                  // JPEG
+        { ".png",  [new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }] },   // PNG
+        { ".gif",  [new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 },                   // GIF87a
+                    new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }] },                // GIF89a
+        { ".tif",  [new byte[] { 0x49, 0x49, 0x2A, 0x00 },                               // TIFF LE
+                    new byte[] { 0x4D, 0x4D, 0x00, 0x2A }] },                            // TIFF BE
+        { ".tiff", [new byte[] { 0x49, 0x49, 0x2A, 0x00 },
+                    new byte[] { 0x4D, 0x4D, 0x00, 0x2A }] },
+        { ".doc",  [new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 }] },   // OLE2
+        { ".xls",  [new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 }] },   // OLE2
+        { ".docx", [new byte[] { 0x50, 0x4B, 0x03, 0x04 }] },                            // ZIP (OOXML)
+        { ".xlsx", [new byte[] { 0x50, 0x4B, 0x03, 0x04 }] },                            // ZIP (OOXML)
+    };
+
     /// <summary>Factory for creating scoped <see cref="EctDbContext"/> instances per request.</summary>
     private readonly IDbContextFactory<EctDbContext> _contextFactory;
 
@@ -87,6 +109,8 @@ public class DocumentFilesController : ControllerBase
         }
 
         _loggingService.DownloadingDocument(key, doc.LineOfDutyCaseId);
+
+        Response.Headers.ContentDisposition = $"attachment; filename=\"{doc.FileName}\"";
         return File(doc.Content, doc.ContentType, doc.FileName);
     }
 
@@ -127,6 +151,20 @@ public class DocumentFilesController : ControllerBase
             {
                 _loggingService.InvalidUpload(caseId);
                 return BadRequest($"File '{f.FileName}' exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
+            }
+
+            // Validate magic bytes match the declared extension
+            if (FileSignatures.TryGetValue(extension, out var signatures))
+            {
+                using var headerStream = f.OpenReadStream();
+                var headerBytes = new byte[8];
+                var bytesRead = await headerStream.ReadAsync(headerBytes.AsMemory(0, headerBytes.Length), ct);
+
+                if (!signatures.Any(sig => sig.Length <= bytesRead && headerBytes.AsSpan(0, sig.Length).SequenceEqual(sig)))
+                {
+                    _loggingService.InvalidUpload(caseId);
+                    return BadRequest($"File '{f.FileName}' content does not match the '{extension}' file type.");
+                }
             }
         }
 
