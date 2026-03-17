@@ -40,7 +40,6 @@ public class CasesController : ODataControllerBase
     /// $top, $skip, and $count automatically against the IQueryable.
     /// </summary>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         LoggingService.QueryingCases();
@@ -51,7 +50,8 @@ public class CasesController : ODataControllerBase
     }
 
     /// <summary>
-    /// Returns a single LOD case by key with all navigation properties.
+    /// Returns a single LOD case by key. OData $expand controls which
+    /// navigation properties are loaded — only the requested ones are fetched.
     /// OData route: GET /odata/Cases({key})
     /// Supports conditional GET via ETag (RowVersion) — returns 304 when unmodified.
     /// </summary>
@@ -60,18 +60,22 @@ public class CasesController : ODataControllerBase
     {
         LoggingService.RetrievingCase(key);
 
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+        var context = await CreateContextAsync(ct);
 
-        var lodCase = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstOrDefaultAsync(c => c.Id == key, ct);
+        // Lightweight ETag check — only reads RowVersion
+        var rowVersion = await context.Cases
+            .Where(c => c.Id == key)
+            .Select(c => c.RowVersion)
+            .FirstOrDefaultAsync(ct);
 
-        if (lodCase is null)
+        if (rowVersion is null)
         {
             LoggingService.CaseNotFound(key);
 
             return NotFound();
         }
 
-        var etag = $"\"{ Convert.ToBase64String(lodCase.RowVersion)}\"";
+        var etag = $"\"{Convert.ToBase64String(rowVersion)}\"";
 
         if (Request.Headers.IfNoneMatch.ToString() == etag)
         {
@@ -86,7 +90,13 @@ public class CasesController : ODataControllerBase
 
         Response.Headers["X-Case-IsBookmarked"] = isBookmarked.ToString().ToLowerInvariant();
 
-        return Ok(lodCase);
+        // Return IQueryable — OData middleware applies $expand/$select from the client request
+        var query = context.Cases
+            .AsSplitQuery()
+            .AsNoTracking()
+            .Where(c => c.Id == key);
+
+        return Ok(SingleResult.Create(query));
     }
 
     /// <summary>

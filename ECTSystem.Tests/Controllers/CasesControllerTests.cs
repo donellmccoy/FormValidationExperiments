@@ -135,7 +135,8 @@ public class CasesControllerTests : ControllerTestBase
         var result = await _sut.Get(1);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var returned = Assert.IsType<LineOfDutyCase>(ok.Value);
+        var singleResult = Assert.IsType<SingleResult<LineOfDutyCase>>(ok.Value);
+        var returned = singleResult.Queryable.Single();
         Assert.Equal(1, returned.Id);
     }
 

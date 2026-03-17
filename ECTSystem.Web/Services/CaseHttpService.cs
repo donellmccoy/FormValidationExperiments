@@ -70,6 +70,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         int? top = null,
         int? skip = null,
         string? orderby = null,
+        string? select = null,
         bool? count = null,
         CancellationToken cancellationToken = default)
     {
@@ -81,7 +82,7 @@ public class CaseHttpService : ODataServiceBase, ICaseService
             : "";
 
         var basePath = $"odata/Cases/ByCurrentState(includeStates='{includeCsv}',excludeStates='{excludeCsv}')";
-        var url = BuildNavigationPropertyUrl(basePath, filter, top, skip, orderby, count);
+        var url = BuildNavigationPropertyUrl(basePath, filter, top, skip, orderby, count, select);
 
         var httpResponse = await HttpClient.GetAsync(url, cancellationToken);
         httpResponse.EnsureSuccessStatusCode();

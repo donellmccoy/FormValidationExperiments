@@ -51,6 +51,7 @@ public interface ICaseService
         int? top = null,
         int? skip = null,
         string? orderby = null,
+        string? select = null,
         bool? count = null,
         CancellationToken cancellationToken = default);
 

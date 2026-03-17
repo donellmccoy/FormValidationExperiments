@@ -10,6 +10,13 @@ namespace ECTSystem.Web.Pages;
 
 public partial class CaseList : ComponentBase, IDisposable
 {
+    /// <summary>
+    /// OData $select projection for the case-list grid. Only requests the properties
+    /// needed by grid columns and UI logic instead of all ~90 scalar properties.
+    /// </summary>
+    private const string ListSelect =
+        "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,Component,IsCheckedOut,CheckedOutByName";
+
     [Inject]
     private ICaseService CaseService { get; set; }
 
@@ -78,6 +85,9 @@ public partial class CaseList : ComponentBase, IDisposable
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
+                // TODO: pass select: ListSelect once CurrentWorkflowState is
+                // persisted as a computed column — currently it's derived from
+                // WorkflowStateHistories navigation which $select would exclude.
                 count: true,
                 cancellationToken: ct);
 
