@@ -127,7 +127,8 @@ public static class ServiceCollectionExtensions
                           "https://app-ectsystem-web-dev.azurewebsites.net")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
-                      .AllowCredentials();
+                      .AllowCredentials()
+                      .WithExposedHeaders("X-Case-IsBookmarked");
             });
         });
 

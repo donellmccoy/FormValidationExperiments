@@ -62,7 +62,7 @@ namespace ECTSystem.Tests.StateMachines;
 /// <para>
 /// All tests use <see cref="Moq"/> to mock the <see cref="ICaseService"/> dependency. The standard mock
 /// setup pattern configures <see cref="ICaseService.TransitionCaseAsync"/> to return a
-/// <see cref="CaseTransitionResponse"/> containing the updated case and empty history entries list,
+/// <see cref="CaseTransitionResponse"/> containing the server-assigned history entries,
 /// simulating a successful server-side persist operation. This is encapsulated in the
 /// <see cref="SetupTransitionSuccess"/> helper method.
 /// </para>
@@ -125,20 +125,18 @@ public class LineOfDutyStateMachineTests
     /// <summary>
     /// Configures <see cref="_dataServiceMock"/> so that any call to
     /// <see cref="ICaseService.TransitionCaseAsync"/> succeeds, returning a
-    /// <see cref="CaseTransitionResponse"/> whose <see cref="CaseTransitionResponse.Case"/>
-    /// has the specified <paramref name="targetState"/> and whose
-    /// <see cref="CaseTransitionResponse.HistoryEntries"/> is empty.
+    /// <see cref="CaseTransitionResponse"/> whose <see cref="CaseTransitionResponse.HistoryEntries"/>
+    /// echoes back the request entries with server-assigned IDs.
     /// <para>
     /// This simulates the server accepting the transition, persisting the new workflow state
-    /// and history entries, and returning the updated case entity. The empty history entries
-    /// list is acceptable for most tests because the state machine's <c>SaveAndNotifyAsync</c>
-    /// method only iterates the returned entries to add them to the in-memory case — an empty
-    /// list simply means no server-assigned entries need to be merged.
+    /// history entries, assigning database IDs, and returning them. The state machine's
+    /// <c>SaveAndNotifyAsync</c> method merges these entries into the in-memory case so that
+    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> reflects the new state.
     /// </para>
     /// </summary>
     /// <param name="targetState">
-    /// The <see cref="WorkflowState"/> that the returned case should have, representing the
-    /// new state after a successful transition.
+    /// The <see cref="WorkflowState"/> that the transition targets. Retained for call-site
+    /// compatibility; the actual state is derived from the returned history entries.
     /// </param>
     private void SetupTransitionSuccess(WorkflowState targetState)
     {
@@ -146,10 +144,18 @@ public class LineOfDutyStateMachineTests
                 It.IsAny<int>(),
                 It.IsAny<CaseTransitionRequest>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CaseTransitionResponse
+            .ReturnsAsync((int _, CaseTransitionRequest req, CancellationToken _) =>
             {
-                Case = BuildCase(targetState),
-                HistoryEntries = []
+                // Simulate server: assign IDs to the submitted entries
+                var nextId = 1000;
+                foreach (var entry in req.HistoryEntries)
+                {
+                    entry.Id = nextId++;
+                }
+                return new CaseTransitionResponse
+                {
+                    HistoryEntries = req.HistoryEntries.ToList()
+                };
             });
     }
 
@@ -1218,10 +1224,17 @@ public class LineOfDutyStateMachineTests
                 It.IsAny<CaseTransitionRequest>(),
                 It.IsAny<CancellationToken>()))
             .Callback<int, CaseTransitionRequest, CancellationToken>((_, req, _) => capturedRequest = req)
-            .ReturnsAsync(new CaseTransitionResponse
+            .ReturnsAsync((int _, CaseTransitionRequest req, CancellationToken _) =>
             {
-                Case = BuildCase(WorkflowState.MemberInformationEntry),
-                HistoryEntries = []
+                var nextId = 1000;
+                foreach (var entry in req.HistoryEntries)
+                {
+                    entry.Id = nextId++;
+                }
+                return new CaseTransitionResponse
+                {
+                    HistoryEntries = req.HistoryEntries.ToList()
+                };
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
@@ -1255,10 +1268,17 @@ public class LineOfDutyStateMachineTests
                 It.IsAny<CaseTransitionRequest>(),
                 It.IsAny<CancellationToken>()))
             .Callback<int, CaseTransitionRequest, CancellationToken>((_, req, _) => capturedRequest = req)
-            .ReturnsAsync(new CaseTransitionResponse
+            .ReturnsAsync((int _, CaseTransitionRequest req, CancellationToken _) =>
             {
-                Case = BuildCase(WorkflowState.MemberInformationEntry),
-                HistoryEntries = []
+                var nextId = 1000;
+                foreach (var entry in req.HistoryEntries)
+                {
+                    entry.Id = nextId++;
+                }
+                return new CaseTransitionResponse
+                {
+                    HistoryEntries = req.HistoryEntries.ToList()
+                };
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 

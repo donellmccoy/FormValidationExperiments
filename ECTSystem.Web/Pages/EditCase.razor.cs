@@ -331,7 +331,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            _lineOfDutyCase = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+            var (lodCase, isBookmarked) = await CaseService.GetCaseAsync(CaseId, _cts.Token);
+
+            _lineOfDutyCase = lodCase;
 
             _stateMachine = StateMachineFactory.Create(_lineOfDutyCase);
 
@@ -348,11 +350,20 @@ public partial class EditCase : ComponentBase, IDisposable
                 _trackingPreloaded = true;
             }
 
-            // Run bookmark check and previous cases load concurrently — they're independent
-            var bookmarkTask = CheckBookmarkAsync();
+            // Use bookmark status from response header; fall back to separate call if absent
+            if (isBookmarked.HasValue)
+            {
+                _bookmark.IsBookmarked = isBookmarked.Value;
+            }
+            else
+            {
+                await CheckBookmarkAsync();
+            }
+
+            // Load previous cases concurrently
             var previousCasesTask = LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
 
-            await Task.WhenAll(bookmarkTask, previousCasesTask);
+            await previousCasesTask;
 
             _loadedCaseId = CaseId;
 
@@ -1232,20 +1243,17 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            // Capture authorities before SaveCaseAsync replaces _lineOfDutyCase
-            // with the API PATCH response, which only contains the DB-persisted
-            // authorities and loses the in-memory changes from ApplyToCase.
-            var authoritiesToSave = _lineOfDutyCase.Authorities;
-
             _lineOfDutyCase = await CaseService.SaveCaseAsync(_lineOfDutyCase, _cts.Token);
 
             // Persist authority entries (commander, SJA, medical provider) via
             // the dedicated batch-upsert endpoint — the scalar PATCH body cannot
-            // include navigation collections.
-            if (_lineOfDutyCase.Id > 0 && authoritiesToSave.Count > 0)
+            // include navigation collections. SaveCaseAsync preserves in-memory
+            // navigation data via capture/restore, so Authorities still holds
+            // the ApplyToCase changes.
+            if (_lineOfDutyCase.Id > 0 && _lineOfDutyCase.Authorities.Count > 0)
             {
                 var savedAuthorities = await AuthorityService.SaveAuthoritiesAsync(
-                    _lineOfDutyCase.Id, authoritiesToSave, _cts.Token);
+                    _lineOfDutyCase.Id, _lineOfDutyCase.Authorities, _cts.Token);
 
                 _lineOfDutyCase.Authorities = savedAuthorities;
             }

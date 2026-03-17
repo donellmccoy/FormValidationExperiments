@@ -161,9 +161,15 @@ internal class LineOfDutyStateMachine
 
             var response = await _dataService.TransitionCaseAsync(_lineOfDutyCase.Id, request);
 
-            saved = response.Case;
+            // Merge server-assigned history entries into the in-memory case.
+            // CurrentWorkflowState is a computed property that derives from
+            // WorkflowStateHistories, so it reflects the new state immediately.
+            foreach (var entry in response.HistoryEntries)
+            {
+                _lineOfDutyCase.WorkflowStateHistories.Add(entry);
+            }
 
-            _lineOfDutyCase = saved;
+            saved = _lineOfDutyCase;
         }
         catch (Exception ex)
         {

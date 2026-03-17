@@ -62,7 +62,7 @@ public interface ICaseService
     /// <param name="caseId">The human-readable case identifier string (e.g., <c>"LOD-2025-00042"</c>).</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>The fully-loaded <see cref="LineOfDutyCase"/> if found; otherwise, <c>null</c>.</returns>
-    Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default);
+    Task<(LineOfDutyCase? Case, bool? IsBookmarked)> GetCaseAsync(string caseId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Saves a LOD case entity. Creates a new case via POST if <see cref="LineOfDutyCase.Id"/>

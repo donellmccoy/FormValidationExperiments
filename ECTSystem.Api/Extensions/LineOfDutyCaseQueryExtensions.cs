@@ -29,6 +29,18 @@ public static class LineOfDutyCaseQueryExtensions
     }
 
     /// <summary>
+    /// Returns a queryable for <see cref="LineOfDutyCase"/> with only
+    /// <see cref="LineOfDutyCase.WorkflowStateHistories"/> eagerly loaded.
+    /// Used for mutation responses (PATCH, POST) where the client already holds all other
+    /// navigation data in memory and only needs the updated histories to recompute
+    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/>.
+    /// </summary>
+    public static IQueryable<LineOfDutyCase> IncludeWorkflowState(this IQueryable<LineOfDutyCase> query)
+    {
+        return query.Include(c => c.WorkflowStateHistories);
+    }
+
+    /// <summary>
     /// Filters cases whose current workflow state (the most recent <see cref="WorkflowStateHistory"/>
     /// entry by <c>CreatedDate</c> then <c>Id</c>) is one of the specified <paramref name="states"/>.
     /// Translates to a SQL subquery and is fully composable with additional OData query options.

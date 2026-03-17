@@ -95,16 +95,36 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         };
     }
 
-    public async Task<LineOfDutyCase?> GetCaseAsync(string caseId, CancellationToken cancellationToken = default)
+    public async Task<(LineOfDutyCase? Case, bool? IsBookmarked)> GetCaseAsync(string caseId, CancellationToken cancellationToken = default)
     {
-        var query = Context.Cases
-            .AddQueryOption("$filter", $"CaseId eq '{caseId}'")
-            .AddQueryOption("$top", 1)
-            .AddQueryOption("$expand", FullExpand);
+        bool? isBookmarked = null;
 
-        var results = await ExecuteQueryAsync(query, cancellationToken);
+        void OnReceivingResponse(object? sender, ReceivingResponseEventArgs args)
+        {
+            var headerValue = args.ResponseMessage?.GetHeader("X-Case-IsBookmarked");
+            if (!string.IsNullOrEmpty(headerValue) && bool.TryParse(headerValue, out var val))
+            {
+                isBookmarked = val;
+            }
+        }
 
-        return results.FirstOrDefault();
+        Context.ReceivingResponse += OnReceivingResponse;
+
+        try
+        {
+            var query = Context.Cases
+                .AddQueryOption("$filter", $"CaseId eq '{caseId}'")
+                .AddQueryOption("$top", 1)
+                .AddQueryOption("$expand", FullExpand);
+
+            var results = await ExecuteQueryAsync(query, cancellationToken);
+
+            return (results.FirstOrDefault(), isBookmarked);
+        }
+        finally
+        {
+            Context.ReceivingResponse -= OnReceivingResponse;
+        }
     }
 
     public async Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default)
@@ -119,11 +139,36 @@ public class CaseHttpService : ODataServiceBase, ICaseService
             return lodCase;
         }
 
+        // Capture navigation data before SaveChangesAsync — the slim PATCH
+        // response only includes WorkflowStateHistories and scalar fields
+        // (RowVersion, etc.), so the OData client may null out other nav
+        // properties when it applies the response in-place.
+        var documents = lodCase.Documents;
+        var authorities = lodCase.Authorities;
+        var appeals = lodCase.Appeals;
+        var member = lodCase.Member;
+        var medcon = lodCase.MEDCON;
+        var incap = lodCase.INCAP;
+        var notifications = lodCase.Notifications;
+        var witnessStatements = lodCase.WitnessStatements;
+        var auditComments = lodCase.AuditComments;
+
         Context.AttachTo("Cases", lodCase);
         Context.UpdateObject(lodCase);
         await Context.SaveChangesAsync(cancellationToken);
 
         Context.Detach(lodCase);
+
+        // Restore captured navigation properties
+        lodCase.Documents = documents;
+        lodCase.Authorities = authorities;
+        lodCase.Appeals = appeals;
+        lodCase.Member = member;
+        lodCase.MEDCON = medcon;
+        lodCase.INCAP = incap;
+        lodCase.Notifications = notifications;
+        lodCase.WitnessStatements = witnessStatements;
+        lodCase.AuditComments = auditComments;
 
         return lodCase;
     }
@@ -154,19 +199,8 @@ public class CaseHttpService : ODataServiceBase, ICaseService
             Context.Detach(entry);
         }
 
-        // Re-fetch the case with all expansions so CurrentWorkflowState computes correctly
-        var query = Context.Cases
-            .AddQueryOption("$filter", $"Id eq {caseId}")
-            .AddQueryOption("$top", 1)
-            .AddQueryOption("$expand", FullExpand);
-
-        var results = await ExecuteQueryAsync(query, cancellationToken);
-
         return new CaseTransitionResponse
         {
-            Case = results.FirstOrDefault()
-                ?? throw new InvalidOperationException(
-                    $"Case {caseId} could not be retrieved after transitioning workflow state."),
             HistoryEntries = savedEntries
         };
     }

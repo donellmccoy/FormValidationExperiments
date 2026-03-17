@@ -81,6 +81,11 @@ public class CasesController : ODataControllerBase
         Response.Headers.ETag = etag;
         Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
+        var isBookmarked = await context.CaseBookmarks
+            .AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == key, ct);
+
+        Response.Headers["X-Case-IsBookmarked"] = isBookmarked.ToString().ToLowerInvariant();
+
         return Ok(lodCase);
     }
 
@@ -133,7 +138,7 @@ public class CasesController : ODataControllerBase
             }
         }
 
-        var created = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == lodCase.Id, ct);
+        var created = await context.Cases.IncludeWorkflowState().AsNoTracking().FirstAsync(c => c.Id == lodCase.Id, ct);
 
         LoggingService.CaseCreated(lodCase.Id);
 
@@ -216,7 +221,7 @@ public class CasesController : ODataControllerBase
             return Conflict();
         }
 
-        var patched = await context.Cases.IncludeAllNavigations().AsNoTracking().FirstAsync(c => c.Id == key, ct);
+        var patched = await context.Cases.IncludeWorkflowState().AsNoTracking().FirstAsync(c => c.Id == key, ct);
 
         LoggingService.CasePatched(key);
 
