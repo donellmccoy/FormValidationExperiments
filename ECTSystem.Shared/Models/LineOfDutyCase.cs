@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using ECTSystem.Shared.Enums;
 
 namespace ECTSystem.Shared.Models;
@@ -107,12 +108,16 @@ public class LineOfDutyCase : AuditableEntity
     /// entry by <see cref="AuditableEntity.CreatedDate"/>, with <see cref="WorkflowStateHistory.Id"/>
     /// as a tiebreaker. Returns <see cref="WorkflowState.Draft"/> if no history exists.
     /// </summary>
-    public WorkflowState CurrentWorkflowState =>
-        WorkflowStateHistories?
+    [IgnoreDataMember]
+    public WorkflowState CurrentWorkflowState
+    {
+        get => WorkflowStateHistories?
             .OrderByDescending(h => h.CreatedDate)
             .ThenByDescending(h => h.Id)
             .Select(h => h.WorkflowState)
             .FirstOrDefault() ?? WorkflowState.Draft;
+        set { } // No-op: computed property; setter required for OData client materialization
+    }
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }

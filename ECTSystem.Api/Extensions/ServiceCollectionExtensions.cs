@@ -172,6 +172,7 @@ public static class ServiceCollectionExtensions
         var odataBuilder = new ODataConventionModelBuilder();
 
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
+        odataBuilder.EntityType<LineOfDutyCase>().Ignore(c => c.CurrentWorkflowState);
 
         odataBuilder.EntitySet<Member>("Members");
         odataBuilder.EntitySet<Notification>("Notifications");
