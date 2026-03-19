@@ -224,12 +224,12 @@ internal class LineOfDutyStateMachine
     /// The data service used to persist history entries, save case state, and
     /// start timeline steps during transitions.
     /// </param>
-    public LineOfDutyStateMachine(ICaseService dataService)
+    public LineOfDutyStateMachine(ICaseService dataService, WorkflowState workflowState = WorkflowState.Draft)
     {
         _dataService = dataService;
         _lineOfDutyCase = new LineOfDutyCase();
 
-        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(WorkflowState.Draft, FiringMode.Queued);
+        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(workflowState, FiringMode.Queued);
 
         _returnTrigger = _sm.SetTriggerParameters<LineOfDutyCase, WorkflowState>(LineOfDutyTrigger.Return);
 

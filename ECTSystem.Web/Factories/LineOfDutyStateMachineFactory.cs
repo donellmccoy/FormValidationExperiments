@@ -31,8 +31,7 @@ internal class LineOfDutyStateMachineFactory
     /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/>.</returns>
     public LineOfDutyStateMachine Create(LineOfDutyCase lineOfDutyCase)
     {
-        _logger.LogDebug("Creating state machine for case {CaseId} in state {State}",
-            lineOfDutyCase.CaseId, lineOfDutyCase.CurrentWorkflowState);
+        _logger.LogDebug("Creating state machine for case {CaseId} in state {State}", lineOfDutyCase.CaseId, lineOfDutyCase.CurrentWorkflowState);
 
         return new LineOfDutyStateMachine(lineOfDutyCase, _dataService);
     }
@@ -42,7 +41,7 @@ internal class LineOfDutyStateMachineFactory
     /// state for a brand-new LOD case.
     /// </summary>
     /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/> in Draft state.</returns>
-    public LineOfDutyStateMachine Create()
+    public LineOfDutyStateMachine CreateDefault()
     {
         _logger.LogDebug("Creating state machine for new case (Draft)");
 

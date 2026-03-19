@@ -788,7 +788,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
 
-                _stateMachine = StateMachineFactory.Create();
+                _stateMachine = StateMachineFactory.CreateDefault();
 
                 var result = await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
