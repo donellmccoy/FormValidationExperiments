@@ -111,7 +111,6 @@ public class CasesController : ODataControllerBase
         if (!ModelState.IsValid)
         {
             LoggingService.InvalidModelState("Post");
-
             return BadRequest(ModelState);
         }
 

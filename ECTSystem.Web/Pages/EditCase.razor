@@ -1982,17 +1982,11 @@ else
                                                             @entry.WorkflowState.ToDisplayString()
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="Action" Title="Action" Width="120px">
-                                                        <Template Context="entry">
-                                                            @entry.Action.ToDisplayString()
-                                                        </Template>
-                                                    </RadzenDataGridColumn>
                                                     <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="Status" Title="Status" Width="120px">
                                                         <Template Context="entry">
                                                             @entry.Status.ToDisplayString()
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="PerformedBy" Title="Performed By" Width="180px" />
                                                     <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="CreatedDate" Title="Date" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
                                                 </Columns>
                                             </RadzenDataGrid>

@@ -136,9 +136,6 @@ public partial class WorkflowSidebar : ComponentBase
                     step.StartDate = history.StartDate;
                     step.EndDate = history.EndDate;
                     step.CompletedDate = history.EndDate;
-                    step.SignedDate = history.SignedDate;
-                    step.SignedBy = history.SignedBy ?? string.Empty;
-                    step.CompletedBy = history.PerformedBy;
                     step.StatusText = "Completed";
                     step.CompletionDate = history.EndDate?.ToString("MM/dd/yyyy h:mm tt") ?? string.Empty;
                 }
@@ -147,9 +144,6 @@ public partial class WorkflowSidebar : ComponentBase
                     step.StartDate = history.StartDate;
                     step.EndDate = null;
                     step.CompletedDate = null;
-                    step.SignedDate = null;
-                    step.SignedBy = string.Empty;
-                    step.CompletedBy = string.Empty;
                     step.StatusText = string.Empty;
                     step.CompletionDate = string.Empty;
                 }
@@ -159,9 +153,6 @@ public partial class WorkflowSidebar : ComponentBase
                     step.StartDate = null;
                     step.EndDate = null;
                     step.CompletedDate = null;
-                    step.SignedDate = null;
-                    step.SignedBy = string.Empty;
-                    step.CompletedBy = string.Empty;
                     step.StatusText = string.Empty;
                     step.CompletionDate = string.Empty;
                 }
@@ -200,9 +191,6 @@ public partial class WorkflowSidebar : ComponentBase
         step.StartDate = null;
         step.EndDate = null;
         step.CompletedDate = null;
-        step.SignedDate = null;
-        step.SignedBy = string.Empty;
-        step.CompletedBy = string.Empty;
         step.StatusText = string.Empty;
         step.CompletionDate = string.Empty;
     }

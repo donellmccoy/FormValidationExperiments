@@ -14,17 +14,9 @@ public class WorkflowStateHistory : AuditableEntity
 
     public WorkflowState WorkflowState { get; set; }
 
-    public TransitionAction Action { get; set; }
-
     public WorkflowStepStatus Status { get; set; }
 
     public DateTime? StartDate { get; set; }
 
     public DateTime? EndDate { get; set; }
-
-    public DateTime? SignedDate { get; set; }
-
-    public string SignedBy { get; set; } = string.Empty;
-
-    public string PerformedBy { get; set; } = string.Empty;
 }

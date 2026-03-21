@@ -11,9 +11,8 @@ namespace ECTSystem.Tests.Extensions;
 /// </summary>
 /// <remarks>
 /// The Shared extensions provide three methods for managing workflow history:
-/// <see cref="LineOfDutyExtensions.AddHistoryEntry"/>,
-/// <see cref="LineOfDutyExtensions.AddInitialHistory"/>, and
-/// <see cref="LineOfDutyExtensions.AddSignedHistory"/>.
+/// <see cref="LineOfDutyExtensions.AddHistoryEntry"/>, and
+/// <see cref="LineOfDutyExtensions.AddInitialHistory"/>.
 /// </remarks>
 public class LineOfDutyExtensionsTests
 {
@@ -32,7 +31,6 @@ public class LineOfDutyExtensionsTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = WorkflowState.Draft,
-            Action = TransitionAction.Enter,
             Status = WorkflowStepStatus.InProgress
         };
 
@@ -54,7 +52,6 @@ public class LineOfDutyExtensionsTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = WorkflowState.Draft,
-            Action = TransitionAction.Enter,
             Status = WorkflowStepStatus.Completed
         };
         var lodCase = new LineOfDutyCase
@@ -66,7 +63,6 @@ public class LineOfDutyExtensionsTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = WorkflowState.MemberInformationEntry,
-            Action = TransitionAction.Enter,
             Status = WorkflowStepStatus.InProgress
         };
 
@@ -100,7 +96,6 @@ public class LineOfDutyExtensionsTests
         var entry = lodCase.WorkflowStateHistories.First();
         Assert.Equal(42, entry.LineOfDutyCaseId);
         Assert.Equal(WorkflowState.MemberInformationEntry, entry.WorkflowState);
-        Assert.Equal(TransitionAction.Enter, entry.Action);
         Assert.Equal(WorkflowStepStatus.InProgress, entry.Status);
         Assert.Equal(createdDate, entry.StartDate);
     }
@@ -125,53 +120,4 @@ public class LineOfDutyExtensionsTests
         var entry = lodCase.WorkflowStateHistories.First();
         Assert.Equal(explicitStart, entry.StartDate);
     }
-
-    // ── AddSignedHistory Tests ──────────────────────────────────────────────
-
-    /// <summary>
-    /// Verifies that <see cref="Shared.Extensions.LineOfDutyExtensions.AddSignedHistory"/>
-    /// creates a history entry with the correct signed date, signed-by, and step start date values.
-    /// </summary>
-    [Fact]
-    public void AddSignedHistory_CreatesEntryWithCorrectSignatureData()
-    {
-        var stepStart = new DateTime(2024, 3, 1, 8, 0, 0, DateTimeKind.Utc);
-        var signedDate = new DateTime(2024, 3, 5, 14, 30, 0, DateTimeKind.Utc);
-        var lodCase = new LineOfDutyCase
-        {
-            Id = 10
-        };
-
-        lodCase.AddSignedHistory(WorkflowState.UnitCommanderReview, stepStart, signedDate, "Col Johnson");
-
-        Assert.Single(lodCase.WorkflowStateHistories);
-        var entry = lodCase.WorkflowStateHistories.First();
-        Assert.Equal(10, entry.LineOfDutyCaseId);
-        Assert.Equal(WorkflowState.UnitCommanderReview, entry.WorkflowState);
-        Assert.Equal(WorkflowStepStatus.InProgress, entry.Status);
-        Assert.Equal(stepStart, entry.StartDate);
-        Assert.Equal(signedDate, entry.SignedDate);
-        Assert.Equal("Col Johnson", entry.SignedBy);
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="Shared.Extensions.LineOfDutyExtensions.AddSignedHistory"/>
-    /// correctly handles <c>null</c> dates for step start and signed date parameters.
-    /// </summary>
-    [Fact]
-    public void AddSignedHistory_NullDates_SetsNullOnEntry()
-    {
-        var lodCase = new LineOfDutyCase
-        {
-            Id = 5
-        };
-
-        lodCase.AddSignedHistory(WorkflowState.WingJudgeAdvocateReview, null, null, "Maj Smith");
-
-        var entry = lodCase.WorkflowStateHistories.First();
-        Assert.Null(entry.StartDate);
-        Assert.Null(entry.SignedDate);
-        Assert.Equal("Maj Smith", entry.SignedBy);
-    }
-
 }

@@ -83,12 +83,8 @@ public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryServ
     {
         LineOfDutyCaseId = entry.LineOfDutyCaseId,
         WorkflowState = entry.WorkflowState,
-        Action = entry.Action,
         Status = entry.Status,
         StartDate = entry.StartDate,
-        EndDate = entry.EndDate,
-        SignedDate = entry.SignedDate,
-        SignedBy = entry.SignedBy ?? "",
-        PerformedBy = entry.PerformedBy ?? ""
+        EndDate = entry.EndDate
     };
 }

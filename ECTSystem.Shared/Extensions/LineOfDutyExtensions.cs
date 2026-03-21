@@ -33,18 +33,4 @@ public static class LineOfDutyExtensions
     {
         lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(lodCase.Id, state, startDate ?? lodCase.CreatedDate));
     }
-
-    /// <summary>
-    /// Creates and adds a <see cref="Enums.TransitionAction.Signed"/> history entry
-    /// for the specified <paramref name="state"/>.
-    /// </summary>
-    /// <param name="lodCase">The LOD case to add the history entry to.</param>
-    /// <param name="state">The workflow state to record in the history entry.</param>
-    /// <param name="stepStartDate">The date the current workflow step started.</param>
-    /// <param name="signedDate">The date the step was digitally signed.</param>
-    /// <param name="signedBy">The name or identifier of the person who signed.</param>
-    public static void AddSignedHistory(this LineOfDutyCase lodCase, WorkflowState state, DateTime? stepStartDate, DateTime? signedDate, string signedBy)
-    {
-        lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateSigned(lodCase.Id, state, stepStartDate, signedDate, signedBy));
-    }
 }

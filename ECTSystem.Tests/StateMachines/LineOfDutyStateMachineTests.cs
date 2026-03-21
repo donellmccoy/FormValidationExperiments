@@ -113,7 +113,6 @@ public class LineOfDutyStateMachineTests
                 {
                     LineOfDutyCaseId = 1,
                     WorkflowState = state,
-                    Action = TransitionAction.Enter,
                     Status = WorkflowStepStatus.InProgress,
                     CreatedDate = DateTime.UtcNow
                 }
