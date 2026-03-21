@@ -1,5 +1,6 @@
+using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
-using Microsoft.OData.Client;
+using ECTSystem.Shared.ViewModels;
 using Radzen;
 
 #nullable enable
@@ -57,32 +58,37 @@ public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryServ
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        Context.AddObject("WorkflowStateHistories", entry);
-        await Context.SaveChangesAsync(cancellationToken);
+        var dto = ToDto(entry);
 
-        Context.Detach(entry);
+        var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistories", dto, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-        return entry;
+        return await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize created workflow state history entry.");
     }
 
     public async Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(List<WorkflowStateHistory> entries, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        foreach (var entry in entries)
-        {
-            Context.AddObject("WorkflowStateHistories", entry);
-        }
+        var dtos = entries.Select(ToDto).ToList();
 
-        await Context.SaveChangesAsync(
-            SaveChangesOptions.BatchWithSingleChangeset | SaveChangesOptions.UseJsonBatch,
-            cancellationToken);
+        var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistories/Batch", dtos, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-        foreach (var entry in entries)
-        {
-            Context.Detach(entry);
-        }
-
-        return entries;
+        return await response.Content.ReadFromJsonAsync<List<WorkflowStateHistory>>(JsonOptions, cancellationToken) ?? [];
     }
+
+    private static CreateWorkflowStateHistoryDto ToDto(WorkflowStateHistory entry) => new()
+    {
+        LineOfDutyCaseId = entry.LineOfDutyCaseId,
+        WorkflowState = entry.WorkflowState,
+        Action = entry.Action,
+        Status = entry.Status,
+        StartDate = entry.StartDate,
+        EndDate = entry.EndDate,
+        SignedDate = entry.SignedDate,
+        SignedBy = entry.SignedBy ?? "",
+        PerformedBy = entry.PerformedBy ?? ""
+    };
 }

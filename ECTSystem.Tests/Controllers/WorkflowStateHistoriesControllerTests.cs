@@ -7,6 +7,7 @@ using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
@@ -73,12 +74,15 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_ReturnsCreatedWithEntry()
     {
-        var entry = BuildEntry();
+        var dto = BuildEntryDto();
 
-        var result = await _sut.Post(entry, CancellationToken.None);
+        var result = await _sut.Post(dto, CancellationToken.None);
 
         var r = Assert.IsType<CreatedODataResult<WorkflowStateHistory>>(result);
-        Assert.Equal(entry, r.Value);
+        Assert.Equal(dto.LineOfDutyCaseId, r.Entity.LineOfDutyCaseId);
+        Assert.Equal(dto.WorkflowState, r.Entity.WorkflowState);
+        Assert.Equal(dto.Action, r.Entity.Action);
+        Assert.Equal(dto.Status, r.Entity.Status);
     }
 
     /// <summary>
@@ -90,7 +94,7 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("WorkflowState", "Required");
 
-        var result = await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
+        var result = await _sut.Post(new CreateWorkflowStateHistoryDto(), CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -102,14 +106,14 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_InvokesServiceWithEntry()
     {
-        var entry = BuildEntry();
+        var dto = BuildEntryDto();
 
-        await _sut.Post(entry, CancellationToken.None);
+        await _sut.Post(dto, CancellationToken.None);
 
         using var ctx = new EctDbContext(_dbOptions);
         var saved = await ctx.WorkflowStateHistories.FirstOrDefaultAsync();
         Assert.NotNull(saved);
-        Assert.Equal(entry.LineOfDutyCaseId, saved.LineOfDutyCaseId);
+        Assert.Equal(dto.LineOfDutyCaseId, saved.LineOfDutyCaseId);
     }
 
     /// <summary>
@@ -121,7 +125,7 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("key", "error");
 
-        await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
+        await _sut.Post(new CreateWorkflowStateHistoryDto(), CancellationToken.None);
 
         using var ctx = new EctDbContext(_dbOptions);
         var count = await ctx.WorkflowStateHistories.CountAsync();
@@ -131,12 +135,11 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     // ─────────────────────────────── Helpers ─────────────────────────────────
 
     /// <summary>
-    /// Builds a <see cref="WorkflowStateHistory"/> test entity representing an initial
+    /// Builds a <see cref="CreateWorkflowStateHistoryDto"/> representing an initial
     /// entry into the <see cref="WorkflowState.MemberInformationEntry"/> state with
     /// <see cref="TransitionAction.Enter"/> and <see cref="WorkflowStepStatus.InProgress"/>.
     /// </summary>
-    /// <returns>A populated <see cref="WorkflowStateHistory"/> instance with <c>LineOfDutyCaseId = 1</c>.</returns>
-    private static WorkflowStateHistory BuildEntry() => new WorkflowStateHistory
+    private static CreateWorkflowStateHistoryDto BuildEntryDto() => new()
     {
         LineOfDutyCaseId = 1,
         WorkflowState    = WorkflowState.MemberInformationEntry,

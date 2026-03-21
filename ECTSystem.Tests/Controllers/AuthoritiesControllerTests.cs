@@ -7,6 +7,7 @@ using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
@@ -68,13 +69,13 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_InsertsNewAuthority()
     {
-        var authority = new LineOfDutyAuthority
+        var dto = new CreateAuthorityDto
         {
             Role = "Commander", Name = "Smith, John", Rank = "Col",
             LineOfDutyCaseId = 1
         };
 
-        var result = await _sut.Post(authority);
+        var result = await _sut.Post(dto);
 
         var created = Assert.IsType<CreatedODataResult<LineOfDutyAuthority>>(result);
         Assert.Equal("Commander", created.Entity.Role);
@@ -84,12 +85,12 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenNoCaseId_ReturnsBadRequest()
     {
-        var authority = new LineOfDutyAuthority
+        var dto = new CreateAuthorityDto
         {
             Role = "Commander", Name = "Smith, John", Rank = "Col"
         };
 
-        var result = await _sut.Post(authority);
+        var result = await _sut.Post(dto);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

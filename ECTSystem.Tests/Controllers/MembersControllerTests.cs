@@ -6,7 +6,9 @@ using Moq;
 using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
@@ -139,9 +141,13 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_PersistsMemberAndReturnsCreated()
     {
-        var member = BuildMember(0, "New", "Recruit");
+        var dto = new CreateMemberDto
+        {
+            FirstName = "New", LastName = "Recruit",
+            Rank = "AB", ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce
+        };
 
-        var result = await _sut.Post(member);
+        var result = await _sut.Post(dto);
 
         Assert.IsType<CreatedODataResult<Member>>(result);
 
@@ -158,7 +164,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Post(new Member());
+        var result = await _sut.Post(new CreateMemberDto());
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -177,9 +183,15 @@ public class MembersControllerTests : ControllerTestBase
         seedCtx.Members.Add(BuildMember(1, "John", "Doe"));
         await seedCtx.SaveChangesAsync();
 
-        var update = new Member { FirstName = "Jane", LastName = "Smith", Rank = "TSgt", Unit = "12 OG" };
+        var dto = new UpdateMemberDto
+        {
+            FirstName = "Jane", LastName = "Smith",
+            Rank = "TSgt", Unit = "12 OG",
+            ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce,
+            RowVersion = new byte[] { 0 }
+        };
 
-        var result = await _sut.Put(1, update);
+        var result = await _sut.Put(1, dto);
 
         Assert.IsType<UpdatedODataResult<Member>>(result);
 
@@ -197,7 +209,14 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Put_WhenMemberNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Put(999, new Member { FirstName = "Ghost" });
+        var dto = new UpdateMemberDto
+        {
+            FirstName = "Ghost", LastName = "Member",
+            Rank = "AB", ServiceNumber = "000000000", Component = ServiceComponent.RegularAirForce,
+            RowVersion = new byte[] { 0 }
+        };
+
+        var result = await _sut.Put(999, dto);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -211,7 +230,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Put(1, new Member());
+        var result = await _sut.Put(1, new UpdateMemberDto());
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

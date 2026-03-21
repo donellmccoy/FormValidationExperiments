@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -55,13 +57,13 @@ public class WorkflowStateHistoriesController : ODataControllerBase
     }
 
     /// <summary>
-    /// Creates a new workflow state history entry for the specified case.
+    /// Creates a single workflow state history entry.
     /// OData route: POST /odata/WorkflowStateHistories
     /// </summary>
-    /// <param name="entry">The workflow state history entry to persist.</param>
+    /// <param name="dto">The workflow state history DTO to persist.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateWorkflowStateHistoryDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -69,36 +71,23 @@ public class WorkflowStateHistoriesController : ODataControllerBase
             return BadRequest(ModelState);
         }
 
-        if (entry.LineOfDutyCaseId <= 0)
-        {
-            LoggingService.WorkflowStateHistoryInvalidCaseId(entry.LineOfDutyCaseId);
-            return BadRequest("LineOfDutyCaseId is required.");
-        }
+        var entry = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
-        // Over-posting guard: reset server-managed fields
-        entry.Id = 0;
-        entry.CreatedBy = string.Empty;
-        entry.CreatedDate = default;
-        entry.ModifiedBy = string.Empty;
-        entry.ModifiedDate = default;
-
-        LoggingService.CreatingWorkflowStateHistory(entry.LineOfDutyCaseId);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.Add(entry);
         await context.SaveChangesAsync(ct);
 
-        LoggingService.WorkflowStateHistoryCreated(entry.Id, entry.LineOfDutyCaseId);
         return Created(entry);
     }
 
     /// <summary>
-    /// Creates multiple workflow state history entries in a single request.
+    /// Creates multiple workflow state history entries in a single batch.
     /// Custom route: POST /odata/WorkflowStateHistories/Batch
     /// </summary>
-    /// <param name="entries">The workflow state history entries to persist.</param>
+    /// <param name="dtos">The workflow state history DTOs to persist.</param>
     /// <param name="ct">Cancellation token.</param>
     [HttpPost("odata/WorkflowStateHistories/Batch")]
-    public async Task<IActionResult> PostBatch([FromBody] List<WorkflowStateHistory> entries, CancellationToken ct = default)
+    public async Task<IActionResult> PostBatch([FromBody] List<CreateWorkflowStateHistoryDto> dtos, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -106,26 +95,12 @@ public class WorkflowStateHistoriesController : ODataControllerBase
             return BadRequest(ModelState);
         }
 
-        if (entries is not { Count: > 0 })
+        if (dtos is not { Count: > 0 })
         {
             return BadRequest("At least one entry is required.");
         }
 
-        foreach (var entry in entries)
-        {
-            if (entry.LineOfDutyCaseId <= 0)
-            {
-                LoggingService.WorkflowStateHistoryInvalidCaseId(entry.LineOfDutyCaseId);
-                return BadRequest($"LineOfDutyCaseId is required for all entries.");
-            }
-
-            // Over-posting guard: reset server-managed fields
-            entry.Id = 0;
-            entry.CreatedBy = string.Empty;
-            entry.CreatedDate = default;
-            entry.ModifiedBy = string.Empty;
-            entry.ModifiedDate = default;
-        }
+        var entries = dtos.Select(WorkflowStateHistoryDtoMapper.ToEntity).ToList();
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.AddRange(entries);

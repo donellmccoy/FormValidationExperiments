@@ -46,7 +46,7 @@ public abstract class ControllerTestBase
     /// database should ensure a <see cref="ECTSystem.Shared.Models.Member"/> with this
     /// <c>Id</c> exists to satisfy EF Core navigation-property resolution.
     /// </summary>
-    private const int DefaultMemberId = 1;
+    protected const int DefaultMemberId = 1;
 
     /// <summary>
     /// Creates a <see cref="ControllerContext"/> whose <c>User</c> is authenticated

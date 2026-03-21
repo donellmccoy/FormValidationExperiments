@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using ECTSystem.Api.Extensions;
 
 namespace ECTSystem.Api.Controllers;
@@ -85,8 +87,7 @@ public class CasesController : ODataControllerBase
         Response.Headers.ETag = etag;
         Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
-        var isBookmarked = await context.CaseBookmarks
-            .AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == key, ct);
+        var isBookmarked = await context.CaseBookmarks.AnyAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == key, ct);
 
         Response.Headers["X-Case-IsBookmarked"] = isBookmarked.ToString().ToLowerInvariant();
 
@@ -105,7 +106,7 @@ public class CasesController : ODataControllerBase
     /// OData route: POST /odata/Cases
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] LineOfDutyCase lodCase, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateCaseDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -114,14 +115,9 @@ public class CasesController : ODataControllerBase
             return BadRequest(ModelState);
         }
 
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+        var lodCase = CaseDtoMapper.ToEntity(dto);
 
-        // Over-posting guard: reset server-managed fields
-        lodCase.Id = 0;
-        lodCase.CreatedBy = string.Empty;
-        lodCase.CreatedDate = default;
-        lodCase.ModifiedBy = string.Empty;
-        lodCase.ModifiedDate = default;
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         lodCase.CaseId = await GenerateCaseIdAsync(context, ct);
 

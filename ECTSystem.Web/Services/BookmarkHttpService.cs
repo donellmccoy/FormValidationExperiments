@@ -1,4 +1,6 @@
+using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -68,10 +70,9 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var bookmark = new CaseBookmark { LineOfDutyCaseId = caseId };
-        Context.AddObject("CaseBookmarks", bookmark);
-        await Context.SaveChangesAsync(cancellationToken);
-        Context.Detach(bookmark);
+        var dto = new CreateBookmarkDto { LineOfDutyCaseId = caseId };
+        var response = await HttpClient.PostAsJsonAsync("odata/CaseBookmarks", dto, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)

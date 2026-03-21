@@ -9,6 +9,7 @@ using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
@@ -105,6 +106,19 @@ public class CasesControllerTests : ControllerTestBase
         ctx.SaveChanges();
     }
 
+    /// <summary>
+    /// Builds a minimal <see cref="CreateCaseDto"/> suitable for Post tests.
+    /// </summary>
+    private static CreateCaseDto BuildCaseDto() => new CreateCaseDto
+    {
+        MemberId            = DefaultMemberId,
+        MemberName          = "SSgt John Doe",
+        MemberRank          = "SSgt",
+        Unit                = "99 ABW",
+        IncidentDescription = "Training injury",
+        InitiationDate      = new DateTime(2025, 1, 15)
+    };
+
     // ─────────────────────────── Get (collection) ────────────────────────────
 
     /// <summary>
@@ -162,10 +176,9 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_ReturnsCreatedWithCase()
     {
-        var lodCase = BuildCase(0);
-        lodCase.CaseId = string.Empty; // server generates CaseId
+        var dto = BuildCaseDto();
 
-        var result = await _sut.Post(lodCase);
+        var result = await _sut.Post(dto);
 
         var created = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result);
         Assert.Matches(@"^\d{8}-\d{3}$", created.Entity.CaseId);
@@ -180,7 +193,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("MemberName", "Required");
 
-        var result = await _sut.Post(new LineOfDutyCase());
+        var result = await _sut.Post(new CreateCaseDto());
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -195,15 +208,13 @@ public class CasesControllerTests : ControllerTestBase
     {
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
 
-        var case1 = BuildCase(0);
-        case1.CaseId = string.Empty;
-        var result1 = await _sut.Post(case1);
+        var dto1 = BuildCaseDto();
+        var result1 = await _sut.Post(dto1);
         var created1 = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result1);
         Assert.Equal($"{today}-001", created1.Entity.CaseId);
 
-        var case2 = BuildCase(0);
-        case2.CaseId = string.Empty;
-        var result2 = await _sut.Post(case2);
+        var dto2 = BuildCaseDto();
+        var result2 = await _sut.Post(dto2);
         var created2 = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result2);
         Assert.Equal($"{today}-002", created2.Entity.CaseId);
     }

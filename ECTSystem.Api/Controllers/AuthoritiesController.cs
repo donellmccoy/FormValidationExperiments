@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -56,23 +58,14 @@ public class AuthoritiesController : ODataControllerBase
     /// OData route: POST /odata/Authorities
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] LineOfDutyAuthority authority, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateAuthorityDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        if (authority.LineOfDutyCaseId is null or <= 0)
-            return BadRequest("LineOfDutyCaseId is required.");
+        var authority = AuthorityDtoMapper.ToEntity(dto);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-
-        // Over-posting guard: reset server-managed fields
-        authority.Id = 0;
-        authority.CreatedBy = string.Empty;
-        authority.CreatedDate = default;
-        authority.ModifiedBy = string.Empty;
-        authority.ModifiedDate = default;
-
         context.Authorities.Add(authority);
         await context.SaveChangesAsync(ct);
 
