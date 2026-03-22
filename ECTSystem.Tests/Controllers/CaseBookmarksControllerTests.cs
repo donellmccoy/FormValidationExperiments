@@ -86,7 +86,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_ReturnsCreatedWithBookmark()
     {
-        var dto = new CreateBookmarkDto { LineOfDutyCaseId = 3 };
+        var dto = new CaseBookmark { LineOfDutyCaseId = 3 };
 
         var result = await _sut.Post(dto);
 
@@ -115,7 +115,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             ctx.SaveChanges();
         }
 
-        var dto = new CreateBookmarkDto { LineOfDutyCaseId = 5 };
+        var dto = new CaseBookmark { LineOfDutyCaseId = 5 };
         var result = await _sut.Post(dto);
 
         var r = Assert.IsType<OkObjectResult>(result);

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
@@ -6,9 +7,7 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
-using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -58,12 +57,10 @@ public class AuthoritiesController : ODataControllerBase
     /// OData route: POST /odata/Authorities
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] CreateAuthorityDto dto, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] LineOfDutyAuthority authority, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-
-        var authority = AuthorityDtoMapper.ToEntity(dto);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.Authorities.Add(authority);

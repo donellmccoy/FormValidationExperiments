@@ -1746,7 +1746,7 @@ else
                                                                Placeholder="Search documents..."
                                                                Style="width: 50%;" />
                                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.25rem">
-                                                <RadzenUpload Url="@($"{Http.BaseAddress}api/cases/{_lineOfDutyCase?.Id}/documents")"
+                                                <RadzenUpload Url="@($"{Http.BaseAddress}odata/Cases({_lineOfDutyCase?.Id})/Documents")"
                                                               Auto="true"
                                                               Multiple="true"
                                                               ParameterName="file"

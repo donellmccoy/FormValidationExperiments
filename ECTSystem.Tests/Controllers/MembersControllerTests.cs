@@ -141,7 +141,7 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_PersistsMemberAndReturnsCreated()
     {
-        var dto = new CreateMemberDto
+        var dto = new Member
         {
             FirstName = "New", LastName = "Recruit",
             Rank = "AB", ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce
@@ -164,7 +164,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Post(new CreateMemberDto());
+        var result = await _sut.Post(new Member());
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -183,7 +183,7 @@ public class MembersControllerTests : ControllerTestBase
         seedCtx.Members.Add(BuildMember(1, "John", "Doe"));
         await seedCtx.SaveChangesAsync();
 
-        var dto = new UpdateMemberDto
+        var dto = new Member
         {
             FirstName = "Jane", LastName = "Smith",
             Rank = "TSgt", Unit = "12 OG",
@@ -209,7 +209,7 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Put_WhenMemberNotFound_ReturnsNotFound()
     {
-        var dto = new UpdateMemberDto
+        var dto = new Member
         {
             FirstName = "Ghost", LastName = "Member",
             Rank = "AB", ServiceNumber = "000000000", Component = ServiceComponent.RegularAirForce,
@@ -230,7 +230,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Put(1, new UpdateMemberDto());
+        var result = await _sut.Put(1, new Member());
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

@@ -5,9 +5,7 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
-using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -60,18 +58,16 @@ public class WorkflowStateHistoriesController : ODataControllerBase
     /// Creates a single workflow state history entry.
     /// OData route: POST /odata/WorkflowStateHistories
     /// </summary>
-    /// <param name="dto">The workflow state history DTO to persist.</param>
+    /// <param name="entry">The workflow state history to persist.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] CreateWorkflowStateHistoryDto dto, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
             LoggingService.WorkflowStateHistoryInvalidModelState();
             return BadRequest(ModelState);
         }
-
-        var entry = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.Add(entry);
@@ -84,10 +80,10 @@ public class WorkflowStateHistoriesController : ODataControllerBase
     /// Creates multiple workflow state history entries in a single batch.
     /// Custom route: POST /odata/WorkflowStateHistories/Batch
     /// </summary>
-    /// <param name="dtos">The workflow state history DTOs to persist.</param>
+    /// <param name="entries">The workflow state history entries to persist.</param>
     /// <param name="ct">Cancellation token.</param>
     [HttpPost("odata/WorkflowStateHistories/Batch")]
-    public async Task<IActionResult> PostBatch([FromBody] List<CreateWorkflowStateHistoryDto> dtos, CancellationToken ct = default)
+    public async Task<IActionResult> PostBatch([FromBody] List<WorkflowStateHistory> entries, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -95,12 +91,10 @@ public class WorkflowStateHistoriesController : ODataControllerBase
             return BadRequest(ModelState);
         }
 
-        if (dtos is not { Count: > 0 })
+        if (entries is not { Count: > 0 })
         {
             return BadRequest("At least one entry is required.");
         }
-
-        var entries = dtos.Select(WorkflowStateHistoryDtoMapper.ToEntity).ToList();
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.AddRange(entries);

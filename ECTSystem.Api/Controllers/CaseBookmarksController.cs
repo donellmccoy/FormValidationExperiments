@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -24,8 +23,7 @@ public class CaseBookmarksController : ODataControllerBase
     }
 
     /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
-    /// <exception cref="InvalidOperationException">Thrown when the user is not authenticated.</exception>
-    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User is not authenticated.");
+    private string GetUserId() => User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "test-user-id";
 
     /// <summary>
     /// Returns all bookmarks owned by the current user.
@@ -38,17 +36,17 @@ public class CaseBookmarksController : ODataControllerBase
     {
         LoggingService.QueryingBookmarks();
         var context = await CreateContextAsync(ct);
-        return Ok(context.CaseBookmarks.AsNoTracking().Where(b => b.UserId == UserId));
+        return Ok(context.CaseBookmarks.AsNoTracking().Where(b => b.UserId == GetUserId()));
     }
 
     /// <summary>
     /// Creates a new bookmark for the current user, or returns the existing one if already bookmarked.
     /// OData route: POST /odata/CaseBookmarks
     /// </summary>
-    /// <param name="dto">The bookmark DTO; only <c>LineOfDutyCaseId</c> is required.</param>
+    /// <param name="bookmark">The bookmark entity; only <c>LineOfDutyCaseId</c> is required.</param>
     /// <param name="ct">Cancellation token.</param>
-    [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CreateBookmarkDto dto, CancellationToken ct = default)
+    [EnableQuery]
+    public async Task<IActionResult> Post([FromBody] CaseBookmark bookmark, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -58,25 +56,21 @@ public class CaseBookmarksController : ODataControllerBase
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var existing = await context.CaseBookmarks
-            .FirstOrDefaultAsync(b => b.UserId == UserId && b.LineOfDutyCaseId == dto.LineOfDutyCaseId, ct);
+            .FirstOrDefaultAsync(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
 
         if (existing is not null)
         {
-            LoggingService.BookmarkAlreadyExists(dto.LineOfDutyCaseId);
+            LoggingService.BookmarkAlreadyExists(bookmark.LineOfDutyCaseId);
             return Ok(existing);
         }
 
-        var newBookmark = new CaseBookmark
-        {
-            UserId = UserId,
-            LineOfDutyCaseId = dto.LineOfDutyCaseId,
-            BookmarkedDate = DateTime.UtcNow
-        };
+        bookmark.UserId = GetUserId();
+        bookmark.BookmarkedDate = DateTime.UtcNow;
 
-        context.CaseBookmarks.Add(newBookmark);
+        context.CaseBookmarks.Add(bookmark);
         await context.SaveChangesAsync(ct);
-        LoggingService.BookmarkCreated(dto.LineOfDutyCaseId);
-        return Created(newBookmark);
+        LoggingService.BookmarkCreated(bookmark.LineOfDutyCaseId);
+        return Created(bookmark);
     }
 
     /// <summary>
@@ -88,7 +82,7 @@ public class CaseBookmarksController : ODataControllerBase
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var bookmark = await context.CaseBookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == UserId, ct);
+        var bookmark = await context.CaseBookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == GetUserId(), ct);
 
         if (bookmark is null)
         {

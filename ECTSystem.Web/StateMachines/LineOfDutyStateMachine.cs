@@ -123,30 +123,16 @@ internal class LineOfDutyStateMachine
         var previousState = _lineOfDutyCase.CurrentWorkflowState;
 
         // Build the list of history entries to persist.
-        var entriesToSave = new List<WorkflowStateHistory>();
+        var oldStartDate = _lineOfDutyCase.WorkflowStateHistories
+            .Where(h => h.WorkflowState == previousState)
+            .OrderByDescending(h => h.Id)
+            .FirstOrDefault()?.StartDate;
 
-        if (isReturn)
+        var entriesToSave = new List<WorkflowStateHistory>
         {
-            // Backward transition: mark all states from previousState down to targetState+1 as Pending
-            for (var state = (int)previousState; state > (int)targetState; state--)
-            {
-                entriesToSave.Add(WorkflowStateHistoryFactory.CreateReturned(_lineOfDutyCase.Id, (WorkflowState)state, stepStartDate: null));
-            }
-
-            // Create InProgress entry for the destination state
-            entriesToSave.Add(WorkflowStateHistoryFactory.CreateInitialHistory(_lineOfDutyCase.Id, targetState));
-        }
-        else
-        {
-            // Forward transition: complete the old state, start the new one
-            var oldStartDate = _lineOfDutyCase.WorkflowStateHistories
-                .Where(h => h.WorkflowState == previousState && h.Status == WorkflowStepStatus.InProgress)
-                .OrderByDescending(h => h.Id)
-                .FirstOrDefault()?.StartDate;
-
-            entriesToSave.Add(WorkflowStateHistoryFactory.CreateCompleted(_lineOfDutyCase.Id, previousState, oldStartDate));
-            entriesToSave.Add(WorkflowStateHistoryFactory.CreateInitialHistory(_lineOfDutyCase.Id, targetState));
-        }
+            WorkflowStateHistoryFactory.CreateCompleted(_lineOfDutyCase.Id, previousState, oldStartDate),
+            WorkflowStateHistoryFactory.CreateInitialHistory(_lineOfDutyCase.Id, targetState)
+        };
 
         LineOfDutyCase saved;
 
@@ -154,12 +140,10 @@ internal class LineOfDutyStateMachine
         {
             // Persist the history entries. The current workflow state is derived
             // from the most recent history entry — no separate PATCH needed.
-            var request = new CaseTransitionRequest
+            var response = await _dataService.TransitionCaseAsync(_lineOfDutyCase.Id, new CaseTransitionRequest
             {
                 HistoryEntries = entriesToSave
-            };
-
-            var response = await _dataService.TransitionCaseAsync(_lineOfDutyCase.Id, request);
+            });
 
             // Merge server-assigned history entries into the in-memory case.
             // CurrentWorkflowState is a computed property that derives from

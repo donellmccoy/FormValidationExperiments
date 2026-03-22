@@ -150,15 +150,15 @@ public partial class CaseList : ComponentBase, IDisposable
             await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Remove(lodCase.Id);
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
+            BookmarkCountService.Decrement();
         }
         else
         {
             await BookmarkService.AddBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Add(lodCase.Id);
             NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
+            BookmarkCountService.Increment();
         }
-
-        await BookmarkCountService.RefreshAsync();
     }
 
     private async Task OnSearchInput(ChangeEventArgs args)

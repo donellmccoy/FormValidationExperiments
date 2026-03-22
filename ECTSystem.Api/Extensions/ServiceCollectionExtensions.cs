@@ -4,6 +4,7 @@ using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
@@ -196,11 +197,14 @@ public static class ServiceCollectionExtensions
         casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
         casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
 
-        // Bound collection function: GET /odata/Cases/ByCurrentState(includeStates='...',excludeStates='...')
+        // Bound collection function: GET /odata/Cases/Default.ByCurrentState(...)
         var byCurrentState = casesEntitySet.EntityType.Collection.Function("ByCurrentState")
-            .ReturnsFromEntitySet<LineOfDutyCase>("Cases");
-        byCurrentState.Parameter<string>("includeStates").Optional();
-        byCurrentState.Parameter<string>("excludeStates").Optional();
+            .ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
+        byCurrentState.CollectionParameter<WorkflowState>("includeStates").Optional();
+        byCurrentState.CollectionParameter<WorkflowState>("excludeStates").Optional();
+
+        // Bound collection function: GET /odata/Cases/Default.Bookmarked()
+        casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
 
         return odataBuilder.GetEdmModel();
     }

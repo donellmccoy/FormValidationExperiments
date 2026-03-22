@@ -9,7 +9,7 @@ public class EctODataContext : DataServiceContext
 {
     public EctODataContext(Uri serviceRoot) : base(serviceRoot, ODataProtocolVersion.V4)
     {
-        MergeOption = MergeOption.OverwriteChanges;
+        MergeOption = MergeOption.OverwriteChanges; 
 
         ResolveName = ResolveEntitySetName;
         ResolveType = ResolveEntityType;

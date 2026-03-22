@@ -107,9 +107,9 @@ public class CasesControllerTests : ControllerTestBase
     }
 
     /// <summary>
-    /// Builds a minimal <see cref="CreateCaseDto"/> suitable for Post tests.
+    /// Builds a minimal <see cref="LineOfDutyCase"/> suitable for Post tests. 
     /// </summary>
-    private static CreateCaseDto BuildCaseDto() => new CreateCaseDto
+    private static LineOfDutyCase BuildCaseDto() => new LineOfDutyCase
     {
         MemberId            = DefaultMemberId,
         MemberName          = "SSgt John Doe",
@@ -193,7 +193,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("MemberName", "Required");
 
-        var result = await _sut.Post(new CreateCaseDto());
+        var result = await _sut.Post(new LineOfDutyCase());
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

@@ -25,7 +25,10 @@ public class AuthorityHttpService : ODataServiceBase, IAuthorityService
         // Step 2: Queue deletes for authorities whose role is not in the incoming list.
         foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
         {
-            Context.AttachTo("Authorities", toRemove);
+            if (Context.GetEntityDescriptor(toRemove) == null)
+            {
+                Context.AttachTo("Authorities", toRemove);
+            }
             Context.DeleteObject(toRemove);
         }
 
@@ -46,8 +49,10 @@ public class AuthorityHttpService : ODataServiceBase, IAuthorityService
                 match.Recommendation = incoming.Recommendation;
                 match.Comments = incoming.Comments;
 
-                if (!Context.Entities.Any(e => e.Entity == match))
+                if (Context.GetEntityDescriptor(match) == null)
+                {
                     Context.AttachTo("Authorities", match);
+                }
 
                 Context.UpdateObject(match);
                 trackedEntities.Add(match);

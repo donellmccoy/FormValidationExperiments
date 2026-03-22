@@ -69,7 +69,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_InsertsNewAuthority()
     {
-        var dto = new CreateAuthorityDto
+        var dto = new LineOfDutyAuthority
         {
             Role = "Commander", Name = "Smith, John", Rank = "Col",
             LineOfDutyCaseId = 1
@@ -85,7 +85,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenNoCaseId_ReturnsBadRequest()
     {
-        var dto = new CreateAuthorityDto
+        var dto = new LineOfDutyAuthority
         {
             Role = "Commander", Name = "Smith, John", Rank = "Col"
         };

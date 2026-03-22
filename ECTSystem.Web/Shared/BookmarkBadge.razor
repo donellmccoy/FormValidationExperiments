@@ -1,0 +1,28 @@
+@using ECTSystem.Web.Services
+@inject BookmarkCountService BookmarkCountService
+@implements IDisposable
+
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Style="flex: 1; padding-right: 0.5rem;" @onclick:stopPropagation="true">
+    <span>Bookmarks</span>
+    @if (BookmarkCountService.Count > 0)
+    {
+        <RadzenBadge BadgeStyle="BadgeStyle.Primary" Text="@BookmarkCountService.Count.ToString()" />
+    }
+</RadzenStack>
+
+@code {
+    protected override void OnInitialized()
+    {
+        BookmarkCountService.OnCountChanged += Redraw;
+    }
+
+    private void Redraw() 
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        BookmarkCountService.OnCountChanged -= Redraw;
+    }
+}

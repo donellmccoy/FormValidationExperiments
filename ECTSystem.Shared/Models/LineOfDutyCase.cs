@@ -109,6 +109,7 @@ public class LineOfDutyCase : AuditableEntity
     /// as a tiebreaker. Returns <see cref="WorkflowState.Draft"/> if no history exists.
     /// </summary>
     [IgnoreDataMember]
+    [System.Text.Json.Serialization.JsonIgnore]
     public WorkflowState CurrentWorkflowState
     {
         get => WorkflowStateHistories?
@@ -196,9 +197,9 @@ public class LineOfDutyCase : AuditableEntity
 
     // Related Benefits
     public int MEDCONId { get; set; }
-    public MEDCONDetail MEDCON { get; set; } = new MEDCONDetail();
+    public MEDCONDetail MEDCON { get; set; }
     public int INCAPId { get; set; }
-    public INCAPDetails INCAP { get; set; } = new INCAPDetails();
+    public INCAPDetails INCAP { get; set; }
     public bool MemberChoseMEDCON { get; set; } // If eligible for both
 
     // Checkout

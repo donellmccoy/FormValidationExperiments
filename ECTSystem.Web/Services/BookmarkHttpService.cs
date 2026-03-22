@@ -92,10 +92,23 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
             return;
         }
 
-        Context.AttachTo("CaseBookmarks", bookmark);
-        Context.DeleteObject(bookmark);
-        await Context.SaveChangesAsync(cancellationToken);
-        Context.Detach(bookmark);
+        try
+        {
+            if (Context.GetEntityDescriptor(bookmark) == null)
+            {
+                Context.AttachTo("CaseBookmarks", bookmark);
+            }
+            Context.DeleteObject(bookmark);
+            await Context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DataServiceRequestException ex) when (ex.InnerException is DataServiceClientException { StatusCode: 404 })
+        {
+            // Already deleted on the server, safely ignore
+        }
+        finally
+        {
+            Context.Detach(bookmark);
+        }
     }
 
     public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)

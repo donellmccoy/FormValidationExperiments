@@ -696,7 +696,7 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
                 _previousCasesBookmarkedIds.Remove(lodCase.Id);
-                await BookmarkCountService.RefreshAsync();
+                BookmarkCountService.Decrement();
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)
@@ -713,7 +713,7 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 await BookmarkService.AddBookmarkAsync(lodCase.Id);
                 _previousCasesBookmarkedIds.Add(lodCase.Id);
-                await BookmarkCountService.RefreshAsync();
+                BookmarkCountService.Increment();
                 NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)
@@ -1317,7 +1317,7 @@ public partial class EditCase : ComponentBase, IDisposable
             try
             {
                 await BookmarkService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
-                await BookmarkCountService.RefreshAsync(_cts.Token);
+                BookmarkCountService.Increment();
                 NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {_viewModel?.CaseNumber} added to bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)
@@ -1334,7 +1334,7 @@ public partial class EditCase : ComponentBase, IDisposable
             try
             {
                 await BookmarkService.RemoveBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
-                await BookmarkCountService.RefreshAsync(_cts.Token);
+                BookmarkCountService.Decrement();
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_viewModel?.CaseNumber} removed from bookmarks.", closeOnClick: true);
             }
             catch (Exception ex)

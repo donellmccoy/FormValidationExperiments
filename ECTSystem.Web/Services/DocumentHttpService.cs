@@ -56,7 +56,7 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
         form.Add(new StringContent("Supporting Document"), "documentType");
         form.Add(new StringContent(string.Empty), "description");
 
-        var response = await HttpClient.PostAsync($"api/cases/{caseId}/documents", form, cancellationToken);
+        var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Documents", form, cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
@@ -68,7 +68,7 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentOutOfRangeException.ThrowIfNegative(documentId);
 
-        var response = await HttpClient.DeleteAsync($"api/cases/{caseId}/documents/{documentId}", cancellationToken);
+        var response = await HttpClient.DeleteAsync($"odata/Documents({documentId})", cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -77,6 +77,6 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        return await HttpClient.GetByteArrayAsync($"api/cases/{caseId}/form348", cancellationToken);
+        return await HttpClient.GetByteArrayAsync($"odata/Cases({caseId})/Form348", cancellationToken);
     }
 }

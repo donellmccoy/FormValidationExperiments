@@ -190,7 +190,7 @@ public partial class EditCase
     /// </summary>
     private string GetDocumentDownloadUrl(LineOfDutyDocument doc)
     {
-        return $"{Http.BaseAddress}api/cases/{_lineOfDutyCase.Id}/documents/{doc.Id}/download";
+        return $"{Http.BaseAddress}odata/Documents({doc.Id})/$value";
     }
 
     private async Task OnViewDocumentInBrowserAsync(LineOfDutyDocument doc)

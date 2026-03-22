@@ -10,6 +10,7 @@ namespace ECTSystem.Web.Services;
 public abstract class ODataServiceBase
 {
     protected readonly EctODataContext Context;
+
     protected readonly HttpClient HttpClient;
 
     protected static readonly JsonSerializerOptions JsonOptions = new()
@@ -25,8 +26,7 @@ public abstract class ODataServiceBase
         HttpClient = httpClient;
     }
 
-    protected static async Task<(List<T> Items, int Count)> ExecutePagedQueryAsync<T>(
-        DataServiceQuery<T> query, CancellationToken ct = default)
+    protected static async Task<(List<T> Items, int Count)> ExecutePagedQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
     {
         var response = await query.IncludeCount().ExecuteAsync(ct)
             as QueryOperationResponse<T>;
@@ -37,25 +37,51 @@ public abstract class ODataServiceBase
         return (items, count);
     }
 
-    protected static async Task<List<T>> ExecuteQueryAsync<T>(
-        DataServiceQuery<T> query, CancellationToken ct = default)
+    protected static async Task<List<T>> ExecuteQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
     {
         var response = await query.ExecuteAsync(ct);
 
-        return response.ToList();
+        return [.. response];
     }
 
-    protected static string BuildNavigationPropertyUrl(
-        string basePath, string? filter, int? top, int? skip, string? orderby, bool? count, string? select = null)
+    protected static string BuildNavigationPropertyUrl(string basePath, string? filter, int? top, int? skip, string? orderby, bool? count, string? select = null, string? expand = null)
     {
         var parts = new List<string>();
 
-        if (!string.IsNullOrEmpty(select)) parts.Add($"$select={Uri.EscapeDataString(select)}");
-        if (!string.IsNullOrEmpty(filter)) parts.Add($"$filter={Uri.EscapeDataString(filter)}");
-        if (top.HasValue) parts.Add($"$top={top.Value}");
-        if (skip.HasValue) parts.Add($"$skip={skip.Value}");
-        if (!string.IsNullOrEmpty(orderby)) parts.Add($"$orderby={Uri.EscapeDataString(orderby)}");
-        if (count == true) parts.Add("$count=true");
+        if (!string.IsNullOrEmpty(expand))
+        {
+            parts.Add($"$expand={Uri.EscapeDataString(expand)}");
+        }
+
+        if (!string.IsNullOrEmpty(select))
+        {
+            parts.Add($"$select={Uri.EscapeDataString(select)}");
+        }
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            parts.Add($"$filter={Uri.EscapeDataString(filter)}");
+        }
+
+        if (top.HasValue)
+        {
+            parts.Add($"$top={top.Value}");
+        }
+
+        if (skip.HasValue)
+        {
+            parts.Add($"$skip={skip.Value}");
+        }
+
+        if (!string.IsNullOrEmpty(orderby))
+        {
+            parts.Add($"$orderby={Uri.EscapeDataString(orderby)}");
+        }
+
+        if (count == true)
+        {
+            parts.Add("$count=true");
+        }
 
         return parts.Count > 0 ? $"{basePath}?{string.Join("&", parts)}" : basePath;
     }

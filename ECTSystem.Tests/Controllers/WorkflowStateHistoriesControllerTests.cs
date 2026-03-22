@@ -93,7 +93,7 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("WorkflowState", "Required");
 
-        var result = await _sut.Post(new CreateWorkflowStateHistoryDto(), CancellationToken.None);
+        var result = await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -124,7 +124,7 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("key", "error");
 
-        await _sut.Post(new CreateWorkflowStateHistoryDto(), CancellationToken.None);
+        await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
 
         using var ctx = new EctDbContext(_dbOptions);
         var count = await ctx.WorkflowStateHistories.CountAsync();
@@ -134,11 +134,11 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     // ─────────────────────────────── Helpers ─────────────────────────────────
 
     /// <summary>
-    /// Builds a <see cref="CreateWorkflowStateHistoryDto"/> representing an initial
+    /// Builds a <see cref="WorkflowStateHistory"/> representing an initial
     /// entry into the <see cref="WorkflowState.MemberInformationEntry"/> state with
     /// <see cref="TransitionAction.Enter"/> and <see cref="WorkflowStepStatus.InProgress"/>.
     /// </summary>
-    private static CreateWorkflowStateHistoryDto BuildEntryDto() => new()
+    private static WorkflowStateHistory BuildEntryDto() => new()
     {
         LineOfDutyCaseId = 1,
         WorkflowState    = WorkflowState.MemberInformationEntry,

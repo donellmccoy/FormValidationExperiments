@@ -74,25 +74,44 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        var includeCsv = includeStates is { Length: > 0 }
-            ? string.Join(",", includeStates)
-            : "";
-        var excludeCsv = excludeStates is { Length: > 0 }
-            ? string.Join(",", excludeStates)
-            : "";
+        var parameters = new List<UriOperationParameter>();
 
-        var basePath = $"odata/Cases/ByCurrentState(includeStates='{includeCsv}',excludeStates='{excludeCsv}')";
-        var url = BuildNavigationPropertyUrl(basePath, filter, top, skip, orderby, count, select);
+        // OData requires bound function parameters to exist in the URL
+        parameters.Add(new UriOperationParameter("includeStates", includeStates ?? Array.Empty<WorkflowState>()));
+        parameters.Add(new UriOperationParameter("excludeStates", excludeStates ?? Array.Empty<WorkflowState>()));
 
-        var httpResponse = await HttpClient.GetAsync(url, cancellationToken);
-        httpResponse.EnsureSuccessStatusCode();
+        var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.ByCurrentState", false, parameters.ToArray());
 
-        var data = await httpResponse.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(JsonOptions, cancellationToken);
+        if (!string.IsNullOrEmpty(filter))
+            query = query.AddQueryOption("$filter", filter);
 
+        if (top.HasValue)
+            query = query.AddQueryOption("$top", top.Value);
+
+        if (skip.HasValue)
+            query = query.AddQueryOption("$skip", skip.Value);
+
+        if (!string.IsNullOrEmpty(orderby))
+            query = query.AddQueryOption("$orderby", orderby);
+
+        if (!string.IsNullOrEmpty(select))
+            query = query.AddQueryOption("$select", select);
+
+        if (count == true)
+        {
+            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
+            return new ODataServiceResult<LineOfDutyCase>
+            {
+                Value = items,
+                Count = totalCount
+            };
+        }
+
+        var results = await ExecuteQueryAsync(query, cancellationToken);
         return new ODataServiceResult<LineOfDutyCase>
         {
-            Value = data?.Value ?? [],
-            Count = data?.Count ?? 0
+            Value = results,
+            Count = results.Count
         };
     }
 
@@ -154,7 +173,10 @@ public class CaseHttpService : ODataServiceBase, ICaseService
         var witnessStatements = lodCase.WitnessStatements;
         var auditComments = lodCase.AuditComments;
 
-        Context.AttachTo("Cases", lodCase);
+        if (Context.GetEntityDescriptor(lodCase) == null)
+        {
+            Context.AttachTo("Cases", lodCase);
+        }
         Context.UpdateObject(lodCase);
         await Context.SaveChangesAsync(cancellationToken);
 

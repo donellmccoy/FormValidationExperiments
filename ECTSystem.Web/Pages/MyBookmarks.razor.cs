@@ -112,7 +112,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         try
         {
             await CaseService.RemoveBookmarkAsync(lodCase.Id);
-            await BookmarkCountService.RefreshAsync();
+            BookmarkCountService.Decrement();
             await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
 
             StateHasChanged();

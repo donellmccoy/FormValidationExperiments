@@ -37,6 +37,27 @@ public class BookmarkCountService
     }
 
     /// <summary>
+    /// Increments the bookmark count by one and notifies subscribers.
+    /// </summary>
+    public void Increment()
+    {
+        Count++;
+        OnCountChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Decrements the bookmark count by one and notifies subscribers.
+    /// </summary>
+    public void Decrement()
+    {
+        if (Count > 0)
+        {
+            Count--;
+            OnCountChanged?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// Fetches the current bookmark count from the server and raises <see cref="OnCountChanged"/>
     /// if the request succeeds. Uses a <c>$top=0&amp;$count=true</c> OData query to retrieve only
     /// the total count without loading any case data. Silently swallows failures to avoid

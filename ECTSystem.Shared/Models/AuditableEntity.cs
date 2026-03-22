@@ -10,5 +10,6 @@ public abstract class AuditableEntity
     public DateTime ModifiedDate { get; set; }
 
     [Timestamp]
+    [ConcurrencyCheck]
     public byte[] RowVersion { get; set; } = [];
 }
