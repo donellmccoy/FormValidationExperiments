@@ -49,4 +49,14 @@ public interface IWorkflowHistoryService
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A list of the persisted <see cref="WorkflowStateHistory"/> entries with server-assigned IDs and timestamps.</returns>
     Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(List<WorkflowStateHistory> entries, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the <see cref="WorkflowStateHistory.EndDate"/> of an existing workflow state history entry
+    /// via OData PATCH. Used to close out the previous workflow step when transitioning to a new state.
+    /// </summary>
+    /// <param name="entryId">The database primary key of the history entry to update.</param>
+    /// <param name="endDate">The <see cref="DateTime"/> to set as the entry's end date.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The updated <see cref="WorkflowStateHistory"/> entry returned by the server.</returns>
+    Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, DateTime endDate, CancellationToken cancellationToken = default);
 }

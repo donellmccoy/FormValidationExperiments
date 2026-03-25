@@ -7,18 +7,18 @@ namespace ECTSystem.Web.Factories;
 
 /// <summary>
 /// Factory for creating <see cref="LineOfDutyStateMachine"/> instances.
-/// Registered as a scoped service so that <see cref="ICaseService"/> and
+/// Registered as a scoped service so that <see cref="IWorkflowHistoryService"/> and
 /// <see cref="ILogger"/> are injected once and reused for every state machine
 /// created during the component's lifetime.
 /// </summary>
 internal class LineOfDutyStateMachineFactory
 {
-    private readonly ICaseService _dataService;
+    private readonly IWorkflowHistoryService _historyService;
     private readonly ILogger<LineOfDutyStateMachineFactory> _logger;
 
-    public LineOfDutyStateMachineFactory(ICaseService dataService, ILogger<LineOfDutyStateMachineFactory> logger)
+    public LineOfDutyStateMachineFactory(IWorkflowHistoryService historyService, ILogger<LineOfDutyStateMachineFactory> logger)
     {
-        _dataService = dataService;
+        _historyService = historyService;
         _logger = logger;
     }
 
@@ -33,7 +33,7 @@ internal class LineOfDutyStateMachineFactory
     {
         _logger.LogDebug("Creating state machine for case {CaseId} in state {State}", lineOfDutyCase.CaseId, lineOfDutyCase.CurrentWorkflowState);
 
-        return new LineOfDutyStateMachine(lineOfDutyCase, _dataService);
+        return new LineOfDutyStateMachine(lineOfDutyCase, _historyService);
     }
 
     /// <summary>
@@ -45,6 +45,6 @@ internal class LineOfDutyStateMachineFactory
     {
         _logger.LogDebug("Creating state machine for new case (Draft)");
 
-        return new LineOfDutyStateMachine(_dataService);
+        return new LineOfDutyStateMachine(_historyService);
     }
 }

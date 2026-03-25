@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
@@ -101,5 +102,32 @@ public class WorkflowStateHistoriesController : ODataControllerBase
         await context.SaveChangesAsync(ct);
 
         return Ok(entries);
+    }
+
+    /// <summary>
+    /// Updates a workflow state history entry (typically to set EndDate when completing a step).
+    /// OData route: PATCH /odata/WorkflowStateHistories({key})
+    /// </summary>
+    public async Task<IActionResult> Patch([FromODataUri] int key, Delta<WorkflowStateHistory> delta, CancellationToken ct = default)
+    {
+        if (delta is null || !ModelState.IsValid)
+        {
+            LoggingService.WorkflowStateHistoryInvalidModelState();
+            return BadRequest(ModelState);
+        }
+
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+
+        var existing = await context.WorkflowStateHistories.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        delta.Patch(existing);
+        await context.SaveChangesAsync(ct);
+
+        return Updated(existing);
     }
 }

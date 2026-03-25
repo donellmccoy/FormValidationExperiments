@@ -87,4 +87,22 @@ public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryServ
         StartDate = entry.StartDate,
         EndDate = entry.EndDate
     };
+
+    public async Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, DateTime endDate, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(entryId);
+
+        var patch = new { EndDate = endDate };
+
+        var response = await HttpClient.PatchAsJsonAsync(
+            $"odata/WorkflowStateHistories({entryId})",
+            patch,
+            JsonOptions,
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken)
+               ?? throw new InvalidOperationException("Server returned null after patching workflow state history entry.");
+    }
 }

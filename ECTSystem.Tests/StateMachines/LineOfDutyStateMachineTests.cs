@@ -2,7 +2,6 @@ using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using ECTSystem.Web.StateMachines;
-using ECTSystem.Web.ViewModels;
 using Moq;
 using Xunit;
 
@@ -49,7 +48,7 @@ namespace ECTSystem.Tests.StateMachines;
 ///   <item><description><b>GetPermittedTriggersAsync Tests</b> — Validates the set of allowed triggers at each state.</description></item>
 ///   <item><description><b>Board Lateral Routing</b> — Tests all valid lateral transitions between board-level states.</description></item>
 ///   <item><description><b>Return Trigger</b> — Tests backward transitions from review states to earlier workflow stages.</description></item>
-///   <item><description><b>Persistence Verification</b> — Validates that <see cref="ICaseService.TransitionCaseAsync"/> is invoked correctly during transitions.</description></item>
+///   <item><description><b>Persistence Verification</b> — Validates that <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> is invoked correctly during transitions.</description></item>
 ///   <item><description><b>Error Handling</b> — Tests state machine revert behavior when persistence fails.</description></item>
 ///   <item><description><b>Invalid Transition Tests</b> — Verifies that illegal triggers throw <see cref="InvalidOperationException"/>.</description></item>
 ///   <item><description><b>Return Availability</b> — Theory-based tests for Return trigger availability across states.</description></item>
@@ -60,9 +59,9 @@ namespace ECTSystem.Tests.StateMachines;
 /// </summary>
 /// <remarks>
 /// <para>
-/// All tests use <see cref="Moq"/> to mock the <see cref="ICaseService"/> dependency. The standard mock
-/// setup pattern configures <see cref="ICaseService.TransitionCaseAsync"/> to return a
-/// <see cref="CaseTransitionResponse"/> containing the server-assigned history entries,
+/// All tests use <see cref="Moq"/> to mock the <see cref="IWorkflowHistoryService"/> dependency. The standard mock
+/// setup pattern configures <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> to return a
+/// <see cref="WorkflowStateHistory"/> with a server-assigned ID,
 /// simulating a successful server-side persist operation. This is encapsulated in the
 /// <see cref="SetupTransitionSuccess"/> helper method.
 /// </para>
@@ -80,11 +79,17 @@ namespace ECTSystem.Tests.StateMachines;
 public class LineOfDutyStateMachineTests
 {
     /// <summary>
-    /// Mocked <see cref="ICaseService"/> used to isolate the state machine from actual API calls.
+    /// Mocked <see cref="IWorkflowHistoryService"/> used to isolate the state machine from actual API calls.
     /// Configured per-test via <see cref="SetupTransitionSuccess"/> or <see cref="SetupTransitionFailure"/>
     /// to simulate successful persistence or server-side errors, respectively.
     /// </summary>
-    private readonly Mock<ICaseService> _dataServiceMock = new();
+    private readonly Mock<IWorkflowHistoryService> _dataServiceMock = new();
+
+    /// <summary>
+    /// Counter for assigning unique server-side IDs to workflow state history entries
+    /// created during mock persistence operations.
+    /// </summary>
+    private int _nextHistoryId = 1000;
 
     #region Helpers
 
@@ -122,59 +127,55 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Configures <see cref="_dataServiceMock"/> so that any call to
-    /// <see cref="ICaseService.TransitionCaseAsync"/> succeeds, returning a
-    /// <see cref="CaseTransitionResponse"/> whose <see cref="CaseTransitionResponse.HistoryEntries"/>
-    /// echoes back the request entries with server-assigned IDs.
+    /// Configures <see cref="_dataServiceMock"/> so that calls to
+    /// <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> and
+    /// <see cref="IWorkflowHistoryService.UpdateHistoryEndDateAsync"/> succeed,
+    /// simulating successful server-side persistence of workflow state transitions.
     /// <para>
-    /// This simulates the server accepting the transition, persisting the new workflow state
-    /// history entries, assigning database IDs, and returning them. The state machine's
-    /// <c>SaveAndNotifyAsync</c> method merges these entries into the in-memory case so that
-    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> reflects the new state.
+    /// <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> returns the submitted entry
+    /// with a server-assigned <see cref="WorkflowStateHistory.Id"/>.
+    /// <see cref="IWorkflowHistoryService.UpdateHistoryEndDateAsync"/> returns a new
+    /// <see cref="WorkflowStateHistory"/> with the updated <see cref="WorkflowStateHistory.EndDate"/>.
     /// </para>
     /// </summary>
     /// <param name="targetState">
     /// The <see cref="WorkflowState"/> that the transition targets. Retained for call-site
-    /// compatibility; the actual state is derived from the returned history entries.
+    /// compatibility; the mock setup is generic across all target states.
     /// </param>
     private void SetupTransitionSuccess(WorkflowState targetState)
     {
-        _dataServiceMock.Setup(ds => ds.TransitionCaseAsync(
+        _dataServiceMock.Setup(hs => hs.UpdateHistoryEndDateAsync(
                 It.IsAny<int>(),
-                It.IsAny<CaseTransitionRequest>(),
+                It.IsAny<DateTime>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((int _, CaseTransitionRequest req, CancellationToken _) =>
+            .ReturnsAsync((int id, DateTime endDate, CancellationToken _) =>
+                new WorkflowStateHistory { Id = id, EndDate = endDate });
+
+        _dataServiceMock.Setup(hs => hs.AddHistoryEntryAsync(
+                It.IsAny<WorkflowStateHistory>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((WorkflowStateHistory entry, CancellationToken _) =>
             {
-                // Simulate server: assign IDs to the submitted entries
-                var nextId = 1000;
-                foreach (var entry in req.HistoryEntries)
-                {
-                    entry.Id = nextId++;
-                }
-                return new CaseTransitionResponse
-                {
-                    HistoryEntries = req.HistoryEntries.ToList()
-                };
+                entry.Id = _nextHistoryId++;
+                return entry;
             });
     }
 
     /// <summary>
     /// Configures <see cref="_dataServiceMock"/> so that any call to
-    /// <see cref="ICaseService.TransitionCaseAsync"/> throws an <see cref="Exception"/>
+    /// <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> throws an <see cref="Exception"/>
     /// with the message <c>"Save failed"</c>.
     /// <para>
     /// This simulates a server-side persistence failure (e.g., network timeout, database error,
-    /// or validation rejection). The state machine's <c>SaveAndNotifyAsync</c> method catches
-    /// this exception, reverts the in-memory workflow state to the previous value, and sets
-    /// <c>_lastTransitionResult</c> to a failure <see cref="StateMachineResult"/> with the
-    /// exception's message.
+    /// or validation rejection). The state machine's <c>HandleTransitionAsync</c> method catches
+    /// this exception and sets <c>_lastTransitionResult</c> to a failure
+    /// <see cref="StateMachineResult"/> with the exception's message.
     /// </para>
     /// </summary>
     private void SetupTransitionFailure()
     {
-        _dataServiceMock.Setup(ds => ds.TransitionCaseAsync(
-                It.IsAny<int>(),
-                It.IsAny<CaseTransitionRequest>(),
+        _dataServiceMock.Setup(hs => hs.AddHistoryEntryAsync(
+                It.IsAny<WorkflowStateHistory>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Save failed"));
     }
@@ -191,7 +192,7 @@ public class LineOfDutyStateMachineTests
     /// </summary>
     /// <remarks>
     /// This tests the primary constructor overload that accepts both a <see cref="LineOfDutyCase"/>
-    /// and an <see cref="ICaseService"/>. The state machine should always initialize to the
+    /// and an <see cref="IWorkflowHistoryService"/>. The state machine should always initialize to the
     /// case's current workflow state, which is the starting point for all subsequent transitions.
     /// </remarks>
     [Fact]
@@ -223,7 +224,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that the parameterless constructor overload (which only takes an
-    /// <see cref="ICaseService"/>) initializes the state machine to
+    /// <see cref="IWorkflowHistoryService"/>) initializes the state machine to
     /// <see cref="WorkflowState.Draft"/>.
     /// </summary>
     /// <remarks>
@@ -251,8 +252,8 @@ public class LineOfDutyStateMachineTests
     /// </summary>
     /// <remarks>
     /// This is the very first transition in the LOD workflow — initiating the case from its
-    /// draft state into active processing. The state machine's <c>SaveAndNotifyAsync</c> method
-    /// persists the transition via <see cref="ICaseService.TransitionCaseAsync"/>, creating
+    /// draft state into active processing. The state machine's <c>HandleTransitionAsync</c> method
+    /// persists the transition via <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/>, creating
     /// workflow state history entries to track the progression. This test validates both the
     /// state change and the success status of the returned result, confirming that the mock
     /// persistence layer accepted the transition.
@@ -1051,8 +1052,8 @@ public class LineOfDutyStateMachineTests
     /// as arguments. This allows a single trigger definition to handle returns to any earlier
     /// state, rather than requiring separate <c>ReturnToMedTech</c>, <c>ReturnToMemberInfo</c>
     /// triggers for each destination. The guard <c>CanReturnAsync</c> currently returns <c>true</c>.
-    /// The <c>SaveAndNotifyAsync</c> method with <c>isReturn: true</c> creates <c>Pending</c>
-    /// history entries for skipped states and an <c>InProgress</c> entry for the destination.
+    /// The <c>HandleTransitionAsync</c> method creates an <c>InProgress</c>
+    /// history entry for the destination state.
     /// </remarks>
     [Fact]
     public async Task FireReturnAsync_MedOfficer_ToMedTech_Transitions()
@@ -1075,11 +1076,8 @@ public class LineOfDutyStateMachineTests
     /// <remarks>
     /// This tests a multi-step return: the case jumps from Unit Commander Review back to
     /// Medical Technician Review, skipping over Medical Officer Review. The
-    /// <c>SaveAndNotifyAsync</c> method with <c>isReturn: true</c> creates <c>Pending</c>
-    /// (returned) history entries for both UnitCommanderReview and MedicalOfficerReview,
-    /// marking them as "rolled back," and creates an <c>InProgress</c> entry for
-    /// MedicalTechnicianReview. This accurately models the scenario where a commander
-    /// returns the case to the medical team for additional clinical review.
+    /// <c>HandleTransitionAsync</c> method creates an <c>InProgress</c>
+    /// entry for the destination MedicalTechnicianReview state.
     /// </remarks>
     [Fact]
     public async Task FireReturnAsync_UnitCC_ToMedTech_SkipsIntermediateStates()
@@ -1128,11 +1126,8 @@ public class LineOfDutyStateMachineTests
     /// <remarks>
     /// This tests a long-range return from a board-level state to an early workflow stage.
     /// The board may discover during its review that the original medical technician screening
-    /// was inadequate and needs to be redone. The <c>SaveAndNotifyAsync</c> method creates
-    /// <c>Pending</c> history entries for all intervening states (BoardMedicalTechnicianReview,
-    /// WingCommanderReview, AppointingAuthorityReview, WingJudgeAdvocateReview,
-    /// UnitCommanderReview, MedicalOfficerReview) and an <c>InProgress</c> entry for the
-    /// target MedicalTechnicianReview state.
+    /// was inadequate and needs to be redone. The <c>HandleTransitionAsync</c> method creates
+    /// an <c>InProgress</c> entry for the target MedicalTechnicianReview state.
     /// </remarks>
     [Fact]
     public async Task FireReturnAsync_BoardTech_ToMedTech_ReturnsAcrossMultipleStages()
@@ -1152,19 +1147,18 @@ public class LineOfDutyStateMachineTests
     #region Persistence Verification
 
     /// <summary>
-    /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked exactly once
+    /// Verifies that <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> is invoked exactly once
     /// when a forward transition is fired from <see cref="WorkflowState.Draft"/> to
     /// <see cref="WorkflowState.MemberInformationEntry"/>.
     /// </summary>
     /// <remarks>
-    /// Each state transition should result in exactly one call to the data service's
-    /// <c>TransitionCaseAsync</c> method, which atomically persists both the new workflow
-    /// state and the associated history entries in a single server-side database transaction.
-    /// Multiple calls would indicate duplicate persistence, while zero calls would mean
-    /// the transition was not persisted at all.
+    /// Each state transition should result in exactly one call to
+    /// <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> to persist the new InProgress
+    /// workflow state history entry. Multiple calls would indicate duplicate persistence,
+    /// while zero calls would mean the transition was not persisted at all.
     /// </remarks>
     [Fact]
-    public async Task FireAsync_Draft_ToMemberInfo_CallsTransitionCaseAsync()
+    public async Task FireAsync_Draft_ToMemberInfo_CallsAddHistoryEntryAsync()
     {
         var lodCase = BuildCase(WorkflowState.Draft);
         SetupTransitionSuccess(WorkflowState.MemberInformationEntry);
@@ -1172,9 +1166,8 @@ public class LineOfDutyStateMachineTests
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        _dataServiceMock.Verify(ds => ds.TransitionCaseAsync(
-            It.IsAny<int>(),
-            It.IsAny<CaseTransitionRequest>(),
+        _dataServiceMock.Verify(hs => hs.AddHistoryEntryAsync(
+            It.IsAny<WorkflowStateHistory>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -1184,10 +1177,9 @@ public class LineOfDutyStateMachineTests
     /// <see cref="LineOfDutyCase"/> entity from the server response.
     /// </summary>
     /// <remarks>
-    /// The <c>SaveAndNotifyAsync</c> method replaces the internal <c>_lineOfDutyCase</c>
-    /// reference with the case returned by <see cref="ICaseService.TransitionCaseAsync"/>.
-    /// This ensures the state machine always holds the server-canonical version of the case,
-    /// including any server-assigned values (timestamps, IDs, computed fields).
+    /// The <c>HandleTransitionAsync</c> method adds the persisted history entry to the
+    /// in-memory <see cref="LineOfDutyCase.WorkflowStateHistories"/> collection, so the
+    /// case's <see cref="LineOfDutyCase.CurrentWorkflowState"/> reflects the new state.
     /// </remarks>
     [Fact]
     public async Task FireAsync_AfterTransition_CasePropertyReflectsServerResponse()
@@ -1202,89 +1194,72 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked with a
-    /// <see cref="CaseTransitionRequest"/> whose <see cref="CaseTransitionRequest.HistoryEntries"/>
-    /// contains an entry with the expected target workflow state.
+    /// Verifies that <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> is invoked with a
+    /// <see cref="WorkflowStateHistory"/> whose <see cref="WorkflowStateHistory.WorkflowState"/>
+    /// matches the expected target workflow state.
     /// </summary>
     /// <remarks>
-    /// This test captures the actual <see cref="CaseTransitionRequest"/> passed to the data
-    /// service mock using Moq's <c>Callback</c> mechanism. It then verifies that the request
-    /// contains a history entry for <see cref="WorkflowState.MemberInformationEntry"/>,
-    /// confirming that the state machine correctly communicates the intended destination to
-    /// the persistence layer via workflow state history entries.
+    /// This test captures the actual <see cref="WorkflowStateHistory"/> passed to
+    /// <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> using Moq's <c>Callback</c>
+    /// mechanism. It then verifies that the entry's <see cref="WorkflowStateHistory.WorkflowState"/>
+    /// is <see cref="WorkflowState.MemberInformationEntry"/>, confirming that the state machine
+    /// correctly communicates the intended destination to the persistence layer.
     /// </remarks>
     [Fact]
     public async Task FireAsync_Draft_ToMemberInfo_SendsCorrectWorkflowState()
     {
         var lodCase = BuildCase(WorkflowState.Draft);
-        CaseTransitionRequest capturedRequest = null;
-        _dataServiceMock.Setup(ds => ds.TransitionCaseAsync(
-                It.IsAny<int>(),
-                It.IsAny<CaseTransitionRequest>(),
+        WorkflowStateHistory capturedEntry = null;
+        _dataServiceMock.Setup(hs => hs.AddHistoryEntryAsync(
+                It.IsAny<WorkflowStateHistory>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<int, CaseTransitionRequest, CancellationToken>((_, req, _) => capturedRequest = req)
-            .ReturnsAsync((int _, CaseTransitionRequest req, CancellationToken _) =>
+            .Callback<WorkflowStateHistory, CancellationToken>((entry, _) => capturedEntry = entry)
+            .ReturnsAsync((WorkflowStateHistory entry, CancellationToken _) =>
             {
-                var nextId = 1000;
-                foreach (var entry in req.HistoryEntries)
-                {
-                    entry.Id = nextId++;
-                }
-                return new CaseTransitionResponse
-                {
-                    HistoryEntries = req.HistoryEntries.ToList()
-                };
+                entry.Id = _nextHistoryId++;
+                return entry;
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        Assert.NotNull(capturedRequest);
-        Assert.Contains(capturedRequest.HistoryEntries, e => e.WorkflowState == WorkflowState.MemberInformationEntry);
+        Assert.NotNull(capturedEntry);
+        Assert.Equal(WorkflowState.MemberInformationEntry, capturedEntry.WorkflowState);
     }
 
     /// <summary>
-    /// Verifies that <see cref="ICaseService.TransitionCaseAsync"/> is invoked with a
-    /// <see cref="CaseTransitionRequest"/> whose <see cref="CaseTransitionRequest.HistoryEntries"/>
-    /// collection is not empty, confirming that workflow state history entries are generated
-    /// and sent to the server during transitions.
+    /// Verifies that <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> is invoked with a
+    /// <see cref="WorkflowStateHistory"/> entry whose <see cref="WorkflowStateHistory.Status"/> is
+    /// <see cref="WorkflowStepStatus.InProgress"/>, confirming that new workflow state history
+    /// entries are generated with the correct initial status during transitions.
     /// </summary>
     /// <remarks>
-    /// The <c>SaveAndNotifyAsync</c> method creates history entries for each transition:
-    /// for forward transitions, a <c>Completed</c> entry for the departing state and an
-    /// <c>InProgress</c> entry for the arriving state. These entries drive the
-    /// <see cref="ECTSystem.Web.Shared.WorkflowSidebar"/> step-progress visualization and
-    /// the audit trail for the LOD case. An empty history entries list would indicate a
-    /// bug in the entry generation logic.
+    /// The <c>HandleTransitionAsync</c> method creates a new InProgress history entry via
+    /// <see cref="WorkflowStateHistoryFactory.CreateInitialHistory"/> for the arriving state.
+    /// This entry drives the <see cref="ECTSystem.Web.Shared.WorkflowSidebar"/> step-progress
+    /// visualization and the audit trail for the LOD case. An entry without InProgress status
+    /// would indicate a bug in the entry generation logic.
     /// </remarks>
     [Fact]
-    public async Task FireAsync_Draft_ToMemberInfo_SendsHistoryEntries()
+    public async Task FireAsync_Draft_ToMemberInfo_SendsInProgressHistoryEntry()
     {
         var lodCase = BuildCase(WorkflowState.Draft);
-        CaseTransitionRequest capturedRequest = null;
-        _dataServiceMock.Setup(ds => ds.TransitionCaseAsync(
-                It.IsAny<int>(),
-                It.IsAny<CaseTransitionRequest>(),
+        WorkflowStateHistory capturedEntry = null;
+        _dataServiceMock.Setup(hs => hs.AddHistoryEntryAsync(
+                It.IsAny<WorkflowStateHistory>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<int, CaseTransitionRequest, CancellationToken>((_, req, _) => capturedRequest = req)
-            .ReturnsAsync((int _, CaseTransitionRequest req, CancellationToken _) =>
+            .Callback<WorkflowStateHistory, CancellationToken>((entry, _) => capturedEntry = entry)
+            .ReturnsAsync((WorkflowStateHistory entry, CancellationToken _) =>
             {
-                var nextId = 1000;
-                foreach (var entry in req.HistoryEntries)
-                {
-                    entry.Id = nextId++;
-                }
-                return new CaseTransitionResponse
-                {
-                    HistoryEntries = req.HistoryEntries.ToList()
-                };
+                entry.Id = _nextHistoryId++;
+                return entry;
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        Assert.NotNull(capturedRequest);
-        Assert.NotEmpty(capturedRequest.HistoryEntries);
+        Assert.NotNull(capturedEntry);
+        Assert.Equal(WorkflowStepStatus.InProgress, capturedEntry.Status);
     }
 
     #endregion
@@ -1292,22 +1267,20 @@ public class LineOfDutyStateMachineTests
     #region Error Handling
 
     /// <summary>
-    /// Verifies that when <see cref="ICaseService.TransitionCaseAsync"/> throws an exception,
-    /// the state machine reverts to the previous state (Draft) rather than advancing to the
-    /// target state (MemberInformationEntry).
+    /// Verifies that when <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> throws an exception,
+    /// the state machine returns a failure <see cref="StateMachineResult"/> rather than advancing
+    /// successfully.
     /// </summary>
     /// <remarks>
-    /// The <c>SaveAndNotifyAsync</c> method wraps the persistence call in a try-catch block.
-    /// When the save fails, the case's <see cref="LineOfDutyCase.CurrentWorkflowState"/>
-    /// to the value it held before the transition attempt and sets <c>_lastTransitionResult</c>
-    /// to a failure result. Because the Stateless library's internal state has already moved
-    /// to the new state by the time the entry handler executes, the state machine's
+    /// The <c>HandleTransitionAsync</c> method wraps the persistence call in a try-catch block.
+    /// When the save fails, <c>_lastTransitionResult</c> is set to a failure result.
+    /// Because the Stateless library's internal state has already moved
+    /// to the new state by the time the <c>OnTransitionedAsync</c> handler executes, the state machine's
     /// <c>State</c> property may reflect the new state even after a failed save — however,
-    /// the case's workflow state is correctly reverted. This test verifies the failure result
-    /// is properly returned to the caller.
+    /// the failure result is correct.
     /// </remarks>
     [Fact]
-    public async Task FireAsync_WhenPersistenceFails_ReturnsFailure()
+    public async Task FireAsync_WhenPersistenceFails_ReturnsFailureResult()
     {
         var lodCase = BuildCase(WorkflowState.Draft);
         SetupTransitionFailure();
@@ -1324,9 +1297,9 @@ public class LineOfDutyStateMachineTests
     /// that conveys the exception details.
     /// </summary>
     /// <remarks>
-    /// The <c>SaveAndNotifyAsync</c> catch block calls <c>StateMachineResult.Fail(ex.Message)</c>,
+    /// The <c>HandleTransitionAsync</c> catch block calls <c>StateMachineResult.Fail(ex.Message)</c>,
     /// passing through the exception's message string. This error message is displayed to the
-    /// user via a Radzen notification in the UI layer. An empty or null error message would
+    /// user via notification in the UI layer. An empty or null error message would
     /// result in a confusing user experience where an error notification appears with no
     /// explanation of what went wrong.
     /// </remarks>
@@ -1351,7 +1324,8 @@ public class LineOfDutyStateMachineTests
     /// <remarks>
     /// Since <see cref="LineOfDutyCase.CurrentWorkflowState"/> is derived from
     /// <see cref="LineOfDutyCase.WorkflowStateHistories"/>, a failed save means no new
-    /// history entries were persisted, so the computed state remains at the original value.
+    /// history entries were added to the in-memory collection, so the computed state
+    /// remains at the original value.
     /// </remarks>
     [Fact]
     public async Task FireAsync_WhenPersistenceFails_CaseWorkflowStateIsReverted()
