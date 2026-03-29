@@ -1,6 +1,5 @@
-using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
+using Microsoft.OData.Client;
 using Radzen;
 
 #nullable enable
@@ -58,51 +57,64 @@ public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryServ
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var dto = ToDto(entry);
+        Context.AddObject("WorkflowStateHistories", entry);
+        await Context.SaveChangesAsync(cancellationToken);
+        Context.Detach(entry);
 
-        var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistories", dto, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize created workflow state history entry.");
+        return entry;
     }
 
     public async Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(List<WorkflowStateHistory> entries, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        var dtos = entries.Select(ToDto).ToList();
+        foreach (var entry in entries)
+        {
+            Context.AddObject("WorkflowStateHistories", entry);
+        }
 
-        var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistories/Batch", dtos, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var response = await Context.SaveChangesAsync(
+            SaveChangesOptions.BatchWithSingleChangeset | SaveChangesOptions.UseJsonBatch,
+            cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<List<WorkflowStateHistory>>(JsonOptions, cancellationToken) ?? [];
+        var savedEntries = response
+            .OfType<ChangeOperationResponse>()
+            .Select(r => (r.Descriptor as EntityDescriptor)?.Entity as WorkflowStateHistory)
+            .Where(e => e is not null)
+            .Cast<WorkflowStateHistory>()
+            .ToList();
+
+        foreach (var entry in savedEntries)
+        {
+            Context.Detach(entry);
+        }
+
+        return savedEntries;
     }
-
-    private static CreateWorkflowStateHistoryDto ToDto(WorkflowStateHistory entry) => new()
-    {
-        LineOfDutyCaseId = entry.LineOfDutyCaseId,
-        WorkflowState = entry.WorkflowState,
-        Status = entry.Status,
-        StartDate = entry.StartDate,
-        EndDate = entry.EndDate
-    };
 
     public async Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, DateTime endDate, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(entryId);
 
-        var patch = new { EndDate = endDate };
+        var query = Context.WorkflowStateHistories
+            .AddQueryOption("$filter", $"Id eq {entryId}")
+            .AddQueryOption("$top", 1);
 
-        var response = await HttpClient.PatchAsJsonAsync(
-            $"odata/WorkflowStateHistories({entryId})",
-            patch,
-            JsonOptions,
-            cancellationToken);
+        var results = await ExecuteQueryAsync(query, cancellationToken);
+        var entry = results.FirstOrDefault()
+            ?? throw new InvalidOperationException($"Workflow state history entry {entryId} not found.");
 
-        response.EnsureSuccessStatusCode();
+        entry.EndDate = endDate;
 
-        return await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken)
-               ?? throw new InvalidOperationException("Server returned null after patching workflow state history entry.");
+        if (Context.GetEntityDescriptor(entry) == null)
+        {
+            Context.AttachTo("WorkflowStateHistories", entry);
+        }
+
+        Context.UpdateObject(entry);
+        await Context.SaveChangesAsync(cancellationToken);
+        Context.Detach(entry);
+
+        return entry;
     }
 }

@@ -15,11 +15,11 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        const string select = "Id,LineOfDutyCaseId,DocumentType,FileName,ContentType,FileSize,UploadDate,Description,CreatedBy,CreatedDate,ModifiedBy,ModifiedDate,RowVersion";
-        var response = await HttpClient.GetFromJsonAsync<ODataResponse<LineOfDutyDocument>>(
-            $"odata/Cases({caseId})/Documents?$select={select}", JsonOptions, cancellationToken);
+        var query = Context.Documents
+            .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}")
+            .AddQueryOption("$select", "Id,LineOfDutyCaseId,DocumentType,FileName,ContentType,FileSize,UploadDate,Description,CreatedBy,CreatedDate,ModifiedBy,ModifiedDate,RowVersion");
 
-        return response?.Value ?? [];
+        return await ExecuteQueryAsync(query, cancellationToken);
     }
 
     public async Task<ODataServiceResult<LineOfDutyDocument>> GetDocumentsAsync(
@@ -29,17 +29,43 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        const string select = "Id,LineOfDutyCaseId,DocumentType,FileName,ContentType,FileSize,UploadDate,Description,CreatedBy,CreatedDate,ModifiedBy,ModifiedDate,RowVersion";
-        var url = BuildNavigationPropertyUrl($"odata/Cases({caseId})/Documents", filter, top, skip, orderby, count, select);
-        var response = await HttpClient.GetFromJsonAsync<ODataCountResponse<LineOfDutyDocument>>(url, JsonOptions, cancellationToken);
+        var caseFilter = $"LineOfDutyCaseId eq {caseId}";
+        var combinedFilter = string.IsNullOrEmpty(filter) ? caseFilter : $"({caseFilter}) and ({filter})";
+
+        var query = Context.Documents
+            .AddQueryOption("$filter", combinedFilter)
+            .AddQueryOption("$select", "Id,LineOfDutyCaseId,DocumentType,FileName,ContentType,FileSize,UploadDate,Description,CreatedBy,CreatedDate,ModifiedBy,ModifiedDate,RowVersion");
+
+        if (top.HasValue)
+            query = query.AddQueryOption("$top", top.Value);
+
+        if (skip.HasValue)
+            query = query.AddQueryOption("$skip", skip.Value);
+
+        if (!string.IsNullOrEmpty(orderby))
+            query = query.AddQueryOption("$orderby", orderby);
+
+        if (count == true)
+        {
+            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
+
+            return new ODataServiceResult<LineOfDutyDocument>
+            {
+                Value = items,
+                Count = totalCount
+            };
+        }
+
+        var results = await ExecuteQueryAsync(query, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyDocument>
         {
-            Value = response?.Value?.ToList() ?? [],
-            Count = response?.Count ?? 0
+            Value = results,
+            Count = results.Count
         };
     }
 
+    // Multipart file upload — HttpClient required (OData client doesn't support multipart form data)
     public async Task<LineOfDutyDocument> UploadDocumentAsync(int caseId, string fileName, string contentType, byte[] content, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
@@ -68,11 +94,22 @@ public class DocumentHttpService : ODataServiceBase, IDocumentService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentOutOfRangeException.ThrowIfNegative(documentId);
 
-        var response = await HttpClient.DeleteAsync($"odata/Documents({documentId})", cancellationToken);
+        var document = new LineOfDutyDocument { Id = documentId, LineOfDutyCaseId = caseId };
 
-        response.EnsureSuccessStatusCode();
+        Context.AttachTo("Documents", document);
+        Context.DeleteObject(document);
+
+        try
+        {
+            await Context.SaveChangesAsync(cancellationToken);
+        }
+        finally
+        {
+            Context.Detach(document);
+        }
     }
 
+    // Binary stream download — HttpClient required (OData client doesn't support raw byte responses)
     public async Task<byte[]> GetForm348PdfAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);

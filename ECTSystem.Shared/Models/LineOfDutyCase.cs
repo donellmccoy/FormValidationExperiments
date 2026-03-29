@@ -113,8 +113,7 @@ public class LineOfDutyCase : AuditableEntity
     public WorkflowState CurrentWorkflowState
     {
         get => WorkflowStateHistories?
-            .OrderByDescending(h => h.CreatedDate)
-            .ThenByDescending(h => h.Id)
+            .OrderByDescending(h => h.Id)
             .Select(h => h.WorkflowState)
             .FirstOrDefault() ?? WorkflowState.Draft;
         set { } // No-op: computed property; setter required for OData client materialization
