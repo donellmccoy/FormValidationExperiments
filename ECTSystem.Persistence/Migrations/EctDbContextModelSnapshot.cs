@@ -40,7 +40,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasIndex("LineOfDutyCaseId");
 
-                    b.ToTable("AuditComments");
+                    b.ToTable("AuditComments", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.CaseBookmark", b =>
@@ -86,7 +86,7 @@ namespace ECTSystem.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[UserId] IS NOT NULL");
 
-                    b.ToTable("CaseBookmarks");
+                    b.ToTable("CaseBookmarks", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.INCAPDetails", b =>
@@ -132,7 +132,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("INCAPDetails");
+                    b.ToTable("INCAPDetails", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyAppeal", b =>
@@ -190,7 +190,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasIndex("LineOfDutyCaseId");
 
-                    b.ToTable("Appeals");
+                    b.ToTable("Appeals", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyAuthority", b =>
@@ -246,7 +246,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasIndex("LineOfDutyCaseId");
 
-                    b.ToTable("Authorities");
+                    b.ToTable("Authorities", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyCase", b =>
@@ -671,7 +671,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.HasIndex("MemberId", "CreatedDate")
                         .HasDatabaseName("IX_Cases_MemberId_CreatedDate");
 
-                    b.ToTable("Cases");
+                    b.ToTable("Cases", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.LineOfDutyDocument", b =>
@@ -729,7 +729,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasIndex("LineOfDutyCaseId");
 
-                    b.ToTable("Documents");
+                    b.ToTable("Documents", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.MEDCONDetail", b =>
@@ -783,7 +783,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MEDCONDetails");
+                    b.ToTable("MEDCONDetails", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.Member", b =>
@@ -837,7 +837,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Members");
+                    b.ToTable("Members", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.Notification", b =>
@@ -890,7 +890,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasIndex("LineOfDutyCaseId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.WitnessStatement", b =>
@@ -911,7 +911,7 @@ namespace ECTSystem.Persistence.Migrations
 
                     b.HasIndex("LineOfDutyCaseId");
 
-                    b.ToTable("WitnessStatements");
+                    b.ToTable("WitnessStatements", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowModule", b =>
@@ -1031,7 +1031,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.HasIndex("LineOfDutyCaseId", "CreatedDate", "Id")
                         .IsDescending(false, true, true);
 
-                    b.ToTable("WorkflowStateHistories");
+                    b.ToTable("WorkflowStateHistories", (string)null);
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>

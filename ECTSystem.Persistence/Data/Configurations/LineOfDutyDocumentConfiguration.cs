@@ -9,6 +9,9 @@ public class LineOfDutyDocumentConfiguration : IEntityTypeConfiguration<LineOfDu
     public void Configure(EntityTypeBuilder<LineOfDutyDocument> builder)
     {
         builder.HasKey(e => e.Id);
+
+        builder.HasIndex(e => e.LineOfDutyCaseId);
+
         builder.Property(e => e.Content).HasColumnType("varbinary(max)");
         builder.Property(e => e.ContentType).HasMaxLength(256);
         builder.Property(e => e.FileName).HasMaxLength(512);

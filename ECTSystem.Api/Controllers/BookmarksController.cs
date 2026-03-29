@@ -12,12 +12,12 @@ namespace ECTSystem.Api.Controllers;
 
 /// <summary>
 /// OData-enabled controller for case bookmark operations.
-/// Named "CaseBookmarksController" to match the OData entity set "CaseBookmarks" (convention routing).
+/// Named "BookmarksController" to match the OData entity set "CaseBookmarks" (convention routing).
 /// </summary>
 [Authorize]
-public class CaseBookmarksController : ODataControllerBase
+public class BookmarksController : ODataControllerBase
 {
-    public CaseBookmarksController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
+    public BookmarksController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
         : base(contextFactory, loggingService)
     {
     }

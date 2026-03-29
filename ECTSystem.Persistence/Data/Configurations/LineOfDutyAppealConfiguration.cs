@@ -10,6 +10,9 @@ public class LineOfDutyAppealConfiguration : IEntityTypeConfiguration<LineOfDuty
     {
         builder.HasKey(e => e.Id);
 
+        builder.HasIndex(e => e.LineOfDutyCaseId);
+        builder.HasIndex(e => e.AppellateAuthorityId);
+
         builder.Property(e => e.NewEvidence)
                .HasConversion(StringListConversion.Converter)
                .Metadata.SetValueComparer(StringListConversion.Comparer);

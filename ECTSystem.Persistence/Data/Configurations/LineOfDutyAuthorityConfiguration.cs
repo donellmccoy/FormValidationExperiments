@@ -10,6 +10,8 @@ public class LineOfDutyAuthorityConfiguration : IEntityTypeConfiguration<LineOfD
     {
         builder.HasKey(e => e.Id);
 
+        builder.HasIndex(e => e.LineOfDutyCaseId);
+
         builder.Property(e => e.Comments)
                .HasConversion(StringListConversion.Converter)
                .Metadata.SetValueComparer(StringListConversion.Comparer);

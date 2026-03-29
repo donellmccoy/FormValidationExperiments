@@ -12,13 +12,13 @@ using Xunit;
 namespace ECTSystem.Tests.Controllers;
 
 /// <summary>
-/// Unit tests for <see cref="CaseBookmarksController"/>, the OData controller that manages
+/// Unit tests for <see cref="BookmarksController"/>, the OData controller that manages
 /// per-user case bookmarks (favorites) in the ECT System API.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Each test instance creates an isolated in-memory EF Core database and a
-/// <see cref="CaseBookmarksController"/> configured with a fake authenticated user
+/// <see cref="BookmarksController"/> configured with a fake authenticated user
 /// (<see cref="ControllerTestBase.TestUserId"/>). The controller filters all queries
 /// and mutations by the current user's <c>NameIdentifier</c> claim.
 /// </para>
@@ -36,12 +36,12 @@ public class CaseBookmarksControllerTests : ControllerTestBase
     private readonly Mock<ILoggingService> _mockLog;
     /// <summary>Mocked context factory returning <see cref="EctDbContext"/> instances backed by the in-memory store.</summary>
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
-    /// <summary>System under test — the <see cref="CaseBookmarksController"/> instance.</summary>
-    private readonly CaseBookmarksController _sut;
+    /// <summary>System under test — the <see cref="BookmarksController"/> instance.</summary>
+    private readonly BookmarksController _sut;
 
     /// <summary>
     /// Initializes the in-memory database, configures mocked dependencies, and creates
-    /// the <see cref="CaseBookmarksController"/> with a fake authenticated user context.
+    /// the <see cref="BookmarksController"/> with a fake authenticated user context.
     /// </summary>
     public CaseBookmarksControllerTests()
     {
@@ -58,14 +58,14 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _sut = new CaseBookmarksController(_mockContextFactory.Object, _mockLog.Object);
+        _sut = new BookmarksController(_mockContextFactory.Object, _mockLog.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 
     // ─────────────────────────── Get (collection) ────────────────────────────
 
     /// <summary>
-    /// Verifies that <see cref="CaseBookmarksController.Get()"/> returns an
+    /// Verifies that <see cref="BookmarksController.Get()"/> returns an
     /// <see cref="OkObjectResult"/> wrapping an <see cref="IQueryable{CaseBookmark}"/>
     /// scoped to the authenticated user.
     /// </summary>
@@ -126,7 +126,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
     // ──────────────────────────── Delete (key) ─────────────────────────────
 
     /// <summary>
-    /// Verifies that <see cref="CaseBookmarksController.Delete(int, CancellationToken)"/>
+    /// Verifies that <see cref="BookmarksController.Delete(int, CancellationToken)"/>
     /// removes the matching bookmark and returns <see cref="NoContentResult"/>.
     /// </summary>
     [Fact]

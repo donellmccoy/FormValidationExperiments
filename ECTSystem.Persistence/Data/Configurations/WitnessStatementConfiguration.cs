@@ -4,9 +4,9 @@ using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Persistence.Data.Configurations;
 
-public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
+public class WitnessStatementConfiguration : IEntityTypeConfiguration<WitnessStatement>
 {
-    public void Configure(EntityTypeBuilder<Notification> builder)
+    public void Configure(EntityTypeBuilder<WitnessStatement> builder)
     {
         builder.HasKey(e => e.Id);
 
