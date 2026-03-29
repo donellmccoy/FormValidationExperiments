@@ -1,4 +1,5 @@
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using ECTSystem.Web.StateMachines;
@@ -100,12 +101,12 @@ public class LineOfDutyStateMachineTests
     /// </summary>
     /// <param name="state">
     /// The <see cref="WorkflowState"/> to assign to the case. Determines the case's
-    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> computed property and the initial state of any
+    /// current workflow state (via <see cref="LineOfDutyExtensions.GetCurrentWorkflowState"/>) and the initial state of any
     /// <see cref="LineOfDutyStateMachine"/> constructed with this case.
     /// </param>
     /// <returns>
     /// A new <see cref="LineOfDutyCase"/> with <see cref="LineOfDutyCase.Id"/> set to 1 and
-    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> reflecting <paramref name="state"/>.
+    /// its current workflow state reflecting <paramref name="state"/>.
     /// </returns>
     private static LineOfDutyCase BuildCase(WorkflowState state)
     {
@@ -186,7 +187,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that constructing a <see cref="LineOfDutyStateMachine"/> with a
-    /// <see cref="LineOfDutyCase"/> whose <see cref="LineOfDutyCase.CurrentWorkflowState"/> is
+    /// <see cref="LineOfDutyCase"/> whose current workflow state is
     /// <see cref="WorkflowState.Draft"/> results in the state machine's
     /// <see cref="LineOfDutyStateMachine.State"/> property reflecting <see cref="WorkflowState.Draft"/>.
     /// </summary>
@@ -1179,7 +1180,7 @@ public class LineOfDutyStateMachineTests
     /// <remarks>
     /// The <c>HandleTransitionAsync</c> method adds the persisted history entry to the
     /// in-memory <see cref="LineOfDutyCase.WorkflowStateHistories"/> collection, so the
-    /// case's <see cref="LineOfDutyCase.CurrentWorkflowState"/> reflects the new state.
+    /// case's current workflow state (via <see cref="LineOfDutyExtensions.GetCurrentWorkflowState"/>) reflects the new state.
     /// </remarks>
     [Fact]
     public async Task FireAsync_AfterTransition_CasePropertyReflectsServerResponse()
@@ -1190,7 +1191,7 @@ public class LineOfDutyStateMachineTests
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        Assert.Equal(WorkflowState.MemberInformationEntry, sm.Case.CurrentWorkflowState);
+        Assert.Equal(WorkflowState.MemberInformationEntry, sm.Case.GetCurrentWorkflowState());
     }
 
     /// <summary>
@@ -1316,13 +1317,13 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that when persistence fails, the in-memory <see cref="LineOfDutyCase.CurrentWorkflowState"/>
+    /// Verifies that when persistence fails, the in-memory current workflow state
     /// on the state machine's <see cref="LineOfDutyStateMachine.Case"/> property reflects
     /// the original state (Draft), ensuring the case object remains consistent even though
     /// the Stateless library's internal state may have advanced.
     /// </summary>
     /// <remarks>
-    /// Since <see cref="LineOfDutyCase.CurrentWorkflowState"/> is derived from
+    /// Since the current workflow state is derived from
     /// <see cref="LineOfDutyCase.WorkflowStateHistories"/>, a failed save means no new
     /// history entries were added to the in-memory collection, so the computed state
     /// remains at the original value.
@@ -1336,7 +1337,7 @@ public class LineOfDutyStateMachineTests
 
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
-        Assert.Equal(WorkflowState.Draft, sm.Case.CurrentWorkflowState);
+        Assert.Equal(WorkflowState.Draft, sm.Case.GetCurrentWorkflowState());
     }
 
     #endregion

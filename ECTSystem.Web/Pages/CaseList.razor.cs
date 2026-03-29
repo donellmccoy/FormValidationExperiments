@@ -85,7 +85,7 @@ public partial class CaseList : ComponentBase, IDisposable
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
-                // TODO: pass select: ListSelect once CurrentWorkflowState is
+                // TODO: pass select: ListSelect once the current workflow state is
                 // persisted as a computed column — currently it's derived from
                 // WorkflowStateHistories navigation which $select would exclude.
                 count: true,

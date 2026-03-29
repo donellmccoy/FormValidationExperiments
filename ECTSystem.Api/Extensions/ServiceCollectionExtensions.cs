@@ -173,7 +173,6 @@ public static class ServiceCollectionExtensions
         var odataBuilder = new ODataConventionModelBuilder();
 
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
-        odataBuilder.EntityType<LineOfDutyCase>().Ignore(c => c.CurrentWorkflowState);
 
         odataBuilder.EntitySet<Member>("Members");
         odataBuilder.EntitySet<Notification>("Notifications");
@@ -187,7 +186,7 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
         odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 
-        odataBuilder.EntitySet<CaseBookmark>("CaseBookmarks");
+        odataBuilder.EntitySet<CaseBookmark>("Bookmarks");
 
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");

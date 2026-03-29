@@ -12,7 +12,7 @@ public class WorkflowStateHistoryConfiguration : IEntityTypeConfiguration<Workfl
 
         builder.HasIndex(h => new { h.LineOfDutyCaseId, h.WorkflowState });
 
-        // Supports CurrentWorkflowState derivation: most-recent history entry by CreatedDate, Id
+        // Supports GetCurrentWorkflowState() derivation: most-recent history entry by CreatedDate, Id
         builder.HasIndex(h => new { h.LineOfDutyCaseId, h.CreatedDate, h.Id })
                .IsDescending(false, true, true);
 

@@ -1,4 +1,5 @@
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Helpers;
 using ECTSystem.Web.Services;
@@ -152,8 +153,8 @@ internal class LineOfDutyStateMachine
     /// persistence, and configures all permitted state transitions via <see cref="Configure"/>.
     /// </summary>
     /// <param name="lineOfDutyCase">
-    /// The LOD case to manage. Must not be <c>null</c>. The case's
-    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/> determines the initial state.
+    /// The LOD case to manage. Must not be <c>null</c>. The case's current workflow state
+    /// (via <see cref="LineOfDutyExtensions.GetCurrentWorkflowState"/>)rkflowState"/>)rkflowState"/>) determines the initial state.
     /// </param>
     /// <param name="historyService">
     /// The workflow history service used to persist history entries during transitions.
@@ -163,7 +164,7 @@ internal class LineOfDutyStateMachine
         _lineOfDutyCase = lineOfDutyCase;
         _historyService = historyService;
 
-        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.CurrentWorkflowState, FiringMode.Queued);
+        _sm = new StateMachine<WorkflowState, LineOfDutyTrigger>(lineOfDutyCase.GetCurrentWorkflowState(), FiringMode.Queued);
 
         _returnTrigger = _sm.SetTriggerParameters<LineOfDutyCase, WorkflowState>(LineOfDutyTrigger.Return);
 
@@ -740,7 +741,7 @@ internal class LineOfDutyStateMachine
 
         await _sm.FireAsync(trigger);
 
-        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState));
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.GetCurrentWorkflowState()));
     }
 
     /// <summary>
@@ -760,7 +761,7 @@ internal class LineOfDutyStateMachine
 
         await _sm.FireAsync(trigger);
 
-        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState));
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.GetCurrentWorkflowState()));
     }
 
     /// <summary>
@@ -781,7 +782,7 @@ internal class LineOfDutyStateMachine
 
         await _sm.FireAsync(_returnTrigger, lodCase, targetState);
 
-        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState));
+        return _lastTransitionResult ?? StateMachineResult.Ok(_lineOfDutyCase, WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.GetCurrentWorkflowState()));
     }
 
     /// <summary>

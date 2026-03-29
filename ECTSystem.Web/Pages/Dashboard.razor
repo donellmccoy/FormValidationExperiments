@@ -234,9 +234,9 @@
                                 </Template>
                             </RadzenDataGridColumn>
                             <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" HeaderCssClass="rz-display-none rz-display-md-table-cell" CssClass="rz-display-none rz-display-md-table-cell" />
-                            <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CurrentWorkflowState" Title="Status" Width="200px">
+                            <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Status" Width="200px" Sortable="false" Filterable="false">
                                 <Template Context="lodCase">
-                                    <RadzenBadge BadgeStyle="GetBadgeStyle(lodCase.CurrentWorkflowState)" Text="@lodCase.CurrentWorkflowState.ToDisplayString()" class="rz-border-radius-4 rz-px-2 rz-py-1" />
+                                    <RadzenBadge BadgeStyle="GetBadgeStyle(lodCase.GetCurrentWorkflowState())" Text="@lodCase.GetCurrentWorkflowState().ToDisplayString()" class="rz-border-radius-4 rz-px-2 rz-py-1" />
                                 </Template>
                             </RadzenDataGridColumn>
                             <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" Width="150px" HeaderCssClass="rz-display-none rz-display-sm-table-cell" CssClass="rz-display-none rz-display-sm-table-cell" />

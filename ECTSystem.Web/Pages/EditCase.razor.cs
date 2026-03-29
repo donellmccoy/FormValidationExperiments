@@ -282,7 +282,7 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         if (IsNewCase)
         {
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.CurrentWorkflowState ?? WorkflowState.Draft);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.GetCurrentWorkflowState() ?? WorkflowState.Draft);
 
             TakeSnapshots();
         }
@@ -341,7 +341,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             TakeSnapshots();
 
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.CurrentWorkflowState);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase.GetCurrentWorkflowState());
 
             // Pre-populate tracking data from $expand to avoid a duplicate HTTP request
             // when the tracking tab is first opened
@@ -398,7 +398,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 Duration = 5000
             });
 
-            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.CurrentWorkflowState ?? WorkflowState.Draft);
+            _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.GetCurrentWorkflowState() ?? WorkflowState.Draft);
         }
         finally
         {
@@ -1073,7 +1073,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool IsTabDisabled(int tabIndex)
     {
-        return WorkflowTabHelper.IsTabDisabled(tabIndex, _lineOfDutyCase?.CurrentWorkflowState ?? WorkflowState.Draft);
+        return WorkflowTabHelper.IsTabDisabled(tabIndex, _lineOfDutyCase?.GetCurrentWorkflowState() ?? WorkflowState.Draft);
     }
 
     #endregion

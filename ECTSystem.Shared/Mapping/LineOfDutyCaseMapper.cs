@@ -47,7 +47,7 @@ public static partial class LineOfDutyCaseMapper
             SSN = source.ServiceNumber ?? string.Empty,
             DutyStatus = source.IncidentDutyStatus.ToDisplayString(),
             Status = DeriveStatus(source),
-            WorkflowState = source.CurrentWorkflowState,
+            WorkflowState = source.GetCurrentWorkflowState(),
             IncidentCircumstances = source.IncidentDescription ?? string.Empty,
             ReportedInjury = source.IncidentDescription ?? string.Empty,
 

@@ -1,4 +1,3 @@
-using System.Runtime.Serialization;
 using ECTSystem.Shared.Enums;
 
 namespace ECTSystem.Shared.Models;
@@ -102,22 +101,6 @@ public class LineOfDutyCase : AuditableEntity
     public DateTime? InterimLODExpiration { get; set; } // Valid for 90 days
     public ICollection<LineOfDutyAuthority> Authorities { get; set; } = new HashSet<LineOfDutyAuthority>();
     public ICollection<WorkflowStateHistory> WorkflowStateHistories { get; set; } = new HashSet<WorkflowStateHistory>();
-
-    /// <summary>
-    /// Derives the current workflow state from the most recent <see cref="WorkflowStateHistory"/>
-    /// entry by <see cref="AuditableEntity.CreatedDate"/>, with <see cref="WorkflowStateHistory.Id"/>
-    /// as a tiebreaker. Returns <see cref="WorkflowState.Draft"/> if no history exists.
-    /// </summary>
-    [IgnoreDataMember]
-    [System.Text.Json.Serialization.JsonIgnore]
-    public WorkflowState CurrentWorkflowState
-    {
-        get => WorkflowStateHistories?
-            .OrderByDescending(h => h.Id)
-            .Select(h => h.WorkflowState)
-            .FirstOrDefault() ?? WorkflowState.Draft;
-        set { } // No-op: computed property; setter required for OData client materialization
-    }
 
     // Findings and Determinations
     public LineOfDutyFinding FinalFinding { get; set; }

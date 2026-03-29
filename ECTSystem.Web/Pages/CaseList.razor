@@ -102,7 +102,7 @@ else
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit"  />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Status" Sortable="false" Filterable="false">
             <Template Context="lodCase">
-                @lodCase.CurrentWorkflowState.ToDisplayString()
+                @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type">

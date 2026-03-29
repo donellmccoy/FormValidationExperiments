@@ -22,14 +22,16 @@ public class CasesIntegrationTests : IntegrationTestBase
     {
         await AuthenticateAsync();
 
-        // Seed a member so the case has a valid MemberId FK
-        var memberId = await SeedMemberAsync();
+        // Seed a member and required related entities so the case has valid FKs
+        var (memberId, medconId, incapId) = await SeedMemberWithBenefitsAsync();
 
         var payload = new
         {
             MemberName = "Doe, John A",
             MemberRank = "TSgt",
             MemberId = memberId,
+            MEDCONId = medconId,
+            INCAPId = incapId,
             ProcessType = nameof(ProcessType.Informal),
             Component = nameof(ServiceComponent.AirForceReserve),
             IncidentType = nameof(IncidentType.Injury),
@@ -67,11 +69,9 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         var (caseDbId, rowVersion) = await SeedCaseAsync();
 
-        var patchPayload = new
-        {
-            IncidentDescription = "Updated: slip and fall during field exercise",
-            RowVersion = Convert.ToBase64String(rowVersion)
-        };
+        object patchPayload = rowVersion is not null
+            ? new { IncidentDescription = "Updated: slip and fall during field exercise", RowVersion = Convert.ToBase64String(rowVersion) }
+            : new { IncidentDescription = "Updated: slip and fall during field exercise" };
 
         var request = new HttpRequestMessage(HttpMethod.Patch, $"/odata/Cases({caseDbId})")
         {
@@ -80,6 +80,7 @@ public class CasesIntegrationTests : IntegrationTestBase
                 Encoding.UTF8,
                 "application/json")
         };
+        request.Headers.Add("Prefer", "return=representation");
 
         var response = await Client.SendAsync(request);
 
@@ -107,15 +108,16 @@ public class CasesIntegrationTests : IntegrationTestBase
         multipart.Add(new StringContent("Supporting Document"), "documentType");
         multipart.Add(new StringContent("Test description"), "description");
 
-        var uploadResponse = await Client.PostAsync($"/api/cases/{caseDbId}/documents", multipart);
+        var uploadResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Documents", multipart);
 
         Assert.Equal(HttpStatusCode.OK, uploadResponse.StatusCode);
 
-        var docs = await uploadResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var docId = docs[0].GetProperty("Id").GetInt32();
+        var docsJson = await uploadResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var docsArray = docsJson.ValueKind == JsonValueKind.Array ? docsJson : docsJson.GetProperty("value");
+        var docId = docsArray[0].GetProperty("Id").GetInt32();
 
         // Download the same document
-        var downloadResponse = await Client.GetAsync($"/api/cases/{caseDbId}/documents/{docId}/download");
+        var downloadResponse = await Client.GetAsync($"/odata/Documents({docId})/$value");
 
         Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
@@ -133,7 +135,7 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         // First checkout should succeed
         var firstResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null);
-        Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
         // Second checkout should be rejected
         var secondResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null);
@@ -162,6 +164,36 @@ public class CasesIntegrationTests : IntegrationTestBase
         await context.SaveChangesAsync();
 
         return member.Id;
+    }
+
+    /// <summary>
+    /// Seeds a <see cref="Member"/> with required <see cref="MEDCONDetail"/> and <see cref="INCAPDetails"/>
+    /// entities and returns their Ids for use in API payloads.
+    /// </summary>
+    private async Task<(int MemberId, int MEDCONId, int INCAPId)> SeedMemberWithBenefitsAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<EctDbContext>>();
+        await using var context = await contextFactory.CreateDbContextAsync();
+
+        var member = new Member
+        {
+            FirstName = "John",
+            LastName = "Doe",
+            Rank = "TSgt",
+            Component = ServiceComponent.AirForceReserve,
+            ServiceNumber = "1234567890"
+        };
+
+        var medcon = new MEDCONDetail();
+        var incap = new INCAPDetails();
+
+        context.Members.Add(member);
+        context.MEDCONDetails.Add(medcon);
+        context.INCAPDetails.Add(incap);
+        await context.SaveChangesAsync();
+
+        return (member.Id, medcon.Id, incap.Id);
     }
 
     /// <summary>
@@ -197,7 +229,9 @@ public class CasesIntegrationTests : IntegrationTestBase
             Component = ServiceComponent.AirNationalGuard,
             IncidentType = IncidentType.Injury,
             IncidentDate = DateTime.UtcNow.AddDays(-10),
-            IncidentDescription = "Initial description"
+            IncidentDescription = "Initial description",
+            MEDCON = new MEDCONDetail(),
+            INCAP = new INCAPDetails()
         };
 
         context.Cases.Add(lodCase);

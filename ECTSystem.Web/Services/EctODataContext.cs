@@ -11,7 +11,7 @@ public class EctODataContext : DataServiceContext
     {
         MergeOption = MergeOption.OverwriteChanges; 
 
-        ResolveName = ResolveEntitySetName;
+        ResolveName = type => type.FullName!;
         ResolveType = ResolveEntityType;
     }
 
@@ -30,8 +30,8 @@ public class EctODataContext : DataServiceContext
     public DataServiceQuery<WorkflowStateHistory> WorkflowStateHistories
         => CreateQuery<WorkflowStateHistory>("WorkflowStateHistories");
 
-    public DataServiceQuery<CaseBookmark> CaseBookmarks
-        => CreateQuery<CaseBookmark>("CaseBookmarks");
+    public DataServiceQuery<CaseBookmark> Bookmarks
+        => CreateQuery<CaseBookmark>("Bookmarks");
 
     public DataServiceQuery<Notification> Notifications
         => CreateQuery<Notification>("Notifications");
@@ -54,7 +54,7 @@ public class EctODataContext : DataServiceContext
             nameof(LineOfDutyAuthority) => "Authorities",
             nameof(LineOfDutyDocument) => "Documents",
             nameof(WorkflowStateHistory) => "WorkflowStateHistories",
-            nameof(CaseBookmark) => "CaseBookmarks",
+            nameof(CaseBookmark) => "Bookmarks",
             nameof(Notification) => "Notifications",
             nameof(LineOfDutyAppeal) => "Appeals",
             nameof(WitnessStatement) => "WitnessStatements",

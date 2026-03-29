@@ -17,7 +17,7 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         CancellationToken cancellationToken = default)
     {
         // Step 1: Get all bookmarked case IDs for the current user.
-        var bookmarkQuery = Context.CaseBookmarks
+        var bookmarkQuery = Context.Bookmarks
             .AddQueryOption("$select", "LineOfDutyCaseId");
 
         var bookmarks = await ExecuteQueryAsync(bookmarkQuery, cancellationToken);
@@ -70,11 +70,10 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
 
         var bookmark = new CaseBookmark { LineOfDutyCaseId = caseId };
 
-        Context.AddObject("CaseBookmarks", bookmark);
-
         try
         {
-            await Context.SaveChangesAsync(cancellationToken);
+            Context.AddObject("Bookmarks", bookmark);
+            await Context.SaveChangesAsync(SaveChangesOptions.None, cancellationToken);
         }
         finally
         {
@@ -86,7 +85,7 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var query = Context.CaseBookmarks
+        var query = Context.Bookmarks
             .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}")
             .AddQueryOption("$top", 1)
             .AddQueryOption("$select", "Id");
@@ -103,7 +102,7 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         {
             if (Context.GetEntityDescriptor(bookmark) == null)
             {
-                Context.AttachTo("CaseBookmarks", bookmark);
+                Context.AttachTo("Bookmarks", bookmark);
             }
             Context.DeleteObject(bookmark);
             await Context.SaveChangesAsync(cancellationToken);
@@ -122,7 +121,7 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var query = Context.CaseBookmarks
+        var query = Context.Bookmarks
             .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}")
             .AddQueryOption("$top", 1)
             .AddQueryOption("$select", "Id");
@@ -140,7 +139,7 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
         }
 
         var ids = string.Join(",", caseIds);
-        var query = Context.CaseBookmarks
+        var query = Context.Bookmarks
             .AddQueryOption("$filter", $"LineOfDutyCaseId in ({ids})")
             .AddQueryOption("$select", "LineOfDutyCaseId");
 

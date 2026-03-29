@@ -10,6 +10,13 @@ public class ODataLoggingHandler : DelegatingHandler
     {
         Console.WriteLine($"[OData] >>> {request.Method} {request.RequestUri}");
 
+        if (request.Content is not null)
+        {
+            var requestBody = await request.Content.ReadAsStringAsync(cancellationToken);
+            Console.WriteLine($"[OData] Request Content-Type: {request.Content.Headers.ContentType}");
+            Console.WriteLine($"[OData] Request body: {requestBody}");
+        }
+
         var response = await base.SendAsync(request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -17,6 +24,10 @@ public class ODataLoggingHandler : DelegatingHandler
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             Console.WriteLine($"[OData] <<< {(int)response.StatusCode} {response.StatusCode}");
             Console.WriteLine($"[OData] Response body: {body}");
+        }
+        else
+        {
+            Console.WriteLine($"[OData] <<< {(int)response.StatusCode} {response.StatusCode}");
         }
 
         return response;

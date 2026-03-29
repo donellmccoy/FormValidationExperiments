@@ -1,3 +1,4 @@
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using ECTSystem.Web.StateMachines;
@@ -25,13 +26,13 @@ internal class LineOfDutyStateMachineFactory
     /// <summary>
     /// Creates a new <see cref="LineOfDutyStateMachine"/> initialized with the specified
     /// LOD case. The state machine starts in the case's current
-    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/>.
+    /// workflow state (via <see cref="LineOfDutyExtensions.GetCurrentWorkflowState"/>)ns.GetCurrentWorkflowState"/>)ns.GetCurrentWorkflowState"/>).
     /// </summary>
     /// <param name="lineOfDutyCase">The LOD case to manage.</param>
     /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/>.</returns>
     public LineOfDutyStateMachine Create(LineOfDutyCase lineOfDutyCase)
     {
-        _logger.LogDebug("Creating state machine for case {CaseId} in state {State}", lineOfDutyCase.CaseId, lineOfDutyCase.CurrentWorkflowState);
+        _logger.LogDebug("Creating state machine for case {CaseId} in state {State}", lineOfDutyCase.CaseId, lineOfDutyCase.GetCurrentWorkflowState());
 
         return new LineOfDutyStateMachine(lineOfDutyCase, _historyService);
     }

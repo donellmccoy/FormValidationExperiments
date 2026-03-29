@@ -33,7 +33,7 @@ public static class LineOfDutyCaseQueryExtensions
     /// <see cref="LineOfDutyCase.WorkflowStateHistories"/> eagerly loaded.
     /// Used for mutation responses (PATCH, POST) where the client already holds all other
     /// navigation data in memory and only needs the updated histories to recompute
-    /// <see cref="LineOfDutyCase.CurrentWorkflowState"/>.
+    /// the current workflow state via <see cref="LineOfDutyExtensions.GetCurrentWorkflowState"/>.
     /// </summary>
     public static IQueryable<LineOfDutyCase> IncludeWorkflowState(this IQueryable<LineOfDutyCase> query)
     {
@@ -51,8 +51,7 @@ public static class LineOfDutyCaseQueryExtensions
     {
         return query.Where(c => states.Contains(
             c.WorkflowStateHistories
-                .OrderByDescending(h => h.CreatedDate)
-                .ThenByDescending(h => h.Id)
+                .OrderByDescending(h => h.Id)
                 .Select(h => h.WorkflowState)
                 .FirstOrDefault()));
     }
@@ -68,8 +67,7 @@ public static class LineOfDutyCaseQueryExtensions
     {
         return query.Where(c => !states.Contains(
             c.WorkflowStateHistories
-                .OrderByDescending(h => h.CreatedDate)
-                .ThenByDescending(h => h.Id)
+                .OrderByDescending(h => h.Id)
                 .Select(h => h.WorkflowState)
                 .FirstOrDefault()));
     }

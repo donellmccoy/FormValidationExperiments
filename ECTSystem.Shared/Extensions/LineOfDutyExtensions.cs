@@ -33,4 +33,17 @@ public static class LineOfDutyExtensions
     {
         lodCase.AddHistoryEntry(WorkflowStateHistoryFactory.CreateInitialHistory(lodCase.Id, state, startDate ?? lodCase.CreatedDate));
     }
+
+    /// <summary>
+    /// Derives the current workflow state from the most recent <see cref="WorkflowStateHistory"/>
+    /// entry by <see cref="WorkflowStateHistory.Id"/> (descending).
+    /// Returns <see cref="WorkflowState.Draft"/> if the case is <c>null</c> or has no history.
+    /// </summary>
+    public static WorkflowState GetCurrentWorkflowState(this LineOfDutyCase lodCase)
+    {
+        return lodCase?.WorkflowStateHistories?
+            .OrderByDescending(h => h.Id)
+            .Select(h => h.WorkflowState)
+            .FirstOrDefault() ?? WorkflowState.Draft;
+    }
 }

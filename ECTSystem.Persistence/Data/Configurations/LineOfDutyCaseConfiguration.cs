@@ -17,9 +17,6 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
         builder.HasIndex(e => new { e.MemberId, e.CreatedDate })
                .HasDatabaseName("IX_Cases_MemberId_CreatedDate");
 
-        // CurrentWorkflowState is a computed CLR property — not a database column
-        builder.Ignore(e => e.CurrentWorkflowState);
-
         builder.HasMany(e => e.WitnessStatements)
                .WithOne()
                .HasForeignKey(w => w.LineOfDutyCaseId)

@@ -7195,22 +7195,22 @@ namespace ECTSystem.Web.OData.Default
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
         private global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.INCAPDetails> _INCAPDetails;
         /// <summary>
-        /// There are no comments for CaseBookmarks in the schema.
+        /// There are no comments for Bookmarks in the schema.
         /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        public virtual global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> CaseBookmarks
+        public virtual global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> Bookmarks
         {
             get
             {
-                if ((this._CaseBookmarks == null))
+                if ((this._Bookmarks == null))
                 {
-                    this._CaseBookmarks = base.CreateQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark>("CaseBookmarks");
+                    this._Bookmarks = base.CreateQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark>("Bookmarks");
                 }
-                return this._CaseBookmarks;
+                return this._Bookmarks;
             }
         }
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        private global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> _CaseBookmarks;
+        private global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> _Bookmarks;
         /// <summary>
         /// There are no comments for WorkflowStateHistories in the schema.
         /// </summary>

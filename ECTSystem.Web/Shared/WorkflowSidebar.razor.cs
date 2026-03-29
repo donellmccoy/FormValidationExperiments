@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Web.Shared;
@@ -93,7 +94,7 @@ public partial class WorkflowSidebar : ComponentBase
         lodCase ??= LineOfDutyCase;
 
         // Clamp to valid range — DB rows that predate the WorkflowState migration have int value 0
-        var rawState = lodCase is not null ? (int)lodCase.CurrentWorkflowState : 1;
+        var rawState = lodCase is not null ? (int)lodCase.GetCurrentWorkflowState() : 1;
         var stateInt = rawState < 1 ? 1 : rawState > Steps.Count ? Steps.Count : rawState;
 
         // Primary source: all history entries for each WorkflowState.
