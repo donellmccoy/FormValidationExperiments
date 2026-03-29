@@ -135,18 +135,24 @@ public class EctSystemWebApplicationFactory : WebApplicationFactory<ECTSystem.Ap
             var identityContext = scope.ServiceProvider.GetRequiredService<EctIdentityDbContext>();
             identityContext.Database.EnsureCreated();
 
-            // Seed a test user for authentication
+            // Seed a test user for authentication.
+            // UserManager has no synchronous API and ConfigureServices is a sync callback,
+            // so we use Task.Run to execute on a thread-pool thread without a
+            // SynchronizationContext, preventing potential deadlocks.
             var userManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
-            if (userManager.FindByEmailAsync("test@ect.mil").GetAwaiter().GetResult() is null)
+            Task.Run(async () =>
             {
-                var testUser = new ApplicationUser
+                if (await userManager.FindByEmailAsync("test@ect.mil") is null)
                 {
-                    UserName = "test@ect.mil",
-                    Email = "test@ect.mil",
-                    EmailConfirmed = true
-                };
-                userManager.CreateAsync(testUser, "Pass123").GetAwaiter().GetResult();
-            }
+                    var testUser = new ApplicationUser
+                    {
+                        UserName = "test@ect.mil",
+                        Email = "test@ect.mil",
+                        EmailConfirmed = true
+                    };
+                    await userManager.CreateAsync(testUser, "Pass123");
+                }
+            }).GetAwaiter().GetResult();
         });
     }
 
