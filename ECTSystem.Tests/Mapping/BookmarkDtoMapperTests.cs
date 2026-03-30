@@ -37,7 +37,7 @@ public class BookmarkDtoMapperTests
     }
 
     /// <summary>
-    /// Verifies that the entity's non-mapped properties (Id, UserId, BookmarkedDate)
+    /// Verifies that the entity's non-mapped properties (Id, UserId)
     /// retain their defaults, since only LineOfDutyCaseId is mapped from the DTO.
     /// </summary>
     [Fact]
@@ -49,6 +49,5 @@ public class BookmarkDtoMapperTests
 
         Assert.Equal(0, entity.Id);
         Assert.Equal(string.Empty, entity.UserId);
-        Assert.Equal(default, entity.BookmarkedDate);
     }
 }

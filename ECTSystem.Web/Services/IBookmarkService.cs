@@ -9,7 +9,7 @@ namespace ECTSystem.Web.Services;
 /// Client-side service interface for case bookmark operations.
 /// Provides methods for querying, adding, and removing user-specific case bookmarks.
 /// Bookmarks allow users to flag LOD cases for quick access from the bookmarks view.
-/// Maps to <c>CaseBookmarksController</c>.
+/// Maps to <c>BookmarksController</c>.
 /// </summary>
 public interface IBookmarkService
 {

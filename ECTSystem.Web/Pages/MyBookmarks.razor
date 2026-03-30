@@ -4,7 +4,7 @@
 <PageTitle>My Bookmarks - Electronic Case Tracking System</PageTitle>
 
 <div class="rz-p-0 rz-p-md-4">
-@if (_isLoading && _bookmarks == null)
+@if (!_initialLoadComplete)
 {
     <RadzenStack Gap="1rem">
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
@@ -20,8 +20,8 @@
         </RadzenStack>
     </RadzenStack>
 }
-else
-{
+
+<div style="@(!_initialLoadComplete ? "visibility:hidden;overflow:hidden;height:0" : "")">
 
 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
               class="rz-mb-4">
@@ -107,5 +107,5 @@ else
     </Columns>
 </RadzenDataGrid>
 
-}
+</div>
 </div>

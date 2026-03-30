@@ -68,7 +68,7 @@ public class BookmarkHttpService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var bookmark = new CaseBookmark { LineOfDutyCaseId = caseId };
+        var bookmark = new LineOfDutyBookmark { LineOfDutyCaseId = caseId };
 
         try
         {

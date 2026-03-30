@@ -186,7 +186,7 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
         odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 
-        odataBuilder.EntitySet<CaseBookmark>("Bookmarks");
+        odataBuilder.EntitySet<LineOfDutyBookmark>("Bookmarks");
 
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");

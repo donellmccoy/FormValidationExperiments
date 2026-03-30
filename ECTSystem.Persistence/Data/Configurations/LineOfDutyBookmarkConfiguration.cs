@@ -4,9 +4,9 @@ using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Persistence.Data.Configurations;
 
-public class CaseBookmarkConfiguration : IEntityTypeConfiguration<CaseBookmark>
+public class LineOfDutyBookmarkConfiguration : IEntityTypeConfiguration<LineOfDutyBookmark>
 {
-    public void Configure(EntityTypeBuilder<CaseBookmark> builder)
+    public void Configure(EntityTypeBuilder<LineOfDutyBookmark> builder)
     {
         builder.HasKey(e => e.Id);
 

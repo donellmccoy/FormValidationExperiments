@@ -1,4 +1,6 @@
-namespace ECTSystem.Shared.Models;
+using ECTSystem.Shared.Models;
+
+namespace ECTSystem.Shared.Factories;
 
 public static class LineOfDutyCaseFactory
 {

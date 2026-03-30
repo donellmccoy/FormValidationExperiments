@@ -5831,56 +5831,54 @@ namespace ECTSystem.Web.OData.ECTSystem.Shared.Models
         partial void OnRowVersionChanged();
     }
     /// <summary>
-    /// There are no comments for CaseBookmarkSingle in the schema.
+    /// There are no comments for LineOfDutyBookmarkSingle in the schema.
     /// </summary>
-    public partial class CaseBookmarkSingle : global::Microsoft.OData.Client.DataServiceQuerySingle<CaseBookmark>
+    public partial class LineOfDutyBookmarkSingle : global::Microsoft.OData.Client.DataServiceQuerySingle<LineOfDutyBookmark>
     {
         /// <summary>
-        /// Initialize a new CaseBookmarkSingle object.
+        /// Initialize a new LineOfDutyBookmarkSingle object.
         /// </summary>
-        public CaseBookmarkSingle(global::Microsoft.OData.Client.DataServiceContext context, string path)
+        public LineOfDutyBookmarkSingle(global::Microsoft.OData.Client.DataServiceContext context, string path)
             : base(context, path) {}
 
         /// <summary>
-        /// Initialize a new CaseBookmarkSingle object.
+        /// Initialize a new LineOfDutyBookmarkSingle object.
         /// </summary>
-        public CaseBookmarkSingle(global::Microsoft.OData.Client.DataServiceContext context, string path, bool isComposable)
+        public LineOfDutyBookmarkSingle(global::Microsoft.OData.Client.DataServiceContext context, string path, bool isComposable)
             : base(context, path, isComposable) {}
 
         /// <summary>
-        /// Initialize a new CaseBookmarkSingle object.
+        /// Initialize a new LineOfDutyBookmarkSingle object.
         /// </summary>
-        public CaseBookmarkSingle(global::Microsoft.OData.Client.DataServiceQuerySingle<CaseBookmark> query)
+        public LineOfDutyBookmarkSingle(global::Microsoft.OData.Client.DataServiceQuerySingle<LineOfDutyBookmark> query)
             : base(query) {}
 
     }
     /// <summary>
-    /// There are no comments for CaseBookmark in the schema.
+    /// There are no comments for LineOfDutyBookmark in the schema.
     /// </summary>
     /// <KeyProperties>
     /// Id
     /// </KeyProperties>
     [global::Microsoft.OData.Client.Key("Id")]
-    public partial class CaseBookmark : global::Microsoft.OData.Client.BaseEntityType
+    public partial class LineOfDutyBookmark : global::Microsoft.OData.Client.BaseEntityType
     {
         /// <summary>
-        /// Create a new CaseBookmark object.
+        /// Create a new LineOfDutyBookmark object.
         /// </summary>
         /// <param name="ID">Initial value of Id.</param>
         /// <param name="lineOfDutyCaseId">Initial value of LineOfDutyCaseId.</param>
-        /// <param name="bookmarkedDate">Initial value of BookmarkedDate.</param>
         /// <param name="createdDate">Initial value of CreatedDate.</param>
         /// <param name="modifiedDate">Initial value of ModifiedDate.</param>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        public static CaseBookmark CreateCaseBookmark(int ID, int lineOfDutyCaseId, global::System.DateTimeOffset bookmarkedDate, global::System.DateTimeOffset createdDate, global::System.DateTimeOffset modifiedDate)
+        public static LineOfDutyBookmark CreateLineOfDutyBookmark(int ID, int lineOfDutyCaseId, global::System.DateTimeOffset createdDate, global::System.DateTimeOffset modifiedDate)
         {
-            CaseBookmark caseBookmark = new CaseBookmark();
-            caseBookmark.Id = ID;
-            caseBookmark.LineOfDutyCaseId = lineOfDutyCaseId;
-            caseBookmark.BookmarkedDate = bookmarkedDate;
-            caseBookmark.CreatedDate = createdDate;
-            caseBookmark.ModifiedDate = modifiedDate;
-            return caseBookmark;
+            LineOfDutyBookmark lineOfDutyBookmark = new LineOfDutyBookmark();
+            lineOfDutyBookmark.Id = ID;
+            lineOfDutyBookmark.LineOfDutyCaseId = lineOfDutyCaseId;
+            lineOfDutyBookmark.CreatedDate = createdDate;
+            lineOfDutyBookmark.ModifiedDate = modifiedDate;
+            return lineOfDutyBookmark;
         }
         /// <summary>
         /// There are no comments for Property Id in the schema.
@@ -5947,28 +5945,6 @@ namespace ECTSystem.Web.OData.ECTSystem.Shared.Models
         private int _LineOfDutyCaseId;
         partial void OnLineOfDutyCaseIdChanging(int value);
         partial void OnLineOfDutyCaseIdChanged();
-        /// <summary>
-        /// There are no comments for Property BookmarkedDate in the schema.
-        /// </summary>
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        [global::System.ComponentModel.DataAnnotations.RequiredAttribute(ErrorMessage = "BookmarkedDate is required.")]
-        public virtual global::System.DateTimeOffset BookmarkedDate
-        {
-            get
-            {
-                return this._BookmarkedDate;
-            }
-            set
-            {
-                this.OnBookmarkedDateChanging(value);
-                this._BookmarkedDate = value;
-                this.OnBookmarkedDateChanged();
-            }
-        }
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        private global::System.DateTimeOffset _BookmarkedDate;
-        partial void OnBookmarkedDateChanging(global::System.DateTimeOffset value);
-        partial void OnBookmarkedDateChanged();
         /// <summary>
         /// There are no comments for Property CreatedBy in the schema.
         /// </summary>
@@ -6788,27 +6764,27 @@ namespace ECTSystem.Web.OData.ECTSystem.Shared.Models
             return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.INCAPDetailsSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
         }
         /// <summary>
-        /// Get an entity of type global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark as global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmarkSingle specified by key from an entity set
+        /// Get an entity of type global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark as global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle specified by key from an entity set
         /// </summary>
         /// <param name="_source">source entity set</param>
         /// <param name="_keys">dictionary with the names and values of keys</param>
-        public static global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmarkSingle ByKey(this global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> _source, global::System.Collections.Generic.IDictionary<string, object> _keys)
+        public static global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle ByKey(this global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark> _source, global::System.Collections.Generic.IDictionary<string, object> _keys)
         {
-            return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmarkSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
+            return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
         }
         /// <summary>
-        /// Get an entity of type global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark as global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmarkSingle specified by key from an entity set
+        /// Get an entity of type global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark as global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle specified by key from an entity set
         /// </summary>
         /// <param name="_source">source entity set</param>
         /// <param name="id">The value of id</param>
-        public static global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmarkSingle ByKey(this global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> _source,
+        public static global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle ByKey(this global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark> _source,
             int id)
         {
             global::System.Collections.Generic.IDictionary<string, object> _keys = new global::System.Collections.Generic.Dictionary<string, object>
             {
                 { "Id", id }
             };
-            return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmarkSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
+            return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
         }
         /// <summary>
         /// Get an entity of type global::ECTSystem.Web.OData.ECTSystem.Shared.Models.WorkflowStateHistory as global::ECTSystem.Web.OData.ECTSystem.Shared.Models.WorkflowStateHistorySingle specified by key from an entity set
@@ -7198,19 +7174,19 @@ namespace ECTSystem.Web.OData.Default
         /// There are no comments for Bookmarks in the schema.
         /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        public virtual global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> Bookmarks
+        public virtual global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark> Bookmarks
         {
             get
             {
                 if ((this._Bookmarks == null))
                 {
-                    this._Bookmarks = base.CreateQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark>("Bookmarks");
+                    this._Bookmarks = base.CreateQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark>("Bookmarks");
                 }
                 return this._Bookmarks;
             }
         }
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        private global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark> _Bookmarks;
+        private global::Microsoft.OData.Client.DataServiceQuery<global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark> _Bookmarks;
         /// <summary>
         /// There are no comments for WorkflowStateHistories in the schema.
         /// </summary>
@@ -7327,12 +7303,12 @@ namespace ECTSystem.Web.OData.Default
             base.AddObject("INCAPDetails", iNCAPDetails);
         }
         /// <summary>
-        /// There are no comments for CaseBookmarks in the schema.
+        /// There are no comments for LineOfDutyBookmarks in the schema.
         /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
-        public virtual void AddToCaseBookmarks(global::ECTSystem.Web.OData.ECTSystem.Shared.Models.CaseBookmark caseBookmark)
+        public virtual void AddToLineOfDutyBookmarks(global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark lineOfDutyBookmark)
         {
-            base.AddObject("CaseBookmarks", caseBookmark);
+            base.AddObject("LineOfDutyBookmarks", lineOfDutyBookmark);
         }
         /// <summary>
         /// There are no comments for WorkflowStateHistories in the schema.

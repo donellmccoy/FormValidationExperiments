@@ -23,25 +23,25 @@ public class Program
         var app = builder.Build();
 
         // Apply migrations and seed data
-        using (var scope = app.Services.CreateScope())
-        {
-            var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<EctDbContext>>();
-            //await using var context = await contextFactory.CreateDbContextAsync();
-            //await context.Database.MigrateAsync();
+        //using (var scope = app.Services.CreateScope())
+        //{
+        //    var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<EctDbContext>>();
+        //    //await using var context = await contextFactory.CreateDbContextAsync();
+        //    //await context.Database.MigrateAsync();
 
-            //var identityContext = scope.ServiceProvider.GetRequiredService<EctIdentityDbContext>();
-            //await identityContext.Database.MigrateAsync();
+        //    //var identityContext = scope.ServiceProvider.GetRequiredService<EctIdentityDbContext>();
+        //    //await identityContext.Database.MigrateAsync();
 
-            await EctDbSeeder.SeedAsync(contextFactory);
+        //    //await EctDbSeeder.SeedAsync(contextFactory);
 
-            // Seed a default dev user so the app works immediately after a database reset
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            if (await userManager.FindByEmailAsync("admin@ect.mil") is null)
-            {
-                var devUser = new ApplicationUser { UserName = "admin@ect.mil", Email = "admin@ect.mil", EmailConfirmed = true };
-                await userManager.CreateAsync(devUser, "Pass123");
-            }
-        }
+        //    // Seed a default dev user so the app works immediately after a database reset
+        //    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        //    if (await userManager.FindByEmailAsync("admin@ect.mil") is null)
+        //    {
+        //        var devUser = new ApplicationUser { UserName = "admin@ect.mil", Email = "admin@ect.mil", EmailConfirmed = true };
+        //        await userManager.CreateAsync(devUser, "Pass123");
+        //    }
+        //}
 
         if (app.Environment.IsDevelopment())
         {
@@ -59,12 +59,12 @@ public class Program
 
                     if (exceptionFeature?.Error is not null)
                     {
-                        logger.LogError(exceptionFeature.Error, "Unhandled exception on {Method} {Path}",
-                            context.Request.Method, context.Request.Path);
+                        logger.LogError(exceptionFeature.Error, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
                     }
 
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     context.Response.ContentType = "application/problem+json";
+
                     await context.Response.WriteAsJsonAsync(new
                     {
                         type = "https://tools.ietf.org/html/rfc7807",

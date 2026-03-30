@@ -286,7 +286,6 @@
         <Property Name="Id" Type="Edm.Int32" Nullable="false" />
         <Property Name="UserId" Type="Edm.String" />
         <Property Name="LineOfDutyCaseId" Type="Edm.Int32" Nullable="false" />
-        <Property Name="BookmarkedDate" Type="Edm.DateTimeOffset" Nullable="false" />
         <Property Name="CreatedBy" Type="Edm.String" />
         <Property Name="CreatedDate" Type="Edm.DateTimeOffset" Nullable="false" />
         <Property Name="ModifiedBy" Type="Edm.String" />

@@ -109,8 +109,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             ctx.CaseBookmarks.Add(new CaseBookmark
             {
                 UserId = TestUserId,
-                LineOfDutyCaseId = 5,
-                BookmarkedDate = DateTime.UtcNow
+                LineOfDutyCaseId = 5
             });
             ctx.SaveChanges();
         }
@@ -138,8 +137,7 @@ public class CaseBookmarksControllerTests : ControllerTestBase
             var bm = new CaseBookmark
             {
                 UserId = TestUserId,
-                LineOfDutyCaseId = 1,
-                BookmarkedDate = DateTime.UtcNow
+                LineOfDutyCaseId = 1
             };
             ctx.CaseBookmarks.Add(bm);
             ctx.SaveChanges();

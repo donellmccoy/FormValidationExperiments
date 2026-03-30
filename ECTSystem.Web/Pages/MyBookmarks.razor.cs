@@ -35,6 +35,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private CancellationTokenSource _loadCts = new();
     private CancellationTokenSource _searchCts = new();
     private bool _searchBoxFocused;
+    private bool _initialLoadComplete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -70,6 +71,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             _bookmarks = result.Value.AsODataEnumerable();
             _count = result.Count;
+            _initialLoadComplete = true;
 
             var firstItem = _bookmarks.FirstOrDefault();
             if (firstItem != null && !_selectedBookmarks.Any(b => b.Id == firstItem.Id))
@@ -88,8 +90,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading bookmarks: {ex}");
-            _bookmarks = null;
+            _bookmarks = Array.Empty<LineOfDutyCase>().AsODataEnumerable();
             _count = 0;
+            _initialLoadComplete = true;
         }
         finally
         {
@@ -115,12 +118,11 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             BookmarkCountService.Decrement();
             await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
 
-            StateHasChanged();
+            //StateHasChanged();
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error removing bookmark: {ex}");
             NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove bookmark. Please try again.");
         }
     }
