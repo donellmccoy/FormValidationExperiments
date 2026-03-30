@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Blazored.LocalStorage;
+using ECTSystem.Web.Models;
 using ECTSystem.Web.Providers;
 
 namespace ECTSystem.Web.Services;

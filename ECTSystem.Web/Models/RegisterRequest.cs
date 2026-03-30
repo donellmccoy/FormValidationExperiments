@@ -1,4 +1,4 @@
-namespace ECTSystem.Web.Services;
+namespace ECTSystem.Web.Models;
 
 /// <summary>
 /// Represents a new user registration request sent to the ASP.NET Core Identity <c>/register</c> endpoint.

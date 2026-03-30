@@ -1,4 +1,4 @@
-namespace ECTSystem.Web.Services;
+namespace ECTSystem.Web.Models;
 
 /// <summary>
 /// Represents the bearer token response returned by the ASP.NET Core Identity login endpoint.
