@@ -6,7 +6,7 @@ using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Web.Services;
 
-public class MemberHttpService : ODataServiceBase, IMemberService
+public class MemberService : ODataServiceBase, IMemberService
 {
     private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -58,7 +58,7 @@ public class MemberHttpService : ODataServiceBase, IMemberService
         ["Gen"] = "O-10",
     };
 
-    public MemberHttpService(EctODataContext context, HttpClient httpClient)
+    public MemberService(EctODataContext context, HttpClient httpClient)
         : base(context, httpClient) { }
 
     public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)

@@ -6,9 +6,9 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class WorkflowHistoryHttpService : ODataServiceBase, IWorkflowHistoryService
+public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
 {
-    public WorkflowHistoryHttpService(EctODataContext context, HttpClient httpClient)
+    public WorkflowHistoryService(EctODataContext context, HttpClient httpClient)
         : base(context, httpClient) { }
 
     public async Task<ODataServiceResult<WorkflowStateHistory>> GetWorkflowStateHistoriesAsync(

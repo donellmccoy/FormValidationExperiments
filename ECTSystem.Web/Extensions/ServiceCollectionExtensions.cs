@@ -86,12 +86,12 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddDomainServices(this IServiceCollection services)
     {
-        services.AddScoped<ICaseService, CaseHttpService>();
-        services.AddScoped<IAuthorityService, AuthorityHttpService>();
-        services.AddScoped<IMemberService, MemberHttpService>();
-        services.AddScoped<IDocumentService, DocumentHttpService>();
-        services.AddScoped<IWorkflowHistoryService, WorkflowHistoryHttpService>();
-        services.AddScoped<IBookmarkService, BookmarkHttpService>();
+        services.AddScoped<ICaseService, CaseService>();
+        services.AddScoped<IAuthorityService, AuthorityService>();
+        services.AddScoped<IMemberService, MemberService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IWorkflowHistoryService, WorkflowHistoryService>();
+        services.AddScoped<IBookmarkService, BookmarkService>();
         services.AddScoped<BookmarkCountService>();
         services.AddScoped<LineOfDutyStateMachineFactory>();
 

@@ -6,9 +6,9 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class BookmarkHttpService : ODataServiceBase, IBookmarkService
+public class BookmarkService : ODataServiceBase, IBookmarkService
 {
-    public BookmarkHttpService(EctODataContext context, HttpClient httpClient)
+    public BookmarkService(EctODataContext context, HttpClient httpClient)
         : base(context, httpClient) { }
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(

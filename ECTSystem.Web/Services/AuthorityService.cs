@@ -5,9 +5,9 @@ using Microsoft.OData.Client;
 
 namespace ECTSystem.Web.Services;
 
-public class AuthorityHttpService : ODataServiceBase, IAuthorityService
+public class AuthorityService : ODataServiceBase, IAuthorityService
 {
-    public AuthorityHttpService(EctODataContext context, HttpClient httpClient)
+    public AuthorityService(EctODataContext context, HttpClient httpClient)
         : base(context, httpClient) { }
 
     public async Task<List<LineOfDutyAuthority>> SaveAuthoritiesAsync(int caseId, ICollection<LineOfDutyAuthority> authorities, CancellationToken cancellationToken = default)

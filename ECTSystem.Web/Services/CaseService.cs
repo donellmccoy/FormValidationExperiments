@@ -9,12 +9,12 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class CaseHttpService : ODataServiceBase, ICaseService
+public class CaseService : ODataServiceBase, ICaseService
 {
     private const string FullExpand =
         "Authorities,Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications,WorkflowStateHistories";
 
-    public CaseHttpService(EctODataContext context, HttpClient httpClient)
+    public CaseService(EctODataContext context, HttpClient httpClient)
         : base(context, httpClient) { }
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(

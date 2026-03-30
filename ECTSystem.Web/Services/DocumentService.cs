@@ -6,9 +6,9 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class DocumentHttpService : ODataServiceBase, IDocumentService
+public class DocumentService : ODataServiceBase, IDocumentService
 {
-    public DocumentHttpService(EctODataContext context, HttpClient httpClient)
+    public DocumentService(EctODataContext context, HttpClient httpClient)
         : base(context, httpClient) { }
 
     public async Task<List<LineOfDutyDocument>> GetDocumentsAsync(int caseId, CancellationToken cancellationToken = default)
