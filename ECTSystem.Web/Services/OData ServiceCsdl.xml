@@ -279,7 +279,7 @@
         <Property Name="ModifiedDate" Type="Edm.DateTimeOffset" Nullable="false" />
         <Property Name="RowVersion" Type="Edm.Binary" />
       </EntityType>
-      <EntityType Name="CaseBookmark">
+      <EntityType Name="LineOfDutyBookmark">
         <Key>
           <PropertyRef Name="Id" />
         </Key>
@@ -483,7 +483,7 @@
             </Collection>
           </Annotation>
         </EntitySet>
-        <EntitySet Name="CaseBookmarks" EntityType="ECTSystem.Shared.Models.CaseBookmark">
+        <EntitySet Name="Bookmarks" EntityType="ECTSystem.Shared.Models.LineOfDutyBookmark">
           <Annotation Term="Org.OData.Core.V1.OptimisticConcurrency">
             <Collection>
               <PropertyPath>RowVersion</PropertyPath>

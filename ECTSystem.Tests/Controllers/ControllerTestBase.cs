@@ -26,7 +26,7 @@ namespace ECTSystem.Tests.Controllers;
 /// </para>
 /// <para>
 /// Derived classes include <see cref="CasesControllerTests"/>,
-/// <see cref="CaseBookmarksControllerTests"/>, <see cref="DocumentsControllerTests"/>,
+/// <see cref="LineOfDutyOfDutyOfDutyBookmarksControllerTests"/>, <see cref="DocumentsControllerTests"/>,
 /// <see cref="MembersControllerTests"/>, and <see cref="WorkflowStateHistoriesControllerTests"/>.
 /// </para>
 /// </remarks>

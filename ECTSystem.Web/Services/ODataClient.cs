@@ -6784,7 +6784,7 @@ namespace ECTSystem.Web.OData.ECTSystem.Shared.Models
             {
                 { "Id", id }
             };
-            return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmarkSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
+            return new global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyOfDutyOfDutyBookmarkSingle(_source.Context, _source.GetKeyPath(global::Microsoft.OData.Client.Serializer.GetKeyString(_source.Context, _keys)));
         }
         /// <summary>
         /// Get an entity of type global::ECTSystem.Web.OData.ECTSystem.Shared.Models.WorkflowStateHistory as global::ECTSystem.Web.OData.ECTSystem.Shared.Models.WorkflowStateHistorySingle specified by key from an entity set
@@ -7308,7 +7308,7 @@ namespace ECTSystem.Web.OData.Default
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.OData.Client.Design.T4", "#VersionNumber#")]
         public virtual void AddToLineOfDutyBookmarks(global::ECTSystem.Web.OData.ECTSystem.Shared.Models.LineOfDutyBookmark lineOfDutyBookmark)
         {
-            base.AddObject("LineOfDutyBookmarks", lineOfDutyBookmark);
+            base.AddObject("LineOfDutyBookmarks", lineOfDuty, lineOfDuty, lineOfDutyBookmark);
         }
         /// <summary>
         /// There are no comments for WorkflowStateHistories in the schema.

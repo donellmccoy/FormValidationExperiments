@@ -687,7 +687,7 @@ public partial class EditCase : ComponentBase, IDisposable
         return parts.Count > 0 ? string.Join(" and ", parts) : null;
     }
 
-    private async Task TogglePreviousCaseBookmark(LineOfDutyCase lodCase)
+    private async Task TogglePreviousLineOfDutyBookmark(LineOfDutyCase lodCase)
     {
         var isBookmarked = _previousCasesBookmarkedIds.Contains(lodCase.Id);
 

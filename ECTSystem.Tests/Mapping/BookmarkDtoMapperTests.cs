@@ -6,7 +6,7 @@ namespace ECTSystem.Tests.Mapping;
 
 /// <summary>
 /// Unit tests for <see cref="BookmarkDtoMapper"/>, which maps
-/// <see cref="CreateBookmarkDto"/> to <see cref="Shared.Models.CaseBookmark"/>.
+/// <see cref="CreateBookmarkDto"/> to <see cref="Shared.Models.LineOfDutyOfDutyOfDutyBookmark"/>.
 /// </summary>
 public class BookmarkDtoMapperTests
 {
