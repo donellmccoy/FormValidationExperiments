@@ -112,17 +112,16 @@ internal class LineOfDutyStateMachine
     {
         try
         {
-            // Step 1: Close out the previous state's InProgress entry by setting its EndDate.
+            // Step 1: Close out the previous state's InProgress entry by setting its ExitDate.
             var previousEntry = _lineOfDutyCase.WorkflowStateHistories
-                .Where(h => h.WorkflowState == transition.Source && h.Status == WorkflowStepStatus.InProgress)
+                .Where(h => h.WorkflowState == transition.Source && h.ExitDate is null)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefault();
 
             if (previousEntry is not null)
             {
                 var now = DateTime.UtcNow;
-                previousEntry.EndDate = now;
-                previousEntry.Status = WorkflowStepStatus.Completed;
+                previousEntry.ExitDate = now;
                 await _historyService.UpdateHistoryEndDateAsync(previousEntry.Id, now);
             }
 

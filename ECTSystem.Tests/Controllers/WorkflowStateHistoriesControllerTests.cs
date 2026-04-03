@@ -81,7 +81,6 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
         var r = Assert.IsType<CreatedODataResult<WorkflowStateHistory>>(result);
         Assert.Equal(dto.LineOfDutyCaseId, r.Entity.LineOfDutyCaseId);
         Assert.Equal(dto.WorkflowState, r.Entity.WorkflowState);
-        Assert.Equal(dto.Status, r.Entity.Status);
     }
 
     /// <summary>
@@ -142,6 +141,5 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     {
         LineOfDutyCaseId = 1,
         WorkflowState    = WorkflowState.MemberInformationEntry,
-        Status           = WorkflowStepStatus.InProgress,
     };
 }

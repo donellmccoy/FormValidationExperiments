@@ -653,7 +653,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         var escaped = text.Replace("'", "''");
-        return $"contains(PerformedBy,'{escaped}') or contains(SignedBy,'{escaped}') or contains(CreatedBy,'{escaped}')";
+        return $"contains(PerformedBy,'{escaped}') or contains(SignedBy,'{escaped}')";
     }
 
     private static string CombineTrackingFilters(string columnFilter, string searchFilter)

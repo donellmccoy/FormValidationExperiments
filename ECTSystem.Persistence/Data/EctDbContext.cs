@@ -9,7 +9,7 @@ namespace ECTSystem.Persistence.Data;
 /// </summary>
 public class EctDbContext : DbContext
 {
-    public string CurrentUserId { get; set; } = "System";
+    public int CurrentUserId { get; set; }
 
     public EctDbContext(DbContextOptions<EctDbContext> options) : base(options)
     {

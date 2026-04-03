@@ -11,8 +11,7 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Status = WorkflowStepStatus.InProgress,
-            StartDate = now,
+            EnteredDate = now,
             CreatedDate = now,
             ModifiedDate = now
         };
@@ -28,9 +27,8 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Status = WorkflowStepStatus.Completed,
-            StartDate = stepStartDate,
-            EndDate = now,
+            EnteredDate = stepStartDate ?? now,
+            ExitDate = now,
             CreatedDate = now,
             ModifiedDate = now
         };
@@ -46,8 +44,7 @@ public static class WorkflowStateHistoryFactory
         {
             LineOfDutyCaseId = caseId,
             WorkflowState = state,
-            Status = WorkflowStepStatus.Pending,
-            StartDate = stepStartDate,
+            EnteredDate = stepStartDate ?? now,
             CreatedDate = now,
             ModifiedDate = now
         };

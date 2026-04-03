@@ -23,18 +23,16 @@ public class WorkflowStateHistoryDtoMapperTests
         {
             LineOfDutyCaseId = 10,
             WorkflowState = WorkflowState.UnitCommanderReview,
-            Status = WorkflowStepStatus.Completed,
-            StartDate = startDate,
-            EndDate = endDate
+            EnteredDate = startDate,
+            ExitDate = endDate
         };
 
         var entity = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
         Assert.Equal(10, entity.LineOfDutyCaseId);
         Assert.Equal(WorkflowState.UnitCommanderReview, entity.WorkflowState);
-        Assert.Equal(WorkflowStepStatus.Completed, entity.Status);
-        Assert.Equal(startDate, entity.StartDate);
-        Assert.Equal(endDate, entity.EndDate);
+        Assert.Equal(startDate, entity.EnteredDate);
+        Assert.Equal(endDate, entity.ExitDate);
     }
 
     /// <summary>
@@ -49,9 +47,8 @@ public class WorkflowStateHistoryDtoMapperTests
 
         Assert.Equal(0, entity.LineOfDutyCaseId);
         Assert.Equal(default, entity.WorkflowState);
-        Assert.Equal(default, entity.Status);
-        Assert.Null(entity.StartDate);
-        Assert.Null(entity.EndDate);
+        Assert.Equal(default, entity.EnteredDate);
+        Assert.Null(entity.ExitDate);
     }
 
     /// <summary>
@@ -65,15 +62,14 @@ public class WorkflowStateHistoryDtoMapperTests
         {
             LineOfDutyCaseId = 5,
             WorkflowState = WorkflowState.MedicalTechnicianReview,
-            Status = WorkflowStepStatus.InProgress,
-            StartDate = startDate,
-            EndDate = null
+            EnteredDate = startDate,
+            ExitDate = null
         };
 
         var entity = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
-        Assert.Equal(startDate, entity.StartDate);
-        Assert.Null(entity.EndDate);
+        Assert.Equal(startDate, entity.EnteredDate);
+        Assert.Null(entity.ExitDate);
     }
 
     /// <summary>
@@ -89,7 +85,6 @@ public class WorkflowStateHistoryDtoMapperTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = terminalState,
-            Status = WorkflowStepStatus.Completed
         };
 
         var entity = WorkflowStateHistoryDtoMapper.ToEntity(dto);

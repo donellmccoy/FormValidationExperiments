@@ -4,6 +4,7 @@ using ECTSystem.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECTSystem.Persistence.Migrations
 {
     [DbContext(typeof(EctDbContext))]
-    partial class EctDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260401015427_ChangeAuditByFieldsToInt")]
+    partial class ChangeAuditByFieldsToInt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1025,7 +1028,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.HasIndex("LineOfDutyCaseId", "CreatedDate", "Id")
                         .IsDescending(false, true, true);
 
-                    b.ToTable("WorkflowStateHistory", (string)null);
+                    b.ToTable("WorkflowStateHistories");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>

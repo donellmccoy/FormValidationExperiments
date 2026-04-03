@@ -17,7 +17,7 @@ BEGIN TRY
     -- --------------------------------------------------------
     DELETE FROM [dbo].[Appeals];
     DELETE FROM [dbo].[Authorities];
-    DELETE FROM [dbo].[WorkflowStateHistories];
+    DELETE FROM [dbo].[WorkflowStateHistory];
     DELETE FROM [dbo].[LineOfDutyBookmarks];
     DELETE FROM [dbo].[Documents];
     DELETE FROM [dbo].[Notifications];
@@ -38,7 +38,7 @@ BEGIN TRY
     -- --------------------------------------------------------
     DBCC CHECKIDENT ('[dbo].[Appeals]',          RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[Authorities]',      RESEED, 0);
-    DBCC CHECKIDENT ('[dbo].[WorkflowStateHistories]', RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[WorkflowStateHistory]', RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[LineOfDutyBookmarks]',    RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[Documents]',        RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[Notifications]',    RESEED, 0);

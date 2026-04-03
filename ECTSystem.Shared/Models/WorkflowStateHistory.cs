@@ -14,9 +14,7 @@ public class WorkflowStateHistory : AuditableEntity
 
     public WorkflowState WorkflowState { get; set; }
 
-    public WorkflowStepStatus Status { get; set; }
+    public DateTime EnteredDate { get; set; }
 
-    public DateTime? StartDate { get; set; }
-
-    public DateTime? EndDate { get; set; }
+    public DateTime? ExitDate { get; set; }
 }

@@ -104,7 +104,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
         var entry = results.FirstOrDefault()
             ?? throw new InvalidOperationException($"Workflow state history entry {entryId} not found.");
 
-        entry.EndDate = endDate;
+        entry.ExitDate = endDate;
 
         if (Context.GetEntityDescriptor(entry) == null)
         {

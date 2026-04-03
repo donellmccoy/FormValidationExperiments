@@ -13,8 +13,6 @@ public class CreateWorkflowStateHistoryDto
     public WorkflowState WorkflowState { get; set; }
 
     [Required]
-    public WorkflowStepStatus Status { get; set; }
-
-    public DateTime? StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+    public DateTime EnteredDate { get; set; }
+    public DateTime? ExitDate { get; set; }
 }

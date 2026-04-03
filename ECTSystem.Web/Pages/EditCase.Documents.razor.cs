@@ -79,7 +79,7 @@ public partial class EditCase
         }
 
         var escaped = text.Replace("'", "''");
-        return $"contains(FileName,'{escaped}') or contains(DocumentType,'{escaped}') or contains(CreatedBy,'{escaped}') or contains(Description,'{escaped}')";
+        return $"contains(FileName,'{escaped}') or contains(DocumentType,'{escaped}') or contains(Description,'{escaped}')";
     }
 
     private static string CombineDocumentsFilters(string columnFilter, string searchFilter)

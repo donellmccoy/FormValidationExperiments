@@ -4,9 +4,9 @@ namespace ECTSystem.Shared.Models;
 
 public abstract class AuditableEntity
 {
-    public string CreatedBy { get; set; } = string.Empty;
+    public int CreatedBy { get; set; }
     public DateTime CreatedDate { get; set; }
-    public string ModifiedBy { get; set; } = string.Empty;
+    public int ModifiedBy { get; set; }
     public DateTime ModifiedDate { get; set; }
 
     [Timestamp]

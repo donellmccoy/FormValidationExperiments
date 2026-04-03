@@ -117,32 +117,35 @@ public partial class WorkflowSidebar : ComponentBase
 
             if (historiesByState.TryGetValue(step.WorkflowState, out var histories))
             {
-                // For past steps, prefer the Completed entry; for the current step, prefer InProgress.
-                // Always pick the most recent entry with the preferred status (highest Id)
+                // For past steps, prefer the completed entry (has ExitDate); for the current step, prefer active (no ExitDate).
+                // Always pick the most recent entry with the preferred characteristic (highest Id)
                 // because a step may have multiple entries after return transitions.
-                var preferredStatus = step.Number < stateInt
-                    ? WorkflowStepStatus.Completed
-                    : WorkflowStepStatus.InProgress;
+                var preferCompleted = step.Number < stateInt;
 
                 var history = histories
-                    .Where(h => h.Status == preferredStatus)
+                    .Where(h => preferCompleted ? h.ExitDate is not null : h.ExitDate is null)
                     .OrderByDescending(h => h.Id)
                     .FirstOrDefault()
                     ?? histories.OrderByDescending(h => h.CreatedDate).ThenByDescending(h => h.Id).First();
 
-                step.Status = history.Status;
+                // Derive status from dates: ExitDate set = Completed, otherwise InProgress
+                var derivedStatus = history.ExitDate is not null
+                    ? WorkflowStepStatus.Completed
+                    : WorkflowStepStatus.InProgress;
 
-                if (history.Status == WorkflowStepStatus.Completed)
+                step.Status = derivedStatus;
+
+                if (derivedStatus == WorkflowStepStatus.Completed)
                 {
-                    step.StartDate = history.StartDate;
-                    step.EndDate = history.EndDate;
-                    step.CompletedDate = history.EndDate;
+                    step.StartDate = history.EnteredDate;
+                    step.EndDate = history.ExitDate;
+                    step.CompletedDate = history.ExitDate;
                     step.StatusText = "Completed";
-                    step.CompletionDate = history.EndDate?.ToString("MM/dd/yyyy h:mm tt") ?? string.Empty;
+                    step.CompletionDate = history.ExitDate?.ToString("MM/dd/yyyy h:mm tt") ?? string.Empty;
                 }
-                else if (history.Status == WorkflowStepStatus.InProgress)
+                else if (derivedStatus == WorkflowStepStatus.InProgress)
                 {
-                    step.StartDate = history.StartDate;
+                    step.StartDate = history.EnteredDate;
                     step.EndDate = null;
                     step.CompletedDate = null;
                     step.StatusText = string.Empty;

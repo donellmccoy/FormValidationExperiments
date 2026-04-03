@@ -31,7 +31,6 @@ public class LineOfDutyExtensionsTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = WorkflowState.Draft,
-            Status = WorkflowStepStatus.InProgress
         };
 
         lodCase.AddHistoryEntry(entry);
@@ -52,7 +51,6 @@ public class LineOfDutyExtensionsTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = WorkflowState.Draft,
-            Status = WorkflowStepStatus.Completed
         };
         var lodCase = new LineOfDutyCase
         {
@@ -63,7 +61,6 @@ public class LineOfDutyExtensionsTests
         {
             LineOfDutyCaseId = 1,
             WorkflowState = WorkflowState.MemberInformationEntry,
-            Status = WorkflowStepStatus.InProgress
         };
 
         lodCase.AddHistoryEntry(newEntry);
@@ -96,8 +93,7 @@ public class LineOfDutyExtensionsTests
         var entry = lodCase.WorkflowStateHistories.First();
         Assert.Equal(42, entry.LineOfDutyCaseId);
         Assert.Equal(WorkflowState.MemberInformationEntry, entry.WorkflowState);
-        Assert.Equal(WorkflowStepStatus.InProgress, entry.Status);
-        Assert.Equal(createdDate, entry.StartDate);
+        Assert.Equal(createdDate, entry.EnteredDate);
     }
 
     /// <summary>
@@ -118,6 +114,6 @@ public class LineOfDutyExtensionsTests
         lodCase.AddInitialHistory(WorkflowState.Draft, explicitStart);
 
         var entry = lodCase.WorkflowStateHistories.First();
-        Assert.Equal(explicitStart, entry.StartDate);
+        Assert.Equal(explicitStart, entry.EnteredDate);
     }
 }

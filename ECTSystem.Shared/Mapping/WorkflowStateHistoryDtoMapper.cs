@@ -14,9 +14,8 @@ public static class WorkflowStateHistoryDtoMapper
         {
             LineOfDutyCaseId = dto.LineOfDutyCaseId,
             WorkflowState = dto.WorkflowState,
-            Status = dto.Status,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
+            EnteredDate = dto.EnteredDate,
+            ExitDate = dto.ExitDate,
         };
     }
 }

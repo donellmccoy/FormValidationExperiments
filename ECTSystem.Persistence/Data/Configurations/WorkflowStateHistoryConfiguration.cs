@@ -8,6 +8,8 @@ public class WorkflowStateHistoryConfiguration : IEntityTypeConfiguration<Workfl
 {
     public void Configure(EntityTypeBuilder<WorkflowStateHistory> builder)
     {
+        builder.ToTable("WorkflowStateHistory");
+
         builder.HasKey(h => h.Id);
 
         builder.HasIndex(h => new { h.LineOfDutyCaseId, h.WorkflowState });

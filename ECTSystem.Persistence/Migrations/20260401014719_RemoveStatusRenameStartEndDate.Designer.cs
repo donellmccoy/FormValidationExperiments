@@ -4,6 +4,7 @@ using ECTSystem.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECTSystem.Persistence.Migrations
 {
     [DbContext(typeof(EctDbContext))]
-    partial class EctDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260401014719_RemoveStatusRenameStartEndDate")]
+    partial class RemoveStatusRenameStartEndDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,8 +58,8 @@ namespace ECTSystem.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -70,8 +73,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<bool>("IsEligible")
                         .HasColumnType("bit");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -109,8 +112,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int?>("AppellateAuthorityId")
                         .HasColumnType("int");
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -118,8 +121,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("LineOfDutyCaseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -161,8 +164,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("Comments")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -170,8 +173,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int?>("LineOfDutyCaseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -211,8 +214,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -220,8 +223,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("LineOfDutyCaseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -335,8 +338,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("Component")
                         .HasColumnType("int");
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -494,8 +497,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("MisconductExplanation")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -686,8 +689,8 @@ namespace ECTSystem.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -708,8 +711,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("LineOfDutyCaseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -737,8 +740,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -752,8 +755,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<bool>("IsEligible")
                         .HasColumnType("bit");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -794,8 +797,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("Component")
                         .HasColumnType("int");
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -812,8 +815,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("MiddleInitial")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -845,8 +848,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -860,8 +863,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<string>("Message")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -919,8 +922,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .ValueGeneratedOnAdd()
@@ -931,8 +934,8 @@ namespace ECTSystem.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .ValueGeneratedOnAdd()
@@ -960,10 +963,10 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Air Force Reserve Command workflow module.",
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "AFRC",
                             RowVersion = new byte[0]
@@ -971,10 +974,10 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Air National Guard workflow module.",
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "ANG",
                             RowVersion = new byte[0]
@@ -989,8 +992,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -1004,8 +1007,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("LineOfDutyCaseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -1025,7 +1028,7 @@ namespace ECTSystem.Persistence.Migrations
                     b.HasIndex("LineOfDutyCaseId", "CreatedDate", "Id")
                         .IsDescending(false, true, true);
 
-                    b.ToTable("WorkflowStateHistory", (string)null);
+                    b.ToTable("WorkflowStateHistories");
                 });
 
             modelBuilder.Entity("ECTSystem.Shared.Models.WorkflowStateLookup", b =>
@@ -1036,8 +1039,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .ValueGeneratedOnAdd()
@@ -1051,8 +1054,8 @@ namespace ECTSystem.Persistence.Migrations
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .ValueGeneratedOnAdd()
@@ -1085,11 +1088,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Enter member identification and incident details to initiate the LOD case.",
                             DisplayOrder = 1,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Member Information Entry",
                             RowVersion = new byte[0],
@@ -1098,11 +1101,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Medical technician reviews the injury/illness and documents clinical findings.",
                             DisplayOrder = 2,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Medical Technician Review",
                             RowVersion = new byte[0],
@@ -1111,11 +1114,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 3,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Medical officer reviews the technician's findings and provides a clinical assessment.",
                             DisplayOrder = 3,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Medical Officer Review",
                             RowVersion = new byte[0],
@@ -1124,11 +1127,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 4,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Unit commander reviews the case and submits a recommendation for the LOD determination.",
                             DisplayOrder = 4,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Unit CC Review",
                             RowVersion = new byte[0],
@@ -1137,11 +1140,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 5,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance.",
                             DisplayOrder = 5,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Wing JA Review",
                             RowVersion = new byte[0],
@@ -1150,11 +1153,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 6,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Appointing authority reviews the case and issues a formal LOD determination.",
                             DisplayOrder = 6,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Appointing Authority Review",
                             RowVersion = new byte[0],
@@ -1163,11 +1166,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 7,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Wing commander reviews the case and renders a preliminary LOD determination.",
                             DisplayOrder = 7,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Wing CC Review",
                             RowVersion = new byte[0],
@@ -1176,11 +1179,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 8,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board medical technician reviews the case file for completeness and accuracy.",
                             DisplayOrder = 8,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Technician Review",
                             RowVersion = new byte[0],
@@ -1189,11 +1192,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 9,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board medical officer reviews all medical evidence and provides a formal assessment.",
                             DisplayOrder = 9,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Medical Review",
                             RowVersion = new byte[0],
@@ -1202,11 +1205,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 10,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board legal counsel reviews the case for legal sufficiency before final decision.",
                             DisplayOrder = 10,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Legal Review",
                             RowVersion = new byte[0],
@@ -1215,11 +1218,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 11,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board administrative officer finalizes the case package and prepares the formal determination.",
                             DisplayOrder = 11,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Admin Review",
                             RowVersion = new byte[0],
@@ -1228,11 +1231,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 12,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "LOD determination has been finalized and the case is closed.",
                             DisplayOrder = 12,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Completed",
                             RowVersion = new byte[0],
@@ -1241,11 +1244,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 13,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Enter member identification and incident details to initiate the LOD case.",
                             DisplayOrder = 1,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Member Information Entry",
                             RowVersion = new byte[0],
@@ -1254,11 +1257,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 14,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Medical technician reviews the injury/illness and documents clinical findings.",
                             DisplayOrder = 2,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Medical Technician Review",
                             RowVersion = new byte[0],
@@ -1267,11 +1270,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 15,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Medical officer reviews the technician's findings and provides a clinical assessment.",
                             DisplayOrder = 3,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Medical Officer Review",
                             RowVersion = new byte[0],
@@ -1280,11 +1283,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 16,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Unit commander reviews the case and submits a recommendation for the LOD determination.",
                             DisplayOrder = 4,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Unit CC Review",
                             RowVersion = new byte[0],
@@ -1293,11 +1296,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 17,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Wing Judge Advocate reviews the case for legal sufficiency and compliance.",
                             DisplayOrder = 5,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Wing JA Review",
                             RowVersion = new byte[0],
@@ -1306,11 +1309,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 18,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Appointing authority reviews the case and issues a formal LOD determination.",
                             DisplayOrder = 6,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Appointing Authority Review",
                             RowVersion = new byte[0],
@@ -1319,11 +1322,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 19,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Wing commander reviews the case and renders a preliminary LOD determination.",
                             DisplayOrder = 7,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Wing CC Review",
                             RowVersion = new byte[0],
@@ -1332,11 +1335,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 20,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board medical technician reviews the case file for completeness and accuracy.",
                             DisplayOrder = 8,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Technician Review",
                             RowVersion = new byte[0],
@@ -1345,11 +1348,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 21,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board medical officer reviews all medical evidence and provides a formal assessment.",
                             DisplayOrder = 9,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Medical Review",
                             RowVersion = new byte[0],
@@ -1358,11 +1361,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 22,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board legal counsel reviews the case for legal sufficiency before final decision.",
                             DisplayOrder = 10,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Legal Review",
                             RowVersion = new byte[0],
@@ -1371,11 +1374,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 23,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Board administrative officer finalizes the case package and prepares the formal determination.",
                             DisplayOrder = 11,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Board Admin Review",
                             RowVersion = new byte[0],
@@ -1384,11 +1387,11 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 24,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "LOD determination has been finalized and the case is closed.",
                             DisplayOrder = 12,
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Completed",
                             RowVersion = new byte[0],
@@ -1404,8 +1407,8 @@ namespace ECTSystem.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .ValueGeneratedOnAdd()
@@ -1416,8 +1419,8 @@ namespace ECTSystem.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("ModifiedBy")
-                        .HasColumnType("int");
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .ValueGeneratedOnAdd()
@@ -1450,10 +1453,10 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Informal LOD determination process.",
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Informal",
                             RowVersion = new byte[0],
@@ -1462,10 +1465,10 @@ namespace ECTSystem.Persistence.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedBy = 0,
+                            CreatedBy = "",
                             CreatedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Formal LOD determination process.",
-                            ModifiedBy = 0,
+                            ModifiedBy = "",
                             ModifiedDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Formal",
                             RowVersion = new byte[0],

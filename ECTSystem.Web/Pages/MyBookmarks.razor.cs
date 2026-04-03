@@ -89,7 +89,6 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading bookmarks: {ex}");
             _bookmarks = Array.Empty<LineOfDutyCase>().AsODataEnumerable();
             _count = 0;
             _initialLoadComplete = true;

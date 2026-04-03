@@ -119,7 +119,6 @@ public class LineOfDutyStateMachineTests
                 {
                     LineOfDutyCaseId = 1,
                     WorkflowState = state,
-                    Status = WorkflowStepStatus.InProgress,
                     CreatedDate = DateTime.UtcNow
                 }
             ];
@@ -136,7 +135,7 @@ public class LineOfDutyStateMachineTests
     /// <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> returns the submitted entry
     /// with a server-assigned <see cref="WorkflowStateHistory.Id"/>.
     /// <see cref="IWorkflowHistoryService.UpdateHistoryEndDateAsync"/> returns a new
-    /// <see cref="WorkflowStateHistory"/> with the updated <see cref="WorkflowStateHistory.EndDate"/>.
+    /// <see cref="WorkflowStateHistory"/> with the updated <see cref="WorkflowStateHistory.ExitDate"/>.
     /// </para>
     /// </summary>
     /// <param name="targetState">
@@ -150,7 +149,7 @@ public class LineOfDutyStateMachineTests
                 It.IsAny<DateTime>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((int id, DateTime endDate, CancellationToken _) =>
-                new WorkflowStateHistory { Id = id, EndDate = endDate });
+                new WorkflowStateHistory { Id = id, ExitDate = endDate });
 
         _dataServiceMock.Setup(hs => hs.AddHistoryEntryAsync(
                 It.IsAny<WorkflowStateHistory>(),
@@ -1230,19 +1229,19 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that <see cref="IWorkflowHistoryService.AddHistoryEntryAsync"/> is invoked with a
-    /// <see cref="WorkflowStateHistory"/> entry whose <see cref="WorkflowStateHistory.Status"/> is
-    /// <see cref="WorkflowStepStatus.InProgress"/>, confirming that new workflow state history
-    /// entries are generated with the correct initial status during transitions.
+    /// <see cref="WorkflowStateHistory"/> entry whose <see cref="WorkflowStateHistory.EnteredDate"/> is
+    /// set, confirming that new workflow state history
+    /// entries are generated with the correct initial date during transitions.
     /// </summary>
     /// <remarks>
-    /// The <c>HandleTransitionAsync</c> method creates a new InProgress history entry via
+    /// The <c>HandleTransitionAsync</c> method creates a new history entry via
     /// <see cref="WorkflowStateHistoryFactory.CreateInitialHistory"/> for the arriving state.
     /// This entry drives the <see cref="ECTSystem.Web.Shared.WorkflowSidebar"/> step-progress
-    /// visualization and the audit trail for the LOD case. An entry without InProgress status
+    /// visualization and the audit trail for the LOD case. An entry without EnteredDate
     /// would indicate a bug in the entry generation logic.
     /// </remarks>
     [Fact]
-    public async Task FireAsync_Draft_ToMemberInfo_SendsInProgressHistoryEntry()
+    public async Task FireAsync_Draft_ToMemberInfo_SendsEntryWithEnteredDate()
     {
         var lodCase = BuildCase(WorkflowState.Draft);
         WorkflowStateHistory capturedEntry = null;
@@ -1260,7 +1259,7 @@ public class LineOfDutyStateMachineTests
         await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
 
         Assert.NotNull(capturedEntry);
-        Assert.Equal(WorkflowStepStatus.InProgress, capturedEntry.Status);
+        Assert.NotEqual(default, capturedEntry.EnteredDate);
     }
 
     #endregion

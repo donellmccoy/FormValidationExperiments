@@ -1816,7 +1816,7 @@ else
                                                             @(doc.UploadDate?.ToLocalTime().ToString("MM/dd/yyyy hh:mm tt") ?? "")
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="By" Width="140px" />
+                                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="By" Width="100px" />
                                                 </Columns>
                                             </RadzenDataGrid>
                                         </RadzenStack>
@@ -1982,11 +1982,8 @@ else
                                                             @entry.WorkflowState.ToDisplayString()
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="Status" Title="Status" Width="120px">
-                                                        <Template Context="entry">
-                                                            @entry.Status.ToDisplayString()
-                                                        </Template>
-                                                    </RadzenDataGridColumn>
+                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="EnteredDate" Title="Entered" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
+                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="ExitDate" Title="Exited" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
                                                     <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="CreatedDate" Title="Date" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
                                                 </Columns>
                                             </RadzenDataGrid>
