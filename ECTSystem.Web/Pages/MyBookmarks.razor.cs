@@ -87,7 +87,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         {
             // Request was superseded by a newer one or component disposed — ignore
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             _bookmarks = Array.Empty<LineOfDutyCase>().AsODataEnumerable();
             _count = 0;
@@ -120,7 +120,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             //StateHasChanged();
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove bookmark. Please try again.");
         }
