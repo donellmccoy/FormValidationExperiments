@@ -203,7 +203,7 @@ public class CaseService : ODataServiceBase, ICaseService
 
         foreach (var entry in request.HistoryEntries)
         {
-            Context.AddObject("WorkflowStateHistories", entry);
+            Context.AddObject("WorkflowStateHistory", entry);
         }
 
         var response = await Context.SaveChangesAsync(

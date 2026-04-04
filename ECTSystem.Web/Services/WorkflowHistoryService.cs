@@ -57,7 +57,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        Context.AddObject("WorkflowStateHistories", entry);
+        Context.AddObject("WorkflowStateHistory", entry);
         await Context.SaveChangesAsync(cancellationToken);
         Context.Detach(entry);
 
@@ -70,7 +70,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
 
         foreach (var entry in entries)
         {
-            Context.AddObject("WorkflowStateHistories", entry);
+            Context.AddObject("WorkflowStateHistory", entry);
         }
 
         var response = await Context.SaveChangesAsync(
@@ -108,7 +108,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
 
         if (Context.GetEntityDescriptor(entry) == null)
         {
-            Context.AttachTo("WorkflowStateHistories", entry);
+            Context.AttachTo("WorkflowStateHistory", entry);
         }
 
         Context.UpdateObject(entry);

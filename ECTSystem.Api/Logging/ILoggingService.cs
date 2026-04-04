@@ -65,10 +65,6 @@ public interface ILoggingService
     void WorkflowStateHistoryCreated(int entryId, int caseId);
     void WorkflowStateHistoryInvalidModelState();
     void WorkflowStateHistoryInvalidCaseId(int caseId);
-    void CreatingWorkflowStateHistoryBatch(int count, int caseId);
-    void WorkflowStateHistoryBatchCreated(int count, int caseId);
-    void WorkflowStateHistoryBatchEmpty();
-
     // Authorities
     void SavingAuthorities(int caseId, int count);
     void AuthoritiesSaved(int caseId, int count);

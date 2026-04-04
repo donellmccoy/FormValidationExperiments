@@ -7,6 +7,7 @@ using ECTSystem.Shared.Models;
 using ECTSystem.Shared.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.OData.Batch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
@@ -91,7 +92,7 @@ public static class ServiceCollectionExtensions
             .AddOData(options =>
             {
                 options.RouteOptions.EnableUnqualifiedOperationCall = true;
-                options.AddRouteComponents("odata", edmModel)
+                options.AddRouteComponents("odata", edmModel, new DefaultODataBatchHandler())
                        .Select()
                        .Filter()
                        .Expand()
@@ -188,7 +189,7 @@ public static class ServiceCollectionExtensions
 
         odataBuilder.EntitySet<LineOfDutyBookmark>("Bookmarks");
 
-        odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistories");
+        odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistory");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
         odataBuilder.EntitySet<AuditComment>("AuditComments");
 

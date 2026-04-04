@@ -10,7 +10,7 @@ namespace ECTSystem.Web.Services;
 /// Provides methods for querying and recording <see cref="WorkflowStateHistory"/> entries
 /// that track LOD case transitions through the workflow pipeline (e.g., Member Reports →
 /// LOD Initiation → Medical Assessment → Commander Review → SJA Review → Wing CC Review).
-/// Maps to <c>WorkflowStateHistoriesController</c>.
+/// Maps to <c>WorkflowStateHistoryController</c>.
 /// </summary>
 public interface IWorkflowHistoryService
 {

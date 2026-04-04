@@ -4,7 +4,6 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.OData.Client;
-using Microsoft.OData.Edm;
 using ECTSystem.Web.Factories;
 using ECTSystem.Web.Handlers;
 using ECTSystem.Web.Providers;
@@ -100,16 +99,12 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddODataContext(this IServiceCollection services, Uri odataBaseAddress)
     {
-        var clientEdmModel = BuildClientEdmModel();
-
         services.AddScoped(sp =>
         {
             var factory = sp.GetRequiredService<IHttpClientFactory>();
             var httpClient = factory.CreateClient("OData");
 
             var context = new EctODataContext(odataBaseAddress);
-
-            context.Format.LoadServiceModel = () => clientEdmModel;
 
             context.Configurations.RequestPipeline.OnMessageCreating = args =>  
             {
@@ -127,19 +122,6 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
-    }
-
-    private static IEdmModel BuildClientEdmModel()
-    {
-        var assembly = typeof(ServiceCollectionExtensions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("ECTSystem.Web.ClientModel.xml");
-        if (stream == null) throw new InvalidOperationException("Could not find ClientModel.xml resource.");
-        using var reader = System.Xml.XmlReader.Create(stream);
-        if (Microsoft.OData.Edm.Csdl.CsdlReader.TryParse(reader, out var model, out var errors))
-        {
-            return model;
-        }
-        throw new InvalidOperationException("Failed to parse EDM model from ClientModel.xml: " + string.Join(", ", errors.Select(e => e.ErrorMessage)));
     }
 
     private sealed class SingleHttpClientFactory(HttpClient httpClient) : IHttpClientFactory

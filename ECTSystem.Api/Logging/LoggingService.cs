@@ -172,15 +172,6 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 703, Level = LogLevel.Warning, Message = "Invalid case ID {CaseId} for workflow state history")]
     public partial void WorkflowStateHistoryInvalidCaseId(int caseId);
 
-    [LoggerMessage(EventId = 704, Level = LogLevel.Information, Message = "Creating batch of {Count} workflow state history entries for case {CaseId}")]
-    public partial void CreatingWorkflowStateHistoryBatch(int count, int caseId);
-
-    [LoggerMessage(EventId = 705, Level = LogLevel.Information, Message = "Batch of {Count} workflow state history entries created for case {CaseId}")]
-    public partial void WorkflowStateHistoryBatchCreated(int count, int caseId);
-
-    [LoggerMessage(EventId = 706, Level = LogLevel.Warning, Message = "Empty batch submitted for workflow state history creation")]
-    public partial void WorkflowStateHistoryBatchEmpty();
-
     // Authorities (EventId 900–901)
 
     [LoggerMessage(EventId = 900, Level = LogLevel.Information, Message = "Saving {Count} authorities for LOD case {CaseId}")]

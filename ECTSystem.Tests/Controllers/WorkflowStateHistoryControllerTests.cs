@@ -13,7 +13,7 @@ using Xunit;
 namespace ECTSystem.Tests.Controllers;
 
 /// <summary>
-/// Unit tests for <see cref="WorkflowStateHistoriesController"/>, the OData controller that
+/// Unit tests for <see cref="WorkflowStateHistoryController"/>, the OData controller that
 /// creates workflow state transition history records individually via <c>Post</c>.
 /// </summary>
 /// <remarks>
@@ -26,7 +26,7 @@ namespace ECTSystem.Tests.Controllers;
 /// The in-memory database is used to verify both API return types and persistence side-effects.
 /// </para>
 /// </remarks>
-public class WorkflowStateHistoriesControllerTests : ControllerTestBase
+public class WorkflowStateHistoryControllerTests : ControllerTestBase
 {
     /// <summary>Mocked context factory returning <see cref="EctDbContext"/> instances backed by the in-memory store.</summary>
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
@@ -34,15 +34,15 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
     private readonly DbContextOptions<EctDbContext>        _dbOptions;
     /// <summary>Mocked logging service injected into the controller.</summary>
     private readonly Mock<ILoggingService>                  _mockLog;
-    /// <summary>System under test — the <see cref="WorkflowStateHistoriesController"/> instance.</summary>
-    private readonly WorkflowStateHistoriesController       _sut;
+    /// <summary>System under test — the <see cref="WorkflowStateHistoryController"/> instance.</summary>
+    private readonly WorkflowStateHistoryController       _sut;
 
     /// <summary>
     /// Initializes the in-memory database (with transaction-warning suppression),
     /// configures mocked dependencies, and creates the
-    /// <see cref="WorkflowStateHistoriesController"/> with a fake authenticated user context.
+    /// <see cref="WorkflowStateHistoryController"/> with a fake authenticated user context.
     /// </summary>
-    public WorkflowStateHistoriesControllerTests()
+    public WorkflowStateHistoryControllerTests()
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -60,14 +60,14 @@ public class WorkflowStateHistoriesControllerTests : ControllerTestBase
 
         _mockLog = new Mock<ILoggingService>();
 
-        _sut = new WorkflowStateHistoriesController(_mockContextFactory.Object, _mockLog.Object);
+        _sut = new WorkflowStateHistoryController(_mockContextFactory.Object, _mockLog.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 
     // ─────────────────────────────── Post ────────────────────────────────────
 
     /// <summary>
-    /// Verifies that <see cref="WorkflowStateHistoriesController.Post"/> returns
+    /// Verifies that <see cref="WorkflowStateHistoryController.Post"/> returns
     /// <see cref="CreatedODataResult{WorkflowStateHistory}"/> with the submitted entry
     /// when the model is valid.
     /// </summary>
