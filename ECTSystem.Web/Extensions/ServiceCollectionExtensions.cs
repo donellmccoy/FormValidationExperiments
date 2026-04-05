@@ -217,6 +217,7 @@ public static class ServiceCollectionExtensions
 
         var memberType = new EdmEntityType(ns, "Member");
         memberType.AddKeys(memberType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
+        memberType.AddStructuralProperty("Component", new EdmEnumTypeReference(serviceComponentEnum, false));
         model.AddElement(memberType);
 
         var notificationType = new EdmEntityType(ns, "Notification");
@@ -225,14 +226,20 @@ public static class ServiceCollectionExtensions
 
         var authorityType = new EdmEntityType(ns, "LineOfDutyAuthority");
         authorityType.AddKeys(authorityType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
+        authorityType.AddStructuralProperty("Comments",
+            new EdmCollectionTypeReference(new EdmCollectionType(EdmCoreModel.Instance.GetString(false))));
         model.AddElement(authorityType);
 
-        var documentType = new EdmEntityType(ns, "LineOfDutyDocument");
+        var documentType = new EdmEntityType(ns, "LineOfDutyDocument", baseType: null, isAbstract: false, isOpen: false, hasStream: true);
         documentType.AddKeys(documentType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
         model.AddElement(documentType);
 
         var appealType = new EdmEntityType(ns, "LineOfDutyAppeal");
         appealType.AddKeys(appealType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
+        appealType.AddStructuralProperty("OriginalFinding", new EdmEnumTypeReference(lineOfDutyFindingEnum, false));
+        appealType.AddStructuralProperty("AppealOutcome", new EdmEnumTypeReference(lineOfDutyFindingEnum, false));
+        appealType.AddStructuralProperty("NewEvidence",
+            new EdmCollectionTypeReference(new EdmCollectionType(EdmCoreModel.Instance.GetString(false))));
         model.AddElement(appealType);
 
         var medconType = new EdmEntityType(ns, "MEDCONDetail");
@@ -259,6 +266,36 @@ public static class ServiceCollectionExtensions
         var auditType = new EdmEntityType(ns, "AuditComment");
         auditType.AddKeys(auditType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
         model.AddElement(auditType);
+
+        // ── Navigation properties ───────────────────────────────────────
+
+        // LineOfDutyCase → single references
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "Member", Target = memberType, TargetMultiplicity = EdmMultiplicity.One });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "MEDCON", Target = medconType, TargetMultiplicity = EdmMultiplicity.ZeroOrOne });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "INCAP", Target = incapType, TargetMultiplicity = EdmMultiplicity.ZeroOrOne });
+
+        // LineOfDutyCase → collections
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "Authorities", Target = authorityType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "Appeals", Target = appealType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "Notifications", Target = notificationType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "WorkflowStateHistories", Target = historyType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "Documents", Target = documentType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "WitnessStatements", Target = witnessType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "AuditComments", Target = auditType, TargetMultiplicity = EdmMultiplicity.Many });
+
+        // LineOfDutyAppeal → AppellateAuthority
+        appealType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "AppellateAuthority", Target = authorityType, TargetMultiplicity = EdmMultiplicity.ZeroOrOne });
 
         // ── Entity container ────────────────────────────────────────────
 
