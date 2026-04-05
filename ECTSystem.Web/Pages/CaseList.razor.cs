@@ -147,6 +147,16 @@ public partial class CaseList : ComponentBase, IDisposable
 
         if (isBookmarked)
         {
+            var confirmed = await DialogService.Confirm(
+                $"Remove bookmark for case {lodCase.CaseId}?",
+                "Remove Bookmark",
+                new ConfirmOptions { OkButtonText = "Remove", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
             await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Remove(lodCase.Id);
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);

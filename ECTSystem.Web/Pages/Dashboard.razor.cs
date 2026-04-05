@@ -2,6 +2,7 @@ using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.Logging;
 using Radzen;
 using ECTSystem.Shared.Enums;
 
@@ -20,6 +21,9 @@ public partial class Dashboard : ComponentBase
 
     [Inject]
     private AuthenticationStateProvider AuthStateProvider { get; set; }
+
+    [Inject]
+    private ILogger<Dashboard> Logger { get; set; }
 
     private bool isLoading = true;
     private string userName = "User";
@@ -68,35 +72,38 @@ public partial class Dashboard : ComponentBase
         isLoading = true;
         try
         {
-            // Load Bookmarked Cases
-            var bookmarksResult = await BookmarkService.GetBookmarkedCasesAsync(top: 5, orderby: "Id desc", count: true);
-            bookmarkedCases = bookmarksResult.Value;
-            bookmarkedCount = bookmarksResult.Count;
+            // Fire all independent requests concurrently
+            var bookmarksTask = BookmarkService.GetBookmarkedCasesAsync(top: 5, orderby: "Id desc", count: true);
 
-            // Load Action Required Cases (Mocking this for now by fetching cases in specific states)
-            // In a real app, this would filter by the user's role and the case's workflow state
-            var actionRequiredResult = await CaseService.GetCasesByCurrentStateAsync(
+            var actionRequiredTask = CaseService.GetCasesByCurrentStateAsync(
                 includeStates: [WorkflowState.UnitCommanderReview, WorkflowState.MedicalTechnicianReview],
                 top: 5, 
                 orderby: "Id desc", 
                 count: true);
-            actionRequiredCases = actionRequiredResult.Value;
-            actionRequiredCount = actionRequiredResult.Count;
 
-            // Load My Active Cases (Mocking this by fetching cases where MemberName contains the user's name)
-            // In a real app, this would filter by MemberId or ServiceNumber matching the logged-in user
-            var myActiveCasesResult = await CaseService.GetCasesByCurrentStateAsync(
+            var myActiveCasesTask = CaseService.GetCasesByCurrentStateAsync(
                 excludeStates: [WorkflowState.Completed, WorkflowState.Closed, WorkflowState.Cancelled],
                 filter: $"contains(MemberName, '{userName}')",
                 top: 1,
                 count: true);
-            myActiveCasesCount = myActiveCasesResult.Count;
 
-            var completedCasesResult = await CaseService.GetCasesByCurrentStateAsync(
+            var completedCasesTask = CaseService.GetCasesByCurrentStateAsync(
                 includeStates: [WorkflowState.Completed],
                 top: 1,
                 count: true);
-            completedCasesCount = completedCasesResult.Count;
+
+            await Task.WhenAll(bookmarksTask, actionRequiredTask, myActiveCasesTask, completedCasesTask);
+
+            var bookmarksResult = bookmarksTask.Result;
+            bookmarkedCases = bookmarksResult.Value;
+            bookmarkedCount = bookmarksResult.Count;
+
+            var actionRequiredResult = actionRequiredTask.Result;
+            actionRequiredCases = actionRequiredResult.Value;
+            actionRequiredCount = actionRequiredResult.Count;
+
+            myActiveCasesCount = myActiveCasesTask.Result.Count;
+            completedCasesCount = completedCasesTask.Result.Count;
 
             // Mock chart data
             casesOverTimeData =
@@ -119,7 +126,7 @@ public partial class Dashboard : ComponentBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading dashboard data: {ex}");
+            Logger.LogError(ex, "Failed to load dashboard data for user {UserName}", userName);
         }
         finally
         {
