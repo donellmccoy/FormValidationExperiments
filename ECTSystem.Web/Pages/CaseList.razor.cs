@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
@@ -10,6 +11,8 @@ namespace ECTSystem.Web.Pages;
 
 public partial class CaseList : ComponentBase, IDisposable
 {
+    #region Injected Services
+
     [Inject]
     private ICaseService CaseService { get; set; }
 
@@ -34,6 +37,13 @@ public partial class CaseList : ComponentBase, IDisposable
     [Inject]
     private IJSRuntime JSRuntime { get; set; }
 
+    [Inject]
+    private ILogger<CaseList> Logger { get; set; }
+
+    #endregion
+
+    #region Fields & Constants
+
     private RadzenDataGrid<LineOfDutyCase> _grid;
     private RadzenTextBox _searchBox;
     private ODataEnumerable<LineOfDutyCase> cases;
@@ -48,6 +58,12 @@ public partial class CaseList : ComponentBase, IDisposable
     private CancellationTokenSource _searchCts = new();
     private bool _searchBoxFocused;
 
+    private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutByName";
+
+    #endregion
+
+    #region Lifecycle
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_searchBoxFocused && _searchBox is not null && cases is not null)
@@ -56,6 +72,10 @@ public partial class CaseList : ComponentBase, IDisposable
             await _searchBox.Element.FocusAsync();
         }
     }
+
+    #endregion
+
+    #region Data Loading
 
     private async Task LoadData(LoadDataArgs args)
     {
@@ -73,16 +93,22 @@ public partial class CaseList : ComponentBase, IDisposable
         {
             var filter = CombineFilters(args.Filter, BuildSearchFilter(searchText));
 
+            Logger.LogDebug("Loading cases — Top: {Top}, Skip: {Skip}, OrderBy: {OrderBy}, Filter: {Filter}",
+                args.Top, args.Skip, args.OrderBy, filter);
+
             var result = await CaseService.GetCasesAsync(
                 filter: filter,
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
+                select: ListSelect,
                 count: true,
                 cancellationToken: ct);
 
             cases = result.Value.AsODataEnumerable();
             count = result.Count;
+
+            Logger.LogDebug("Loaded {Count} cases (total: {Total})", cases.Count(), count);
 
             var firstItem = cases.FirstOrDefault();
             if (firstItem != null && !_selectedCases.Any(c => c.Id == firstItem.Id))
@@ -98,10 +124,11 @@ public partial class CaseList : ComponentBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Request was superseded by a newer one or component disposed — ignore
+            Logger.LogDebug("LoadData cancelled — superseded by newer request");
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Failed to load cases");
             cases = null;
             count = 0;
         }
@@ -120,15 +147,15 @@ public partial class CaseList : ComponentBase, IDisposable
             return;
         }
 
-        foreach (var lodCase in cases)
-        {
-            ct.ThrowIfCancellationRequested();
-            if (await BookmarkService.IsBookmarkedAsync(lodCase.Id, ct))
-            {
-                bookmarkedCaseIds.Add(lodCase.Id);
-            }
-        }
+        var caseIds = cases.Select(c => c.Id).ToArray();
+        bookmarkedCaseIds = await BookmarkService.GetBookmarkedCaseIdsAsync(caseIds, ct);
+
+        Logger.LogDebug("Loaded {BookmarkCount} bookmarks for {CaseCount} cases", bookmarkedCaseIds.Count, caseIds.Length);
     }
+
+    #endregion
+
+    #region Bookmarks
 
     private async Task ToggleBookmark(LineOfDutyCase lodCase)
     {
@@ -148,6 +175,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
             await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Remove(lodCase.Id);
+            Logger.LogInformation("Bookmark removed for case {CaseId}", lodCase.CaseId);
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
             BookmarkCountService.Decrement();
         }
@@ -158,6 +186,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
             await BookmarkService.AddBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Add(lodCase.Id);
+            Logger.LogInformation("Bookmark added for case {CaseId}", lodCase.CaseId);
             NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
             BookmarkCountService.Increment();
 
@@ -165,6 +194,10 @@ public partial class CaseList : ComponentBase, IDisposable
             animatingBookmarkIds.Remove(lodCase.Id);
         }
     }
+
+    #endregion
+
+    #region Search & Filtering
 
     private async Task OnSearchInput(ChangeEventArgs args)
     {
@@ -255,8 +288,13 @@ public partial class CaseList : ComponentBase, IDisposable
         };
     }
 
+    #endregion
+
+    #region Navigation & Actions
+
     private void OnCreateCase()
     {
+        Logger.LogInformation("Navigating to create new case");
         Navigation.NavigateTo("/case/new?from=cases");
     }
 
@@ -264,7 +302,7 @@ public partial class CaseList : ComponentBase, IDisposable
     {
         if (lodCase.IsCheckedOut)
         {
-            // Already checked out — open in read-only mode
+            Logger.LogInformation("Case {CaseId} already checked out by {CheckedOutBy} — opening read-only", lodCase.CaseId, lodCase.CheckedOutByName);
             Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
             return;
         }
@@ -281,10 +319,12 @@ public partial class CaseList : ComponentBase, IDisposable
 
             if (success)
             {
+                Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=edit");
             }
             else
             {
+                Logger.LogWarning("Checkout failed for case {CaseId} (Id: {Id}) — may be checked out by another user", lodCase.CaseId, lodCase.Id);
                 NotificationService.Notify(NotificationSeverity.Error, 
                     "Checkout Failed", 
                     $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.", 
@@ -302,6 +342,10 @@ public partial class CaseList : ComponentBase, IDisposable
             Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
         }
     }
+
+    #endregion
+
+    #region Context Menu
 
     private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
     {
@@ -356,6 +400,10 @@ public partial class CaseList : ComponentBase, IDisposable
             });
     }
 
+    #endregion
+
+    #region IDisposable
+
     public void Dispose()
     {
         _loadCts.Cancel();
@@ -363,4 +411,6 @@ public partial class CaseList : ComponentBase, IDisposable
         _searchCts.Cancel();
         _searchCts.Dispose();
     }
+
+    #endregion
 }
