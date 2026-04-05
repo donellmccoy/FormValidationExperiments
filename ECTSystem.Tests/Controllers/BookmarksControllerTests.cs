@@ -28,7 +28,7 @@ namespace ECTSystem.Tests.Controllers;
 /// and not-found / duplicate scenarios.
 /// </para>
 /// </remarks>
-public class LineOfDutyBookmarksControllerTests : ControllerTestBase
+public class BookmarksControllerTests : ControllerTestBase
 {
     /// <summary>In-memory database options shared across seed, act, and verify phases.</summary>
     private readonly DbContextOptions<EctDbContext> _dbOptions;
@@ -43,7 +43,7 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
     /// Initializes the in-memory database, configures mocked dependencies, and creates
     /// the <see cref="BookmarksController"/> with a fake authenticated user context.
     /// </summary>
-    public LineOfDutyBookmarksControllerTests()
+    public BookmarksControllerTests()
     {
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -66,7 +66,7 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
 
     /// <summary>
     /// Verifies that <see cref="BookmarksController.Get()"/> returns an
-    /// <see cref="OkObjectResult"/> wrapping an <see cref="IQueryable{LineOfDutyBookmark}"/>
+    /// <see cref="OkObjectResult"/> wrapping an <see cref="IQueryable{Bookmark}"/>
     /// scoped to the authenticated user.
     /// </summary>
     [Fact]
@@ -81,17 +81,17 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
 
     /// <summary>
     /// Verifies that posting a new bookmark creates it, stamps the current user's ID,
-    /// and returns <see cref="CreatedODataResult{LineOfDutyBookmark}"/>.
+    /// and returns <see cref="CreatedODataResult{Bookmark}"/>.
     /// </summary>
     [Fact]
     public async Task Post_ReturnsCreatedWithBookmark()
     {
-        var dto = new LineOfDutyBookmark { LineOfDutyCaseId = 3 };
+        var dto = new Bookmark { LineOfDutyCaseId = 3 };
 
         var result = await _sut.Post(dto);
 
-        var r = Assert.IsType<CreatedODataResult<LineOfDutyBookmark>>(result);
-        var created = (LineOfDutyBookmark)r.Value;
+        var r = Assert.IsType<CreatedODataResult<Bookmark>>(result);
+        var created = (Bookmark)r.Value;
         Assert.Equal(TestUserId, created.UserId);
         Assert.Equal(3, created.LineOfDutyCaseId);
     }
@@ -106,7 +106,7 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
         // Seed a bookmark
         using (var ctx = new EctDbContext(_dbOptions))
         {
-            ctx.LineOfDutyBookmarks.Add(new LineOfDutyBookmark
+            ctx.Bookmarks.Add(new Bookmark
             {
                 UserId = TestUserId,
                 LineOfDutyCaseId = 5
@@ -114,11 +114,11 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
             ctx.SaveChanges();
         }
 
-        var dto = new LineOfDutyBookmark { LineOfDutyCaseId = 5 };
+        var dto = new Bookmark { LineOfDutyCaseId = 5 };
         var result = await _sut.Post(dto);
 
         var r = Assert.IsType<OkObjectResult>(result);
-        var existing = (LineOfDutyBookmark)r.Value;
+        var existing = (Bookmark)r.Value;
         Assert.Equal(5, existing.LineOfDutyCaseId);
     }
 
@@ -134,12 +134,12 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
         int bookmarkId;
         using (var ctx = new EctDbContext(_dbOptions))
         {
-            var bm = new LineOfDutyBookmark
+            var bm = new Bookmark
             {
                 UserId = TestUserId,
                 LineOfDutyCaseId = 1
             };
-            ctx.LineOfDutyBookmarks.Add(bm);
+            ctx.Bookmarks.Add(bm);
             ctx.SaveChanges();
             bookmarkId = bm.Id;
         }
@@ -150,7 +150,7 @@ public class LineOfDutyBookmarksControllerTests : ControllerTestBase
 
         using (var ctx = new EctDbContext(_dbOptions))
         {
-            Assert.Empty(ctx.LineOfDutyBookmarks);
+            Assert.Empty(ctx.Bookmarks);
         }
     }
 

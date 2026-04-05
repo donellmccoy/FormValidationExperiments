@@ -36,7 +36,7 @@ public class BookmarksController : ODataControllerBase
     {
         LoggingService.QueryingBookmarks();
         var context = await CreateContextAsync(ct);
-        return Ok(context.LineOfDutyBookmarks.AsNoTracking().Where(b => b.UserId == GetUserId()));
+        return Ok(context.Bookmarks.AsNoTracking().Where(b => b.UserId == GetUserId()));
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public class BookmarksController : ODataControllerBase
     /// <param name="bookmark">The bookmark entity; only <c>LineOfDutyCaseId</c> is required.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery]
-    public async Task<IActionResult> Post([FromBody] LineOfDutyBookmark bookmark, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] Bookmark bookmark, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -55,7 +55,7 @@ public class BookmarksController : ODataControllerBase
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
-        var existing = await context.LineOfDutyBookmarks
+        var existing = await context.Bookmarks
             .FirstOrDefaultAsync(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
 
         if (existing is not null)
@@ -66,7 +66,7 @@ public class BookmarksController : ODataControllerBase
 
         bookmark.UserId = GetUserId();
 
-        context.LineOfDutyBookmarks.Add(bookmark);
+        context.Bookmarks.Add(bookmark);
         await context.SaveChangesAsync(ct);
         LoggingService.BookmarkCreated(bookmark.LineOfDutyCaseId);
         return Created(bookmark);
@@ -81,7 +81,7 @@ public class BookmarksController : ODataControllerBase
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var bookmark = await context.LineOfDutyBookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == GetUserId(), ct);
+        var bookmark = await context.Bookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == GetUserId(), ct);
 
         if (bookmark is null)
         {
@@ -89,7 +89,7 @@ public class BookmarksController : ODataControllerBase
         }
 
         LoggingService.DeletingBookmark(bookmark.LineOfDutyCaseId);
-        context.LineOfDutyBookmarks.Remove(bookmark);
+        context.Bookmarks.Remove(bookmark);
         await context.SaveChangesAsync(ct);
         LoggingService.BookmarkDeleted(bookmark.LineOfDutyCaseId);
         return NoContent();

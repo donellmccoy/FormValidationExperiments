@@ -23,7 +23,7 @@ public class EctDbContext : DbContext
     public DbSet<MEDCONDetail> MEDCONDetails { get; set; }
     public DbSet<INCAPDetails> INCAPDetails { get; set; }
     public DbSet<Notification> Notifications { get; set; }
-    public DbSet<LineOfDutyBookmark> LineOfDutyBookmarks { get; set; }
+    public DbSet<Bookmark> Bookmarks { get; set; }
     public DbSet<WorkflowStateLookup> WorkflowStates { get; set; }
     public DbSet<WorkflowStateHistory> WorkflowStateHistories { get; set; }
     public DbSet<WitnessStatement> WitnessStatements { get; set; }

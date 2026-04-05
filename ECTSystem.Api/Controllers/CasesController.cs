@@ -86,7 +86,7 @@ public class CasesController : ODataControllerBase
         Response.Headers.ETag = etag;
         Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
-        var isBookmarked = await context.LineOfDutyBookmarks.AnyAsync(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == key, ct);
+        var isBookmarked = await context.Bookmarks.AnyAsync(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == key, ct);
 
         Response.Headers["X-Case-IsBookmarked"] = isBookmarked.ToString().ToLowerInvariant();
 
@@ -379,7 +379,7 @@ public class CasesController : ODataControllerBase
 
         var query = context.Cases
             .AsNoTracking()
-            .Where(c => context.LineOfDutyBookmarks.Any(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == c.Id));
+            .Where(c => context.Bookmarks.Any(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == c.Id));
 
         return Ok(query);
     }

@@ -24,8 +24,8 @@ public static class ServiceCollectionExtensions
                 .AddODataControllers()
                 .AddPdfServices()
                 .AddCorsPolicy()
-                .AddOpenApi()
-                .AddApiRateLimiting();
+                .AddOpenApi();
+                //.AddApiRateLimiting();
 
         return services;
     }
@@ -187,7 +187,7 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");
         odataBuilder.EntitySet<INCAPDetails>("INCAPDetails");
 
-        odataBuilder.EntitySet<LineOfDutyBookmark>("Bookmarks");
+        odataBuilder.EntitySet<Bookmark>("Bookmarks");
 
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistory");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");

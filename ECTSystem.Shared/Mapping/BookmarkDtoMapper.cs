@@ -4,13 +4,13 @@ using ECTSystem.Shared.ViewModels;
 namespace ECTSystem.Shared.Mapping;
 
 /// <summary>
-/// Maps <see cref="CreateBookmarkDto"/> to <see cref="LineOfDutyBookmark"/>.
+/// Maps <see cref="CreateBookmarkDto"/> to <see cref="Bookmark"/>.
 /// </summary>
 public static class BookmarkDtoMapper
 {
-    public static LineOfDutyBookmark ToEntity(CreateBookmarkDto dto)
+    public static Bookmark ToEntity(CreateBookmarkDto dto)
     {
-        return new LineOfDutyBookmark
+        return new Bookmark
         {
             LineOfDutyCaseId = dto.LineOfDutyCaseId,
         };

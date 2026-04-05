@@ -4,10 +4,12 @@ using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Persistence.Data.Configurations;
 
-public class LineOfDutyBookmarkConfiguration : IEntityTypeConfiguration<LineOfDutyBookmark>
+public class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
 {
-    public void Configure(EntityTypeBuilder<LineOfDutyBookmark> builder)
+    public void Configure(EntityTypeBuilder<Bookmark> builder)
     {
+        builder.ToTable("Bookmarks");
+
         builder.HasKey(e => e.Id);
 
         builder.HasIndex(e => new { e.UserId, e.LineOfDutyCaseId }).IsUnique();

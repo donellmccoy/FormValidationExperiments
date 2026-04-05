@@ -30,8 +30,8 @@ public class EctODataContext : DataServiceContext
     public DataServiceQuery<WorkflowStateHistory> WorkflowStateHistories
         => CreateQuery<WorkflowStateHistory>("WorkflowStateHistory");
 
-    public DataServiceQuery<LineOfDutyBookmark> Bookmarks
-        => CreateQuery<LineOfDutyBookmark>("Bookmarks");
+    public DataServiceQuery<Bookmark> Bookmarks
+        => CreateQuery<Bookmark>("Bookmarks");
 
     public DataServiceQuery<Notification> Notifications
         => CreateQuery<Notification>("Notifications");
@@ -54,7 +54,7 @@ public class EctODataContext : DataServiceContext
             nameof(LineOfDutyAuthority) => "Authorities",
             nameof(LineOfDutyDocument) => "Documents",
             nameof(WorkflowStateHistory) => "WorkflowStateHistory",
-            nameof(LineOfDutyBookmark) => "Bookmarks",
+            nameof(Bookmark) => "Bookmarks",
             nameof(Notification) => "Notifications",
             nameof(LineOfDutyAppeal) => "Appeals",
             nameof(WitnessStatement) => "WitnessStatements",
@@ -75,7 +75,7 @@ public class EctODataContext : DataServiceContext
             nameof(LineOfDutyAuthority) => typeof(LineOfDutyAuthority),
             nameof(LineOfDutyDocument) => typeof(LineOfDutyDocument),
             nameof(WorkflowStateHistory) => typeof(WorkflowStateHistory),
-            nameof(LineOfDutyBookmark) => typeof(LineOfDutyBookmark),
+            nameof(Bookmark) => typeof(Bookmark),
             nameof(Notification) => typeof(Notification),
             nameof(LineOfDutyAppeal) => typeof(LineOfDutyAppeal),
             nameof(WitnessStatement) => typeof(WitnessStatement),

@@ -1911,7 +1911,7 @@ else
                                                                               Variant="Variant.Text"
                                                                               Size="ButtonSize.ExtraSmall"
                                                                               class="bookmark-btn"
-                                                                              Click="@(() => TogglePreviousLineOfDutyBookmark(lodCase))"
+                                                                              Click="@(() => TogglePreviousBookmark(lodCase))"
                                                                               title="@(_previousCasesBookmarkedIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark")">
                                                                     <ChildContent>
                                                                         <span class="material-symbols-outlined @(_previousCasesAnimatingIds.Contains(lodCase.Id) ? "bookmark-flash" : "")">@(_previousCasesBookmarkedIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")</span>
