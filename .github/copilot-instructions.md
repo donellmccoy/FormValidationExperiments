@@ -14,43 +14,118 @@ This is a **Blazor WebAssembly** application targeting **.NET 10** that implemen
 
 ## Project Structure
 
+The solution contains five projects: `ECTSystem.Web` (Blazor WASM client), `ECTSystem.Api` (ASP.NET Core OData API), `ECTSystem.Shared` (shared models/enums/mappings), `ECTSystem.Persistence` (EF Core data layer), and `ECTSystem.Tests` (unit/integration tests).
+
 ```
+ECTSystem.Shared/
+├── Models/                 # Domain model classes (namespace: ECTSystem.Shared.Models)
+│   ├── LineOfDutyCase.cs         # Root aggregate — full LOD case record
+│   ├── LineOfDutyDocument.cs     # Uploaded/attached documents
+│   ├── LineOfDutyAppeal.cs       # Appeal records
+│   ├── LineOfDutyAuthority.cs    # Reviewing authority entries
+│   ├── MEDCONDetails.cs          # Medical Continuation benefit tracking
+│   ├── INCAPDetails.cs           # Incapacitation Pay benefit tracking
+│   ├── Member.cs                 # Service member entity
+│   ├── Notification.cs           # Notification entity
+│   ├── Bookmark.cs               # Case bookmark entity
+│   ├── WorkflowStateHistory.cs   # Workflow state transition history
+│   ├── WorkflowStateHistoryFactory.cs
+│   ├── WorkflowStateLookup.cs
+│   ├── WorkflowModule.cs
+│   ├── WorkflowType.cs
+│   ├── CaseTransitionRequest.cs  # State transition request DTO
+│   ├── CaseTransitionResponse.cs # State transition response DTO
+│   ├── AuditableEntity.cs        # Base class with audit fields
+│   ├── AuditComment.cs
+│   ├── TimelineStep.cs
+│   └── WitnessStatement.cs
+├── Enums/                  # Domain enums (namespace: ECTSystem.Shared.Enums)
+│   ├── CommanderRecommendation.cs  # Item 21: commander's LOD recommendation
+│   ├── DutyStatus.cs              # Duty status at time of incident
+│   ├── FindingType.cs             # ILOD, NILOD, EPTS findings
+│   ├── IncidentType.cs            # Injury, Illness, Disease, Death, etc.
+│   ├── MemberStatus.cs            # Item 8: AFR, ANG member status
+│   ├── MilitaryRank.cs            # Enlisted, Officer, Cadet ranks
+│   ├── ProcessType.cs             # Informal vs. Formal process
+│   ├── ServiceComponent.cs        # RegAF, USSF, AFR, ANG
+│   ├── SubstanceType.cs           # Item 13a: Alcohol, Drugs, Both
+│   ├── WorkflowState.cs           # Workflow states (Draft → Completed/Cancelled)
+│   ├── WorkflowStepStatus.cs      # Completed, InProgress, Pending
+│   ├── WorkflowTransitionAction.cs # Enter, Leave transition actions
+│   └── WorkflowTrigger.cs         # State machine triggers (Forward*, Return, Cancel, etc.)
+├── ViewModels/             # Shared view models and DTOs (namespace: ECTSystem.Shared.ViewModels)
+│   ├── LineOfDutyViewModel.cs     # Main case view model
+│   ├── DocumentItem.cs            # Supporting document metadata
+│   ├── PagedResult.cs             # Paged query result wrapper
+│   ├── TrackableModel.cs          # Change-tracking base
+│   ├── FormSectionAttribute.cs    # Form section metadata attribute
+│   ├── Create*Dto.cs              # Create DTOs (Authority, Bookmark, Member, WorkflowStateHistory)
+│   └── UpdateMemberDto.cs         # Update member DTO
+├── Mapping/                # Model-to-DTO mappers (namespace: ECTSystem.Shared.Mapping)
+│   ├── LineOfDutyCaseMapper.cs
+│   ├── AuthorityDtoMapper.cs
+│   ├── BookmarkDtoMapper.cs
+│   ├── MemberDtoMapper.cs
+│   └── WorkflowStateHistoryDtoMapper.cs
+├── Extensions/             # Extension methods (namespace: ECTSystem.Shared.Extensions)
+│   ├── EnumExtensions.cs          # Enum display formatting
+│   └── LineOfDutyExtensions.cs    # LOD case helper extensions
+└── Factories/              # Factory classes
+
 ECTSystem.Web/
 ├── Pages/                  # Razor pages with code-behind (.razor.cs) and scoped styles (.razor.css)
 │   ├── EditCase.razor/.cs/.css   # Multi-step wizard workflow (primary page)
-│   └── NotFound.razor            # 404 fallback page
-├── ViewModels/             # Form models per workflow step (namespace: ECTSystem.Web.ViewModels)
-│   ├── CaseInfoModel.cs            # Read-only case header/summary data
-│   ├── MemberInfoFormModel.cs      # Items 1–8: member identification
-│   ├── MedicalAssessmentFormModel.cs # Items 9–15: medical/clinical data
-│   ├── MedicalTechnicianFormModel.cs # Medical technician review
-│   ├── UnitCommanderFormModel.cs    # Items 16–23: unit commander endorsement
-│   ├── WingJudgeAdvocateFormModel.cs # Wing JA legal review
-│   ├── WingCommanderFormModel.cs    # Items 24–25: wing commander review
-│   ├── AppointingAuthorityFormModel.cs # Appointing authority review
-│   ├── LineOfDutyBoardFormModel.cs  # Board review
-│   └── DocumentItem.cs            # Supporting document metadata
-├── Models/                 # Domain model classes (namespace: ECTSystem.Web.Models)
-│   ├── LODCase.cs                # Root aggregate — full LOD case record
-│   ├── LODDocument.cs            # Uploaded/attached documents
-│   ├── LODAppeal.cs              # Appeal records
-│   ├── LODAuthority.cs           # Reviewing authority entries
-│   ├── MEDCONDetails.cs          # Medical Continuation benefit tracking
-│   └── INCAPDetails.cs           # Incapacitation Pay benefit tracking
-├── Enums/                  # Domain enums (namespace: ECTSystem.Web.Enums)
-│   ├── CommanderRecommendation.cs  # Item 21: commander's LOD recommendation
-│   ├── DutyStatus.cs              # Duty status at time of incident
-│   ├── IncidentType.cs            # Injury, Illness, Disease, Death, etc.
-│   ├── LineOfDutyFinding.cs       # ILOD, NILOD, EPTS findings
-│   ├── LineOfDutyProcessType.cs   # Informal vs. Formal process
-│   ├── MemberStatus.cs            # Item 8: AFR, ANG member status
-│   ├── MilitaryRank.cs            # Enlisted, Officer, Cadet ranks
-│   ├── ServiceComponent.cs        # RegAF, USSF, AFR, ANG
-│   └── SubstanceType.cs           # Item 13a: Alcohol, Drugs, Both
+│   ├── EditCase.Documents.razor.cs # Document management partial
+│   ├── EditCase.Form348.razor.cs   # Form 348 PDF generation partial
+│   ├── EditCase.MemberSearch.razor.cs # Member search partial
+│   ├── EditCase.State.razor.cs     # State machine operations partial
+│   ├── CaseList.razor/.cs/.css     # Case search/list grid page
+│   ├── Dashboard.razor/.cs/.css    # Dashboard with stats and charts
+│   ├── MyBookmarks.razor/.cs/.css  # Bookmarked cases page
+│   ├── Login.razor/.cs/.css        # Login page
+│   ├── Register.razor/.cs/.css     # Registration page
+│   ├── ValidatorDemo.razor/.cs/.css # Validation style demos
+│   └── NotFound.razor              # 404 fallback page
+├── Services/               # OData client services (namespace: ECTSystem.Web.Services)
+│   ├── Interfaces/               # Service interfaces (ICaseService, IBookmarkService, etc.)
+│   ├── ODataServiceBase.cs       # Base class for OData services
+│   ├── CaseService.cs            # Case CRUD and workflow operations
+│   ├── BookmarkService.cs        # Bookmark management
+│   ├── AuthorityService.cs       # Authority/reviewer data
+│   ├── DocumentService.cs        # Document upload/download
+│   ├── MemberService.cs          # Member data
+│   ├── WorkflowHistoryService.cs # Workflow state history
+│   ├── AuthService.cs            # Authentication
+│   ├── BookmarkCountService.cs   # Client-side bookmark count tracking
+│   └── EctODataContext.cs        # OData client context
+├── StateMachines/          # Client-side state machine (namespace: ECTSystem.Web.StateMachines)
+│   └── LineOfDutyStateMachine.cs # Stateless-based workflow state machine
+├── Factories/              # Factory classes
+│   └── LineOfDutyStateMachineFactory.cs
+├── Handlers/               # HTTP message handlers
+│   ├── AuthorizationMessageHandler.cs
+│   └── ODataLoggingHandler.cs
+├── Helpers/
+│   └── WorkflowTabHelper.cs
+├── Providers/
+│   └── JwtAuthStateProvider.cs
+├── Extensions/
+│   └── ServiceCollectionExtensions.cs  # DI registration + OData EdmModel builder
+├── Models/                 # Client-only models (namespace: ECTSystem.Web.Models)
+│   ├── AuthResponse.cs
+│   ├── LoginRequest.cs
+│   └── RegisterRequest.cs
 ├── Shared/                 # Reusable components
-│   └── WorkflowSidebar.razor/.cs/.css  # Vertical step-progress sidebar
+│   ├── WorkflowSidebar.razor/.cs/.css  # Vertical step-progress sidebar
+│   ├── WorkflowStep.cs                 # Step model
+│   ├── WorkflowStepStatus.cs           # Step status enum
+│   ├── BookmarkBadge.razor             # Sidebar bookmark count badge
+│   ├── CheckOutCaseDialog.razor/.cs    # Case checkout confirmation dialog
+│   ├── LoginDisplay.razor/.css         # Auth status display
+│   └── RedirectToLogin.razor           # Auth redirect component
 ├── Layout/                 # App layout
-│   └── MainLayout.razor
+│   ├── MainLayout.razor/.cs/.css
+│   └── AuthLayout.razor/.css
 ├── Program.cs              # WebAssembly host builder and service registration
 ├── App.razor               # Root component with Router
 ├── _Imports.razor           # Global usings for Radzen, domain, and view-model namespaces
@@ -62,18 +137,28 @@ ECTSystem.Web/
 
 | Namespace | Contents |
 |-----------|----------|
-| `ECTSystem.Web.Models` | Domain model classes (`Models/` folder) |
-| `ECTSystem.Web.Enums` | Domain enums (`Enums/` folder) |
-| `ECTSystem.Web.Pages` | Page components (`EditCase`) |
-| `ECTSystem.Web.ViewModels` | Form/view models per workflow step |
-| `ECTSystem.Web.Shared` | Shared components (`WorkflowSidebar`, `WorkflowStep`, `WorkflowStepStatus`) |
-| `ECTSystem.Web.Layout` | Layout components |
+| `ECTSystem.Shared.Models` | Domain model classes (LineOfDutyCase, Member, etc.) |
+| `ECTSystem.Shared.Enums` | Domain enums (WorkflowState, FindingType, WorkflowTrigger, etc.) |
+| `ECTSystem.Shared.ViewModels` | Shared view models and DTOs |
+| `ECTSystem.Shared.Mapping` | Model-to-DTO mappers |
+| `ECTSystem.Shared.Extensions` | Enum and domain extension methods |
+| `ECTSystem.Web.Pages` | Page components (EditCase, CaseList, Dashboard, MyBookmarks, Login, Register) |
+| `ECTSystem.Web.Services` | OData client services and interfaces |
+| `ECTSystem.Web.StateMachines` | Client-side Stateless workflow state machine |
+| `ECTSystem.Web.Models` | Client-only models (auth request/response) |
+| `ECTSystem.Web.Shared` | Shared components (WorkflowSidebar, BookmarkBadge, CheckOutCaseDialog, etc.) |
+| `ECTSystem.Web.Layout` | Layout components (MainLayout, AuthLayout) |
+| `ECTSystem.Web.Handlers` | HTTP message handlers (auth, OData logging) |
+| `ECTSystem.Web.Providers` | Authentication state provider |
+| `ECTSystem.Web.Factories` | State machine factory |
+| `ECTSystem.Web.Helpers` | Workflow tab helper |
 
 ## Coding Conventions
 
 - Use **partial classes** with code-behind files (`.razor.cs`) to separate logic from markup.
-- View models live in `ViewModels/` under `ECTSystem.Web.ViewModels`; domain models live under `ECTSystem.Web.Models`; enums live under `ECTSystem.Web.Enums`.
-- Namespaces follow the folder structure (e.g., `ECTSystem.Web.Models`, `ECTSystem.Web.Enums`).
+- Domain models, enums, view models, and mappers live in `ECTSystem.Shared` under their respective namespaces (`ECTSystem.Shared.Models`, `ECTSystem.Shared.Enums`, `ECTSystem.Shared.ViewModels`, `ECTSystem.Shared.Mapping`).
+- Client-only models (auth) live in `ECTSystem.Web.Models`.
+- Namespaces follow the folder structure (e.g., `ECTSystem.Shared.Models`, `ECTSystem.Shared.Enums`).
 - Format enum display names by inserting spaces before uppercase letters using `Regex.Replace(value.ToString(), "(\\B[A-Z])", " $1")`.
 - Use component-scoped CSS (`.razor.css`) rather than global styles where possible.
 - Follow the existing pattern of one form model per workflow step (e.g., `MemberInfoFormModel`, `MedicalAssessmentFormModel`, `UnitCommanderFormModel`, `WingCommanderFormModel`).
@@ -94,7 +179,7 @@ ECTSystem.Web/
 This application models the U.S. Air Force's Line of Duty determination process per AFI 36-2910 (now DAFI 36-2910). Key domain concepts:
 
 - **AF Form 348** — The official form being modeled; view models map to numbered form items (Items 1–25+).
-- **LOD Case** (`LODCase.cs`) — Root aggregate tracking an injury/illness determination through multiple review stages, including documents, appeals, MEDCON/INCAP details, timeline, and audit comments.
+- **LOD Case** (`LineOfDutyCase.cs`) — Root aggregate tracking an injury/illness determination through multiple review stages, including documents, appeals, authorities, MEDCON/INCAP details, timeline, and audit comments.
 - **Workflow Steps** — Start → Member Reports → LOD Initiation → Medical Assessment → Commander Review → Legal/SJA Review → Wing CC Review → Board Review (8 steps in the current implementation).
 - **Service Components** — RegAF (Regular Air Force), AFR (Air Force Reserve), ANG (Air National Guard). ARC-specific fields appear conditionally for Reserve/Guard members.
 - **Findings** — Line of Duty, Not in Line of Duty (NILOD), with proximate cause analysis.
