@@ -1,6 +1,6 @@
 namespace ECTSystem.Shared.Enums;
 
-public enum LineOfDutyTrigger
+public enum WorkflowTrigger
 {
     None,
     ForwardToMemberInformationEntry,

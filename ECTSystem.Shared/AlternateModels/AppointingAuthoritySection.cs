@@ -8,7 +8,7 @@ namespace ECTSystem.Shared.AlternateModels;
 public class AppointingAuthoritySection
 {
     // Item 26: Wing Commander's LOD Finding
-    public LineOfDutyFinding? LODFinding { get; set; }
+    public FindingType? LODFinding { get; set; }
 
     // Item 26a: Rationale for Finding
     public string FindingRationale { get; set; }

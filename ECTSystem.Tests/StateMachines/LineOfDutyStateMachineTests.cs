@@ -231,7 +231,7 @@ public class LineOfDutyStateMachineTests
     /// This constructor is used when creating a brand-new LOD case that does not yet exist
     /// in the system. It creates a default <see cref="LineOfDutyCase"/> and initializes the
     /// state machine at <see cref="WorkflowState.Draft"/>, ready for the user to trigger
-    /// <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/> to begin the workflow.
+    /// <see cref="WorkflowTrigger.ForwardToMemberInformationEntry"/> to begin the workflow.
     /// </remarks>
     [Fact]
     public void Constructor_WithoutCase_DefaultsToDraft()
@@ -245,7 +245,7 @@ public class LineOfDutyStateMachineTests
     #region Forward Transition: Draft → MemberInformationEntry
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToMemberInformationEntry"/>
     /// from <see cref="WorkflowState.Draft"/> transitions the state machine to
     /// <see cref="WorkflowState.MemberInformationEntry"/> and returns a successful
     /// <see cref="StateMachineResult"/>.
@@ -265,7 +265,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.MemberInformationEntry);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        var result = await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        var result = await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.Equal(WorkflowState.MemberInformationEntry, sm.State);
         Assert.True(result.Success);
@@ -276,7 +276,7 @@ public class LineOfDutyStateMachineTests
     #region Forward Transition Full Happy Path
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToMedicalTechnician"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToMedicalTechnician"/>
     /// from <see cref="WorkflowState.MemberInformationEntry"/> advances the workflow to
     /// <see cref="WorkflowState.MedicalTechnicianReview"/>.
     /// </summary>
@@ -292,13 +292,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.MedicalTechnicianReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMedicalTechnician);
 
         Assert.Equal(WorkflowState.MedicalTechnicianReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToMedicalOfficerReview"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToMedicalOfficerReview"/>
     /// from <see cref="WorkflowState.MedicalTechnicianReview"/> advances the workflow to
     /// <see cref="WorkflowState.MedicalOfficerReview"/>.
     /// </summary>
@@ -314,13 +314,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.MedicalOfficerReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMedicalOfficerReview);
 
         Assert.Equal(WorkflowState.MedicalOfficerReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToUnitCommanderReview"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToUnitCommanderReview"/>
     /// from <see cref="WorkflowState.MedicalOfficerReview"/> advances the workflow to
     /// <see cref="WorkflowState.UnitCommanderReview"/>.
     /// </summary>
@@ -336,13 +336,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.UnitCommanderReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToUnitCommanderReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToUnitCommanderReview);
 
         Assert.Equal(WorkflowState.UnitCommanderReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToWingJudgeAdvocateReview"/>
     /// from <see cref="WorkflowState.UnitCommanderReview"/> advances the workflow to
     /// <see cref="WorkflowState.WingJudgeAdvocateReview"/>.
     /// </summary>
@@ -358,13 +358,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.WingJudgeAdvocateReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToWingJudgeAdvocateReview);
 
         Assert.Equal(WorkflowState.WingJudgeAdvocateReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToAppointingAuthorityReview"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToAppointingAuthorityReview"/>
     /// from <see cref="WorkflowState.WingJudgeAdvocateReview"/> advances the workflow to
     /// <see cref="WorkflowState.AppointingAuthorityReview"/>.
     /// </summary>
@@ -380,13 +380,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.AppointingAuthorityReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToAppointingAuthorityReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToAppointingAuthorityReview);
 
         Assert.Equal(WorkflowState.AppointingAuthorityReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToWingCommanderReview"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToWingCommanderReview"/>
     /// from <see cref="WorkflowState.AppointingAuthorityReview"/> advances the workflow to
     /// <see cref="WorkflowState.WingCommanderReview"/>.
     /// </summary>
@@ -402,13 +402,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.WingCommanderReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToWingCommanderReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToWingCommanderReview);
 
         Assert.Equal(WorkflowState.WingCommanderReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/>
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/>
     /// from <see cref="WorkflowState.WingCommanderReview"/> advances the workflow to
     /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
     /// </summary>
@@ -425,7 +425,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalTechnicianReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardTechnicianReview);
 
         Assert.Equal(WorkflowState.BoardMedicalTechnicianReview, sm.State);
     }
@@ -435,7 +435,7 @@ public class LineOfDutyStateMachineTests
     #region Cancel Trigger
 
     /// <summary>
-    /// Verifies that the <see cref="LineOfDutyTrigger.Cancel"/> trigger can be fired from
+    /// Verifies that the <see cref="WorkflowTrigger.Cancel"/> trigger can be fired from
     /// every non-terminal <see cref="WorkflowState"/>, transitioning the state machine to
     /// <see cref="WorkflowState.Cancelled"/> each time.
     /// </summary>
@@ -446,7 +446,7 @@ public class LineOfDutyStateMachineTests
     /// BoardAdministratorReview) to ensure universal cancel support. The Cancel trigger is
     /// configured with a <c>CanCancelAsync</c> guard (currently returning <c>true</c>) on
     /// every non-terminal state, and terminal states (Completed, Cancelled) use
-    /// <c>.Ignore(LineOfDutyTrigger.Cancel)</c> to silently swallow the trigger.
+    /// <c>.Ignore(WorkflowTrigger.Cancel)</c> to silently swallow the trigger.
     /// </remarks>
     /// <param name="startState">
     /// The <see cref="WorkflowState"/> from which the Cancel trigger is fired. Each value
@@ -471,7 +471,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.Cancelled);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.Cancel);
+        await sm.FireAsync(lodCase, WorkflowTrigger.Cancel);
 
         Assert.Equal(WorkflowState.Cancelled, sm.State);
     }
@@ -481,7 +481,7 @@ public class LineOfDutyStateMachineTests
     #region Terminal States Cancel Ignored
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.Cancel"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.Cancel"/> from
     /// <see cref="WorkflowState.Completed"/> is silently ignored and the state machine
     /// remains in the Completed state.
     /// </summary>
@@ -489,7 +489,7 @@ public class LineOfDutyStateMachineTests
     /// Once a LOD determination has been finalized (Completed), the case is a permanent record
     /// and cannot be cancelled. The Stateless library's <c>.Ignore()</c> configuration causes
     /// the trigger to be swallowed without throwing an exception or changing state. This test
-    /// uses the simple (non-parameterized) <see cref="LineOfDutyStateMachine.FireAsync(LineOfDutyTrigger)"/>
+    /// uses the simple (non-parameterized) <see cref="LineOfDutyStateMachine.FireAsync(WorkflowTrigger)"/>
     /// overload because the Completed state's Ignore configuration does not expect a payload.
     /// </remarks>
     [Fact]
@@ -498,13 +498,13 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.Completed);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(LineOfDutyTrigger.Cancel);
+        await sm.FireAsync(WorkflowTrigger.Cancel);
 
         Assert.Equal(WorkflowState.Completed, sm.State);
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.Cancel"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.Cancel"/> from
     /// <see cref="WorkflowState.Cancelled"/> is silently ignored and the state machine
     /// remains in the Cancelled state.
     /// </summary>
@@ -521,7 +521,7 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.Cancelled);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(LineOfDutyTrigger.Cancel);
+        await sm.FireAsync(WorkflowTrigger.Cancel);
 
         Assert.Equal(WorkflowState.Cancelled, sm.State);
     }
@@ -532,7 +532,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
-    /// <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/> when the state machine
+    /// <see cref="WorkflowTrigger.ForwardToMemberInformationEntry"/> when the state machine
     /// is in <see cref="WorkflowState.Draft"/>.
     /// </summary>
     /// <remarks>
@@ -548,12 +548,12 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.Draft);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToMemberInformationEntry));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToMemberInformationEntry));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>false</c> for
-    /// <see cref="LineOfDutyTrigger.ForwardToMedicalTechnician"/> when the state machine
+    /// <see cref="WorkflowTrigger.ForwardToMedicalTechnician"/> when the state machine
     /// is in <see cref="WorkflowState.Draft"/>.
     /// </summary>
     /// <remarks>
@@ -568,12 +568,12 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.Draft);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.False(sm.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician));
+        Assert.False(sm.CanFire(WorkflowTrigger.ForwardToMedicalTechnician));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
-    /// <see cref="LineOfDutyTrigger.Cancel"/> when the state machine is in
+    /// <see cref="WorkflowTrigger.Cancel"/> when the state machine is in
     /// <see cref="WorkflowState.Draft"/>.
     /// </summary>
     /// <remarks>
@@ -587,12 +587,12 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.Draft);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.Cancel));
+        Assert.True(sm.CanFire(WorkflowTrigger.Cancel));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>false</c> for
-    /// <see cref="LineOfDutyTrigger.Complete"/> when the state machine is in
+    /// <see cref="WorkflowTrigger.Complete"/> when the state machine is in
     /// <see cref="WorkflowState.Draft"/>.
     /// </summary>
     /// <remarks>
@@ -606,12 +606,12 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.Draft);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.False(sm.CanFire(LineOfDutyTrigger.Complete));
+        Assert.False(sm.CanFire(WorkflowTrigger.Complete));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
-    /// <see cref="LineOfDutyTrigger.ForwardToMedicalTechnician"/> when the state machine
+    /// <see cref="WorkflowTrigger.ForwardToMedicalTechnician"/> when the state machine
     /// is in <see cref="WorkflowState.MemberInformationEntry"/>.
     /// </summary>
     /// <remarks>
@@ -626,12 +626,12 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.MemberInformationEntry);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToMedicalTechnician));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToMedicalTechnician));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>false</c> for
-    /// <see cref="LineOfDutyTrigger.Cancel"/> from every non-terminal <see cref="WorkflowState"/>
+    /// <see cref="WorkflowTrigger.Cancel"/> from every non-terminal <see cref="WorkflowState"/>
     /// that the Cancel trigger is configured on — specifically, this theory tests Cancel
     /// availability using the Stateless <c>CanFire</c> method across all 12 active workflow states.
     /// </summary>
@@ -671,7 +671,7 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(state);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.Cancel));
+        Assert.True(sm.CanFire(WorkflowTrigger.Cancel));
     }
 
     #endregion
@@ -681,8 +681,8 @@ public class LineOfDutyStateMachineTests
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.GetPermittedTriggersAsync"/> from
     /// <see cref="WorkflowState.Draft"/> returns exactly two triggers:
-    /// <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/> and
-    /// <see cref="LineOfDutyTrigger.Cancel"/>.
+    /// <see cref="WorkflowTrigger.ForwardToMemberInformationEntry"/> and
+    /// <see cref="WorkflowTrigger.Cancel"/>.
     /// </summary>
     /// <remarks>
     /// From the Draft state, the only possible actions are to initiate the LOD workflow
@@ -698,16 +698,16 @@ public class LineOfDutyStateMachineTests
 
         var triggers = (await sm.GetPermittedTriggersAsync()).ToList();
 
-        Assert.Contains(LineOfDutyTrigger.ForwardToMemberInformationEntry, triggers);
-        Assert.Contains(LineOfDutyTrigger.Cancel, triggers);
+        Assert.Contains(WorkflowTrigger.ForwardToMemberInformationEntry, triggers);
+        Assert.Contains(WorkflowTrigger.Cancel, triggers);
         Assert.Equal(2, triggers.Count);
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.GetPermittedTriggersAsync"/> from
     /// <see cref="WorkflowState.MemberInformationEntry"/> returns exactly two triggers:
-    /// <see cref="LineOfDutyTrigger.ForwardToMedicalTechnician"/> and
-    /// <see cref="LineOfDutyTrigger.Cancel"/>.
+    /// <see cref="WorkflowTrigger.ForwardToMedicalTechnician"/> and
+    /// <see cref="WorkflowTrigger.Cancel"/>.
     /// </summary>
     /// <remarks>
     /// From Member Information Entry, the workflow can only move forward to Medical Technician
@@ -723,8 +723,8 @@ public class LineOfDutyStateMachineTests
 
         var triggers = (await sm.GetPermittedTriggersAsync()).ToList();
 
-        Assert.Contains(LineOfDutyTrigger.ForwardToMedicalTechnician, triggers);
-        Assert.Contains(LineOfDutyTrigger.Cancel, triggers);
+        Assert.Contains(WorkflowTrigger.ForwardToMedicalTechnician, triggers);
+        Assert.Contains(WorkflowTrigger.Cancel, triggers);
         Assert.Equal(2, triggers.Count);
     }
 
@@ -746,13 +746,13 @@ public class LineOfDutyStateMachineTests
         var triggers = (await sm.GetPermittedTriggersAsync()).ToList();
 
         Assert.Single(triggers);
-        Assert.Contains(LineOfDutyTrigger.Cancel, triggers);
+        Assert.Contains(WorkflowTrigger.Cancel, triggers);
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.GetPermittedTriggersAsync"/> from
     /// <see cref="WorkflowState.BoardAdministratorReview"/> includes the
-    /// <see cref="LineOfDutyTrigger.Complete"/> trigger along with lateral routing triggers,
+    /// <see cref="WorkflowTrigger.Complete"/> trigger along with lateral routing triggers,
     /// Return, and Cancel.
     /// </summary>
     /// <remarks>
@@ -770,7 +770,7 @@ public class LineOfDutyStateMachineTests
 
         var triggers = (await sm.GetPermittedTriggersAsync()).ToList();
 
-        Assert.Contains(LineOfDutyTrigger.Complete, triggers);
+        Assert.Contains(WorkflowTrigger.Complete, triggers);
     }
 
     #endregion
@@ -778,7 +778,7 @@ public class LineOfDutyStateMachineTests
     #region Board Lateral Routing
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardMedicalReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardMedicalReview"/> can be fired
     /// from <see cref="WorkflowState.BoardMedicalTechnicianReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardMedicalOfficerReview"/>.
     /// </summary>
@@ -794,13 +794,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalOfficerReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardMedicalReview);
 
         Assert.Equal(WorkflowState.BoardMedicalOfficerReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardLegalReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardLegalReview"/> can be fired
     /// from <see cref="WorkflowState.BoardMedicalTechnicianReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardLegalReview"/>.
     /// </summary>
@@ -816,13 +816,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardLegalReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardLegalReview);
 
         Assert.Equal(WorkflowState.BoardLegalReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardAdministratorReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardAdministratorReview"/> can be fired
     /// from <see cref="WorkflowState.BoardMedicalTechnicianReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardAdministratorReview"/>.
     /// </summary>
@@ -838,13 +838,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardAdministratorReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardAdministratorReview);
 
         Assert.Equal(WorkflowState.BoardAdministratorReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/> can be fired
     /// from <see cref="WorkflowState.BoardMedicalOfficerReview"/>, transitioning back to
     /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
     /// </summary>
@@ -860,13 +860,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalTechnicianReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardTechnicianReview);
 
         Assert.Equal(WorkflowState.BoardMedicalTechnicianReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardLegalReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardLegalReview"/> can be fired
     /// from <see cref="WorkflowState.BoardMedicalOfficerReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardLegalReview"/>.
     /// </summary>
@@ -881,13 +881,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardLegalReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardLegalReview);
 
         Assert.Equal(WorkflowState.BoardLegalReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardAdministratorReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardAdministratorReview"/> can be fired
     /// from <see cref="WorkflowState.BoardMedicalOfficerReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardAdministratorReview"/>.
     /// </summary>
@@ -902,13 +902,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardAdministratorReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardAdministratorReview);
 
         Assert.Equal(WorkflowState.BoardAdministratorReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardAdministratorReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardAdministratorReview"/> can be fired
     /// from <see cref="WorkflowState.BoardLegalReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardAdministratorReview"/>.
     /// </summary>
@@ -923,13 +923,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardAdministratorReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardAdministratorReview);
 
         Assert.Equal(WorkflowState.BoardAdministratorReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/> can be fired
     /// from <see cref="WorkflowState.BoardLegalReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
     /// </summary>
@@ -944,13 +944,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalTechnicianReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardTechnicianReview);
 
         Assert.Equal(WorkflowState.BoardMedicalTechnicianReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardMedicalReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardMedicalReview"/> can be fired
     /// from <see cref="WorkflowState.BoardLegalReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardMedicalOfficerReview"/>.
     /// </summary>
@@ -966,13 +966,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalOfficerReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardMedicalReview);
 
         Assert.Equal(WorkflowState.BoardMedicalOfficerReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/> can be fired
     /// from <see cref="WorkflowState.BoardAdministratorReview"/>, transitioning back to
     /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/>.
     /// </summary>
@@ -989,13 +989,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalTechnicianReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardTechnicianReview);
 
         Assert.Equal(WorkflowState.BoardMedicalTechnicianReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardMedicalReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardMedicalReview"/> can be fired
     /// from <see cref="WorkflowState.BoardAdministratorReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardMedicalOfficerReview"/>.
     /// </summary>
@@ -1010,13 +1010,13 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardMedicalOfficerReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardMedicalReview);
 
         Assert.Equal(WorkflowState.BoardMedicalOfficerReview, sm.State);
     }
 
     /// <summary>
-    /// Verifies that <see cref="LineOfDutyTrigger.ForwardToBoardLegalReview"/> can be fired
+    /// Verifies that <see cref="WorkflowTrigger.ForwardToBoardLegalReview"/> can be fired
     /// from <see cref="WorkflowState.BoardAdministratorReview"/>, transitioning to
     /// <see cref="WorkflowState.BoardLegalReview"/>.
     /// </summary>
@@ -1032,7 +1032,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.BoardLegalReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToBoardLegalReview);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToBoardLegalReview);
 
         Assert.Equal(WorkflowState.BoardLegalReview, sm.State);
     }
@@ -1042,7 +1042,7 @@ public class LineOfDutyStateMachineTests
     #region Return Trigger
 
     /// <summary>
-    /// Verifies that the <see cref="LineOfDutyTrigger.Return"/> trigger can be fired from
+    /// Verifies that the <see cref="WorkflowTrigger.Return"/> trigger can be fired from
     /// <see cref="WorkflowState.MedicalOfficerReview"/> targeting
     /// <see cref="WorkflowState.MedicalTechnicianReview"/>, returning the case one step back.
     /// </summary>
@@ -1069,7 +1069,7 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that the <see cref="LineOfDutyTrigger.Return"/> trigger can be fired from
+    /// Verifies that the <see cref="WorkflowTrigger.Return"/> trigger can be fired from
     /// <see cref="WorkflowState.UnitCommanderReview"/> targeting
     /// <see cref="WorkflowState.MedicalTechnicianReview"/>, returning the case two steps back.
     /// </summary>
@@ -1093,7 +1093,7 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that the <see cref="LineOfDutyTrigger.Return"/> trigger can be fired from
+    /// Verifies that the <see cref="WorkflowTrigger.Return"/> trigger can be fired from
     /// <see cref="WorkflowState.WingJudgeAdvocateReview"/> targeting
     /// <see cref="WorkflowState.UnitCommanderReview"/>, returning one step back.
     /// </summary>
@@ -1118,7 +1118,7 @@ public class LineOfDutyStateMachineTests
     }
 
     /// <summary>
-    /// Verifies that the <see cref="LineOfDutyTrigger.Return"/> trigger can be fired from
+    /// Verifies that the <see cref="WorkflowTrigger.Return"/> trigger can be fired from
     /// <see cref="WorkflowState.BoardMedicalTechnicianReview"/> targeting
     /// <see cref="WorkflowState.MedicalTechnicianReview"/>, returning from the board review
     /// phase all the way back to the pre-board medical technician review.
@@ -1164,7 +1164,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.MemberInformationEntry);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         _dataServiceMock.Verify(hs => hs.AddHistoryEntryAsync(
             It.IsAny<WorkflowStateHistory>(),
@@ -1188,7 +1188,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionSuccess(WorkflowState.MemberInformationEntry);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.Equal(WorkflowState.MemberInformationEntry, sm.Case.GetCurrentWorkflowState());
     }
@@ -1221,7 +1221,7 @@ public class LineOfDutyStateMachineTests
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.NotNull(capturedEntry);
         Assert.Equal(WorkflowState.MemberInformationEntry, capturedEntry.WorkflowState);
@@ -1256,7 +1256,7 @@ public class LineOfDutyStateMachineTests
             });
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.NotNull(capturedEntry);
         Assert.NotEqual(default, capturedEntry.EnteredDate);
@@ -1286,7 +1286,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionFailure();
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        var result = await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        var result = await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.False(result.Success);
     }
@@ -1310,7 +1310,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionFailure();
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        var result = await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        var result = await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.False(string.IsNullOrEmpty(result.ErrorMessage));
     }
@@ -1334,7 +1334,7 @@ public class LineOfDutyStateMachineTests
         SetupTransitionFailure();
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
         Assert.Equal(WorkflowState.Draft, sm.Case.GetCurrentWorkflowState());
     }
@@ -1344,7 +1344,7 @@ public class LineOfDutyStateMachineTests
     #region Invalid Transition Tests
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToMedicalTechnician"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToMedicalTechnician"/> from
     /// <see cref="WorkflowState.Draft"/> throws an <see cref="InvalidOperationException"/>
     /// because the trigger is not configured as a valid transition from Draft.
     /// </summary>
@@ -1362,11 +1362,11 @@ public class LineOfDutyStateMachineTests
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMedicalTechnician));
+            () => sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMedicalTechnician));
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.Complete"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.Complete"/> from
     /// <see cref="WorkflowState.Draft"/> throws an <see cref="InvalidOperationException"/>.
     /// </summary>
     /// <remarks>
@@ -1381,11 +1381,11 @@ public class LineOfDutyStateMachineTests
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sm.FireAsync(lodCase, LineOfDutyTrigger.Complete));
+            () => sm.FireAsync(lodCase, WorkflowTrigger.Complete));
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToMedicalOfficerReview"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToMedicalOfficerReview"/> from
     /// <see cref="WorkflowState.MemberInformationEntry"/> throws an
     /// <see cref="InvalidOperationException"/> because it skips the Medical Technician
     /// Review step.
@@ -1402,11 +1402,11 @@ public class LineOfDutyStateMachineTests
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMedicalOfficerReview));
+            () => sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMedicalOfficerReview));
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.ForwardToMemberInformationEntry"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.ForwardToMemberInformationEntry"/> from
     /// <see cref="WorkflowState.MedicalTechnicianReview"/> throws an
     /// <see cref="InvalidOperationException"/> because backward transitions must use the
     /// Return trigger, not forward triggers.
@@ -1424,11 +1424,11 @@ public class LineOfDutyStateMachineTests
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry));
+            () => sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry));
     }
 
     /// <summary>
-    /// Verifies that firing <see cref="LineOfDutyTrigger.Complete"/> from
+    /// Verifies that firing <see cref="WorkflowTrigger.Complete"/> from
     /// <see cref="WorkflowState.MemberInformationEntry"/> throws an
     /// <see cref="InvalidOperationException"/> because Complete is only valid from
     /// <see cref="WorkflowState.BoardAdministratorReview"/>.
@@ -1445,7 +1445,7 @@ public class LineOfDutyStateMachineTests
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sm.FireAsync(lodCase, LineOfDutyTrigger.Complete));
+            () => sm.FireAsync(lodCase, WorkflowTrigger.Complete));
     }
 
     #endregion
@@ -1454,7 +1454,7 @@ public class LineOfDutyStateMachineTests
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
-    /// <see cref="LineOfDutyTrigger.Return"/> from every state that supports backward
+    /// <see cref="WorkflowTrigger.Return"/> from every state that supports backward
     /// transitions, and <c>false</c> from states that do not (Draft,
     /// MemberInformationEntry, Completed, Cancelled).
     /// </summary>
@@ -1492,7 +1492,7 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(state);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.Equal(expected, sm.CanFire(LineOfDutyTrigger.Return));
+        Assert.Equal(expected, sm.CanFire(WorkflowTrigger.Return));
     }
 
     #endregion
@@ -1502,9 +1502,9 @@ public class LineOfDutyStateMachineTests
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
     /// all lateral routing triggers from <see cref="WorkflowState.BoardMedicalTechnicianReview"/>:
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardMedicalReview"/>,
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardLegalReview"/>, and
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardAdministratorReview"/>.
+    /// <see cref="WorkflowTrigger.ForwardToBoardMedicalReview"/>,
+    /// <see cref="WorkflowTrigger.ForwardToBoardLegalReview"/>, and
+    /// <see cref="WorkflowTrigger.ForwardToBoardAdministratorReview"/>.
     /// </summary>
     /// <remarks>
     /// Board-level states permit lateral routing to all other board review stages. This test
@@ -1517,17 +1517,17 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.BoardMedicalTechnicianReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardMedicalReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardLegalReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardAdministratorReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardMedicalReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardLegalReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardAdministratorReview));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
     /// all lateral routing triggers from <see cref="WorkflowState.BoardMedicalOfficerReview"/>:
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/>,
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardLegalReview"/>, and
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardAdministratorReview"/>.
+    /// <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/>,
+    /// <see cref="WorkflowTrigger.ForwardToBoardLegalReview"/>, and
+    /// <see cref="WorkflowTrigger.ForwardToBoardAdministratorReview"/>.
     /// </summary>
     /// <remarks>
     /// From the Board Medical Officer Review, the case can be laterally routed to the board
@@ -1540,17 +1540,17 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.BoardMedicalOfficerReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardLegalReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardAdministratorReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardTechnicianReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardLegalReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardAdministratorReview));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
     /// all lateral routing triggers from <see cref="WorkflowState.BoardLegalReview"/>:
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/>,
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardMedicalReview"/>, and
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardAdministratorReview"/>.
+    /// <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/>,
+    /// <see cref="WorkflowTrigger.ForwardToBoardMedicalReview"/>, and
+    /// <see cref="WorkflowTrigger.ForwardToBoardAdministratorReview"/>.
     /// </summary>
     /// <remarks>
     /// From the Board Legal Review, the case can be laterally routed to the board technician,
@@ -1563,19 +1563,19 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.BoardLegalReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardMedicalReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardAdministratorReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardTechnicianReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardMedicalReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardAdministratorReview));
     }
 
     /// <summary>
     /// Verifies that <see cref="LineOfDutyStateMachine.CanFire"/> returns <c>true</c> for
-    /// all lateral routing triggers plus <see cref="LineOfDutyTrigger.Complete"/> from
+    /// all lateral routing triggers plus <see cref="WorkflowTrigger.Complete"/> from
     /// <see cref="WorkflowState.BoardAdministratorReview"/>:
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardTechnicianReview"/>,
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardMedicalReview"/>,
-    /// <see cref="LineOfDutyTrigger.ForwardToBoardLegalReview"/>, and
-    /// <see cref="LineOfDutyTrigger.Complete"/>.
+    /// <see cref="WorkflowTrigger.ForwardToBoardTechnicianReview"/>,
+    /// <see cref="WorkflowTrigger.ForwardToBoardMedicalReview"/>,
+    /// <see cref="WorkflowTrigger.ForwardToBoardLegalReview"/>, and
+    /// <see cref="WorkflowTrigger.Complete"/>.
     /// </summary>
     /// <remarks>
     /// The Board Administrator Review is unique in that it is the only state from which
@@ -1589,10 +1589,10 @@ public class LineOfDutyStateMachineTests
         var lodCase = BuildCase(WorkflowState.BoardAdministratorReview);
         var sm = new LineOfDutyStateMachine(lodCase, _dataServiceMock.Object);
 
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardTechnicianReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardMedicalReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.ForwardToBoardLegalReview));
-        Assert.True(sm.CanFire(LineOfDutyTrigger.Complete));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardTechnicianReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardMedicalReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.ForwardToBoardLegalReview));
+        Assert.True(sm.CanFire(WorkflowTrigger.Complete));
     }
 
     #endregion
@@ -1628,16 +1628,16 @@ public class LineOfDutyStateMachineTests
     /// WingCommanderReview=6, BoardMedicalTechnicianReview=7.
     /// </param>
     [Theory]
-    [InlineData(WorkflowState.Draft, LineOfDutyTrigger.ForwardToMemberInformationEntry, WorkflowState.MemberInformationEntry, 0)]
-    [InlineData(WorkflowState.MemberInformationEntry, LineOfDutyTrigger.ForwardToMedicalTechnician, WorkflowState.MedicalTechnicianReview, 1)]
-    [InlineData(WorkflowState.MedicalTechnicianReview, LineOfDutyTrigger.ForwardToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, 2)]
-    [InlineData(WorkflowState.MedicalOfficerReview, LineOfDutyTrigger.ForwardToUnitCommanderReview, WorkflowState.UnitCommanderReview, 3)]
-    [InlineData(WorkflowState.UnitCommanderReview, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, 4)]
-    [InlineData(WorkflowState.WingJudgeAdvocateReview, LineOfDutyTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, 5)]
-    [InlineData(WorkflowState.AppointingAuthorityReview, LineOfDutyTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, 6)]
-    [InlineData(WorkflowState.WingCommanderReview, LineOfDutyTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, 7)]
+    [InlineData(WorkflowState.Draft, WorkflowTrigger.ForwardToMemberInformationEntry, WorkflowState.MemberInformationEntry, 0)]
+    [InlineData(WorkflowState.MemberInformationEntry, WorkflowTrigger.ForwardToMedicalTechnician, WorkflowState.MedicalTechnicianReview, 1)]
+    [InlineData(WorkflowState.MedicalTechnicianReview, WorkflowTrigger.ForwardToMedicalOfficerReview, WorkflowState.MedicalOfficerReview, 2)]
+    [InlineData(WorkflowState.MedicalOfficerReview, WorkflowTrigger.ForwardToUnitCommanderReview, WorkflowState.UnitCommanderReview, 3)]
+    [InlineData(WorkflowState.UnitCommanderReview, WorkflowTrigger.ForwardToWingJudgeAdvocateReview, WorkflowState.WingJudgeAdvocateReview, 4)]
+    [InlineData(WorkflowState.WingJudgeAdvocateReview, WorkflowTrigger.ForwardToAppointingAuthorityReview, WorkflowState.AppointingAuthorityReview, 5)]
+    [InlineData(WorkflowState.AppointingAuthorityReview, WorkflowTrigger.ForwardToWingCommanderReview, WorkflowState.WingCommanderReview, 6)]
+    [InlineData(WorkflowState.WingCommanderReview, WorkflowTrigger.ForwardToBoardTechnicianReview, WorkflowState.BoardMedicalTechnicianReview, 7)]
     public async Task FireAsync_ForwardTransition_ReturnsCorrectTabIndex(
-        WorkflowState startState, LineOfDutyTrigger trigger, WorkflowState endState, int expectedTabIndex)
+        WorkflowState startState, WorkflowTrigger trigger, WorkflowState endState, int expectedTabIndex)
     {
         var lodCase = BuildCase(startState);
         SetupTransitionSuccess(endState);
@@ -1687,62 +1687,62 @@ public class LineOfDutyStateMachineTests
 
         // Draft → MemberInformationEntry
         SetupTransitionSuccess(WorkflowState.MemberInformationEntry);
-        await sm.FireAsync(lodCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+        await sm.FireAsync(lodCase, WorkflowTrigger.ForwardToMemberInformationEntry);
         Assert.Equal(WorkflowState.MemberInformationEntry, sm.State);
 
         // MemberInformationEntry → MedicalTechnicianReview
         SetupTransitionSuccess(WorkflowState.MedicalTechnicianReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToMedicalTechnician);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToMedicalTechnician);
         Assert.Equal(WorkflowState.MedicalTechnicianReview, sm.State);
 
         // MedicalTechnicianReview → MedicalOfficerReview
         SetupTransitionSuccess(WorkflowState.MedicalOfficerReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToMedicalOfficerReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToMedicalOfficerReview);
         Assert.Equal(WorkflowState.MedicalOfficerReview, sm.State);
 
         // MedicalOfficerReview → UnitCommanderReview
         SetupTransitionSuccess(WorkflowState.UnitCommanderReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToUnitCommanderReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToUnitCommanderReview);
         Assert.Equal(WorkflowState.UnitCommanderReview, sm.State);
 
         // UnitCommanderReview → WingJudgeAdvocateReview
         SetupTransitionSuccess(WorkflowState.WingJudgeAdvocateReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToWingJudgeAdvocateReview);
         Assert.Equal(WorkflowState.WingJudgeAdvocateReview, sm.State);
 
         // WingJudgeAdvocateReview → AppointingAuthorityReview
         SetupTransitionSuccess(WorkflowState.AppointingAuthorityReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToAppointingAuthorityReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToAppointingAuthorityReview);
         Assert.Equal(WorkflowState.AppointingAuthorityReview, sm.State);
 
         // AppointingAuthorityReview → WingCommanderReview
         SetupTransitionSuccess(WorkflowState.WingCommanderReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToWingCommanderReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToWingCommanderReview);
         Assert.Equal(WorkflowState.WingCommanderReview, sm.State);
 
         // WingCommanderReview → BoardMedicalTechnicianReview
         SetupTransitionSuccess(WorkflowState.BoardMedicalTechnicianReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToBoardTechnicianReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToBoardTechnicianReview);
         Assert.Equal(WorkflowState.BoardMedicalTechnicianReview, sm.State);
 
         // BoardMedicalTechnicianReview → BoardMedicalOfficerReview
         SetupTransitionSuccess(WorkflowState.BoardMedicalOfficerReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToBoardMedicalReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToBoardMedicalReview);
         Assert.Equal(WorkflowState.BoardMedicalOfficerReview, sm.State);
 
         // BoardMedicalOfficerReview → BoardLegalReview
         SetupTransitionSuccess(WorkflowState.BoardLegalReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToBoardLegalReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToBoardLegalReview);
         Assert.Equal(WorkflowState.BoardLegalReview, sm.State);
 
         // BoardLegalReview → BoardAdministratorReview
         SetupTransitionSuccess(WorkflowState.BoardAdministratorReview);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.ForwardToBoardAdministratorReview);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.ForwardToBoardAdministratorReview);
         Assert.Equal(WorkflowState.BoardAdministratorReview, sm.State);
 
         // BoardAdministratorReview → Completed
         SetupTransitionSuccess(WorkflowState.Completed);
-        await sm.FireAsync(sm.Case, LineOfDutyTrigger.Complete);
+        await sm.FireAsync(sm.Case, WorkflowTrigger.Complete);
         Assert.Equal(WorkflowState.Completed, sm.State);
     }
 

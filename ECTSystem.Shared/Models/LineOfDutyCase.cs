@@ -103,7 +103,7 @@ public class LineOfDutyCase : AuditableEntity
     public ICollection<WorkflowStateHistory> WorkflowStateHistories { get; set; } = new HashSet<WorkflowStateHistory>();
 
     // Findings and Determinations
-    public LineOfDutyFinding FinalFinding { get; set; }
+    public FindingType FinalFinding { get; set; }
     public string ProximateCause { get; set; } = string.Empty; // For NILOD
     public bool IsPriorServiceCondition { get; set; }
     public string PSCDocumentation { get; set; } = string.Empty;
@@ -143,14 +143,14 @@ public class LineOfDutyCase : AuditableEntity
     public string LodBoardChairNameRank { get; set; } = string.Empty;
     public string LodBoardChairDate { get; set; } = string.Empty;
     public string LodBoardChairSignature { get; set; } = string.Empty;
-    public LineOfDutyFinding? BoardFinding { get; set; }  // Item 32
+    public FindingType? BoardFinding { get; set; }  // Item 32
     public bool BoardReferForFormal { get; set; }         // REFER option
 
     // Part VII: Approving Authority (Items 34–35)
     public string ApprovingAuthorityNameRank { get; set; } = string.Empty;
     public string ApprovingAuthorityDate { get; set; } = string.Empty;
     public string ApprovingAuthoritySignature { get; set; } = string.Empty;
-    public LineOfDutyFinding? ApprovingFinding { get; set; } // Item 34
+    public FindingType? ApprovingFinding { get; set; } // Item 34
     public bool ApprovingReferForFormal { get; set; }        // REFER option
 
     // Notification & Reporting

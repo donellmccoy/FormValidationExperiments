@@ -72,7 +72,7 @@ public static class EctDbSeeder
             var component = PickRandom(rng, ServiceComponent.RegularAirForce, ServiceComponent.AirForceReserve, ServiceComponent.AirNationalGuard, ServiceComponent.UnitedStatesSpaceForce);
             var incidentType = PickRandom(rng, IncidentType.Injury, IncidentType.Illness, IncidentType.Disease, IncidentType.Death);
             var dutyStatus = PickRandom(rng, DutyStatus.Title10ActiveDuty, DutyStatus.InactiveDutyTraining, DutyStatus.Title32ActiveDuty, DutyStatus.NotInDutyStatus, DutyStatus.TravelToFromDuty);
-            var finding = PickRandom(rng, LineOfDutyFinding.InLineOfDuty, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.ExistingPriorToServiceNotAggravated);
+            var finding = PickRandom(rng, FindingType.InLineOfDuty, FindingType.NotInLineOfDutyDueToMisconduct, FindingType.NotInLineOfDutyNotDueToMisconduct, FindingType.ExistingPriorToServiceNotAggravated);
             var wasUnderInfluence = rng.Next(100) < 15;
             var isInterim = processType == ProcessType.Informal && rng.Next(100) < 40;
             var rank = Ranks[rng.Next(Ranks.Length)];
@@ -120,7 +120,7 @@ public static class EctDbSeeder
                 CommanderReportReviewed = true,
                 OtherSourcesReviewed = rng.Next(100) < 25,
                 OtherSourcesDescription = string.Empty,
-                MisconductExplanation = finding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct
+                MisconductExplanation = finding == FindingType.NotInLineOfDutyDueToMisconduct
                     ? MisconductExplanations[rng.Next(MisconductExplanations.Length)]
                     : string.Empty,
 
@@ -130,10 +130,10 @@ public static class EctDbSeeder
                 IsInterimLOD = isInterim,
                 InterimLODExpiration = isInterim ? initiationDate.AddDays(90) : null,
                 FinalFinding = finding,
-                ProximateCause = finding != LineOfDutyFinding.InLineOfDuty
+                ProximateCause = finding != FindingType.InLineOfDuty
                     ? ProximateCauses[rng.Next(ProximateCauses.Length)]
                     : string.Empty,
-                IsPriorServiceCondition = finding == LineOfDutyFinding.ExistingPriorToServiceNotAggravated,
+                IsPriorServiceCondition = finding == FindingType.ExistingPriorToServiceNotAggravated,
                 PSCDocumentation = string.Empty,
                 EightYearRuleApplies = rng.Next(100) < 5,
                 YearsOfService = rng.Next(1, 28),
@@ -172,7 +172,7 @@ public static class EctDbSeeder
                         Rank = PickRandom(rng, "Lt Col", "Col", "Maj"),
                         Title = $"{unit.Split(',')[0]}/CC",
                         ActionDate = initiationDate.AddDays(rng.Next(5, 20)),
-                        Recommendation = finding == LineOfDutyFinding.InLineOfDuty ? "Line of Duty" : "Not in Line of Duty",
+                        Recommendation = finding == FindingType.InLineOfDuty ? "Line of Duty" : "Not in Line of Duty",
                         Comments = new List<string> { "Reviewed all evidence and documentation." }
                     },
                     new()

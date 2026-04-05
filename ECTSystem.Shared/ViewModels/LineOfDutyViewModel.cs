@@ -408,7 +408,7 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     public string LodBoardChairSignature { get; set; } = string.Empty;
 
     [FormSection("Board")]
-    public LineOfDutyFinding? BoardFinding { get; set; }
+    public FindingType? BoardFinding { get; set; }
 
     [FormSection("Board")]
     public bool BoardReferForFormal { get; set; }
@@ -423,7 +423,7 @@ public class LineOfDutyViewModel : TrackableModel, IValidatableObject
     public string ApprovingAuthoritySignature { get; set; } = string.Empty;
 
     [FormSection("ApprovingAuthority")]
-    public LineOfDutyFinding? ApprovingFinding { get; set; }
+    public FindingType? ApprovingFinding { get; set; }
 
     [FormSection("ApprovingAuthority")]
     public bool ApprovingReferForFormal { get; set; }

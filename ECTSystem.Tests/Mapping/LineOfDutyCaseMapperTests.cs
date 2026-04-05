@@ -501,10 +501,10 @@ public class LineOfDutyCaseMapperTests
     /// Verifies that the FinalFinding is mapped to a CommanderRecommendation on the view model.
     /// </summary>
     [Theory]
-    [InlineData(LineOfDutyFinding.InLineOfDuty, CommanderRecommendation.InLineOfDuty)]
-    [InlineData(LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, CommanderRecommendation.NotInLineOfDutyDueToMisconduct)]
-    [InlineData(LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct, CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct)]
-    public void ToLineOfDutyViewModel_Finding_MapsToRecommendation(LineOfDutyFinding finding, CommanderRecommendation expected)
+    [InlineData(FindingType.InLineOfDuty, CommanderRecommendation.InLineOfDuty)]
+    [InlineData(FindingType.NotInLineOfDutyDueToMisconduct, CommanderRecommendation.NotInLineOfDutyDueToMisconduct)]
+    [InlineData(FindingType.NotInLineOfDutyNotDueToMisconduct, CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct)]
+    public void ToLineOfDutyViewModel_Finding_MapsToRecommendation(FindingType finding, CommanderRecommendation expected)
     {
         var lodCase = CreateMinimalCase();
         lodCase.FinalFinding = finding;
@@ -520,10 +520,10 @@ public class LineOfDutyCaseMapperTests
     /// Verifies that findings without a direct recommendation mapping (e.g., EPTS) return null.
     /// </summary>
     [Theory]
-    [InlineData(LineOfDutyFinding.ExistingPriorToServiceNotAggravated)]
-    [InlineData(LineOfDutyFinding.Undetermined)]
-    [InlineData(LineOfDutyFinding.EightYearRuleApplied)]
-    public void ToLineOfDutyViewModel_UnmappedFinding_RecommendationNull(LineOfDutyFinding finding)
+    [InlineData(FindingType.ExistingPriorToServiceNotAggravated)]
+    [InlineData(FindingType.Undetermined)]
+    [InlineData(FindingType.EightYearRuleApplied)]
+    public void ToLineOfDutyViewModel_UnmappedFinding_RecommendationNull(FindingType finding)
     {
         var lodCase = CreateMinimalCase();
         lodCase.FinalFinding = finding;
@@ -834,10 +834,10 @@ public class LineOfDutyCaseMapperTests
     /// Verifies that the view model Recommendation maps to the correct FinalFinding on the case.
     /// </summary>
     [Theory]
-    [InlineData(CommanderRecommendation.InLineOfDuty, LineOfDutyFinding.InLineOfDuty)]
-    [InlineData(CommanderRecommendation.NotInLineOfDutyDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyDueToMisconduct)]
-    [InlineData(CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct, LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct)]
-    public void ApplyToCase_Recommendation_MapsToFinalFinding(CommanderRecommendation rec, LineOfDutyFinding expected)
+    [InlineData(CommanderRecommendation.InLineOfDuty, FindingType.InLineOfDuty)]
+    [InlineData(CommanderRecommendation.NotInLineOfDutyDueToMisconduct, FindingType.NotInLineOfDutyDueToMisconduct)]
+    [InlineData(CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct, FindingType.NotInLineOfDutyNotDueToMisconduct)]
+    public void ApplyToCase_Recommendation_MapsToFinalFinding(CommanderRecommendation rec, FindingType expected)
     {
         var vm = new LineOfDutyViewModel { Recommendation = rec };
         var target = CreateMinimalCase();
@@ -857,11 +857,11 @@ public class LineOfDutyCaseMapperTests
     {
         var vm = new LineOfDutyViewModel { Recommendation = null };
         var target = CreateMinimalCase();
-        target.FinalFinding = LineOfDutyFinding.NotInLineOfDutyDueToMisconduct;
+        target.FinalFinding = FindingType.NotInLineOfDutyDueToMisconduct;
 
         LineOfDutyCaseMapper.ApplyToCase(vm, target);
 
-        Assert.Equal(LineOfDutyFinding.NotInLineOfDutyDueToMisconduct, target.FinalFinding);
+        Assert.Equal(FindingType.NotInLineOfDutyDueToMisconduct, target.FinalFinding);
     }
 
     // ApplyToCase - Authority creation

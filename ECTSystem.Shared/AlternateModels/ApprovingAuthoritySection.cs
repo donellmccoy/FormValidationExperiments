@@ -8,7 +8,7 @@ namespace ECTSystem.Shared.AlternateModels;
 public class ApprovingAuthoritySection
 {
     // Item 34: Approving Authority Finding
-    public LineOfDutyFinding? ApprovingAuthorityFinding { get; set; }
+    public FindingType? ApprovingAuthorityFinding { get; set; }
 
     // Item 34a: Concurs with Wing Commander / Board
     public bool? ConcursWithLowerLevel { get; set; }

@@ -73,25 +73,25 @@ public partial class EditCase : ComponentBase, IDisposable
         ["return-appointing-authority"] = (WorkflowState.AppointingAuthorityReview, "Appointing Authority"),
     };
 
-    private static readonly Dictionary<string, (LineOfDutyTrigger Trigger, string DisplayName)> BoardTargets = new()
+    private static readonly Dictionary<string, (WorkflowTrigger Trigger, string DisplayName)> BoardTargets = new()
     {
-        ["board-tech"] = (LineOfDutyTrigger.ForwardToBoardTechnicianReview, "Board Technician"),
-        ["board-med"] = (LineOfDutyTrigger.ForwardToBoardMedicalReview, "Board Medical Officer"),
-        ["board-legal"] = (LineOfDutyTrigger.ForwardToBoardLegalReview, "Board Legal Advisor"),
-        ["board-admin"] = (LineOfDutyTrigger.ForwardToBoardAdministratorReview, "Board Administrator"),
+        ["board-tech"] = (WorkflowTrigger.ForwardToBoardTechnicianReview, "Board Technician"),
+        ["board-med"] = (WorkflowTrigger.ForwardToBoardMedicalReview, "Board Medical Officer"),
+        ["board-legal"] = (WorkflowTrigger.ForwardToBoardLegalReview, "Board Legal Advisor"),
+        ["board-admin"] = (WorkflowTrigger.ForwardToBoardAdministratorReview, "Board Administrator"),
     };
 
-    private static readonly Dictionary<LineOfDutyTrigger, string> TriggerDisplayNames = new()
+    private static readonly Dictionary<WorkflowTrigger, string> TriggerDisplayNames = new()
     {
-        [LineOfDutyTrigger.ForwardToMedicalOfficerReview] = "Medical Officer",
-        [LineOfDutyTrigger.ForwardToUnitCommanderReview] = "Unit Commander",
-        [LineOfDutyTrigger.ForwardToWingJudgeAdvocateReview] = "Wing Judge Advocate",
-        [LineOfDutyTrigger.ForwardToWingCommanderReview] = "Wing Commander",
-        [LineOfDutyTrigger.ForwardToAppointingAuthorityReview] = "Appointing Authority",
-        [LineOfDutyTrigger.ForwardToBoardTechnicianReview] = "Board Technician",
-        [LineOfDutyTrigger.ForwardToBoardMedicalReview] = "Board Medical Officer",
-        [LineOfDutyTrigger.ForwardToBoardLegalReview] = "Board Legal Advisor",
-        [LineOfDutyTrigger.ForwardToBoardAdministratorReview] = "Board Administrator",
+        [WorkflowTrigger.ForwardToMedicalOfficerReview] = "Medical Officer",
+        [WorkflowTrigger.ForwardToUnitCommanderReview] = "Unit Commander",
+        [WorkflowTrigger.ForwardToWingJudgeAdvocateReview] = "Wing Judge Advocate",
+        [WorkflowTrigger.ForwardToWingCommanderReview] = "Wing Commander",
+        [WorkflowTrigger.ForwardToAppointingAuthorityReview] = "Appointing Authority",
+        [WorkflowTrigger.ForwardToBoardTechnicianReview] = "Board Technician",
+        [WorkflowTrigger.ForwardToBoardMedicalReview] = "Board Medical Officer",
+        [WorkflowTrigger.ForwardToBoardLegalReview] = "Board Legal Advisor",
+        [WorkflowTrigger.ForwardToBoardAdministratorReview] = "Board Administrator",
     };
 
     #endregion
@@ -187,7 +187,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private static readonly object[] _processTypeOptions = [.. Enum.GetValues<ProcessType>().Select(p => new { Text = p.ToString(), Value = (ProcessType?)p })];
 
-    private static readonly object[] _findingOptions = [.. Enum.GetValues<LineOfDutyFinding>().Select(f => new { Text = Regex.Replace(f.ToString(), "(\\B[A-Z])", " $1"), Value = (LineOfDutyFinding?)f })];
+    private static readonly object[] _findingOptions = [.. Enum.GetValues<FindingType>().Select(f => new { Text = Regex.Replace(f.ToString(), "(\\B[A-Z])", " $1"), Value = (FindingType?)f })];
 
     private readonly PageOperationState _page = new();
 
@@ -791,11 +791,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _stateMachine = StateMachineFactory.CreateDefault();
 
-                var result = await _stateMachine.FireAsync(lineOfDutyCase, LineOfDutyTrigger.ForwardToMemberInformationEntry);
+                var result = await _stateMachine.FireAsync(lineOfDutyCase, WorkflowTrigger.ForwardToMemberInformationEntry);
 
                 if (result.Success)
                 {
-                    result = await _stateMachine.FireAsync(result.Case, LineOfDutyTrigger.ForwardToMedicalTechnician);
+                    result = await _stateMachine.FireAsync(result.Case, WorkflowTrigger.ForwardToMedicalTechnician);
                 }
 
                 if (result.Success)
@@ -855,7 +855,7 @@ public partial class EditCase : ComponentBase, IDisposable
         {
             LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
 
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, LineOfDutyTrigger.ForwardToMedicalTechnician);
+            var result = await _stateMachine.FireAsync(_lineOfDutyCase, WorkflowTrigger.ForwardToMedicalTechnician);
 
             if (result.Success)
             {
@@ -883,7 +883,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnForwardClick(RadzenSplitButtonItem item, LineOfDutyTrigger trigger)
+    private async Task OnForwardClick(RadzenSplitButtonItem item, WorkflowTrigger trigger)
     {
         var name = TriggerDisplayNames[trigger];
 
@@ -902,7 +902,7 @@ public partial class EditCase : ComponentBase, IDisposable
             "Are you sure you want to complete this line of duty case?",
             "Complete Case",
             "Completing line of duty case...",
-            LineOfDutyTrigger.Complete,
+            WorkflowTrigger.Complete,
             okButtonText: "Complete",
             notifySummary: "Line of Duty Case Completed",
             notifyVerb: "completed");
@@ -913,7 +913,7 @@ public partial class EditCase : ComponentBase, IDisposable
         string confirmMessage,
         string confirmTitle,
         string busyMessage,
-        LineOfDutyTrigger forwardTrigger,
+        WorkflowTrigger forwardTrigger,
         string okButtonText = "Start",
         string notifySummary = "Line of Duty Case Updated",
         string notifyVerb = "updated")

@@ -14,7 +14,7 @@ public class BoardReviewSection
     public string BoardFindings { get; set; }
 
     // Item 30: Board LOD Finding
-    public LineOfDutyFinding? BoardLODFinding { get; set; }
+    public FindingType? BoardLODFinding { get; set; }
 
     // Item 30a: Board Rationale
     public string BoardFindingRationale { get; set; }

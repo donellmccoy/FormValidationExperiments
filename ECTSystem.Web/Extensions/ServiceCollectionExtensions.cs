@@ -129,7 +129,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IEdmModel BuildClientEdmModel()
+    private static EdmModel BuildClientEdmModel()
     {
         var model = new EdmModel();
         var ns = "ECTSystem.Shared.Models";
@@ -172,16 +172,16 @@ public static class ServiceCollectionExtensions
         substanceTypeEnum.AddMember("Both", new EdmEnumMemberValue(2));
         model.AddElement(substanceTypeEnum);
 
-        var lineOfDutyFindingEnum = new EdmEnumType(enumNs, "LineOfDutyFinding");
-        lineOfDutyFindingEnum.AddMember("InLineOfDuty", new EdmEnumMemberValue(0));
-        lineOfDutyFindingEnum.AddMember("NotInLineOfDutyDueToMisconduct", new EdmEnumMemberValue(1));
-        lineOfDutyFindingEnum.AddMember("NotInLineOfDutyNotDueToMisconduct", new EdmEnumMemberValue(2));
-        lineOfDutyFindingEnum.AddMember("ExistingPriorToServiceNotAggravated", new EdmEnumMemberValue(3));
-        lineOfDutyFindingEnum.AddMember("ExistingPriorToServiceAggravated", new EdmEnumMemberValue(4));
-        lineOfDutyFindingEnum.AddMember("PriorServiceCondition", new EdmEnumMemberValue(5));
-        lineOfDutyFindingEnum.AddMember("EightYearRuleApplied", new EdmEnumMemberValue(6));
-        lineOfDutyFindingEnum.AddMember("Undetermined", new EdmEnumMemberValue(7));
-        model.AddElement(lineOfDutyFindingEnum);
+        var findingTypeEnum = new EdmEnumType(enumNs, "FindingType");
+        findingTypeEnum.AddMember("InLineOfDuty", new EdmEnumMemberValue(0));
+        findingTypeEnum.AddMember("NotInLineOfDutyDueToMisconduct", new EdmEnumMemberValue(1));
+        findingTypeEnum.AddMember("NotInLineOfDutyNotDueToMisconduct", new EdmEnumMemberValue(2));
+        findingTypeEnum.AddMember("ExistingPriorToServiceNotAggravated", new EdmEnumMemberValue(3));
+        findingTypeEnum.AddMember("ExistingPriorToServiceAggravated", new EdmEnumMemberValue(4));
+        findingTypeEnum.AddMember("PriorServiceCondition", new EdmEnumMemberValue(5));
+        findingTypeEnum.AddMember("EightYearRuleApplied", new EdmEnumMemberValue(6));
+        findingTypeEnum.AddMember("Undetermined", new EdmEnumMemberValue(7));
+        model.AddElement(findingTypeEnum);
 
         var workflowStateEnum = new EdmEnumType(enumNs, "WorkflowState");
         workflowStateEnum.AddMember("Draft", new EdmEnumMemberValue(0));
@@ -210,9 +210,9 @@ public static class ServiceCollectionExtensions
         caseType.AddStructuralProperty("IncidentType", new EdmEnumTypeReference(incidentTypeEnum, false));
         caseType.AddStructuralProperty("IncidentDutyStatus", new EdmEnumTypeReference(dutyStatusEnum, false));
         caseType.AddStructuralProperty("SubstanceType", new EdmEnumTypeReference(substanceTypeEnum, true));
-        caseType.AddStructuralProperty("FinalFinding", new EdmEnumTypeReference(lineOfDutyFindingEnum, false));
-        caseType.AddStructuralProperty("BoardFinding", new EdmEnumTypeReference(lineOfDutyFindingEnum, true));
-        caseType.AddStructuralProperty("ApprovingFinding", new EdmEnumTypeReference(lineOfDutyFindingEnum, true));
+        caseType.AddStructuralProperty("FinalFinding", new EdmEnumTypeReference(findingTypeEnum, false));
+        caseType.AddStructuralProperty("BoardFinding", new EdmEnumTypeReference(findingTypeEnum, true));
+        caseType.AddStructuralProperty("ApprovingFinding", new EdmEnumTypeReference(findingTypeEnum, true));
         model.AddElement(caseType);
 
         var memberType = new EdmEntityType(ns, "Member");
@@ -236,8 +236,8 @@ public static class ServiceCollectionExtensions
 
         var appealType = new EdmEntityType(ns, "LineOfDutyAppeal");
         appealType.AddKeys(appealType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
-        appealType.AddStructuralProperty("OriginalFinding", new EdmEnumTypeReference(lineOfDutyFindingEnum, false));
-        appealType.AddStructuralProperty("AppealOutcome", new EdmEnumTypeReference(lineOfDutyFindingEnum, false));
+        appealType.AddStructuralProperty("OriginalFinding", new EdmEnumTypeReference(findingTypeEnum, false));
+        appealType.AddStructuralProperty("AppealOutcome", new EdmEnumTypeReference(findingTypeEnum, false));
         appealType.AddStructuralProperty("NewEvidence",
             new EdmCollectionTypeReference(new EdmCollectionType(EdmCoreModel.Instance.GetString(false))));
         model.AddElement(appealType);

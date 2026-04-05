@@ -3,7 +3,7 @@ namespace ECTSystem.Shared.Enums;
 /// <summary>
 /// Enum representing the possible LOD findings.
 /// </summary>
-public enum LineOfDutyFinding
+public enum FindingType
 {
     InLineOfDuty,                   // ILOD
     NotInLineOfDutyDueToMisconduct, // NILOD - Due to own misconduct

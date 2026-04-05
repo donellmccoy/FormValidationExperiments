@@ -133,8 +133,8 @@ public static partial class LineOfDutyCaseMapper
             WitnessNameAddress5 = source.WitnessNameAddress5 ?? string.Empty,
             DutyStatusAtTime = source.IncidentDutyStatus,
             NarrativeOfCircumstances = source.IncidentDescription ?? string.Empty,
-            ResultOfMisconduct = source.FinalFinding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct ? true
-                               : source.FinalFinding == LineOfDutyFinding.InLineOfDuty ? false
+            ResultOfMisconduct = source.FinalFinding == FindingType.NotInLineOfDutyDueToMisconduct ? true
+                               : source.FinalFinding == FindingType.InLineOfDuty ? false
                                : null,
             MisconductExplanation = source.MisconductExplanation ?? string.Empty,
             ProximateCause = source.ProximateCause ?? string.Empty,
@@ -474,14 +474,14 @@ public static partial class LineOfDutyCaseMapper
         };
     }
 
-    private static LineOfDutyFinding MapRecommendationToFinding(CommanderRecommendation recommendation)
+    private static FindingType MapRecommendationToFinding(CommanderRecommendation recommendation)
     {
         return recommendation switch
         {
-            CommanderRecommendation.InLineOfDuty => LineOfDutyFinding.InLineOfDuty,
-            CommanderRecommendation.NotInLineOfDutyDueToMisconduct => LineOfDutyFinding.NotInLineOfDutyDueToMisconduct,
-            CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct => LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct,
-            _ => LineOfDutyFinding.InLineOfDuty
+            CommanderRecommendation.InLineOfDuty => FindingType.InLineOfDuty,
+            CommanderRecommendation.NotInLineOfDutyDueToMisconduct => FindingType.NotInLineOfDutyDueToMisconduct,
+            CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct => FindingType.NotInLineOfDutyNotDueToMisconduct,
+            _ => FindingType.InLineOfDuty
         };
     }
 
@@ -617,13 +617,13 @@ public static partial class LineOfDutyCaseMapper
         };
     }
 
-    private static CommanderRecommendation? MapFindingToRecommendation(LineOfDutyFinding finding)
+    private static CommanderRecommendation? MapFindingToRecommendation(FindingType finding)
     {
         return finding switch
         {
-            LineOfDutyFinding.InLineOfDuty => CommanderRecommendation.InLineOfDuty,
-            LineOfDutyFinding.NotInLineOfDutyDueToMisconduct => CommanderRecommendation.NotInLineOfDutyDueToMisconduct,
-            LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct => CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct,
+            FindingType.InLineOfDuty => CommanderRecommendation.InLineOfDuty,
+            FindingType.NotInLineOfDutyDueToMisconduct => CommanderRecommendation.NotInLineOfDutyDueToMisconduct,
+            FindingType.NotInLineOfDutyNotDueToMisconduct => CommanderRecommendation.NotInLineOfDutyNotDueToMisconduct,
             _ => null
         };
     }

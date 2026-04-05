@@ -135,7 +135,7 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
     /// <summary>
     /// Builds a <see cref="WorkflowStateHistory"/> representing an initial
     /// entry into the <see cref="WorkflowState.MemberInformationEntry"/> state with
-    /// <see cref="TransitionAction.Enter"/> and <see cref="WorkflowStepStatus.InProgress"/>.
+    /// <see cref="WorkflowTransitionAction.Enter"/> and <see cref="WorkflowStepStatus.InProgress"/>.
     /// </summary>
     private static WorkflowStateHistory BuildEntryDto() => new()
     {

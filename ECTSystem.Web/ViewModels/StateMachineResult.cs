@@ -29,7 +29,7 @@ internal sealed class StateMachineResult
 /// messages, notification details) used by the page component.
 /// </summary>
 internal record WorkflowTransition(
-    LineOfDutyTrigger Trigger,
+    WorkflowTrigger Trigger,
     WorkflowState TargetState,
     string ConfirmMessage,
     string ConfirmTitle,

@@ -244,11 +244,11 @@ public sealed class AF348PdfService
         SetText(fields, "part3NameAddr5", c.WitnessNameAddress5);
 
         // Item 22: Commander recommendation
-        SetCheckbox(fields, "part3Check22ILOD", c.FinalFinding == LineOfDutyFinding.InLineOfDuty);
+        SetCheckbox(fields, "part3Check22ILOD", c.FinalFinding == FindingType.InLineOfDuty);
         SetCheckbox(fields, "part3Check22FLOD", false); // Formal LOD — separate flow
         SetCheckbox(fields, "part3Check22NILOD",
-            c.FinalFinding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct ||
-            c.FinalFinding == LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct);
+            c.FinalFinding == FindingType.NotInLineOfDutyDueToMisconduct ||
+            c.FinalFinding == FindingType.NotInLineOfDutyNotDueToMisconduct);
 
         // Item 23: Commander signature block
         SetText(fields, "part3ICNameRank", c.CommanderNameRank);
@@ -266,11 +266,11 @@ public sealed class AF348PdfService
         // ─── Page 2: Part V — Wing CC Finding ───
 
         // Item 25-26: Wing Commander finding
-        SetCheckbox(fields, "part5Check26ILOD", c.FinalFinding == LineOfDutyFinding.InLineOfDuty);
+        SetCheckbox(fields, "part5Check26ILOD", c.FinalFinding == FindingType.InLineOfDuty);
         SetCheckbox(fields, "part5Check26FLOD", false);
         SetCheckbox(fields, "part5Check26NILOD",
-            c.FinalFinding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct ||
-            c.FinalFinding == LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct);
+            c.FinalFinding == FindingType.NotInLineOfDutyDueToMisconduct ||
+            c.FinalFinding == FindingType.NotInLineOfDutyNotDueToMisconduct);
         SetText(fields, "WingSignature25", c.WingCcSignature);
 
         // Case number page 2
@@ -297,11 +297,11 @@ public sealed class AF348PdfService
         SetText(fields, "LegalSignature31", c.LegalReviewerSignature);
 
         // Item 32: Board finding
-        SetCheckbox(fields, "part6Check32ILOD", c.BoardFinding == LineOfDutyFinding.InLineOfDuty);
+        SetCheckbox(fields, "part6Check32ILOD", c.BoardFinding == FindingType.InLineOfDuty);
         SetCheckbox(fields, "part6Check32FLOD", false);
         SetCheckbox(fields, "part6Check32NILOD",
-            c.BoardFinding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct ||
-            c.BoardFinding == LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct);
+            c.BoardFinding == FindingType.NotInLineOfDutyDueToMisconduct ||
+            c.BoardFinding == FindingType.NotInLineOfDutyNotDueToMisconduct);
         SetCheckbox(fields, "part6Check32REFER", c.BoardReferForFormal);
 
         SetText(fields, "part6LODNameRank", c.LodBoardChairNameRank);
@@ -311,11 +311,11 @@ public sealed class AF348PdfService
         // ─── Page 3: Part VII — Approving Authority ───
 
         // Item 34: Approving finding
-        SetCheckbox(fields, "part7Check34ILOD", c.ApprovingFinding == LineOfDutyFinding.InLineOfDuty);
+        SetCheckbox(fields, "part7Check34ILOD", c.ApprovingFinding == FindingType.InLineOfDuty);
         SetCheckbox(fields, "part7Check34FLOD", false);
         SetCheckbox(fields, "part7Check34NILOD",
-            c.ApprovingFinding == LineOfDutyFinding.NotInLineOfDutyDueToMisconduct ||
-            c.ApprovingFinding == LineOfDutyFinding.NotInLineOfDutyNotDueToMisconduct);
+            c.ApprovingFinding == FindingType.NotInLineOfDutyDueToMisconduct ||
+            c.ApprovingFinding == FindingType.NotInLineOfDutyNotDueToMisconduct);
         SetCheckbox(fields, "part7Check34REFER", c.ApprovingReferForFormal);
 
         SetText(fields, "part7ApprovingNameRank", c.ApprovingAuthorityNameRank);
