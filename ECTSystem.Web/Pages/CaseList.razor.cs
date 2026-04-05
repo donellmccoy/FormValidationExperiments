@@ -10,13 +10,6 @@ namespace ECTSystem.Web.Pages;
 
 public partial class CaseList : ComponentBase, IDisposable
 {
-    /// <summary>
-    /// OData $select projection for the case-list grid. Only requests the properties
-    /// needed by grid columns and UI logic instead of all ~90 scalar properties.
-    /// </summary>
-    private const string ListSelect =
-        "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,Component,IsCheckedOut,CheckedOutByName";
-
     [Inject]
     private ICaseService CaseService { get; set; }
 
@@ -46,6 +39,7 @@ public partial class CaseList : ComponentBase, IDisposable
     private ODataEnumerable<LineOfDutyCase> cases;
     private IList<LineOfDutyCase> _selectedCases = [];
     private HashSet<int> bookmarkedCaseIds = [];
+    private HashSet<int> animatingBookmarkIds = [];
     private int count;
     private bool isLoading;
     private string searchText = string.Empty;
@@ -78,16 +72,12 @@ public partial class CaseList : ComponentBase, IDisposable
         try
         {
             var filter = CombineFilters(args.Filter, BuildSearchFilter(searchText));
-            Console.WriteLine($"[CaseList] Filter: {filter ?? "(none)"}");
 
             var result = await CaseService.GetCasesAsync(
                 filter: filter,
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
-                // TODO: pass select: ListSelect once the current workflow state is
-                // persisted as a computed column — currently it's derived from
-                // WorkflowStateHistories navigation which $select would exclude.
                 count: true,
                 cancellationToken: ct);
 
@@ -112,7 +102,6 @@ public partial class CaseList : ComponentBase, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading cases: {ex}");
             cases = null;
             count = 0;
         }
@@ -164,10 +153,16 @@ public partial class CaseList : ComponentBase, IDisposable
         }
         else
         {
+            animatingBookmarkIds.Add(lodCase.Id);
+            StateHasChanged();
+
             await BookmarkService.AddBookmarkAsync(lodCase.Id);
             bookmarkedCaseIds.Add(lodCase.Id);
             NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
             BookmarkCountService.Increment();
+
+            await Task.Delay(800);
+            animatingBookmarkIds.Remove(lodCase.Id);
         }
     }
 
@@ -290,7 +285,11 @@ public partial class CaseList : ComponentBase, IDisposable
             }
             else
             {
-                NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
+                NotificationService.Notify(NotificationSeverity.Error, 
+                    "Checkout Failed", 
+                    $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.", 
+                    closeOnClick: true);
+
                 // Refresh the grid to get latest checkout state
                 if (_lastArgs is not null)
                 {
@@ -302,7 +301,6 @@ public partial class CaseList : ComponentBase, IDisposable
         {
             Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
         }
-        // null means Cancel — do nothing
     }
 
     private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)

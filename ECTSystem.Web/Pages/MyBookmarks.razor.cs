@@ -10,7 +10,10 @@ namespace ECTSystem.Web.Pages;
 public partial class MyBookmarks : ComponentBase, IDisposable
 {
     [Inject]
-    private IBookmarkService CaseService { get; set; }
+    private IBookmarkService BookmarkService { get; set; }
+
+    [Inject]
+    private ICaseService CaseService { get; set; }
 
     [Inject]
     private NavigationManager Navigation { get; set; }
@@ -61,7 +64,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         {
             var filter = CombineFilters(args.Filter, BuildSearchFilter(_searchText));
 
-            var result = await CaseService.GetBookmarkedCasesAsync(
+            var result = await BookmarkService.GetBookmarkedCasesAsync(
                 filter: filter,
                 top: args.Top,
                 skip: args.Skip,
@@ -113,7 +116,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         try
         {
-            await CaseService.RemoveBookmarkAsync(lodCase.Id);
+            await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
             BookmarkCountService.Decrement();
             await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
 
@@ -123,6 +126,42 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         catch (Exception)
         {
             NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove bookmark. Please try again.");
+        }
+    }
+
+    private async Task OnCaseClick(LineOfDutyCase lodCase)
+    {
+        if (lodCase.IsCheckedOut)
+        {
+            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=readonly");
+            return;
+        }
+
+        var result = await DialogService.OpenAsync<Shared.CheckOutCaseDialog>(
+            "Check Out Case",
+            new Dictionary<string, object> { { "CaseId", lodCase.CaseId } },
+            new DialogOptions { ShowClose = false, Width = "auto" });
+
+        if (result is "checkout")
+        {
+            var success = await CaseService.CheckOutCaseAsync(lodCase.Id);
+
+            if (success)
+            {
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=edit");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
+                if (_lastArgs is not null)
+                {
+                    await LoadData(_lastArgs);
+                }
+            }
+        }
+        else if (result is "readonly")
+        {
+            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=readonly");
         }
     }
 

@@ -62,14 +62,26 @@
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="180px">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="210px" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 <div class="case-id-cell">
-                    <RadzenLink Path="@($"case/{lodCase.CaseId}?from=bookmarks")" Text="@lodCase.CaseId" />
-                    <RadzenButton Icon="bookmark_remove" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.ExtraSmall"
+                    <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
+                        @lodCase.CaseId
+                    </span>
+                    @if (lodCase.IsCheckedOut)
+                    {
+                        <RadzenIcon Icon="lock" class="checkout-lock-icon" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
+                    }
+                    <RadzenButton ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Text"
+                                  Size="ButtonSize.ExtraSmall"
                                   class="bookmark-btn"
                                   title="Remove bookmark"
-                                  Click="@(() => OnRemoveBookmark(lodCase))" />
+                                  Click="@(() => OnRemoveBookmark(lodCase))">
+                        <ChildContent>
+                            <span class="material-symbols-outlined">bookmark_remove</span>
+                        </ChildContent>
+                    </RadzenButton>
                 </div>
             </Template>
         </RadzenDataGridColumn>

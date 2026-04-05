@@ -9,13 +9,9 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class CaseService : ODataServiceBase, ICaseService
+public class CaseService(EctODataContext context, HttpClient httpClient) : ODataServiceBase(context, httpClient), ICaseService
 {
-    private const string FullExpand =
-        "Authorities,Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications,WorkflowStateHistories";
-
-    public CaseService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    private const string FullExpand = "Authorities,Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications,WorkflowStateHistories";
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null,
@@ -26,22 +22,32 @@ public class CaseService : ODataServiceBase, ICaseService
         bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        var query = Context.Cases as DataServiceQuery<LineOfDutyCase>;
+        var query = Context.Cases;
 
         if (!string.IsNullOrEmpty(filter))
+        {
             query = query.AddQueryOption("$filter", filter);
+        }
 
         if (top.HasValue)
+        {
             query = query.AddQueryOption("$top", top.Value);
+        }
 
         if (skip.HasValue)
+        {
             query = query.AddQueryOption("$skip", skip.Value);
+        }
 
         if (!string.IsNullOrEmpty(orderby))
+        {
             query = query.AddQueryOption("$orderby", orderby);
+        }
 
         if (!string.IsNullOrEmpty(select))
+        {
             query = query.AddQueryOption("$select", select);
+        }
 
         if (count == true)
         {
@@ -83,19 +89,29 @@ public class CaseService : ODataServiceBase, ICaseService
         var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.ByCurrentState", false, parameters.ToArray());
 
         if (!string.IsNullOrEmpty(filter))
+        {
             query = query.AddQueryOption("$filter", filter);
+        }
 
         if (top.HasValue)
+        {
             query = query.AddQueryOption("$top", top.Value);
+        }
 
         if (skip.HasValue)
+        {
             query = query.AddQueryOption("$skip", skip.Value);
+        }
 
         if (!string.IsNullOrEmpty(orderby))
+        {
             query = query.AddQueryOption("$orderby", orderby);
+        }
 
         if (!string.IsNullOrEmpty(select))
+        {
             query = query.AddQueryOption("$select", select);
+        }
 
         if (count == true)
         {
@@ -194,38 +210,6 @@ public class CaseService : ODataServiceBase, ICaseService
         lodCase.AuditComments = auditComments;
 
         return lodCase;
-    }
-
-    public async Task<CaseTransitionResponse> TransitionCaseAsync(int caseId, CaseTransitionRequest request, CancellationToken cancellationToken = default)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
-        ArgumentNullException.ThrowIfNull(request);
-
-        foreach (var entry in request.HistoryEntries)
-        {
-            Context.AddObject("WorkflowStateHistory", entry);
-        }
-
-        var response = await Context.SaveChangesAsync(
-            SaveChangesOptions.BatchWithSingleChangeset | SaveChangesOptions.UseJsonBatch,
-            cancellationToken);
-
-        var savedEntries = response
-            .OfType<ChangeOperationResponse>()
-            .Select(r => (r.Descriptor as EntityDescriptor)?.Entity as WorkflowStateHistory)
-            .Where(e => e is not null)
-            .Cast<WorkflowStateHistory>()
-            .ToList();
-
-        foreach (var entry in savedEntries)
-        {
-            Context.Detach(entry);
-        }
-
-        return new CaseTransitionResponse
-        {
-            HistoryEntries = savedEntries
-        };
     }
 
     public async Task<bool> CheckOutCaseAsync(int caseId, CancellationToken cancellationToken = default)

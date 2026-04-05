@@ -68,20 +68,23 @@ else
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="210px" TextAlign="TextAlign.Center" >
             <Template Context="lodCase">
                 <div class="case-id-cell">
+                    <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
+                        @lodCase.CaseId
+                    </span>
                     @if (lodCase.IsCheckedOut)
                     {
                         <RadzenIcon Icon="lock" class="checkout-lock-icon" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
                     }
-                    <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
-                        @lodCase.CaseId
-                    </span>
-                    <RadzenButton Icon="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")"
-                                  ButtonStyle="ButtonStyle.Light"
+                    <RadzenButton ButtonStyle="ButtonStyle.Light"
                                   Variant="Variant.Text"
                                   Size="ButtonSize.ExtraSmall"
                                   class="bookmark-btn"
                                   Click="@(() => ToggleBookmark(lodCase))"
-                                  title="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark")" />
+                                  title="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark")">
+                        <ChildContent>
+                            <span class="material-symbols-outlined @(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark-flash" : "")">@(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark_added" : bookmarkedCaseIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")</span>
+                        </ChildContent>
+                    </RadzenButton>
                 </div>
             </Template>
         </RadzenDataGridColumn>

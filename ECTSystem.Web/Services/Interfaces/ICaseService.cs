@@ -76,17 +76,6 @@ public interface ICaseService
     Task<LineOfDutyCase> SaveCaseAsync(LineOfDutyCase lodCase, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Atomically transitions a LOD case to a new workflow state and persists the
-    /// associated history entries in a single server-side transaction.
-    /// Returns the updated case and server-persisted history entries.
-    /// </summary>
-    /// <param name="caseId">The database primary key of the case to transition.</param>
-    /// <param name="request">The transition request containing the target workflow state and history entries to persist.</param>
-    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    /// <returns>A <see cref="CaseTransitionResponse"/> containing the updated case and the server-assigned history entries.</returns>
-    Task<CaseTransitionResponse> TransitionCaseAsync(int caseId, CaseTransitionRequest request, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Checks out a LOD case by setting <c>IsCheckedOut</c> to <c>true</c>,
     /// signaling to other users that the case is currently being edited and should be treated as read-only.
     /// </summary>
