@@ -21,6 +21,8 @@
 ::deep .case-id-cell .checkout-lock-icon {
     font-size: 14px;
     color: var(--rz-warning);
+    margin-bottom: 4px;
+    margin-right: 4px;
 }
 
 ::deep .case-id-cell .bookmark-btn {

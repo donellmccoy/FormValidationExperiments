@@ -65,14 +65,14 @@ else
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="210px" HeaderTextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="210px" TextAlign="TextAlign.Center" >
             <Template Context="lodCase">
                 <div class="case-id-cell">
+                    @if (lodCase.IsCheckedOut)
+                    {
+                        <RadzenIcon Icon="lock" class="checkout-lock-icon" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
+                    }
                     <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
-                        @if (lodCase.IsCheckedOut)
-                        {
-                            <RadzenIcon Icon="lock" class="checkout-lock-icon" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
-                        }
                         @lodCase.CaseId
                     </span>
                     <RadzenButton Icon="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")"
@@ -85,7 +85,7 @@ else
                 </div>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" Width="120px" HeaderTextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" Width="120px" TextAlign="TextAlign.Center" >
             <Template Context="lodCase">
                 @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
                 {
@@ -97,21 +97,21 @@ else
                 }
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px" HeaderTextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="85px" TextAlign="TextAlign.Center" HeaderTextAlign="TextAlign.Center"/>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" HeaderTextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Status" Sortable="false" Filterable="false" HeaderTextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px"  TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="90px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Status" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type" HeaderTextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" HeaderTextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" HeaderTextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>
