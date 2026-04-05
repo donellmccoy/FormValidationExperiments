@@ -264,17 +264,13 @@ public partial class CaseList : ComponentBase, IDisposable
             return;
         }
 
-        // Ask user whether to check out for editing or view read-only
-        var result = await DialogService.Confirm(
-            $"Do you want to check out Case {lodCase.CaseId} for editing?",
+        // Ask user whether to check out for editing, view read-only, or cancel
+        var result = await DialogService.OpenAsync<Shared.CheckOutCaseDialog>(
             "Check Out Case",
-            new ConfirmOptions
-            {
-                OkButtonText = "Check Out",
-                CancelButtonText = "View Read-Only"
-            });
+            new Dictionary<string, object> { { "CaseId", lodCase.CaseId } },
+            new DialogOptions { ShowClose = false, Width = "auto" });
 
-        if (result == true)
+        if (result is "checkout")
         {
             var success = await CaseService.CheckOutCaseAsync(lodCase.Id);
 
@@ -292,11 +288,11 @@ public partial class CaseList : ComponentBase, IDisposable
                 }
             }
         }
-        else if (result == false)
+        else if (result is "readonly")
         {
             Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
         }
-        // result == null means dialog was dismissed (X button) — do nothing
+        // null means Cancel — do nothing
     }
 
     private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)

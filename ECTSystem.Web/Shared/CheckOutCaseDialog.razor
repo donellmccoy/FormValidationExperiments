@@ -1,0 +1,7 @@
+<p class="rz-mb-4">Do you want to check out Case <strong>@CaseId</strong> for editing?</p>
+
+<div style="display: flex; gap: 8px; justify-content: flex-end;">
+    <RadzenButton Text="Check Out" Click="@(() => DialogService.Close("checkout"))" ButtonStyle="ButtonStyle.Primary" />
+    <RadzenButton Text="View Read-Only" Click="@(() => DialogService.Close("readonly"))" ButtonStyle="ButtonStyle.Light" />
+    <RadzenButton Text="Cancel" Click="@(() => DialogService.Close(null))" ButtonStyle="ButtonStyle.Light" />
+</div>
