@@ -40,6 +40,8 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private bool _searchBoxFocused;
     private bool _initialLoadComplete;
 
+    private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutByName";
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_searchBoxFocused && _searchBox is not null && _bookmarks is not null)
@@ -69,6 +71,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
                 top: args.Top,
                 skip: args.Skip,
                 orderby: args.OrderBy,
+                select: ListSelect,
                 count: true,
                 cancellationToken: ct);
 

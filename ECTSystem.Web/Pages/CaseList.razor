@@ -48,7 +48,7 @@ else
                 AllowGrouping="true" 
                 AllowColumnResize="true"
                 FilterMode="FilterMode.Simple"
-                PageSize="10"
+                PageSize="10" 
                 AllowPaging="true"
                 ShowPagingSummary="true"
                 PagingSummaryFormat="@("Displaying page {0} of {1} ({2} records)")"
@@ -65,7 +65,7 @@ else
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case ID" Width="210px" TextAlign="TextAlign.Center" >
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case Number" TextAlign="TextAlign.Center"  >
             <Template Context="lodCase">
                 <div class="case-id-cell">
                     <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
@@ -88,11 +88,11 @@ else
                 </div>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" Width="120px" TextAlign="TextAlign.Center" >
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" TextAlign="TextAlign.Center" Width="90px">
             <Template Context="lodCase">
                 @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
                 {
-                    @($"***-**-{lodCase.ServiceNumber[^4..]}")
+                    @($"{lodCase.ServiceNumber[^4..]}")
                 }
                 else
                 {
@@ -100,21 +100,21 @@ else
                 }
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member" Width="220px"  TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" Width="90px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member Name" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" TextAlign="TextAlign.Center" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Status" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Current Status" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Type" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Incident Date" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>

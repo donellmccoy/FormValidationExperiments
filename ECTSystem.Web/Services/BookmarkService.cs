@@ -13,7 +13,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
-        string? orderby = null, bool? count = null,
+        string? orderby = null, string? select = null, bool? count = null,
         CancellationToken cancellationToken = default)
     {
         // Step 1: Get all bookmarked case IDs for the current user.
@@ -43,6 +43,9 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
 
         if (!string.IsNullOrEmpty(orderby))
             caseQuery = caseQuery.AddQueryOption("$orderby", orderby);
+
+        if (!string.IsNullOrEmpty(select))
+            caseQuery = caseQuery.AddQueryOption("$select", select);
 
         if (count == true)
         {

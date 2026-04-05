@@ -27,7 +27,7 @@ public interface IBookmarkService
     /// <returns>An <see cref="ODataServiceResult{T}"/> containing the matching bookmarked cases and optional total count.</returns>
     Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
-        string? orderby = null, bool? count = null,
+        string? orderby = null, string? select = null, bool? count = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
