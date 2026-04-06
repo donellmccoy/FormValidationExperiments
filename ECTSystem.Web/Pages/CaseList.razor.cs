@@ -38,6 +38,9 @@ public partial class CaseList : ComponentBase, IDisposable
     [Inject]
     private ILogger<CaseList> Logger { get; set; }
 
+    [Inject]
+    private CurrentUserService CurrentUserService { get; set; }
+
     #endregion
 
     #region Fields & Constants
@@ -56,11 +59,17 @@ public partial class CaseList : ComponentBase, IDisposable
     private CancellationTokenSource _searchCts = new();
     private bool _searchBoxFocused;
 
-    private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutByName";
+    private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
+    private string _currentUserId;
 
     #endregion
 
     #region Lifecycle
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUserId = await CurrentUserService.GetUserIdAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -300,8 +309,16 @@ public partial class CaseList : ComponentBase, IDisposable
     {
         if (lodCase.IsCheckedOut)
         {
-            Logger.LogInformation("Case {CaseId} already checked out by {CheckedOutBy} — opening read-only", lodCase.CaseId, lodCase.CheckedOutByName);
-            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
+            if (string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogInformation("Case {CaseId} already checked out by current user — opening in edit mode", lodCase.CaseId);
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=edit");
+            }
+            else
+            {
+                Logger.LogInformation("Case {CaseId} checked out by {CheckedOutBy} — opening read-only", lodCase.CaseId, lodCase.CheckedOutByName);
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=cases&mode=readonly");
+            }
             return;
         }
 

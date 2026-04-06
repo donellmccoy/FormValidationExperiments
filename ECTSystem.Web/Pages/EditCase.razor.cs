@@ -165,7 +165,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private bool IsNewCase => string.IsNullOrEmpty(CaseId);
 
-    private bool IsReadOnly => string.Equals(Mode, "readonly", StringComparison.OrdinalIgnoreCase);
+    private bool IsReadOnly => !IsNewCase && !string.Equals(Mode, "edit", StringComparison.OrdinalIgnoreCase);
 
     private bool IsCheckedOutByMe => string.Equals(Mode, "edit", StringComparison.OrdinalIgnoreCase);
 

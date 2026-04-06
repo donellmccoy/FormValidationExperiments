@@ -78,16 +78,23 @@ public class AuthService : IAuthService
     private readonly JwtAuthStateProvider _authStateProvider;
 
     /// <summary>
+    /// The service that caches the current user's server-assigned identity.
+    /// </summary>
+    private readonly CurrentUserService _currentUserService;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
     /// </summary>
     /// <param name="httpClient">The HTTP client configured with the API base address.</param>
     /// <param name="localStorage">The local storage service for persisting JWT tokens.</param>
     /// <param name="authStateProvider">The JWT authentication state provider for notifying auth state changes.</param>
-    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider)
+    /// <param name="currentUserService">The service that caches the current user's identity.</param>
+    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider, CurrentUserService currentUserService)
     {
         _httpClient = httpClient;
         _localStorage = localStorage;
         _authStateProvider = authStateProvider;
+        _currentUserService = currentUserService;
     }
 
     /// <inheritdoc />
@@ -157,6 +164,7 @@ public class AuthService : IAuthService
     {
         await _localStorage.RemoveItemAsync("accessToken");
         await _localStorage.RemoveItemAsync("refreshToken");
+        _currentUserService.Clear();
         _authStateProvider.NotifyAuthenticationStateChanged();
     }
 }

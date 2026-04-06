@@ -27,6 +27,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     [Inject]
     private BookmarkCountService BookmarkCountService { get; set; }
 
+    [Inject]
+    private CurrentUserService CurrentUserService { get; set; }
+
     private RadzenDataGrid<LineOfDutyCase> _grid;
     private RadzenTextBox _searchBox;
     private ODataEnumerable<LineOfDutyCase> _bookmarks;
@@ -40,7 +43,13 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private bool _searchBoxFocused;
     private bool _initialLoadComplete;
 
-    private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutByName";
+    private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
+    private string _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUserId = await CurrentUserService.GetUserIdAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -136,7 +145,14 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     {
         if (lodCase.IsCheckedOut)
         {
-            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=readonly");
+            if (string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=edit");
+            }
+            else
+            {
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=readonly");
+            }
             return;
         }
 

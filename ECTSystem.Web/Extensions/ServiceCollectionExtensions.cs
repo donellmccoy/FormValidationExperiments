@@ -93,6 +93,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkflowHistoryService, WorkflowHistoryService>();
         services.AddScoped<IBookmarkService, BookmarkService>();
         services.AddScoped<BookmarkCountService>();
+        services.AddScoped<CurrentUserService>();
         services.AddScoped<LineOfDutyStateMachineFactory>();
 
         return services;
