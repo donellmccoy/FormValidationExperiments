@@ -65,16 +65,20 @@ else
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="" Width="55px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false" Resizable="false" Reorderable="false" Groupable="false">
+            <Template Context="lodCase">
+                @if (lodCase.IsCheckedOut)
+                {
+                    <RadzenIcon Icon="lock" class="checkout-lock-icon" Style="font-size: 16px;" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
+                }
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case Number" TextAlign="TextAlign.Center"  >
             <Template Context="lodCase">
                 <div class="case-id-cell">
                     <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
                         @lodCase.CaseId
                     </span>
-                    @if (lodCase.IsCheckedOut)
-                    {
-                        <RadzenIcon Icon="lock" class="checkout-lock-icon" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
-                    }
                     <RadzenButton ButtonStyle="ButtonStyle.Light"
                                   Variant="Variant.Text"
                                   Size="ButtonSize.ExtraSmall"
