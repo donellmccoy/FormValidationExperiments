@@ -69,7 +69,14 @@ else
             <Template Context="lodCase">
                 @if (lodCase.IsCheckedOut)
                 {
-                    <RadzenIcon Icon="lock" class="checkout-lock-icon" Style="font-size: 16px;" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
+                    @if (string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <RadzenIcon Icon="check_circle" Style="font-size: 16px; color: var(--rz-success);" title="Checked out by you" />
+                    }
+                    else
+                    {
+                        <RadzenIcon Icon="lock" class="checkout-lock-icon" Style="font-size: 16px;" title="@($"Checked out by {lodCase.CheckedOutByName}")" />
+                    }
                 }
             </Template>
         </RadzenDataGridColumn>

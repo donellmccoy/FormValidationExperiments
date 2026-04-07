@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
 
@@ -29,6 +30,12 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
     [Inject]
     private CurrentUserService CurrentUserService { get; set; }
+
+    [Inject]
+    private ContextMenuService ContextMenuService { get; set; }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
 
     private RadzenDataGrid<LineOfDutyCase> _grid;
     private RadzenTextBox _searchBox;
@@ -130,9 +137,8 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         {
             await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
             BookmarkCountService.Decrement();
-            await LoadData(_lastArgs ?? new LoadDataArgs { Skip = 0, Top = 10 });
+            await _grid.Reload();
 
-            //StateHasChanged();
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }
         catch (Exception)
@@ -284,5 +290,87 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         _loadCts.Dispose();
         _searchCts.Cancel();
         _searchCts.Dispose();
+    }
+
+    private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
+    {
+        _ = ShowContextMenuAsync(args);
+    }
+
+    private async Task ShowContextMenuAsync(DataGridCellMouseEventArgs<LineOfDutyCase> args)
+    {
+        var lodCase = args.Data;
+        var isCheckedOutByMe = lodCase.IsCheckedOut
+            && string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase);
+
+        var items = new List<ContextMenuItem>
+        {
+            new ContextMenuItem
+            {
+                Text = "Open Case",
+                Icon = "open_in_new",
+                Value = "open"
+            },
+            new ContextMenuItem
+            {
+                Text = "Remove Bookmark",
+                Icon = "bookmark_remove",
+                Value = "remove-bookmark"
+            },
+            new ContextMenuItem
+            {
+                Text = "Copy Case ID",
+                Icon = "content_copy",
+                Value = "copy"
+            }
+        };
+
+        if (isCheckedOutByMe)
+        {
+            items.Add(new ContextMenuItem
+            {
+                Text = "Check In",
+                Icon = "lock_open",
+                Value = "checkin"
+            });
+        }
+
+        ContextMenuService.Open(args, items,
+            async menuItem =>
+            {
+                ContextMenuService.Close();
+
+                switch (menuItem.Value?.ToString())
+                {
+                    case "open":
+                        await OnCaseClick(lodCase);
+                        break;
+
+                    case "remove-bookmark":
+                        await OnRemoveBookmark(lodCase);
+                        break;
+
+                    case "copy":
+                        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", lodCase.CaseId);
+                        NotificationService.Notify(NotificationSeverity.Info, "Copied", $"Case ID {lodCase.CaseId} copied to clipboard.", closeOnClick: true);
+                        break;
+
+                    case "checkin":
+                        var success = await CaseService.CheckInCaseAsync(lodCase.Id);
+                        if (success)
+                        {
+                            NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
+                            if (_lastArgs is not null)
+                            {
+                                await LoadData(_lastArgs);
+                            }
+                        }
+                        else
+                        {
+                            NotificationService.Notify(NotificationSeverity.Error, "Check In Failed", $"Could not check in Case {lodCase.CaseId}.", closeOnClick: true);
+                        }
+                        break;
+                }
+            });
     }
 }

@@ -371,28 +371,42 @@ public partial class CaseList : ComponentBase, IDisposable
     {
         var lodCase = args.Data;
         var isBookmarked = await BookmarkService.IsBookmarkedAsync(lodCase.Id);
+        var isCheckedOutByMe = lodCase.IsCheckedOut
+            && string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase);
 
-        ContextMenuService.Open(args,
-            [
-                new ContextMenuItem
-                {
-                    Text = "Open Case",
-                    Icon = "open_in_new",
-                    Value = "open"
-                },
-                new ContextMenuItem
-                {
-                    Text = isBookmarked ? "Remove Bookmark" : "Add Bookmark",
-                    Icon = isBookmarked ? "bookmark_remove" : "bookmark_add",
-                    Value = "bookmark"
-                },
-                new ContextMenuItem
-                {
-                    Text = "Copy Case ID",
-                    Icon = "content_copy",
-                    Value = "copy"
-                }
-            ],
+        var items = new List<ContextMenuItem>
+        {
+            new ContextMenuItem
+            {
+                Text = "Open Case",
+                Icon = "open_in_new",
+                Value = "open"
+            },
+            new ContextMenuItem
+            {
+                Text = isBookmarked ? "Remove Bookmark" : "Add Bookmark",
+                Icon = isBookmarked ? "bookmark_remove" : "bookmark_add",
+                Value = "bookmark"
+            },
+            new ContextMenuItem
+            {
+                Text = "Copy Case ID",
+                Icon = "content_copy",
+                Value = "copy"
+            }
+        };
+
+        if (isCheckedOutByMe)
+        {
+            items.Add(new ContextMenuItem
+            {
+                Text = "Check In",
+                Icon = "lock_open",
+                Value = "checkin"
+            });
+        }
+
+        ContextMenuService.Open(args, items,
             async menuItem =>
             {
                 ContextMenuService.Close();
@@ -410,6 +424,23 @@ public partial class CaseList : ComponentBase, IDisposable
                     case "copy":
                         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", lodCase.CaseId);
                         NotificationService.Notify(NotificationSeverity.Info, "Copied", $"Case ID {lodCase.CaseId} copied to clipboard.", closeOnClick: true);
+                        break;
+
+                    case "checkin":
+                        var success = await CaseService.CheckInCaseAsync(lodCase.Id);
+                        if (success)
+                        {
+                            Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
+                            NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
+                            if (_lastArgs is not null)
+                            {
+                                await LoadData(_lastArgs);
+                            }
+                        }
+                        else
+                        {
+                            NotificationService.Notify(NotificationSeverity.Error, "Check In Failed", $"Could not check in Case {lodCase.CaseId}.", closeOnClick: true);
+                        }
                         break;
                 }
             });
