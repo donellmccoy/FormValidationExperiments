@@ -116,6 +116,7 @@ obj/Debug/net10.0/
  ECTSystem.Shared.AssemblyInfo.cs
  ECTSystem.Shared.GlobalUsings.g.cs
 ViewModels/
+ CaseListItemViewModel.cs
  CreateAuthorityDto.cs
  CreateBookmarkDto.cs
  CreateMemberDto.cs

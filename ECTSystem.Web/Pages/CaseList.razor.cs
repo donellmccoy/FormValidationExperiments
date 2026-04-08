@@ -1,4 +1,6 @@
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -45,10 +47,10 @@ public partial class CaseList : ComponentBase, IDisposable
 
     #region Fields & Constants
 
-    private RadzenDataGrid<LineOfDutyCase> _grid;
+    private RadzenDataGrid<CaseListItemViewModel> _grid;
     private RadzenTextBox _searchBox;
-    private ODataEnumerable<LineOfDutyCase> cases;
-    private IList<LineOfDutyCase> _selectedCases = [];
+    private IEnumerable<CaseListItemViewModel> cases;
+    private IList<CaseListItemViewModel> _selectedCases = [];
     private HashSet<int> bookmarkedCaseIds = [];
     private HashSet<int> animatingBookmarkIds = [];
     private int count;
@@ -112,7 +114,7 @@ public partial class CaseList : ComponentBase, IDisposable
                 count: true,
                 cancellationToken: ct);
 
-            cases = result.Value.AsODataEnumerable();
+            cases = result.Value.Select(LineOfDutyCaseMapper.ToCaseListItem).ToList();
             count = result.Count;
 
             Logger.LogDebug("Loaded {Count} cases (total: {Total})", cases.Count(), count);
@@ -164,7 +166,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
     #region Bookmarks
 
-    private async Task ToggleBookmark(LineOfDutyCase lodCase)
+    private async Task ToggleBookmark(CaseListItemViewModel lodCase)
     {
         var isBookmarked = bookmarkedCaseIds.Contains(lodCase.Id);
 
@@ -305,7 +307,7 @@ public partial class CaseList : ComponentBase, IDisposable
         Navigation.NavigateTo("/case/new?from=cases");
     }
 
-    private async Task OnCaseClick(LineOfDutyCase lodCase)
+    private async Task OnCaseClick(CaseListItemViewModel lodCase)
     {
         if (lodCase.IsCheckedOut)
         {
@@ -362,12 +364,12 @@ public partial class CaseList : ComponentBase, IDisposable
 
     #region Context Menu
 
-    private void OnCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
+    private void OnCellContextMenu(DataGridCellMouseEventArgs<CaseListItemViewModel> args)
     {
         _ = ShowContextMenuAsync(args);
     }
 
-    private async Task ShowContextMenuAsync(DataGridCellMouseEventArgs<LineOfDutyCase> args)
+    private async Task ShowContextMenuAsync(DataGridCellMouseEventArgs<CaseListItemViewModel> args)
     {
         var lodCase = args.Data;
         var isBookmarked = await BookmarkService.IsBookmarkedAsync(lodCase.Id);

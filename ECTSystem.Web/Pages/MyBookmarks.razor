@@ -63,7 +63,7 @@
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="" Width="55px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false" Resizable="false" Reorderable="false" Groupable="false">
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="" Width="55px" Sortable="false" Filterable="false" Resizable="false" Reorderable="false" Groupable="false" TextAlign="TextAlign.Center" >
             <Template Context="lodCase">
                 @if (lodCase.IsCheckedOut)
                 {
@@ -112,7 +112,7 @@
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member Name" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" TextAlign="TextAlign.Center" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Current Status" TextAlign="TextAlign.Center" >
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CurrentWorkflowState" Title="Current Status" TextAlign="TextAlign.Center" >
             <Template Context="lodCase">
                 @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>

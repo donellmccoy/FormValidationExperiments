@@ -672,4 +672,26 @@ public static partial class LineOfDutyCaseMapper
         return entry is not null ? entry[NonConcurrencePrefix.Length..] : string.Empty;
     }
 
+    // ──────────────────────────── Domain → Case List Item ────────────────────────────
+
+    public static CaseListItemViewModel ToCaseListItem(LineOfDutyCase source)
+    {
+        return new CaseListItemViewModel
+        {
+            Id = source.Id,
+            CaseId = source.CaseId,
+            ServiceNumber = source.ServiceNumber,
+            MemberName = source.MemberName,
+            MemberRank = source.MemberRank,
+            Unit = source.Unit,
+            IncidentType = source.IncidentType,
+            IncidentDate = source.IncidentDate,
+            ProcessType = source.ProcessType,
+            CurrentWorkflowState = source.GetCurrentWorkflowState(),
+            IsCheckedOut = source.IsCheckedOut,
+            CheckedOutBy = source.CheckedOutBy,
+            CheckedOutByName = source.CheckedOutByName,
+        };
+    }
+
 }
