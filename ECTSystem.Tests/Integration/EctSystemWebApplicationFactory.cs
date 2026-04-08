@@ -81,6 +81,11 @@ public class EctSystemWebApplicationFactory : WebApplicationFactory<ECTSystem.Ap
     private SqliteConnection _ectConnection;
     private SqliteConnection _identityConnection;
 
+    // Named shared in-memory databases allow each DbContext to open its own connection,
+    // avoiding "unable to delete/modify user-function due to active statements" under
+    // concurrent load.  Anchor connections keep the databases alive.
+    private readonly string _instanceId = Guid.NewGuid().ToString("N")[..8];
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -99,29 +104,34 @@ public class EctSystemWebApplicationFactory : WebApplicationFactory<ECTSystem.Ap
                 services.Remove(d);
             }
 
-            // Create persistent in-memory SQLite connections (must stay open)
-            _ectConnection = new SqliteConnection("DataSource=:memory:");
+            // Named shared in-memory databases — each DbContext gets its own connection
+            // but they all point to the same in-memory database.
+            var ectConnStr = $"DataSource=EctTest_{_instanceId};Mode=Memory;Cache=Shared";
+            var identityConnStr = $"DataSource=EctIdentity_{_instanceId};Mode=Memory;Cache=Shared";
+
+            // Anchor connections keep the in-memory databases alive
+            _ectConnection = new SqliteConnection(ectConnStr);
             _ectConnection.Open();
 
-            _identityConnection = new SqliteConnection("DataSource=:memory:");
+            _identityConnection = new SqliteConnection(identityConnStr);
             _identityConnection.Open();
 
             services.AddDbContextFactory<EctDbContext>(options =>
             {
-                options.UseSqlite(_ectConnection);
+                options.UseSqlite(ectConnStr);
                 options.AddInterceptors(new SqlServerToSqliteInterceptor());
                 options.ConfigureWarnings(w => w.Ignore(RelationalEventId.AmbientTransactionWarning));
             });
 
             services.AddDbContextFactory<EctIdentityDbContext>(options =>
             {
-                options.UseSqlite(_identityConnection);
+                options.UseSqlite(identityConnStr);
             });
 
             // Also register the contexts directly for Identity's AddEntityFrameworkStores
             services.AddDbContext<EctIdentityDbContext>(options =>
             {
-                options.UseSqlite(_identityConnection);
+                options.UseSqlite(identityConnStr);
             });
 
             // Build the service provider and create the schemas
