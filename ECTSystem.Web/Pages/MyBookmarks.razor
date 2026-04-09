@@ -122,44 +122,17 @@
             <Template Context="lodCase">
                 @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>
-            <FilterTemplate>
-                <RadzenDropDown @bind-Value="context.FilterValue"
-                                Data="@_workflowStateFilters"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                AllowClear="true"
-                                Style="width:100%"
-                                Change="@(args => _grid.Reload())" />
-            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
-            <FilterTemplate>
-                <RadzenDropDown @bind-Value="context.FilterValue"
-                                Data="@_incidentTypeFilters"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                AllowClear="true"
-                                Style="width:100%"
-                                Change="@(args => _grid.Reload())" />
-            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>
-            <FilterTemplate>
-                <RadzenDropDown @bind-Value="context.FilterValue"
-                                Data="@_processTypeFilters"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                AllowClear="true"
-                                Style="width:100%"
-                                Change="@(args => _grid.Reload())" />
-            </FilterTemplate>
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
