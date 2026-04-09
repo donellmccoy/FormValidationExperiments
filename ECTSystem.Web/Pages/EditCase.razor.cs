@@ -787,6 +787,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
 
+                // Persist the case first so it gets a real DB Id — the state machine's
+                // HandleTransitionAsync creates WorkflowStateHistory rows that reference
+                // LineOfDutyCaseId via FK, which fails if Id is still 0.
+                lineOfDutyCase = await CaseService.SaveCaseAsync(lineOfDutyCase, _cts.Token);
+
                 _stateMachine = StateMachineFactory.CreateDefault();
 
                 var result = await _stateMachine.FireAsync(lineOfDutyCase, WorkflowTrigger.ForwardToMemberInformationEntry);
@@ -801,6 +806,10 @@ public partial class EditCase : ComponentBase, IDisposable
                     _lineOfDutyCase = result.Case;
 
                     CaseId = _lineOfDutyCase.CaseId;
+
+                    // Auto-checkout the newly created case so the creator can edit immediately
+                    await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id, _cts.Token);
+                    Mode = "edit";
 
                     _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 

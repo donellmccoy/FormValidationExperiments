@@ -178,9 +178,9 @@ public class LineOfDutyCase : AuditableEntity
     public Member Member { get; set; }
 
     // Related Benefits
-    public int MEDCONId { get; set; }
+    public int? MEDCONId { get; set; }
     public MEDCONDetail MEDCON { get; set; }
-    public int INCAPId { get; set; }
+    public int? INCAPId { get; set; }
     public INCAPDetails INCAP { get; set; }
     public bool MemberChoseMEDCON { get; set; } // If eligible for both
 
