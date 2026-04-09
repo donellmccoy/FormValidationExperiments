@@ -1,3 +1,5 @@
+using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
@@ -43,6 +45,9 @@ public partial class CaseList : ComponentBase, IDisposable
     [Inject]
     private CurrentUserService CurrentUserService { get; set; }
 
+    [Inject]
+    private TooltipService _tooltipService { get; set; }
+
     #endregion
 
     #region Fields & Constants
@@ -55,6 +60,7 @@ public partial class CaseList : ComponentBase, IDisposable
     private HashSet<int> animatingBookmarkIds = [];
     private int count;
     private bool isLoading;
+    private bool _initialLoadComplete;
     private string searchText = string.Empty;
     private LoadDataArgs _lastArgs;
     private CancellationTokenSource _loadCts = new();
@@ -63,6 +69,21 @@ public partial class CaseList : ComponentBase, IDisposable
 
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
     private string _currentUserId;
+
+    private static readonly object[] _workflowStateFilters =
+        Enum.GetValues<WorkflowState>()
+            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .ToArray();
+
+    private static readonly object[] _incidentTypeFilters =
+        Enum.GetValues<IncidentType>()
+            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .ToArray();
+
+    private static readonly object[] _processTypeFilters =
+        Enum.GetValues<ProcessType>()
+            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .ToArray();
 
     #endregion
 
@@ -130,6 +151,8 @@ public partial class CaseList : ComponentBase, IDisposable
             }
 
             await LoadBookmarkStates(ct);
+
+            _initialLoadComplete = true;
         }
         catch (OperationCanceledException)
         {
@@ -140,6 +163,7 @@ public partial class CaseList : ComponentBase, IDisposable
             Logger.LogError(ex, "Failed to load cases");
             cases = null;
             count = 0;
+            _initialLoadComplete = true;
         }
         finally
         {
@@ -207,6 +231,16 @@ public partial class CaseList : ComponentBase, IDisposable
     #endregion
 
     #region Search & Filtering
+
+    private void ShowSearchTooltip(ElementReference args)
+    {
+        _tooltipService.Open(args,
+            "Search across case number, member name, rank, SSN, unit, incident description, " +
+            "clinical diagnosis, medical findings, commander review details, witness information, " +
+            "SJA and board review fields, and signature blocks. Results match any field containing " +
+            "your search text.",
+            new TooltipOptions { Duration = null, Position = TooltipPosition.Right, Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);" });
+    }
 
     private async Task OnSearchInput(ChangeEventArgs args)
     {

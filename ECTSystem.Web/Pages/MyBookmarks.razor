@@ -9,7 +9,8 @@
     <RadzenStack Gap="1rem">
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
                       class="rz-mb-4">
-            <RadzenSkeleton Style="width: 240px; height: 32px;" Animation="SkeletonAnimation.Wave" />
+            <RadzenSkeleton Style="width: 51%; height: 36px;" class="rz-border-radius-1" Animation="SkeletonAnimation.Wave" />
+            <RadzenSkeleton Style="width: 130px; height: 36px;" class="rz-border-radius-1" Animation="SkeletonAnimation.Wave" />
         </RadzenStack>
         <RadzenStack Gap="0.5rem" class="rz-border-radius-2 rz-p-4">
             <RadzenSkeleton Style="width: 100%; height: 40px;" Animation="SkeletonAnimation.Wave" />
@@ -25,9 +26,14 @@
 
 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
               class="rz-mb-4">
-    <RadzenTextBox @ref="_searchBox" Value="@_searchText"
-                   @oninput="@OnSearchInput"
-                   Placeholder="Search bookmarks..." Style="width: 51%;" />
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Style="width: 51%;">
+        <RadzenTextBox @ref="_searchBox" Value="@_searchText"
+                       @oninput="@OnSearchInput"
+                       Placeholder="Search bookmarked cases..." Style="width: 100%;" />
+        <RadzenIcon Icon="info" Style="font-size: 20px; color: var(--rz-text-secondary-color); cursor: help;"
+                    MouseEnter="@ShowSearchTooltip"
+                    MouseLeave="@(_ => TooltipService.Close())" />
+    </RadzenStack>
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
@@ -116,17 +122,44 @@
             <Template Context="lodCase">
                 @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="context.FilterValue"
+                                Data="@_workflowStateFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="context.FilterValue"
+                                Data="@_incidentTypeFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="context.FilterValue"
+                                Data="@_processTypeFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>

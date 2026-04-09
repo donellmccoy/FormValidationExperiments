@@ -4,15 +4,14 @@
 <PageTitle>Cases - Electronic Case Tracking System</PageTitle>
 
 <div class="rz-p-0 rz-p-md-4">
-@if (isLoading && cases == null)
+@if (!_initialLoadComplete)
 {
     <RadzenStack Gap="1rem">
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
                       class="rz-mb-4">
-            <RadzenSkeleton Style="width: 240px; height: 32px;" Animation="SkeletonAnimation.Wave" />
+            <RadzenSkeleton Style="width: 51%; height: 36px;" class="rz-border-radius-1" Animation="SkeletonAnimation.Wave" />
             <RadzenSkeleton Style="width: 130px; height: 36px;" class="rz-border-radius-1" Animation="SkeletonAnimation.Wave" />
         </RadzenStack>
-        <RadzenSkeleton Style="width: 100%; height: 40px;" class="rz-border-radius-1 rz-mb-4" Animation="SkeletonAnimation.Wave" />
         <RadzenStack Gap="0.5rem" class="rz-border-radius-2 rz-p-4">
             <RadzenSkeleton Style="width: 100%; height: 40px;" Animation="SkeletonAnimation.Wave" />
             @for (var i = 0; i < 5; i++)
@@ -22,14 +21,19 @@
         </RadzenStack>
     </RadzenStack>
 }
-else
-{
+
+<div style="@(!_initialLoadComplete ? "visibility:hidden;overflow:hidden;height:0" : "")">
 
 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
               class="rz-mb-4">
-    <RadzenTextBox @ref="_searchBox" Value="@searchText"
-                   @oninput="@OnSearchInput"
-                   Placeholder="Search cases..." Style="width: 51%;" />
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Style="width: 51%;">
+        <RadzenTextBox @ref="_searchBox" Value="@searchText"
+                       @oninput="@OnSearchInput"
+                       Placeholder="Search cases..." Style="width: 100%;" />
+        <RadzenIcon Icon="info" Style="font-size: 20px; color: var(--rz-text-secondary-color); cursor: help;"
+                    MouseEnter="@ShowSearchTooltip"
+                    MouseLeave="@(_ => _tooltipService.Close())" />
+    </RadzenStack>
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
@@ -118,20 +122,47 @@ else
             <Template Context="lodCase">
                 @lodCase.CurrentWorkflowState.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="context.FilterValue"
+                                Data="@_workflowStateFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="context.FilterValue"
+                                Data="@_incidentTypeFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center" />
         <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="context.FilterValue"
+                                Data="@_processTypeFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
 
-}
+</div>
 </div>

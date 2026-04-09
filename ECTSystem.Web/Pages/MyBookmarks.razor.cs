@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
@@ -37,6 +39,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     [Inject]
     private IJSRuntime JSRuntime { get; set; }
 
+    [Inject]
+    private TooltipService TooltipService { get; set; }
+
     private RadzenDataGrid<LineOfDutyCase> _grid;
     private RadzenTextBox _searchBox;
     private ODataEnumerable<LineOfDutyCase> _bookmarks;
@@ -52,6 +57,21 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
     private string _currentUserId;
+
+    private static readonly object[] _workflowStateFilters =
+        Enum.GetValues<WorkflowState>()
+            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .ToArray();
+
+    private static readonly object[] _incidentTypeFilters =
+        Enum.GetValues<IncidentType>()
+            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .ToArray();
+
+    private static readonly object[] _processTypeFilters =
+        Enum.GetValues<ProcessType>()
+            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .ToArray();
 
     protected override async Task OnInitializedAsync()
     {
@@ -193,6 +213,16 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private void OnCreateCase()
     {
         Navigation.NavigateTo("/case/new?from=bookmarks");
+    }
+
+    private void ShowSearchTooltip(ElementReference args)
+    {
+        TooltipService.Open(args,
+            "Search across case number, member name, rank, SSN, unit, incident description, " +
+            "clinical diagnosis, medical findings, commander review details, witness information, " +
+            "SJA and board review fields, and signature blocks. Results match any field containing " +
+            "your search text.",
+            new TooltipOptions { Duration = null, Position = TooltipPosition.Right, Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);" });
     }
 
     private async Task OnSearchInput(ChangeEventArgs args)
