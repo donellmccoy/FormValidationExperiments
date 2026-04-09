@@ -770,7 +770,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 "Start Line of Duty Case",
                 new ConfirmOptions
                 {
-                    OkButtonText = "Start",
+                    OkButtonText = "Yes",
                     CancelButtonText = "Cancel"
                 });
 
@@ -838,7 +838,7 @@ public partial class EditCase : ComponentBase, IDisposable
             "Forward to Medical Technician",
             new ConfirmOptions
             {
-                OkButtonText = "Start",
+                OkButtonText = "Yes",
                 CancelButtonText = "Cancel"
             });
 
@@ -912,7 +912,7 @@ public partial class EditCase : ComponentBase, IDisposable
         string confirmTitle,
         string busyMessage,
         WorkflowTrigger forwardTrigger,
-        string okButtonText = "Start",
+        string okButtonText = "Yes",
         string notifySummary = "Line of Duty Case Updated",
         string notifyVerb = "updated")
     {
@@ -954,7 +954,7 @@ public partial class EditCase : ComponentBase, IDisposable
             var returnConfirmed = await DialogService.Confirm(
                 $"Are you sure you want to return the case to {returnTarget.DisplayName}?",
                 $"Return to {returnTarget.DisplayName}",
-                new ConfirmOptions { OkButtonText = "Return", CancelButtonText = "Cancel" });
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "Cancel" });
 
             if (returnConfirmed != true)
             {
@@ -985,7 +985,7 @@ public partial class EditCase : ComponentBase, IDisposable
             var boardConfirmed = await DialogService.Confirm(
                 $"Are you sure you want to forward the case to {boardTarget.DisplayName}?",
                 $"Forward to {boardTarget.DisplayName}",
-                new ConfirmOptions { OkButtonText = "Start", CancelButtonText = "Cancel" });
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "Cancel" });
 
             if (boardConfirmed != true)
             {

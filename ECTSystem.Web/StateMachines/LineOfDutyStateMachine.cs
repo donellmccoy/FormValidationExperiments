@@ -113,16 +113,21 @@ internal class LineOfDutyStateMachine
         try
         {
             // Step 1: Close out the previous state's InProgress entry by setting its ExitDate.
-            var previousEntry = _lineOfDutyCase.WorkflowStateHistories
-                .Where(h => h.WorkflowState == transition.Source && h.ExitDate is null)
-                .OrderByDescending(h => h.Id)
-                .FirstOrDefault();
-
-            if (previousEntry is not null)
+            // Draft is a transient in-memory state that is never persisted, so skip the
+            // close-out when leaving Draft — there is no database row to update.
+            if (transition.Source is not WorkflowState.Draft)
             {
-                var now = DateTime.UtcNow;
-                previousEntry.ExitDate = now;
-                await _historyService.UpdateHistoryEndDateAsync(previousEntry.Id, now);
+                var previousEntry = _lineOfDutyCase.WorkflowStateHistories
+                    .Where(h => h.WorkflowState == transition.Source && h.ExitDate is null)
+                    .OrderByDescending(h => h.Id)
+                    .FirstOrDefault();
+
+                if (previousEntry is not null)
+                {
+                    var now = DateTime.UtcNow;
+                    previousEntry.ExitDate = now;
+                    await _historyService.UpdateHistoryEndDateAsync(previousEntry.Id, now);
+                }
             }
 
             // Step 2: Add a new InProgress entry for the destination state.
