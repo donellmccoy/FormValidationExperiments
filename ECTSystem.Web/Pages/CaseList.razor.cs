@@ -70,19 +70,23 @@ public partial class CaseList : ComponentBase, IDisposable
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
     private string _currentUserId;
 
+    private WorkflowState? _workflowStateFilter;
+    private IncidentType? _incidentTypeFilter;
+    private ProcessType? _processTypeFilter;
+
     private static readonly object[] _workflowStateFilters =
         Enum.GetValues<WorkflowState>()
-            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .Select(e => (object)new { Value = (WorkflowState?)e, Text = e.ToDisplayString() })
             .ToArray();
 
     private static readonly object[] _incidentTypeFilters =
         Enum.GetValues<IncidentType>()
-            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .Select(e => (object)new { Value = (IncidentType?)e, Text = e.ToDisplayString() })
             .ToArray();
 
     private static readonly object[] _processTypeFilters =
         Enum.GetValues<ProcessType>()
-            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .Select(e => (object)new { Value = (ProcessType?)e, Text = e.ToDisplayString() })
             .ToArray();
 
     #endregion
@@ -121,19 +125,46 @@ public partial class CaseList : ComponentBase, IDisposable
 
         try
         {
-            var filter = CombineFilters(args.Filter, BuildSearchFilter(searchText));
+            // Build enum filters manually — bypasses Radzen's auto-filter for enum columns
+            var enumFilters = new List<string>();
+            if (_incidentTypeFilter.HasValue)
+                enumFilters.Add($"IncidentType eq '{_incidentTypeFilter.Value}'");
+            if (_processTypeFilter.HasValue)
+                enumFilters.Add($"ProcessType eq '{_processTypeFilter.Value}'");
+            var enumFilter = enumFilters.Count > 0 ? string.Join(" and ", enumFilters) : null;
+
+            var filter = CombineFilters(
+                CombineFilters(args.Filter, enumFilter),
+                BuildSearchFilter(searchText));
 
             Logger.LogDebug("Loading cases — Top: {Top}, Skip: {Skip}, OrderBy: {OrderBy}, Filter: {Filter}",
                 args.Top, args.Skip, args.OrderBy, filter);
 
-            var result = await CaseService.GetCasesAsync(
-                filter: filter,
-                top: args.Top,
-                skip: args.Skip,
-                orderby: args.OrderBy,
-                select: ListSelect,
-                count: true,
-                cancellationToken: ct);
+            ODataServiceResult<LineOfDutyCase> result;
+
+            if (_workflowStateFilter.HasValue)
+            {
+                result = await CaseService.GetCasesByCurrentStateAsync(
+                    includeStates: [_workflowStateFilter.Value],
+                    filter: filter,
+                    top: args.Top,
+                    skip: args.Skip,
+                    orderby: args.OrderBy,
+                    select: ListSelect,
+                    count: true,
+                    cancellationToken: ct);
+            }
+            else
+            {
+                result = await CaseService.GetCasesAsync(
+                    filter: filter,
+                    top: args.Top,
+                    skip: args.Skip,
+                    orderby: args.OrderBy,
+                    select: ListSelect,
+                    count: true,
+                    cancellationToken: ct);
+            }
 
             cases = result.Value.Select(LineOfDutyCaseMapper.ToCaseListItem).ToList();
             count = result.Count;

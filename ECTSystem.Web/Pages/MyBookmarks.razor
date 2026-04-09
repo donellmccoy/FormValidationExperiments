@@ -118,21 +118,51 @@
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member Name" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" TextAlign="TextAlign.Center" />
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CurrentWorkflowState" Title="Current Status" TextAlign="TextAlign.Center" >
+        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Current Status" TextAlign="TextAlign.Center" Sortable="false">
             <Template Context="lodCase">
                 @lodCase.GetCurrentWorkflowState().ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="_workflowStateFilter"
+                                Data="@_workflowStateFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                PopupStyle="max-height:200px; overflow-y:auto"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="_incidentTypeFilter"
+                                Data="@_incidentTypeFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                PopupStyle="max-height:200px; overflow-y:auto"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center"/>
         <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value="_processTypeFilter"
+                                Data="@_processTypeFilters"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                AllowClear="true"
+                                Style="width:100%"
+                                PopupStyle="max-height:200px; overflow-y:auto"
+                                Change="@(args => _grid.Reload())" />
+            </FilterTemplate>
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>

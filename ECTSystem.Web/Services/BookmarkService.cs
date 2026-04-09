@@ -1,3 +1,4 @@
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Microsoft.OData.Client;
 using Radzen;
@@ -149,5 +150,70 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         var bookmarks = await ExecuteQueryAsync(query, cancellationToken);
 
         return bookmarks.Select(b => b.LineOfDutyCaseId).ToHashSet();
+    }
+
+    public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesByCurrentStateAsync(
+        WorkflowState[]? includeStates = null,
+        WorkflowState[]? excludeStates = null,
+        string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, string? select = null, bool? count = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Step 1: Get all bookmarked case IDs for the current user.
+        var bookmarkQuery = Context.Bookmarks
+            .AddQueryOption("$select", "LineOfDutyCaseId");
+
+        var bookmarks = await ExecuteQueryAsync(bookmarkQuery, cancellationToken);
+        var bookmarkedIds = bookmarks.Select(b => b.LineOfDutyCaseId).ToList();
+
+        if (bookmarkedIds.Count == 0)
+        {
+            return new ODataServiceResult<LineOfDutyCase> { Value = [], Count = 0 };
+        }
+
+        // Step 2: Query Cases via ByCurrentState function, filtered to bookmarked IDs.
+        var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
+        var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
+
+        var parameters = new List<UriOperationParameter>
+        {
+            new("includeStates", includeStates ?? Array.Empty<WorkflowState>()),
+            new("excludeStates", excludeStates ?? Array.Empty<WorkflowState>())
+        };
+
+        var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.ByCurrentState", false, parameters.ToArray());
+
+        query = query.AddQueryOption("$filter", combinedFilter);
+
+        if (top.HasValue)
+            query = query.AddQueryOption("$top", top.Value);
+
+        if (skip.HasValue)
+            query = query.AddQueryOption("$skip", skip.Value);
+
+        if (!string.IsNullOrEmpty(orderby))
+            query = query.AddQueryOption("$orderby", orderby);
+
+        if (!string.IsNullOrEmpty(select))
+            query = query.AddQueryOption("$select", select);
+
+        if (count == true)
+        {
+            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
+
+            return new ODataServiceResult<LineOfDutyCase>
+            {
+                Value = items,
+                Count = totalCount
+            };
+        }
+
+        var results = await ExecuteQueryAsync(query, cancellationToken);
+
+        return new ODataServiceResult<LineOfDutyCase>
+        {
+            Value = results,
+            Count = results.Count
+        };
     }
 }

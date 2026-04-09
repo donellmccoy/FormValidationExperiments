@@ -1,3 +1,4 @@
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Radzen;
 
@@ -60,4 +61,16 @@ public interface IBookmarkService
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A <see cref="HashSet{T}"/> of case IDs from <paramref name="caseIds"/> that are bookmarked by the current user.</returns>
     Task<HashSet<int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queries bookmarked LOD cases filtered by current workflow state via the <c>ByCurrentState</c> OData function.
+    /// Used when the user filters bookmarked cases by workflow state, which is a computed property
+    /// derived from <c>WorkflowStateHistories</c> and cannot be filtered via standard OData <c>$filter</c>.
+    /// </summary>
+    Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesByCurrentStateAsync(
+        WorkflowState[]? includeStates = null,
+        WorkflowState[]? excludeStates = null,
+        string? filter = null, int? top = null, int? skip = null,
+        string? orderby = null, string? select = null, bool? count = null,
+        CancellationToken cancellationToken = default);
 }

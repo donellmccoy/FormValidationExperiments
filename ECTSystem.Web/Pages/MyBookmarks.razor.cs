@@ -58,19 +58,23 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
     private string _currentUserId;
 
+    private WorkflowState? _workflowStateFilter;
+    private IncidentType? _incidentTypeFilter;
+    private ProcessType? _processTypeFilter;
+
     private static readonly object[] _workflowStateFilters =
         Enum.GetValues<WorkflowState>()
-            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .Select(e => (object)new { Value = (WorkflowState?)e, Text = e.ToDisplayString() })
             .ToArray();
 
     private static readonly object[] _incidentTypeFilters =
         Enum.GetValues<IncidentType>()
-            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .Select(e => (object)new { Value = (IncidentType?)e, Text = e.ToDisplayString() })
             .ToArray();
 
     private static readonly object[] _processTypeFilters =
         Enum.GetValues<ProcessType>()
-            .Select(e => (object)new { Value = (object)e, Text = e.ToDisplayString() })
+            .Select(e => (object)new { Value = (ProcessType?)e, Text = e.ToDisplayString() })
             .ToArray();
 
     protected override async Task OnInitializedAsync()
@@ -100,16 +104,43 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         try
         {
-            var filter = CombineFilters(args.Filter, BuildSearchFilter(_searchText));
+            // Build enum filters manually — these columns use FilterTemplate with separate state variables
+            var enumFilters = new List<string>();
+            if (_incidentTypeFilter.HasValue)
+                enumFilters.Add($"IncidentType eq '{_incidentTypeFilter.Value}'");
+            if (_processTypeFilter.HasValue)
+                enumFilters.Add($"ProcessType eq '{_processTypeFilter.Value}'");
+            var enumFilter = enumFilters.Count > 0 ? string.Join(" and ", enumFilters) : null;
 
-            var result = await BookmarkService.GetBookmarkedCasesAsync(
-                filter: filter,
-                top: args.Top,
-                skip: args.Skip,
-                orderby: args.OrderBy,
-                select: ListSelect,
-                count: true,
-                cancellationToken: ct);
+            var filter = CombineFilters(
+                CombineFilters(args.Filter, enumFilter),
+                BuildSearchFilter(_searchText));
+
+            ODataServiceResult<LineOfDutyCase> result;
+
+            if (_workflowStateFilter.HasValue)
+            {
+                result = await BookmarkService.GetBookmarkedCasesByCurrentStateAsync(
+                    includeStates: [_workflowStateFilter.Value],
+                    filter: filter,
+                    top: args.Top,
+                    skip: args.Skip,
+                    orderby: args.OrderBy,
+                    select: ListSelect,
+                    count: true,
+                    cancellationToken: ct);
+            }
+            else
+            {
+                result = await BookmarkService.GetBookmarkedCasesAsync(
+                    filter: filter,
+                    top: args.Top,
+                    skip: args.Skip,
+                    orderby: args.OrderBy,
+                    select: ListSelect,
+                    count: true,
+                    cancellationToken: ct);
+            }
 
             _bookmarks = result.Value.AsODataEnumerable();
             _count = result.Count;
