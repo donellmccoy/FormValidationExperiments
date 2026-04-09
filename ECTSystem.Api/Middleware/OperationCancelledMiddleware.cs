@@ -25,7 +25,11 @@ public class OperationCancelledMiddleware
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
             _logger.LogInformation("Request cancelled by client: {Method} {Path}", context.Request.Method, context.Request.Path);
-            context.Response.StatusCode = 499;
+
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = 499;
+            }
         }
     }
 }
