@@ -10,7 +10,7 @@ namespace ECTSystem.Tests.E2E;
 /// <para>
 /// Prerequisites:
 /// <list type="bullet">
-///   <item>API running at https://localhost:7139 (<c>dotnet watch run --project ECTSystem.Api</c>)</item>
+///   <item>API running at https://localhost:7173 (<c>dotnet watch run --project ECTSystem.Api</c>)</item>
 ///   <item>Web running at https://localhost:7240 (<c>dotnet watch run --project ECTSystem.Web</c>)</item>
 ///   <item>Playwright browsers installed: <c>pwsh bin\Debug\net10.0\playwright.ps1 install</c></item>
 /// </list>
@@ -72,7 +72,13 @@ public class LodCaseWorkflowTests : IAsyncLifetime
 
         await _page.ClickAsync("button:has-text('Create Account')");
 
-        // App auto-logs in after registration and redirects to dashboard (forceLoad: true)
+        // Registration triggers: Register API → auto-Login API → NavigateTo("/", forceLoad: true)
+        // forceLoad causes full browser navigation and WASM reload — wait for URL to leave /register first
+        await _page.WaitForURLAsync(
+            url => !url.Contains("/register"),
+            new PageWaitForURLOptions { Timeout = 60_000 });
+
+        // Then wait for dashboard content to render after WASM reload
         await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         _output.WriteLine($"Registration succeeded for {_testEmail}, redirected to dashboard");
         _registered = true;
@@ -147,8 +153,9 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         // Wait for the tab structure to render
         await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 30_000 });
 
-        // The first tab "Member Information" should be visible
-        var memberTab = _page.GetByText("Member Information");
+        // The first tab "Member Information" should be visible — scope to tab nav to avoid
+        // strict mode violation (text also appears in panel headings and sidebar)
+        var memberTab = _page.Locator(".rz-tabview-nav").GetByText("Member Information");
         await Assertions.Expect(memberTab).ToBeVisibleAsync();
 
         _output.WriteLine($"Case created, navigated to: {_page.Url}");
@@ -177,8 +184,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
             Buffer = GenerateTestPdfBytes()
         });
 
-        // Wait for upload to complete — badge should increment
-        await _page.WaitForTimeoutAsync(3_000);
+        // Wait for upload to complete — OnAttachFilesSelected increments _documentsCount,
+        // which causes the badge to render in the Documents tab header
+        await _page.Locator(".rz-tabview-nav .rz-badge").First.WaitForAsync(
+            new LocatorWaitForOptions { Timeout = 30_000 });
 
         var badgeAfter = await GetDocumentBadgeCountAsync();
         _output.WriteLine($"Document badge count after upload: {badgeAfter}");
@@ -199,11 +208,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         // Click the Documents tab
         await ClickTabAsync("Documents");
 
-        // Wait for the documents grid to render
-        await _page.WaitForSelectorAsync(".rz-datatable", new PageWaitForSelectorOptions { Timeout = 10_000 });
-
-        // Look for our uploaded file name
+        // Wait for the documents grid to load data and render file links
+        // (skip generic .rz-datatable wait — it matches multiple grids in strict mode)
         var fileLink = _page.Locator(".doc-file-link");
+        await fileLink.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
         var count = await fileLink.CountAsync();
 
         _output.WriteLine($"Documents in grid: {count}");
@@ -220,10 +228,11 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         await EnsureOnEditCasePageAsync();
         await ClickTabAsync("Documents");
 
-        // Wait for grid to have at least one row
-        await _page.WaitForSelectorAsync(".doc-file-link", new PageWaitForSelectorOptions { Timeout = 10_000 });
+        // Wait for grid to have at least one row (use Locator to avoid strict mode)
+        await _page.Locator(".doc-file-link").First.WaitForAsync(
+            new LocatorWaitForOptions { Timeout = 15_000 });
 
-        // Click the first delete button in the documents grid
+        // Click the last delete button in the documents grid (most recent file)
         var deleteButtons = _page.Locator(".doc-actions button").Last;
         await deleteButtons.ClickAsync();
 
@@ -254,8 +263,9 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         await EnsureOnEditCasePageAsync();
         await ClickTabAsync("Documents");
 
-        // Wait for at least one document
-        await _page.WaitForSelectorAsync(".doc-file-link", new PageWaitForSelectorOptions { Timeout = 10_000 });
+        // Wait for at least one document (use Locator to avoid strict mode)
+        await _page.Locator(".doc-file-link").First.WaitForAsync(
+            new LocatorWaitForOptions { Timeout = 15_000 });
 
         var countBefore = await _page.Locator(".doc-file-link").CountAsync();
         var badgeBefore = await GetDocumentBadgeCountAsync();
@@ -297,12 +307,13 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         // Navigate to Medical Technician tab (index 1) — may be disabled for new cases
         // Instead, test non-disabled tabs: Member Information, Case Dialogue, Documents
         await ClickTabAsync("Member Information");
-        var memberContent = _page.Locator("input[name='MemberName'], input[name='ServiceNumber']").First;
+        // Member Information tab has the member search box with an aria-label
+        var memberContent = _page.Locator("[aria-label='Search members']");
         await Assertions.Expect(memberContent).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
 
         await ClickTabAsync("Documents");
-        // Documents tab content — either grid or empty state
-        var docContent = _page.Locator(".rz-datatable, :has-text('No documents')").First;
+        // Documents tab has a search box for filtering documents
+        var docContent = _page.Locator("[placeholder='Search documents...']");
         await Assertions.Expect(docContent).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
 
         _output.WriteLine("Tab navigation works between Member Information and Documents");
@@ -343,7 +354,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         await _page.FillAsync("input[name='Password']", _testPassword);
         await _page.FillAsync("input[name='ConfirmPassword']", _testPassword);
         await _page.ClickAsync("button:has-text('Create Account')");
-        // App auto-logs in after registration and redirects to dashboard (forceLoad: true)
+        // forceLoad: true causes full browser navigation and WASM reload
+        await _page.WaitForURLAsync(
+            url => !url.Contains("/register"),
+            new PageWaitForURLOptions { Timeout = 60_000 });
         await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         _registered = true;
         _loggedIn = true;
@@ -362,7 +376,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         await _page.FillAsync("input[name='Username']", _testEmail);
         await _page.FillAsync("input[name='Password']", _testPassword);
         await _page.ClickAsync("button:has-text('Login')");
-        // forceLoad: true triggers full Blazor WASM reload
+        // forceLoad: true triggers full browser navigation and WASM reload
+        await _page.WaitForURLAsync(
+            url => !url.Contains("/login"),
+            new PageWaitForURLOptions { Timeout = 60_000 });
         await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         _loggedIn = true;
     }

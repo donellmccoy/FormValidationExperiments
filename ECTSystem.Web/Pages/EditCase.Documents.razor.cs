@@ -111,7 +111,26 @@ public partial class EditCase
 
         try
         {
-            var documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(args.RawResponse, JsonOptions);
+            List<LineOfDutyDocument> documents;
+
+            // The API returns OData-formatted JSON: {"value":[...]} or a plain array [...].
+            using var doc = JsonDocument.Parse(args.RawResponse);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                doc.RootElement.TryGetProperty("value", out var valueElement))
+            {
+                documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(valueElement.GetRawText(), JsonOptions);
+            }
+            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(args.RawResponse, JsonOptions);
+            }
+            else
+            {
+                // Single object response
+                var single = JsonSerializer.Deserialize<LineOfDutyDocument>(args.RawResponse, JsonOptions);
+                documents = single is not null ? [single] : [];
+            }
+
             if (documents is { Count: > 0 })
             {
                 _documentsGrid?.Reload();
