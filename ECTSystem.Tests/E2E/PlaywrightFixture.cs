@@ -5,13 +5,15 @@ namespace ECTSystem.Tests.E2E;
 
 /// <summary>
 /// Shared xUnit fixture that manages Playwright browser lifecycle.
-/// A single browser instance is reused across all tests in the collection.
-/// Each test gets a fresh <see cref="IBrowserContext"/> for isolation.
+/// A single browser, context, and page are shared across all tests so the
+/// Blazor WASM runtime only downloads once and auth state is preserved.
 /// </summary>
 public class PlaywrightFixture : IAsyncLifetime
 {
     public IPlaywright Playwright { get; private set; }
     public IBrowser Browser { get; private set; }
+    public IBrowserContext SharedContext { get; private set; }
+    public IPage SharedPage { get; private set; }
 
     public const string BaseUrl = "https://localhost:7240";
     public const string ApiUrl = "https://localhost:7173";
@@ -23,26 +25,25 @@ public class PlaywrightFixture : IAsyncLifetime
         {
             Headless = true
         });
+        SharedContext = await Browser.NewContextAsync(new BrowserNewContextOptions
+        {
+            IgnoreHTTPSErrors = true
+        });
+        SharedPage = await SharedContext.NewPageAsync();
     }
 
     public async Task DisposeAsync()
     {
+        if (SharedPage is not null)
+            await SharedPage.CloseAsync();
+
+        if (SharedContext is not null)
+            await SharedContext.DisposeAsync();
+
         if (Browser is not null)
             await Browser.DisposeAsync();
 
         Playwright?.Dispose();
-    }
-
-    /// <summary>
-    /// Creates an isolated browser context with HTTPS errors ignored
-    /// (required for localhost self-signed certs).
-    /// </summary>
-    public async Task<IBrowserContext> CreateContextAsync()
-    {
-        return await Browser.NewContextAsync(new BrowserNewContextOptions
-        {
-            IgnoreHTTPSErrors = true
-        });
     }
 }
 

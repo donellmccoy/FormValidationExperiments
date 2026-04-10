@@ -23,10 +23,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
 {
     private readonly PlaywrightFixture _fixture;
     private readonly ITestOutputHelper _output;
-    private IBrowserContext _context;
     private IPage _page;
 
-    // Shared state across ordered tests
+    // Shared state across ordered tests (static survives across test instances).
+    // Because we share a single browser context, auth/localStorage persists.
     private static string _testEmail;
     private static string _testPassword;
     private static bool _registered;
@@ -42,20 +42,17 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         _testPassword ??= "Test123!";
     }
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        _context = await _fixture.CreateContextAsync();
-        _page = await _context.NewPageAsync();
-        _page.SetDefaultTimeout(15_000);
+        // Reuse the shared page — WASM only downloads once, auth persists
+        _page = _fixture.SharedPage;
+        return Task.CompletedTask;
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
-        if (_page is not null)
-            await _page.CloseAsync();
-
-        if (_context is not null)
-            await _context.DisposeAsync();
+        // Don't close the shared page — it persists across tests
+        return Task.CompletedTask;
     }
 
     // ─────────────────────────────────────────────────────────
@@ -66,7 +63,8 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     public async Task T01_Register_CreatesAccount()
     {
         await _page.GotoAsync($"{PlaywrightFixture.BaseUrl}/register");
-        await _page.WaitForSelectorAsync(".register-card");
+        // First navigation downloads entire Blazor WASM runtime — needs generous timeout
+        await _page.WaitForSelectorAsync(".register-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
 
         await _page.FillAsync("input[name='Email']", _testEmail);
         await _page.FillAsync("input[name='Password']", _testPassword);
@@ -74,10 +72,11 @@ public class LodCaseWorkflowTests : IAsyncLifetime
 
         await _page.ClickAsync("button:has-text('Create Account')");
 
-        // After successful registration, app redirects to /login
-        await _page.WaitForURLAsync($"**/login**", new PageWaitForURLOptions { Timeout = 10_000 });
-        _output.WriteLine($"Registration succeeded for {_testEmail}");
+        // App auto-logs in after registration and redirects to dashboard (forceLoad: true)
+        await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
+        _output.WriteLine($"Registration succeeded for {_testEmail}, redirected to dashboard");
         _registered = true;
+        _loggedIn = true;
     }
 
     // ─────────────────────────────────────────────────────────
@@ -91,16 +90,15 @@ public class LodCaseWorkflowTests : IAsyncLifetime
             await RegisterAsync();
 
         await _page.GotoAsync($"{PlaywrightFixture.BaseUrl}/login");
-        await _page.WaitForSelectorAsync(".login-card");
+        await _page.WaitForSelectorAsync(".login-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
 
         await _page.FillAsync("input[name='Username']", _testEmail);
         await _page.FillAsync("input[name='Password']", _testPassword);
 
         await _page.ClickAsync("button:has-text('Login')");
 
-        // Dashboard should load after login
-        await _page.WaitForURLAsync($"**/", new PageWaitForURLOptions { Timeout = 10_000 });
-        await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 10_000 });
+        // Dashboard should load after login (forceLoad: true triggers full page reload)
+        await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
 
         _output.WriteLine("Login succeeded, dashboard visible");
         _loggedIn = true;
@@ -340,27 +338,32 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     private async Task RegisterAsync()
     {
         await _page.GotoAsync($"{PlaywrightFixture.BaseUrl}/register");
-        await _page.WaitForSelectorAsync(".register-card");
+        await _page.WaitForSelectorAsync(".register-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         await _page.FillAsync("input[name='Email']", _testEmail);
         await _page.FillAsync("input[name='Password']", _testPassword);
         await _page.FillAsync("input[name='ConfirmPassword']", _testPassword);
         await _page.ClickAsync("button:has-text('Create Account')");
-        await _page.WaitForURLAsync("**/login**", new PageWaitForURLOptions { Timeout = 10_000 });
+        // App auto-logs in after registration and redirects to dashboard (forceLoad: true)
+        await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         _registered = true;
+        _loggedIn = true;
     }
 
     private async Task LoginAsync()
     {
         if (!_registered)
-            await RegisterAsync();
+        {
+            await RegisterAsync(); // RegisterAsync auto-logs in
+            return;
+        }
 
         await _page.GotoAsync($"{PlaywrightFixture.BaseUrl}/login");
-        await _page.WaitForSelectorAsync(".login-card");
+        await _page.WaitForSelectorAsync(".login-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         await _page.FillAsync("input[name='Username']", _testEmail);
         await _page.FillAsync("input[name='Password']", _testPassword);
         await _page.ClickAsync("button:has-text('Login')");
-        await _page.WaitForURLAsync($"**/", new PageWaitForURLOptions { Timeout = 10_000 });
-        await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 10_000 });
+        // forceLoad: true triggers full Blazor WASM reload
+        await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 60_000 });
         _loggedIn = true;
     }
 
@@ -378,10 +381,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         if (!_page.Url.Contains("/case/"))
         {
             await _page.GotoAsync(PlaywrightFixture.BaseUrl);
-            await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 10_000 });
+            await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 30_000 });
             await _page.ClickAsync("button:has-text('Add New')");
-            await _page.WaitForURLAsync("**/case/**", new PageWaitForURLOptions { Timeout = 15_000 });
-            await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 10_000 });
+            await _page.WaitForURLAsync("**/case/**", new PageWaitForURLOptions { Timeout = 30_000 });
+            await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 15_000 });
         }
     }
 
