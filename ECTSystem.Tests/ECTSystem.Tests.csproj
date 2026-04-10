@@ -26,6 +26,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.52.0" />
     <PackageReference Include="NBomber" Version="6.3.0" />
     <PackageReference Include="NBomber.Http" Version="6.2.0" />
     <PackageReference Include="Respawn" Version="6.2.1" />
