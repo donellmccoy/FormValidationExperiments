@@ -26,3 +26,14 @@ function openFileInNewTab(contentType, bytes) {
     var url = URL.createObjectURL(blob);
     window.open(url, '_blank');
 }
+
+/**
+ * Programmatically clicks a hidden file input element by its ID.
+ * @param {string} inputId - The DOM element ID of the input to click.
+ */
+function triggerFileInput(inputId) {
+    var el = document.getElementById(inputId);
+    if (el) {
+        el.click();
+    }
+}

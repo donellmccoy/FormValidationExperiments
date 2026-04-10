@@ -12,6 +12,7 @@ using ECTSystem.Web.Shared;
 using ECTSystem.Web.StateMachines;
 using ECTSystem.Web.ViewModels;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Radzen;
@@ -194,6 +195,8 @@ public partial class EditCase : ComponentBase, IDisposable
     private readonly DocumentUiState _documents = new();
 
     private RadzenDataGrid<LineOfDutyDocument> _documentsGrid;
+
+    private InputFile _toolbarFileInput;
 
     private RadzenTextBox _documentsSearchBox;
 
@@ -1355,8 +1358,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnAttachFileClick()
     {
-        // TODO: Implement file attachment dialog/upload
-        await Task.CompletedTask;
+        await JSRuntime.InvokeVoidAsync("triggerFileInput", "toolbar-file-input");
     }
 
     private void OnCreateNewCase()

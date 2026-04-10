@@ -151,6 +151,11 @@ else
                                         <span class="material-symbols-outlined">attach_file_add</span>
                                     </ChildContent>
                                 </RadzenButton>
+                                <InputFile @ref="_toolbarFileInput" id="toolbar-file-input"
+                                           OnChange="@OnAttachFilesSelected"
+                                           accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+                                           multiple
+                                           style="display:none" />
                                 <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
                                               Click="@OnCreateNewCase"
                                               class="toolbar-icon-btn"

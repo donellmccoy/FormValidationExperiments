@@ -1,6 +1,7 @@
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Radzen;
 using System.Text.Json;
@@ -137,6 +138,102 @@ public partial class EditCase
     {
         _documents.IsLoading = false;
         NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", args.Message);
+    }
+
+    /// <summary>
+    /// Handles files selected from the toolbar Attach File button.
+    /// Uploads each file to the Documents endpoint and refreshes the grid.
+    /// </summary>
+    private async Task OnAttachFilesSelected(InputFileChangeEventArgs e)
+    {
+        const long maxFileSize = 10 * 1024 * 1024; // 10 MB
+        var caseId = _lineOfDutyCase?.Id ?? 0;
+
+        Logger.LogInformation("OnAttachFilesSelected fired — caseId={CaseId}, fileCount={Count}", caseId, e.FileCount);
+
+        if (caseId == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "No Case", "Save the case before attaching files.");
+            return;
+        }
+
+        var files = e.GetMultipleFiles(20);
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        _documents.IsLoading = true;
+        StateHasChanged();
+
+        var uploadedNames = new List<string>();
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+
+            foreach (var file in files)
+            {
+                if (file.Size > maxFileSize)
+                {
+                    NotificationService.Notify(NotificationSeverity.Warning, "File Too Large",
+                        $"'{file.Name}' exceeds the 10 MB limit and was skipped.");
+                    continue;
+                }
+
+                // Buffer the file into a byte array — BrowserFileStream wrapped in
+                // StreamContent can fail silently under the WASM Fetch API pipeline.
+                await using var stream = file.OpenReadStream(maxFileSize);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+
+                var byteContent = new ByteArrayContent(bytes);
+                byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                    file.ContentType ?? "application/octet-stream");
+                content.Add(byteContent, "file", file.Name);
+                uploadedNames.Add(file.Name);
+            }
+
+            if (uploadedNames.Count == 0)
+            {
+                _documents.IsLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            var uploadUrl = $"odata/Cases({caseId})/Documents";
+            Logger.LogInformation("Uploading {Count} file(s) to {Url}", uploadedNames.Count, uploadUrl);
+
+            var response = await Http.PostAsync(uploadUrl, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Upload Complete",
+                    $"Uploaded: {string.Join(", ", uploadedNames)}");
+
+                _documentsCount += uploadedNames.Count;
+            }
+            else
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                Logger.LogWarning("Upload failed: {Status} — {Body}", response.StatusCode, errorBody);
+                NotificationService.Notify(NotificationSeverity.Error, "Upload Failed",
+                    string.IsNullOrWhiteSpace(errorBody) ? response.ReasonPhrase : errorBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error uploading files for case {CaseId}", caseId);
+            NotificationService.Notify(NotificationSeverity.Error, "Upload Error",
+                "An unexpected error occurred during upload.");
+        }
+        finally
+        {
+            _documents.IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     /// <summary>
@@ -288,7 +385,15 @@ public partial class EditCase
         {
             await DocumentService.DeleteDocumentAsync(_lineOfDutyCase.Id, doc.Id, _cts.Token);
 
-            _documentsGrid?.Reload();
+            if (_documentsCount > 0)
+            {
+                _documentsCount--;
+            }
+
+            if (_documentsGrid is not null)
+            {
+                await _documentsGrid.Reload();
+            }
 
             NotificationService.Notify(NotificationSeverity.Success, "Deleted", $"\"{doc.FileName}\" was removed.");
         }

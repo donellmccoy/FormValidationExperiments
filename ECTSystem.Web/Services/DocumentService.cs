@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
+using Microsoft.OData.Client;
 using Radzen;
 
 #nullable enable
@@ -92,16 +93,36 @@ public class DocumentService : ODataServiceBase, IDocumentService
     public async Task DeleteDocumentAsync(int caseId, int documentId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
-        ArgumentOutOfRangeException.ThrowIfNegative(documentId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentId);
 
-        var document = new LineOfDutyDocument { Id = documentId, LineOfDutyCaseId = caseId };
+        // Query the entity so the context materializes and tracks it with correct
+        // key values and concurrency tokens — avoids stub-entity issues.
+        var query = Context.Documents
+            .AddQueryOption("$filter", $"Id eq {documentId}")
+            .AddQueryOption("$top", 1)
+            .AddQueryOption("$select", "Id");
 
-        Context.AttachTo("Documents", document);
-        Context.DeleteObject(document);
+        var documents = await ExecuteQueryAsync(query, cancellationToken);
+        var document = documents.FirstOrDefault();
+
+        if (document is null || document.Id == 0)
+        {
+            return;
+        }
 
         try
         {
+            if (Context.GetEntityDescriptor(document) == null)
+            {
+                Context.AttachTo("Documents", document);
+            }
+
+            Context.DeleteObject(document);
             await Context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DataServiceRequestException ex) when (ex.InnerException is DataServiceClientException { StatusCode: 404 })
+        {
+            // Already deleted on the server — safely ignore
         }
         finally
         {
