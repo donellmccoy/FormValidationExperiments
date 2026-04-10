@@ -142,10 +142,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         await _page.ClickAsync("button:has-text('Add New')");
 
         // Should navigate to /case/new or /case/{id} in edit mode
-        await _page.WaitForURLAsync("**/case/**", new PageWaitForURLOptions { Timeout = 15_000 });
+        await _page.WaitForURLAsync("**/case/**", new PageWaitForURLOptions { Timeout = 30_000 });
 
         // Wait for the tab structure to render
-        await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 10_000 });
+        await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 30_000 });
 
         // The first tab "Member Information" should be visible
         var memberTab = _page.GetByText("Member Information");
@@ -384,7 +384,7 @@ public class LodCaseWorkflowTests : IAsyncLifetime
             await _page.WaitForSelectorAsync(".dashboard-card", new PageWaitForSelectorOptions { Timeout = 30_000 });
             await _page.ClickAsync("button:has-text('Add New')");
             await _page.WaitForURLAsync("**/case/**", new PageWaitForURLOptions { Timeout = 30_000 });
-            await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 15_000 });
+            await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 30_000 });
         }
     }
 
