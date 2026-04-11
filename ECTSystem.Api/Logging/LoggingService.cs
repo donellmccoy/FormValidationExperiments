@@ -127,6 +127,18 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 310, Level = LogLevel.Information, Message = "Document {DocumentId} deleted for case {CaseId}")]
     public partial void DocumentDeleted(int documentId, int caseId);
 
+    [LoggerMessage(EventId = 312, Level = LogLevel.Information, Message = "Patching document {DocumentId} for case {CaseId}")]
+    public partial void PatchingDocument(int documentId, int caseId);
+
+    [LoggerMessage(EventId = 313, Level = LogLevel.Information, Message = "Document {DocumentId} patched for case {CaseId}")]
+    public partial void DocumentPatched(int documentId, int caseId);
+
+    [LoggerMessage(EventId = 314, Level = LogLevel.Information, Message = "Updating document {DocumentId} for case {CaseId}")]
+    public partial void UpdatingDocument(int documentId, int caseId);
+
+    [LoggerMessage(EventId = 315, Level = LogLevel.Information, Message = "Document {DocumentId} updated for case {CaseId}")]
+    public partial void DocumentUpdated(int documentId, int caseId);
+
     // Bookmarks (EventId 500–506)
 
     [LoggerMessage(EventId = 500, Level = LogLevel.Information, Message = "Querying bookmarks")]

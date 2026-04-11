@@ -67,7 +67,10 @@ public class MembersController : ODataControllerBase
     {
         if (!ModelState.IsValid)
         {
-            LoggingService.MemberInvalidModelState("Post");
+            var errors = ModelState
+                .Where(ms => ms.Value?.Errors.Count > 0)
+                .Select(ms => $"{ms.Key}: [{string.Join(", ", ms.Value!.Errors.Select(e => e.ErrorMessage + (e.Exception != null ? $" ({e.Exception.Message})" : "")))}]");
+            LoggingService.MemberInvalidModelState($"Post — {string.Join("; ", errors)}");
             return BadRequest(ModelState);
         }
 

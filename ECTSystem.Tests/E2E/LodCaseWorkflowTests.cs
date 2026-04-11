@@ -1,3 +1,6 @@
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +22,7 @@ namespace ECTSystem.Tests.E2E;
 /// </summary>
 [Collection("Playwright")]
 [Trait("Category", "E2E")]
+[TestCaseOrderer("ECTSystem.Tests.E2E.AlphabeticalOrderer", "ECTSystem.Tests")]
 public class LodCaseWorkflowTests : IAsyncLifetime
 {
     private readonly PlaywrightFixture _fixture;
@@ -31,6 +35,8 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     private static string _testPassword;
     private static bool _registered;
     private static bool _loggedIn;
+    private static bool _caseSaved;
+    private static string _savedCaseId;
 
     public LodCaseWorkflowTests(PlaywrightFixture fixture, ITestOutputHelper output)
     {
@@ -168,26 +174,37 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     [Fact]
     public async Task T05_UploadFile_BadgeCountIncrements()
     {
-        await EnsureOnEditCasePageAsync();
+        await EnsureCaseSavedAsync();
 
         // Note the current document badge count
         var badgeBefore = await GetDocumentBadgeCountAsync();
         _output.WriteLine($"Document badge count before upload: {badgeBefore}");
 
-        // The hidden InputFile is triggered by the attach button via JS
-        // Use Playwright's SetInputFiles on the hidden input
-        var fileInput = _page.Locator("#toolbar-file-input");
-        await fileInput.SetInputFilesAsync(new FilePayload
+        // Use RunAndWaitForFileChooserAsync to click the toolbar "Attach file" button —
+        // this triggers JS triggerFileInput() which clicks the hidden InputFile, opening
+        // the native file dialog that Playwright intercepts. This ensures Blazor's
+        // InputFile OnChange handler fires correctly.
+        var uploadResponse = _page.WaitForResponseAsync(
+            resp => resp.Url.Contains("/odata/Cases") && resp.Url.Contains("/Documents") && resp.Request.Method == "POST",
+            new PageWaitForResponseOptions { Timeout = 30_000 });
+
+        var fileChooser = await _page.RunAndWaitForFileChooserAsync(async () =>
+        {
+            await _page.Locator("[title='Attach file']").ClickAsync();
+        });
+        await fileChooser.SetFilesAsync(new FilePayload
         {
             Name = "e2e-test-document.pdf",
             MimeType = "application/pdf",
             Buffer = GenerateTestPdfBytes()
         });
 
-        // Wait for upload to complete — OnAttachFilesSelected increments _documentsCount,
-        // which causes the badge to render in the Documents tab header
-        await _page.Locator(".rz-tabview-nav .rz-badge").First.WaitForAsync(
-            new LocatorWaitForOptions { Timeout = 30_000 });
+        // Wait for the upload POST to complete
+        var response = await uploadResponse;
+        _output.WriteLine($"Upload response status: {response.Status}");
+
+        // Wait for badge to update after successful upload
+        await _page.WaitForTimeoutAsync(1_000);
 
         var badgeAfter = await GetDocumentBadgeCountAsync();
         _output.WriteLine($"Document badge count after upload: {badgeAfter}");
@@ -197,15 +214,110 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     }
 
     // ─────────────────────────────────────────────────────────
+    // 5b. Upload via RadzenUpload shows progress indicator
+    // ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task T05b_UploadFile_ShowsProgressIndicator()
+    {
+        await EnsureCaseSavedAsync();
+
+        // Switch to Documents tab where RadzenUpload lives
+        await ClickTabAsync("Documents");
+
+        // Throttle upload speed via Chrome DevTools Protocol so the ~2 MB
+        // test file takes several seconds to send. This ensures the browser
+        // fires xhr.upload.onprogress events — route interception suppresses
+        // them because the browser never actually sends data over the wire.
+        var cdpSession = await _page.Context.NewCDPSessionAsync(_page);
+        await cdpSession.SendAsync("Network.enable");
+        await cdpSession.SendAsync("Network.emulateNetworkConditions", new Dictionary<string, object>
+        {
+            ["offline"] = false,
+            ["latency"] = 0,
+            ["downloadThroughput"] = -1,
+            ["uploadThroughput"] = 300 * 1024, // 300 KB/s → ~7 s for 2 MB
+        });
+
+        try
+        {
+            // Use RunAndWaitForFileChooserAsync to click RadzenUpload's "Choose Files"
+            // button — this triggers the native file dialog which Playwright intercepts,
+            // ensuring Radzen's JS upload handler fires correctly.
+            var fileChooser = await _page.RunAndWaitForFileChooserAsync(async () =>
+            {
+                await _page.GetByRole(AriaRole.Button, new() { Name = "Choose Files" }).ClickAsync();
+            });
+            // Use a large (~2 MB) file so the browser fires xhr.upload.onprogress
+            // at least once. Small files send in a single TCP segment and the
+            // progress event never fires, leaving IsUploading = false.
+            await fileChooser.SetFilesAsync(new FilePayload
+            {
+                Name = "progress-test.pdf",
+                MimeType = "application/pdf",
+                Buffer = GenerateLargeTestPdfBytes()
+            });
+
+            // The upload-progress-bar container should become visible
+            var progressBar = _page.Locator(".upload-progress-bar");
+            await Assertions.Expect(progressBar).ToBeVisibleAsync(
+                new LocatorAssertionsToBeVisibleOptions { Timeout = 10_000 });
+
+            // Verify "Uploading" text appears
+            await Assertions.Expect(progressBar).ToContainTextAsync("Uploading",
+                new LocatorAssertionsToContainTextOptions { Timeout = 5_000 });
+
+            // Verify percentage text appears (e.g. "0%" or "50%" or "100%")
+            await Assertions.Expect(progressBar).ToContainTextAsync("%",
+                new LocatorAssertionsToContainTextOptions { Timeout = 5_000 });
+
+            // Verify the RadzenProgressBar element exists inside the container
+            var progressElement = progressBar.Locator(".rz-progressbar");
+            await Assertions.Expect(progressElement).ToBeVisibleAsync(
+                new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
+
+            _output.WriteLine("Upload progress indicator appeared during file upload");
+
+            // Restore full speed so upload finishes quickly
+            await cdpSession.SendAsync("Network.emulateNetworkConditions", new Dictionary<string, object>
+            {
+                ["offline"] = false,
+                ["latency"] = 0,
+                ["downloadThroughput"] = -1,
+                ["uploadThroughput"] = -1,
+            });
+
+            // Wait for upload to complete — progress bar should disappear
+            await Assertions.Expect(progressBar).Not.ToBeVisibleAsync(
+                new LocatorAssertionsToBeVisibleOptions { Timeout = 30_000 });
+
+            _output.WriteLine("Upload progress indicator disappeared after upload completed");
+        }
+        finally
+        {
+            // Ensure network throttling is removed even on failure
+            await cdpSession.SendAsync("Network.emulateNetworkConditions", new Dictionary<string, object>
+            {
+                ["offline"] = false,
+                ["latency"] = 0,
+                ["downloadThroughput"] = -1,
+                ["uploadThroughput"] = -1,
+            });
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
     // 6. Navigate to Documents tab and verify file appears
     // ─────────────────────────────────────────────────────────
 
     [Fact]
     public async Task T06_DocumentsTab_ShowsUploadedFile()
     {
-        await EnsureOnEditCasePageAsync();
+        await EnsureCaseSavedAsync();
 
-        // Click the Documents tab
+        // Force grid reload by switching away then back — clicking the same
+        // tab does NOT trigger OnTabIndexChanged, so the grid won't refresh.
+        await ClickTabAsync("Member Information");
         await ClickTabAsync("Documents");
 
         // Wait for the documents grid to load data and render file links
@@ -225,7 +337,10 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     [Fact]
     public async Task T07_DeleteFile_ShowsConfirmationDialog()
     {
-        await EnsureOnEditCasePageAsync();
+        await EnsureCaseSavedAsync();
+
+        // Force grid reload by switching away then back
+        await ClickTabAsync("Member Information");
         await ClickTabAsync("Documents");
 
         // Wait for grid to have at least one row (use Locator to avoid strict mode)
@@ -260,15 +375,23 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     [Fact]
     public async Task T08_DeleteFile_ConfirmRemovesFileFromGrid()
     {
-        await EnsureOnEditCasePageAsync();
+        await EnsureCaseSavedAsync();
+
+        // Badge tracks _documentsCount which is accurate after T05's += 1
+        var badgeBefore = await GetDocumentBadgeCountAsync();
+
+        // Force grid to sync with server by switching tabs. The toolbar
+        // upload in T05 increments the badge but does NOT call
+        // _documentsGrid.Reload(), so the grid may show stale data.
+        // Switching away then back triggers OnTabIndexChanged which reloads.
+        await ClickTabAsync("Member Information");
         await ClickTabAsync("Documents");
 
-        // Wait for at least one document (use Locator to avoid strict mode)
-        await _page.Locator(".doc-file-link").First.WaitForAsync(
-            new LocatorWaitForOptions { Timeout = 15_000 });
+        // Wait for grid to fully reload and show all server documents
+        await Assertions.Expect(_page.Locator(".doc-file-link")).ToHaveCountAsync(
+            badgeBefore, new LocatorAssertionsToHaveCountOptions { Timeout = 15_000 });
 
-        var countBefore = await _page.Locator(".doc-file-link").CountAsync();
-        var badgeBefore = await GetDocumentBadgeCountAsync();
+        var countBefore = badgeBefore;
 
         _output.WriteLine($"Documents before delete: {countBefore}, badge: {badgeBefore}");
 
@@ -279,10 +402,21 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         // Confirm deletion in the dialog
         var dialog = _page.Locator(".rz-dialog");
         await Assertions.Expect(dialog).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
+
+        // Wait for the delete API response after clicking Delete
+        var deleteResponse = _page.WaitForResponseAsync(
+            resp => resp.Url.Contains("/odata/") && resp.Url.Contains("Documents") && resp.Request.Method == "DELETE",
+            new PageWaitForResponseOptions { Timeout = 15_000 });
+
         await dialog.Locator("button:has-text('Delete')").ClickAsync();
 
-        // Wait for grid to refresh
-        await _page.WaitForTimeoutAsync(3_000);
+        // Wait for delete API call to complete
+        var response = await deleteResponse;
+        _output.WriteLine($"Delete response status: {response.Status}");
+
+        // Wait for grid to refresh — the count should decrease
+        await Assertions.Expect(_page.Locator(".doc-file-link")).ToHaveCountAsync(
+            countBefore - 1, new LocatorAssertionsToHaveCountOptions { Timeout = 10_000 });
 
         var countAfter = await _page.Locator(".doc-file-link").CountAsync();
         var badgeAfter = await GetDocumentBadgeCountAsync();
@@ -302,13 +436,13 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     [Fact]
     public async Task T09_TabNavigation_SwitchesBetweenFormSections()
     {
-        await EnsureOnEditCasePageAsync();
+        await EnsureCaseSavedAsync();
 
         // Navigate to Medical Technician tab (index 1) — may be disabled for new cases
         // Instead, test non-disabled tabs: Member Information, Case Dialogue, Documents
         await ClickTabAsync("Member Information");
-        // Member Information tab has the member search box with an aria-label
-        var memberContent = _page.Locator("[aria-label='Search members']");
+        // After saving, member search box is hidden; verify member form fields are visible instead
+        var memberContent = _page.Locator("input[placeholder='___-__-____']");
         await Assertions.Expect(memberContent).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
 
         await ClickTabAsync("Documents");
@@ -394,7 +528,15 @@ public class LodCaseWorkflowTests : IAsyncLifetime
     {
         await EnsureLoggedInAsync();
 
-        // If not already on an edit case page, create a new case
+        // If we have a saved case and we're not on its edit page, navigate there
+        if (_savedCaseId is not null && !_page.Url.Contains($"/case/{_savedCaseId}"))
+        {
+            await _page.GotoAsync($"{PlaywrightFixture.BaseUrl}/case/{_savedCaseId}");
+            await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 30_000 });
+            return;
+        }
+
+        // Fallback: create a new case via dashboard
         if (!_page.Url.Contains("/case/"))
         {
             await _page.GotoAsync(PlaywrightFixture.BaseUrl);
@@ -403,6 +545,121 @@ public class LodCaseWorkflowTests : IAsyncLifetime
             await _page.WaitForURLAsync("**/case/**", new PageWaitForURLOptions { Timeout = 30_000 });
             await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 30_000 });
         }
+    }
+
+    /// <summary>
+    /// Ensures a saved case exists so upload controls are enabled (Id &gt; 0).
+    /// Creates the case via OData API POST and navigates to its edit page.
+    /// </summary>
+    private async Task EnsureCaseSavedAsync()
+    {
+        await EnsureLoggedInAsync();
+
+        if (_caseSaved)
+        {
+            await EnsureOnEditCasePageAsync();
+            return;
+        }
+
+        // Create a case via the OData API directly — bypasses Radzen popup timing issues
+        using var httpClient = new HttpClient(new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+        });
+
+        // Authenticate with the API to get a bearer token
+        var loginPayload = new { email = _testEmail, password = _testPassword };
+        var loginResponse = await httpClient.PostAsJsonAsync(
+            $"{PlaywrightFixture.ApiUrl}/login", loginPayload);
+        loginResponse.EnsureSuccessStatusCode();
+        var loginBody = await loginResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var accessToken = loginBody.GetProperty("accessToken").GetString();
+        httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        _output.WriteLine("Authenticated with API");
+
+        // First, create a Member so the FK is satisfied
+        var memberPayload = new
+        {
+            FirstName = "Jane",
+            MiddleInitial = "A",
+            LastName = "Doe",
+            Rank = "SSgt",
+            ServiceNumber = "999-99-9999",
+            Unit = "99 TW/CC",
+            Component = "AirForceReserve",
+            DateOfBirth = new DateTime(1990, 1, 15, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        var memberResponse = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post,
+            $"{PlaywrightFixture.ApiUrl}/odata/Members")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(memberPayload),
+                Encoding.UTF8,
+                "application/json")
+        });
+
+        if (!memberResponse.IsSuccessStatusCode)
+        {
+            var memberError = await memberResponse.Content.ReadAsStringAsync();
+            _output.WriteLine($"Member POST failed ({memberResponse.StatusCode}): {memberError}");
+        }
+
+        memberResponse.EnsureSuccessStatusCode();
+        var memberBody = await memberResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var memberId = memberBody.GetProperty("Id").GetInt32();
+        _output.WriteLine($"Created member via API: Id={memberId}");
+
+        // Now create the case with the valid MemberId
+        var payload = new
+        {
+            MemberName = "Doe, Jane A",
+            MemberRank = "SSgt",
+            MemberId = memberId,
+            ProcessType = "Informal",
+            Component = "AirForceReserve",
+            IncidentType = "Injury",
+            IncidentDutyStatus = "Title10ActiveDuty",
+            IncidentDate = DateTime.UtcNow.AddDays(-5),
+            InitiationDate = DateTime.UtcNow,
+            IncidentDescription = "Training injury during PT — E2E test"
+        };
+
+        var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post,
+            $"{PlaywrightFixture.ApiUrl}/odata/Cases")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json")
+        });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            _output.WriteLine($"API POST failed ({response.StatusCode}): {errorBody}");
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var caseId = body.GetProperty("CaseId").GetString();
+        _output.WriteLine($"Created case via API: CaseId={caseId}, Id={body.GetProperty("Id").GetInt32()}");
+
+        // Navigate to the saved case's edit page
+        await _page.GotoAsync($"{PlaywrightFixture.BaseUrl}/case/{caseId}");
+
+        // Wait for the edit page to finish loading (busy overlay disappears, tabs render)
+        await _page.WaitForSelectorAsync(".rz-tabview", new PageWaitForSelectorOptions { Timeout = 30_000 });
+
+        // Verify the toolbar attach button is enabled (case has Id > 0)
+        await _page.Locator("[title='Attach file']").WaitForAsync(
+            new LocatorWaitForOptions { Timeout = 10_000 });
+
+        _caseSaved = true;
+        _savedCaseId = caseId;
+        _output.WriteLine($"Navigated to case edit page — uploads enabled");
     }
 
     private async Task ClickTabAsync(string tabText)
@@ -437,5 +694,19 @@ public class LodCaseWorkflowTests : IAsyncLifetime
                          "0000000058 00000 n \n0000000110 00000 n \n" +
                          "trailer<</Size 4/Root 1 0 R>>\nstartxref\n174\n%%EOF";
         return System.Text.Encoding.ASCII.GetBytes(pdfContent);
+    }
+
+    /// <summary>
+    /// Generates a large (~2 MB) PDF so the browser fires at least one
+    /// <c>xhr.upload.onprogress</c> event during the upload.
+    /// </summary>
+    private static byte[] GenerateLargeTestPdfBytes(int sizeInBytes = 2 * 1024 * 1024)
+    {
+        var header = GenerateTestPdfBytes();
+        var result = new byte[sizeInBytes];
+        Array.Copy(header, result, header.Length);
+        // Fill remaining bytes with PDF-safe whitespace
+        Array.Fill(result, (byte)' ', header.Length, sizeInBytes - header.Length);
+        return result;
     }
 }

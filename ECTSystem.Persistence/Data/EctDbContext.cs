@@ -9,8 +9,6 @@ namespace ECTSystem.Persistence.Data;
 /// </summary>
 public class EctDbContext : DbContext
 {
-    public int CurrentUserId { get; set; }
-
     public EctDbContext(DbContextOptions<EctDbContext> options) : base(options)
     {
     }
@@ -31,27 +29,9 @@ public class EctDbContext : DbContext
     public DbSet<WorkflowType> WorkflowTypes { get; set; }
     public DbSet<WorkflowModule> WorkflowModules { get; set; }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
-        {
-            switch (entry.State)
-            {
-                case EntityState.Added:
-                    entry.Entity.CreatedDate = DateTime.UtcNow;
-                    entry.Entity.CreatedBy = CurrentUserId;
-                    entry.Entity.ModifiedDate = DateTime.UtcNow;
-                    entry.Entity.ModifiedBy = CurrentUserId;
-                    break;
-                case EntityState.Modified:
-                    entry.Entity.ModifiedDate = DateTime.UtcNow;
-                    entry.Entity.ModifiedBy = CurrentUserId;
-                    break;
-            }
-        }
-
-        return base.SaveChangesAsync(cancellationToken);
-    }
+    // Audit fields are populated by AuditSaveChangesInterceptor (registered via DI).
+    // The interceptor reads the current user from IHttpContextAccessor and sets
+    // CreatedBy/ModifiedBy/CreatedDate/ModifiedDate on AuditableEntity entries.
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -80,7 +80,9 @@ obj/Debug/net10.0/
  ECTSystem.Api.AssemblyInfo.cs
  ECTSystem.Api.GlobalUsings.g.cs
 Program.cs
-Services/AF348PdfService.cs
+Services/
+ AF348PdfService.cs
+ AuditSaveChangesInterceptor.cs
 
 [metadataReferences]
 ../

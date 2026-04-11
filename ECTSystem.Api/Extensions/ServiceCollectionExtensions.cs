@@ -18,6 +18,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
+        services.AddProblemDetails();
+
         services.AddDatabase(configuration)
                 .AddIdentity()
                 .AddApiLogging()
@@ -34,12 +37,17 @@ public static class ServiceCollectionExtensions
     {
         var connectionString = configuration.GetConnectionString("EctDatabase");
 
-        services.AddPooledDbContextFactory<EctDbContext>(options =>
+        services.AddSingleton<AuditSaveChangesInterceptor>();
+
+        services.AddPooledDbContextFactory<EctDbContext>((sp, options) =>
+        {
             options.UseSqlServer(connectionString, sql =>
             {
                 sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                 sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-            }), poolSize: 32);
+            });
+            options.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
+        }, poolSize: 32);
 
         services.AddPooledDbContextFactory<EctIdentityDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
@@ -182,6 +190,8 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
         odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
         odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
+        odataBuilder.EntityType<LineOfDutyDocument>()
+            .Property(d => d.RowVersion).IsConcurrencyToken();
 
         odataBuilder.EntitySet<LineOfDutyAppeal>("Appeals");
         odataBuilder.EntitySet<MEDCONDetail>("MEDCONDetails");

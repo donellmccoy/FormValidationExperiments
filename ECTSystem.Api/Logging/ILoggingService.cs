@@ -46,6 +46,10 @@ public interface ILoggingService
     void UploadFailed(int caseId, Exception ex);
     void DeletingDocument(int documentId, int caseId);
     void DocumentDeleted(int documentId, int caseId);
+    void PatchingDocument(int documentId, int caseId);
+    void DocumentPatched(int documentId, int caseId);
+    void UpdatingDocument(int documentId, int caseId);
+    void DocumentUpdated(int documentId, int caseId);
 
     // Bookmarks
     void QueryingBookmarks();

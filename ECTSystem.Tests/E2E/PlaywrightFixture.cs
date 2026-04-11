@@ -30,6 +30,11 @@ public class PlaywrightFixture : IAsyncLifetime
             IgnoreHTTPSErrors = true
         });
         SharedPage = await SharedContext.NewPageAsync();
+
+        // Pre-warm: navigate to the app so Blazor WASM runtime downloads once
+        // before any test starts. This avoids timeout issues on first navigation.
+        await SharedPage.GotoAsync($"{BaseUrl}/login", new PageGotoOptions { Timeout = 120_000 });
+        await SharedPage.WaitForSelectorAsync(".login-card", new PageWaitForSelectorOptions { Timeout = 120_000 });
     }
 
     public async Task DisposeAsync()

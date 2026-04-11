@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
@@ -44,6 +46,23 @@ public class DocumentsController : ODataControllerBase
         { ".xlsx", [new byte[] { 0x50, 0x4B, 0x03, 0x04 }] },
     };
 
+    private static readonly Dictionary<string, string> MimeMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { ".pdf",  "application/pdf" },
+        { ".doc",  "application/msword" },
+        { ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+        { ".xls",  "application/vnd.ms-excel" },
+        { ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+        { ".jpg",  "image/jpeg" },
+        { ".jpeg", "image/jpeg" },
+        { ".png",  "image/png" },
+        { ".gif",  "image/gif" },
+        { ".tif",  "image/tiff" },
+        { ".tiff", "image/tiff" },
+        { ".txt",  "text/plain" },
+        { ".rtf",  "application/rtf" },
+    };
+
     private readonly AF348PdfService _pdfService;
 
     public DocumentsController(
@@ -61,7 +80,7 @@ public class DocumentsController : ODataControllerBase
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]     
+    [ResponseCache(NoStore = true)]     
     public async Task<IActionResult> Get(CancellationToken ct = default)        
     {
         LoggingService.QueryingDocuments();
@@ -70,28 +89,112 @@ public class DocumentsController : ODataControllerBase
     }
 
     /// <summary>
-    /// Returns a single document by key.
+    /// Returns a single document by key as a deferred IQueryable for full OData composition.
     /// OData route: GET /odata/Documents({key})
     /// </summary>
     /// <param name="key">The document identifier.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]     
-    public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
+    [ResponseCache(NoStore = true)]     
+    public async Task<SingleResult<LineOfDutyDocument>> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var document = await context.Documents
-            .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.Id == key, ct);
+        LoggingService.RetrievingDocument(key, 0);
+        var context = await CreateContextAsync(ct);
+        var query = context.Documents.AsNoTracking().Where(d => d.Id == key);
+        return SingleResult.Create(query);
+    }
 
-        if (document is null)
+    /// <summary>
+    /// Partially updates an existing document's metadata using OData Delta semantics.
+    /// OData route: PATCH /odata/Documents({key})
+    /// </summary>
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyDocument> delta, CancellationToken ct = default)
+    {
+        if (delta is null || !ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        LoggingService.PatchingDocument(key, 0);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+        var existing = await context.Documents.FindAsync([key], ct);
+
+        if (existing is null)
         {
             LoggingService.DocumentNotFound(key, 0);
-            return NotFound();
+            return Problem(
+                title: "Document not found",
+                detail: $"No document exists with ID {key}.",
+                statusCode: StatusCodes.Status404NotFound);
         }
 
-        LoggingService.RetrievingDocument(key, document.LineOfDutyCaseId);      
-        return Ok(document);
+        delta.Patch(existing);
+
+        // Use client-provided RowVersion for optimistic concurrency check
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(
+                title: "Concurrency conflict",
+                detail: "The document was modified by another user. Refresh and retry.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        LoggingService.DocumentPatched(key, existing.LineOfDutyCaseId);
+        return Updated(existing);
+    }
+
+    /// <summary>
+    /// Fully replaces an existing document's metadata.
+    /// OData route: PUT /odata/Documents({key})
+    /// </summary>
+    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] LineOfDutyDocument document, CancellationToken ct = default)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        if (key != document.Id)
+            return Problem(
+                title: "Key mismatch",
+                detail: "The key parameter does not match the entity ID.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        LoggingService.UpdatingDocument(key, 0);
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+        var existing = await context.Documents.FindAsync([key], ct);
+
+        if (existing is null)
+        {
+            LoggingService.DocumentNotFound(key, 0);
+            return Problem(
+                title: "Document not found",
+                detail: $"No document exists with ID {key}.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        // Use client-provided RowVersion for optimistic concurrency check
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = document.RowVersion;
+        context.Entry(existing).CurrentValues.SetValues(document);
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(
+                title: "Concurrency conflict",
+                detail: "The document was modified by another user. Refresh and retry.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        LoggingService.DocumentUpdated(key, existing.LineOfDutyCaseId);
+        return Updated(existing);
     }
 
     /// <summary>
@@ -111,13 +214,19 @@ public class DocumentsController : ODataControllerBase
         if (doc is null)
         {
             LoggingService.DocumentNotFound(key, 0);
-            return NotFound();
+            return Problem(
+                title: "Document not found",
+                detail: $"No document exists with ID {key}.",
+                statusCode: StatusCodes.Status404NotFound);
         }
 
         if (doc.Content is null || doc.Content.Length == 0)
         {
             LoggingService.DocumentContentNotFound(key);
-            return NotFound();
+            return Problem(
+                title: "Document content not found",
+                detail: $"Document {key} exists but has no binary content.",
+                statusCode: StatusCodes.Status404NotFound);
         }
 
         LoggingService.DownloadingDocument(key, doc.LineOfDutyCaseId);
@@ -143,7 +252,10 @@ public class DocumentsController : ODataControllerBase
         if (file is null || file.Count == 0)
         {
             LoggingService.InvalidUpload(caseId);
-            return BadRequest("No file provided.");
+            return Problem(
+                title: "No file provided",
+                detail: "At least one file must be included in the upload request.",
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         foreach (var f in file)
@@ -152,13 +264,19 @@ public class DocumentsController : ODataControllerBase
             if (!AllowedExtensions.Contains(extension))
             {
                 LoggingService.InvalidUpload(caseId);
-                return BadRequest($"File type '{extension}' is not permitted.");
+                return Problem(
+                    title: "File type not permitted",
+                    detail: $"Extension '{extension}' is not in the allowed list.",
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (f.Length > MaxDocumentSize)
             {
                 LoggingService.InvalidUpload(caseId);
-                return BadRequest($"File '{f.FileName}' exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.");
+                return Problem(
+                    title: "File too large",
+                    detail: $"File '{f.FileName}' exceeds the maximum allowed size of {MaxDocumentSize / (1024 * 1024)} MB.",
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (FileSignatures.TryGetValue(extension, out var signatures))
@@ -170,47 +288,81 @@ public class DocumentsController : ODataControllerBase
                 if (!signatures.Any(sig => sig.Length <= bytesRead && headerBytes.AsSpan(0, sig.Length).SequenceEqual(sig)))
                 {
                     LoggingService.InvalidUpload(caseId);
-                    return BadRequest($"File '{f.FileName}' content does not match the '{extension}' file type.");
+                    return Problem(
+                        title: "File content mismatch",
+                        detail: $"File '{f.FileName}' content does not match the '{extension}' file type.",
+                        statusCode: StatusCodes.Status400BadRequest);
                 }
             }
         }
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
+
+        // Validate the parent case exists before processing files
+        if (!await context.Cases.AnyAsync(c => c.Id == caseId, ct))
+        {
+            LoggingService.InvalidUpload(caseId);
+            return Problem(
+                title: "Case not found",
+                detail: $"No case exists with ID {caseId}.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var strategy = context.Database.CreateExecutionStrategy();
+
         var documents = new List<LineOfDutyDocument>(file.Count);
 
-        foreach (var f in file)
+        try
         {
-            LoggingService.UploadingDocument(caseId);
-            using var ms = new MemoryStream();
-            await using var stream = f.OpenReadStream();
-            await stream.CopyToAsync(ms, ct);
-            var bytes = ms.ToArray();
-
-            var document = new LineOfDutyDocument
+            await strategy.ExecuteAsync(async () =>
             {
-                LineOfDutyCaseId = caseId,
-                FileName = f.FileName,
-                ContentType = f.ContentType,
-                DocumentType = documentType,
-                Description = description,
-                Content = bytes,
-                FileSize = bytes.Length,
-                UploadDate = DateTime.UtcNow
-            };
+                documents.Clear();
+                context.ChangeTracker.Clear();
 
-            context.Documents.Add(document);
-            documents.Add(document);
+                await using var transaction = await context.Database.BeginTransactionAsync(ct);
+
+                foreach (var f in file)
+                {
+                    LoggingService.UploadingDocument(caseId);
+                    using var ms = new MemoryStream();
+                    await using var stream = f.OpenReadStream();
+                    await stream.CopyToAsync(ms, ct);
+                    var bytes = ms.ToArray();
+
+                    var ext = Path.GetExtension(f.FileName);
+                    var document = new LineOfDutyDocument
+                    {
+                        LineOfDutyCaseId = caseId,
+                        FileName = f.FileName,
+                        ContentType = MimeMap.GetValueOrDefault(ext, "application/octet-stream"),
+                        DocumentType = documentType,
+                        Description = description,
+                        Content = bytes,
+                        FileSize = bytes.Length,
+                        UploadDate = DateTime.UtcNow
+                    };
+
+                    context.Documents.Add(document);
+                    documents.Add(document);
+                }
+
+                await context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            });
+
+            foreach (var document in documents)
+            {
+                document.Content = null!;
+                LoggingService.DocumentUploaded(document.Id, caseId);
+            }
+
+            return Ok(documents);
         }
-
-        await context.SaveChangesAsync(ct);
-
-        foreach (var document in documents)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            document.Content = null!;
-            LoggingService.DocumentUploaded(document.Id, caseId);
+            LoggingService.UploadFailed(caseId, ex);
+            throw;
         }
-
-        return Ok(documents);
     }
 
     /// <summary>
@@ -219,38 +371,24 @@ public class DocumentsController : ODataControllerBase
     /// </summary>
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
+        LoggingService.DeletingDocument(key, 0);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        
-        //var documentToDelete = new LineOfDutyDocument { Id = key };
-        //context.Entry(documentToDelete).State = EntityState.Deleted;
 
-        //var entry = context.Attach(documentToDelete);
-        //entry.Property("RowVersion").IsModified = false; // Exclude RowVersion from concurrency check
-        //context.Remove(documentToDelete);
+        var deleted = await context.Documents
+            .Where(d => d.Id == key)
+            .ExecuteDeleteAsync(ct);
 
-        try
+        if (deleted == 0)
         {
-            var document = await context.Set<LineOfDutyDocument>().FindAsync([key], ct);
-            if (document == null)
-            {
-                LoggingService.DocumentNotFound(key, 0);
-                return NotFound();
-            }
-            context.Remove(document);
-            await context.SaveChangesAsync(ct);
-            LoggingService.DocumentDeleted(key, 0);
-            return NoContent();
-
-            //await context.SaveChangesAsync(ct);
-            //LoggingService.DocumentDeleted(key, 0); // We don't have caseId here, logging 0
-            //return NoContent();
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            // This occurs if the entity was already deleted.
             LoggingService.DocumentNotFound(key, 0);
-            return NotFound();
+            return Problem(
+                title: "Document not found",
+                detail: $"No document exists with ID {key}.",
+                statusCode: StatusCodes.Status404NotFound);
         }
+
+        LoggingService.DocumentDeleted(key, 0);
+        return NoContent();
     }
 
     /// <summary>
@@ -266,7 +404,10 @@ public class DocumentsController : ODataControllerBase
             .FirstOrDefaultAsync(c => c.Id == caseId, ct);
 
         if (lodCase is null)
-            return NotFound();
+            return Problem(
+                title: "Case not found",
+                detail: $"No case exists with ID {caseId}.",
+                statusCode: StatusCodes.Status404NotFound);
 
         var pdfBytes = _pdfService.GenerateFilledForm(lodCase);
         return File(pdfBytes, "application/pdf", $"AF348_{lodCase.CaseId}.pdf");

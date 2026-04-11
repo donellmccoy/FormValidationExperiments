@@ -67,9 +67,12 @@ Controllers/
  BookmarksControllerTests.cs
  CasesControllerTests.cs
  ControllerTestBase.cs
+ DocumentsControllerTests.cs
  MembersControllerTests.cs
  WorkflowStateHistoryControllerTests.cs
 E2E/
+ AlphabeticalOrderer.cs
+ DiagnosticTest.cs
  LodCaseWorkflowTests.cs
  PlaywrightFixture.cs
 Extensions/
