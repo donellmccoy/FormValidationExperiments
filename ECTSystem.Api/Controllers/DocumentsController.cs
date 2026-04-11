@@ -220,19 +220,37 @@ public class DocumentsController : ODataControllerBase
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var document = await context.Documents.FindAsync(new object[] { key }, ct);
+        
+        //var documentToDelete = new LineOfDutyDocument { Id = key };
+        //context.Entry(documentToDelete).State = EntityState.Deleted;
 
-        if (document is null)
+        //var entry = context.Attach(documentToDelete);
+        //entry.Property("RowVersion").IsModified = false; // Exclude RowVersion from concurrency check
+        //context.Remove(documentToDelete);
+
+        try
         {
+            var document = await context.Set<LineOfDutyDocument>().FindAsync([key], ct);
+            if (document == null)
+            {
+                LoggingService.DocumentNotFound(key, 0);
+                return NotFound();
+            }
+            context.Remove(document);
+            await context.SaveChangesAsync(ct);
+            LoggingService.DocumentDeleted(key, 0);
+            return NoContent();
+
+            //await context.SaveChangesAsync(ct);
+            //LoggingService.DocumentDeleted(key, 0); // We don't have caseId here, logging 0
+            //return NoContent();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // This occurs if the entity was already deleted.
             LoggingService.DocumentNotFound(key, 0);
             return NotFound();
         }
-
-        LoggingService.DeletingDocument(key, document.LineOfDutyCaseId);
-        context.Documents.Remove(document);
-        await context.SaveChangesAsync(ct);
-        LoggingService.DocumentDeleted(key, document.LineOfDutyCaseId);
-        return NoContent();
     }
 
     /// <summary>

@@ -66,5 +66,14 @@ public partial class EditCase
 
         /// <summary>Gets or sets the Bearer token for the RadzenUpload Authorization header.</summary>
         public string AuthToken { get; set; }
+
+        /// <summary>Gets or sets whether a file upload is in progress.</summary>
+        public bool IsUploading { get; set; }
+
+        /// <summary>Gets or sets the current upload progress percentage (0–100).</summary>
+        public int UploadProgress { get; set; }
+
+        /// <summary>Gets or sets the name of the file currently being uploaded.</summary>
+        public string UploadFileName { get; set; }
     }
 }

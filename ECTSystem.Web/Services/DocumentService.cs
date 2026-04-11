@@ -95,39 +95,23 @@ public class DocumentService : ODataServiceBase, IDocumentService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentId);
 
-        // Query the entity so the context materializes and tracks it with correct
-        // key values and concurrency tokens — avoids stub-entity issues.
-        var query = Context.Documents
-            .AddQueryOption("$filter", $"Id eq {documentId}")
-            .AddQueryOption("$top", 1)
-            .AddQueryOption("$select", "Id");
+        var documentUri = new Uri(Context.BaseUri, $"Documents({documentId})");
+        var trackedDocument = Context.Entities.FirstOrDefault(e => e.Identity == documentUri)?.Entity as LineOfDutyDocument;
 
-        var documents = await ExecuteQueryAsync(query, cancellationToken);
-        var document = documents.FirstOrDefault();
-
-        if (document is null || document.Id == 0)
+        if (trackedDocument != null)
         {
-            return;
+            Context.DeleteObject(trackedDocument);
+        }
+        else
+        {
+            // Attach a stub entity to the context for deletion if not already tracked.
+            // This avoids a GET request to fetch the entity before deleting it.
+            var documentToDelete = new LineOfDutyDocument { Id = documentId };
+            Context.AttachTo("Documents", documentToDelete);
+            Context.DeleteObject(documentToDelete);
         }
 
-        try
-        {
-            if (Context.GetEntityDescriptor(document) == null)
-            {
-                Context.AttachTo("Documents", document);
-            }
-
-            Context.DeleteObject(document);
-            await Context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DataServiceRequestException ex) when (ex.InnerException is DataServiceClientException { StatusCode: 404 })
-        {
-            // Already deleted on the server — safely ignore
-        }
-        finally
-        {
-            Context.Detach(document);
-        }
+        await Context.SaveChangesAsync(cancellationToken);
     }
 
     // Binary stream download — HttpClient required (OData client doesn't support raw byte responses)

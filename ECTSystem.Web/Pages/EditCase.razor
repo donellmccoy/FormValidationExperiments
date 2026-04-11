@@ -1634,6 +1634,31 @@ else
                                                 </RadzenStack>
                                             </RadzenStack>
 
+                                            @* ═══ Upload Progress ═══ *@
+                                            @if (_documents.IsUploading)
+                                            {
+                                                <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem" class="upload-progress-bar">
+                                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                                                        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">
+                                                            @if (!string.IsNullOrEmpty(_documents.UploadFileName))
+                                                            {
+                                                                <text>Uploading @_documents.UploadFileName…</text>
+                                                            }
+                                                            else
+                                                            {
+                                                                <text>Uploading…</text>
+                                                            }
+                                                        </RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">
+                                                            @(_documents.UploadProgress)%
+                                                        </RadzenText>
+                                                    </RadzenStack>
+                                                    <RadzenProgressBar Value="@_documents.UploadProgress" ShowValue="false"
+                                                                       Style="width: 100%; height: 6px;"
+                                                                       ProgressBarStyle="ProgressBarStyle.Primary" />
+                                                </RadzenStack>
+                                            }
+
                                             @* ═══ Documents Data Grid ═══ *@
                                             <RadzenDataGrid @ref="_documentsGrid" TItem="LineOfDutyDocument"
                                                             Data="@_documentsData"

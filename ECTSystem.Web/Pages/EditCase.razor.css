@@ -703,6 +703,10 @@
     text-decoration: underline;
 }
 
+::deep .upload-progress-bar {
+    padding: 0.25rem 0;
+}
+
 ::deep .doc-actions {
     opacity: 0;
     transition: opacity 0.15s ease;

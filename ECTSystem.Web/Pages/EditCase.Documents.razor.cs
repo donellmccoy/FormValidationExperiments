@@ -69,6 +69,8 @@ public partial class EditCase
             {
                 _documents.IsLoading = false;
             }
+
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -94,11 +96,13 @@ public partial class EditCase
     }
 
     /// <summary>
-    /// Handles the <c>RadzenUpload.Progress</c> event to show loading state during file upload.
+    /// Handles the <c>RadzenUpload.Progress</c> event to show upload progress.
     /// </summary>
     private void OnUploadProgress(UploadProgressArgs args)
     {
-        _documents.IsLoading = true;
+        _documents.IsUploading = true;
+        _documents.UploadProgress = (int)args.Progress;
+        _documents.UploadFileName = args.Files?.FirstOrDefault()?.Name;
     }
 
     /// <summary>
@@ -108,6 +112,9 @@ public partial class EditCase
     private void OnUploadComplete(UploadCompleteEventArgs args)
     {
         _documents.IsLoading = false;
+        _documents.IsUploading = false;
+        _documents.UploadProgress = 0;
+        _documents.UploadFileName = null;
 
         try
         {
@@ -156,6 +163,9 @@ public partial class EditCase
     private void OnUploadError(UploadErrorEventArgs args)
     {
         _documents.IsLoading = false;
+        _documents.IsUploading = false;
+        _documents.UploadProgress = 0;
+        _documents.UploadFileName = null;
         NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", args.Message);
     }
 
@@ -418,6 +428,7 @@ public partial class EditCase
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex?.GetBaseException()?.Message);
             NotificationService.Notify(NotificationSeverity.Error, "Delete Failed", ex.Message);
         }
     }
