@@ -1320,6 +1320,11 @@ public partial class EditCase : ComponentBase, IDisposable
 
     #region Bookmarks & Documents
 
+    private async Task OnHistoryClick()
+    {
+        await OnTabIndexChanged(CaseHistoryTabIndex);
+    }
+
     private async Task OnBookmarkClick()
     {
         if (_lineOfDutyCase?.Id is null or 0)

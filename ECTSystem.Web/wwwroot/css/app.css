@@ -58,6 +58,10 @@
     font-family: 'Material Symbols Outlined' !important;
 }
 
+.material-symbols-outlined {
+    font-variation-settings: 'wght' 250;
+}
+
 h1:focus {
     outline: none;
 }
