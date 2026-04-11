@@ -196,7 +196,6 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private RadzenDataGrid<LineOfDutyDocument> _documentsGrid;
 
-    private InputFile _toolbarFileInput;
 
     private RadzenTextBox _documentsSearchBox;
 
@@ -694,6 +693,16 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (isBookmarked)
         {
+            var confirmed = await DialogService.Confirm(
+                $"Remove bookmark for case {lodCase.CaseId}?",
+                "Remove Bookmark",
+                new ConfirmOptions { OkButtonText = "Remove", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
             try
             {
                 await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
@@ -1342,6 +1351,21 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         else
         {
+            // Revert optimistic toggle — wait for confirmation before removing
+            _bookmark.IsBookmarked = true;
+
+            var confirmed = await DialogService.Confirm(
+                $"Remove bookmark for case {_viewModel?.CaseNumber}?",
+                "Remove Bookmark",
+                new ConfirmOptions { OkButtonText = "Remove", CancelButtonText = "Cancel" });
+
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            _bookmark.IsBookmarked = false;
+
             try
             {
                 await BookmarkService.RemoveBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
@@ -1356,15 +1380,7 @@ public partial class EditCase : ComponentBase, IDisposable
         }
     }
 
-    private async Task OnAttachFileClick()
-    {
-        await JSRuntime.InvokeVoidAsync("triggerFileInput", "toolbar-file-input");
-    }
 
-    private void OnCreateNewCase()
-    {
-        Navigation.NavigateTo("/case/new?from=case");
-    }
 
     private async Task OnCheckInClick()
     {
@@ -1403,6 +1419,34 @@ public partial class EditCase : ComponentBase, IDisposable
         else
         {
             NotificationService.Notify(NotificationSeverity.Error, "Check-In Failed", "Could not check in the case. Please try again.", closeOnClick: true);
+        }
+    }
+
+    private async Task OnCheckOutClick()
+    {
+        if (_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)
+        {
+            return;
+        }
+
+        var result = await DialogService.OpenAsync<Shared.CheckOutCaseDialog>(
+            "Check Out Case",
+            new Dictionary<string, object> { { "CaseId", _lineOfDutyCase.CaseId } },
+            new DialogOptions { ShowClose = false, Width = "auto" });
+
+        if (result is "checkout")
+        {
+            var success = await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id);
+
+            if (success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Checked Out", $"Case {_lineOfDutyCase.CaseId} has been checked out for editing.", closeOnClick: true);
+                Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=edit");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {_lineOfDutyCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
+            }
         }
     }
 

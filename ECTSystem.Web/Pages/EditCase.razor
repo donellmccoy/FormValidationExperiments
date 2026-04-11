@@ -142,34 +142,28 @@ else
                                         <span class="material-symbols-outlined @(_bookmark.IsAnimating ? "bookmark-flash" : "")">@_bookmark.Icon</span>
                                     </ChildContent>
                                 </RadzenButton>
-                                <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                              Click="@OnAttachFileClick"
-                                              Disabled="@(_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)"
-                                              class="toolbar-icon-btn"
-                                              title="@((_lineOfDutyCase is null || _lineOfDutyCase.Id == 0) ? "Save the LOD first to enable documents" : "Attach file")">
-                                    <ChildContent>
-                                        <span class="material-symbols-outlined">attach_file_add</span>
-                                    </ChildContent>
-                                </RadzenButton>
-                                <InputFile @ref="_toolbarFileInput" id="toolbar-file-input"
-                                           OnChange="@OnAttachFilesSelected"
-                                           accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
-                                           multiple
-                                           style="display:none" />
-                                <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                              Click="@OnCreateNewCase"
-                                              class="toolbar-icon-btn"
-                                              title="Create new case">
-                                    <ChildContent>
-                                        <span class="material-symbols-outlined">note_add</span>
-                                    </ChildContent>
-                                </RadzenButton>
+
                                 @if (IsCheckedOutByMe)
                                 {
-                                    <RadzenButton Text="Check In" Icon="lock_open" ButtonStyle="ButtonStyle.Warning"
-                                                  Variant="Variant.Outlined" Size="ButtonSize.Small"
+                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
                                                   Click="@OnCheckInClick"
-                                                  title="Release the case so others can edit it" />
+                                                  class="toolbar-icon-btn"
+                                                  title="Release the case so others can edit it">
+                                        <ChildContent>
+                                            <span class="material-symbols-outlined">lock_open</span>
+                                        </ChildContent>
+                                    </RadzenButton>
+                                }
+                                else if (!IsNewCase && !(_lineOfDutyCase?.IsCheckedOut ?? false))
+                                {
+                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                  Click="@OnCheckOutClick"
+                                                  class="toolbar-icon-btn"
+                                                  title="Check out the case for editing">
+                                        <ChildContent>
+                                            <span class="material-symbols-outlined">lock</span>
+                                        </ChildContent>
+                                    </RadzenButton>
                                 }
                             </RadzenStack>
                         </RadzenStack>
