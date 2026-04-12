@@ -188,37 +188,39 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         return lodCase;
     }
 
-    public async Task<bool> CheckOutCaseAsync(int caseId, CancellationToken cancellationToken = default)
+    public async Task<bool> CheckOutCaseAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkout");
-
         try
         {
-            await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", cancellationToken);
+            var response = await HttpClient.PostAsJsonAsync(
+                $"odata/Cases({caseId})/Checkout",
+                new { RowVersion = rowVersion },
+                cancellationToken);
 
-            return true;
+            return response.IsSuccessStatusCode;
         }
-        catch (DataServiceRequestException)
+        catch (HttpRequestException)
         {
             return false;
         }
     }
 
-    public async Task<bool> CheckInCaseAsync(int caseId, CancellationToken cancellationToken = default)
+    public async Task<bool> CheckInCaseAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkin");
-
         try
         {
-            await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", cancellationToken);
+            var response = await HttpClient.PostAsJsonAsync(
+                $"odata/Cases({caseId})/Checkin",
+                new { RowVersion = rowVersion },
+                cancellationToken);
 
-            return true;
+            return response.IsSuccessStatusCode;
         }
-        catch (DataServiceRequestException)
+        catch (HttpRequestException)
         {
             return false;
         }

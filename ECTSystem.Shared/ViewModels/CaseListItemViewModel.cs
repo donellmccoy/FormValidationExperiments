@@ -17,4 +17,5 @@ public class CaseListItemViewModel
     public bool IsCheckedOut { get; set; }
     public string CheckedOutBy { get; set; }
     public string CheckedOutByName { get; set; }
+    public byte[] RowVersion { get; set; } = [];
 }

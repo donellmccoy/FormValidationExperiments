@@ -773,7 +773,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseAsync(lodCase.Id);
+            var success = await CaseService.CheckOutCaseAsync(lodCase.Id, lodCase.RowVersion);
 
             if (success)
             {
@@ -845,7 +845,7 @@ public partial class EditCase : ComponentBase, IDisposable
                         break;
 
                     case "checkin":
-                        var success = await CaseService.CheckInCaseAsync(lodCase.Id);
+                        var success = await CaseService.CheckInCaseAsync(lodCase.Id, lodCase.RowVersion);
                         if (success)
                         {
                             Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
@@ -954,7 +954,7 @@ public partial class EditCase : ComponentBase, IDisposable
                     CaseId = _lineOfDutyCase.CaseId;
 
                     // Auto-checkout the newly created case so the creator can edit immediately
-                    await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id, _cts.Token);
+                    await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion, _cts.Token);
                     Mode = "edit";
 
                     _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
@@ -1550,7 +1550,7 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var success = await CaseService.CheckInCaseAsync(_lineOfDutyCase.Id);
+        var success = await CaseService.CheckInCaseAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
 
         if (success)
         {
@@ -1583,7 +1583,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id);
+            var success = await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
 
             if (success)
             {

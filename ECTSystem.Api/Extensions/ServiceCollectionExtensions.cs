@@ -209,8 +209,10 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<AuditComment>("AuditComments");
 
         // Bound actions: POST /odata/Cases({key})/Checkout, /Checkin
-        casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
-        casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+        var checkoutAction = casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+        checkoutAction.Parameter<byte[]>("RowVersion").Optional();
+        var checkinAction = casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+        checkinAction.Parameter<byte[]>("RowVersion").Optional();
 
         // Bound collection action: POST /odata/Cases/ByCurrentState
         var byCurrentState = casesEntitySet.EntityType.Collection.Action("ByCurrentState")

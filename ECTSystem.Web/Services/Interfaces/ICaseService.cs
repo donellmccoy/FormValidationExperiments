@@ -83,16 +83,18 @@ public interface ICaseService
     /// signaling to other users that the case is currently being edited and should be treated as read-only.
     /// </summary>
     /// <param name="caseId">The database primary key of the case to check out.</param>
+    /// <param name="rowVersion">The concurrency token of the case entity.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns><c>true</c> if the checkout succeeded; <c>false</c> if the server rejected the request.</returns>
-    Task<bool> CheckOutCaseAsync(int caseId, CancellationToken cancellationToken = default);
+    Task<bool> CheckOutCaseAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Checks in a LOD case by setting <c>IsCheckedOut</c> to <c>false</c>,
     /// releasing the editing lock so the case becomes available for other users to edit.
     /// </summary>
     /// <param name="caseId">The database primary key of the case to check in.</param>
+    /// <param name="rowVersion">The concurrency token of the case entity.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns><c>true</c> if the check-in succeeded; <c>false</c> if the server rejected the request.</returns>
-    Task<bool> CheckInCaseAsync(int caseId, CancellationToken cancellationToken = default);
+    Task<bool> CheckInCaseAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
 }

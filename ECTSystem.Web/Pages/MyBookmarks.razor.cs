@@ -220,7 +220,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseAsync(lodCase.Id);
+            var success = await CaseService.CheckOutCaseAsync(lodCase.Id, lodCase.RowVersion);
 
             if (success)
             {
@@ -417,7 +417,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
                         break;
 
                     case "checkin":
-                        var success = await CaseService.CheckInCaseAsync(lodCase.Id);
+                        var success = await CaseService.CheckInCaseAsync(lodCase.Id, lodCase.RowVersion);
                         if (success)
                         {
                             NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);

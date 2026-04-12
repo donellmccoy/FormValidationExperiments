@@ -691,6 +691,7 @@ public static partial class LineOfDutyCaseMapper
             IsCheckedOut = source.IsCheckedOut,
             CheckedOutBy = source.CheckedOutBy,
             CheckedOutByName = source.CheckedOutByName,
+            RowVersion = source.RowVersion,
         };
     }
 

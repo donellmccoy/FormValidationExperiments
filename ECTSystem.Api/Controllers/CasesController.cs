@@ -250,7 +250,7 @@ public class CasesController : ODataControllerBase
     /// OData route: POST /odata/Cases({key})/Checkout
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Checkout([FromODataUri] int key, CancellationToken ct = default)
+    public async Task<IActionResult> Checkout([FromODataUri] int key, ODataActionParameters parameters, CancellationToken ct = default)
     {
         LoggingService.CheckingOutCase(key);
 
@@ -282,8 +282,9 @@ public class CasesController : ODataControllerBase
         existing.CheckedOutByName = userName;
         existing.CheckedOutDate = DateTime.UtcNow;
 
-        // Optimistic concurrency — prevents two users checking out simultaneously
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+        // Optimistic concurrency — use client-supplied RowVersion if available, otherwise fall back to DB-loaded value
+        var clientRowVersion = parameters?.TryGetValue("RowVersion", out var rv) == true ? rv as byte[] : null;
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion ?? existing.RowVersion;
 
         try
         {
@@ -304,7 +305,7 @@ public class CasesController : ODataControllerBase
     /// OData route: POST /odata/Cases({key})/Checkin
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Checkin([FromODataUri] int key, CancellationToken ct = default)
+    public async Task<IActionResult> Checkin([FromODataUri] int key, ODataActionParameters parameters, CancellationToken ct = default)
     {
         LoggingService.CheckingInCase(key);
 
@@ -324,7 +325,18 @@ public class CasesController : ODataControllerBase
         existing.CheckedOutByName = string.Empty;
         existing.CheckedOutDate = null;
 
-        await context.SaveChangesAsync(ct);
+        // Optimistic concurrency — use client-supplied RowVersion if available, otherwise fall back to DB-loaded value
+        var clientRowVersion = parameters?.TryGetValue("RowVersion", out var rv) == true ? rv as byte[] : null;
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion ?? existing.RowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
+        }
 
         LoggingService.CaseCheckedIn(key);
 

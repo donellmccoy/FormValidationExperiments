@@ -94,18 +94,20 @@ public class WorkflowStateHistoryController : ODataControllerBase
             return Problem(title: "Not found", detail: $"No workflow state history entry exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
-        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ExitDate" };
-        var changed = delta.GetChangedPropertyNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (!changed.IsSubsetOf(allowed))
+        // Only ExitDate is mutable on workflow state history entries.
+        // The OData client sends all properties in PATCH, so extract only
+        // ExitDate from the delta and ignore everything else.
+        if (!delta.GetChangedPropertyNames().Contains(nameof(WorkflowStateHistory.ExitDate), StringComparer.OrdinalIgnoreCase))
         {
             return Problem(
                 title: "Invalid update",
-                detail: "Only ExitDate can be updated on workflow state history entries.",
+                detail: "ExitDate is required for workflow state history updates.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
         var originalRowVersion = existing.RowVersion;
-        delta.Patch(existing);
+        delta.TryGetPropertyValue(nameof(WorkflowStateHistory.ExitDate), out var exitDateValue);
+        existing.ExitDate = (DateTime?)exitDateValue;
 
         // Use client-provided RowVersion for optimistic concurrency check
         context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowVersion;
