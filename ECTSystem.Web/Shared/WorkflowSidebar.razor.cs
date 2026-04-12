@@ -137,15 +137,15 @@ public partial class WorkflowSidebar : ComponentBase
 
                 if (derivedStatus == WorkflowStepStatus.Completed)
                 {
-                    step.StartDate = history.EnteredDate;
-                    step.EndDate = history.ExitDate;
-                    step.CompletedDate = history.ExitDate;
+                    step.StartDate = AsUtc(history.EnteredDate);
+                    step.EndDate = AsUtcNullable(history.ExitDate);
+                    step.CompletedDate = AsUtcNullable(history.ExitDate);
                     step.StatusText = "Completed";
-                    step.CompletionDate = history.ExitDate?.ToString("MM/dd/yyyy h:mm tt") ?? string.Empty;
+                    step.CompletionDate = AsUtcNullable(history.ExitDate)?.ToLocalTime().ToString("MM/dd/yyyy h:mm tt") ?? string.Empty;
                 }
                 else if (derivedStatus == WorkflowStepStatus.InProgress)
                 {
-                    step.StartDate = history.EnteredDate;
+                    step.StartDate = AsUtc(history.EnteredDate);
                     step.EndDate = null;
                     step.CompletedDate = null;
                     step.StatusText = string.Empty;
@@ -261,4 +261,18 @@ public partial class WorkflowSidebar : ComponentBase
 
         return $"Days in process \u2014 {days} days";
     }
+
+    /// <summary>
+    /// Forces a <see cref="DateTime"/> to <see cref="DateTimeKind.Utc"/>.
+    /// All dates in the database are stored as UTC in <c>datetime2</c> columns which carry
+    /// no timezone information. When the OData client materialises them it may assign
+    /// <see cref="DateTimeKind.Local"/> or <see cref="DateTimeKind.Unspecified"/>,
+    /// which causes <see cref="DateTime.ToLocalTime"/> to produce wrong results.
+    /// </summary>
+    private static DateTime AsUtc(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+
+    /// <summary>Nullable overload of <see cref="AsUtc(DateTime)"/>.</summary>
+    private static DateTime? AsUtcNullable(DateTime? dt) =>
+        dt.HasValue ? AsUtc(dt.Value) : null;
 }
