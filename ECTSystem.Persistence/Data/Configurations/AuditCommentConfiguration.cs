@@ -11,5 +11,7 @@ public class AuditCommentConfiguration : IEntityTypeConfiguration<AuditComment>
         builder.HasKey(e => e.Id);
 
         builder.HasIndex(e => e.LineOfDutyCaseId);
+
+        builder.Property(e => e.Text).HasMaxLength(4000);
     }
 }

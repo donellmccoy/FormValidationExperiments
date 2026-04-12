@@ -15,5 +15,11 @@ public class LineOfDutyAuthorityConfiguration : IEntityTypeConfiguration<LineOfD
         builder.Property(e => e.Comments)
                .HasConversion(StringListConversion.Converter)
                .Metadata.SetValueComparer(StringListConversion.Comparer);
+
+        builder.Property(e => e.Name).HasMaxLength(150);
+        builder.Property(e => e.Rank).HasMaxLength(50);
+        builder.Property(e => e.Title).HasMaxLength(200);
+        builder.Property(e => e.Role).HasMaxLength(100);
+        builder.Property(e => e.Recommendation).HasMaxLength(2000);
     }
 }

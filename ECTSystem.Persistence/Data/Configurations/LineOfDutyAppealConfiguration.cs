@@ -21,5 +21,7 @@ public class LineOfDutyAppealConfiguration : IEntityTypeConfiguration<LineOfDuty
                .WithMany()
                .HasForeignKey(e => e.AppellateAuthorityId)
                .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Property(e => e.Appellant).HasMaxLength(200);
     }
 }

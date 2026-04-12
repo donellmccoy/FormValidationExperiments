@@ -10,5 +10,7 @@ public class INCAPDetailsConfiguration : IEntityTypeConfiguration<INCAPDetails>
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.CivilianIncomeLoss).HasPrecision(18, 2);
+
+        builder.Property(e => e.Documentation).HasMaxLength(4000);
     }
 }

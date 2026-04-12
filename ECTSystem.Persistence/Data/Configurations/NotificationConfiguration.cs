@@ -11,5 +11,10 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         builder.HasKey(e => e.Id);
 
         builder.HasIndex(e => e.LineOfDutyCaseId);
+
+        builder.Property(e => e.Title).HasMaxLength(256);
+        builder.Property(e => e.Message).HasMaxLength(2000);
+        builder.Property(e => e.Recipient).HasMaxLength(256);
+        builder.Property(e => e.NotificationType).HasMaxLength(100);
     }
 }
