@@ -7,9 +7,10 @@ Consolidated implementation plan derived from the characterization reviews of al
 | Metric | Count |
 |--------|-------|
 | **Total items (Phases 1–8)** | 30 |
-| **Completed** ✅ | 26 |
-| **Partial** ⏳ | 3 (items 2.3, 2.4, 4.3) |
-| **Remaining work** | Restrict WSH PATCH to ExitDate (2.3), client RowVersion on Checkout + Checkin concurrency (2.4), batch WHERE IN for LookupUsers (4.3) |
+| **Completed** ✅ | 28 |
+| **Not done** ❌ | 0 |
+| **Partial** ⏳ | 2 (items 2.4, 4.3) |
+| **Remaining work** | Client RowVersion on Checkout + Checkin concurrency (2.4), batch WHERE IN for LookupUsers (4.3) |
 | **Deferred (D.1–D.6)** | 6 — unchanged, future work |
 
 ---
@@ -84,22 +85,13 @@ context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowV
 - **Risk if skipped:** Concurrent PATCH requests silently overwrite each other (last-write-wins on audit trail entries).
 - **Status:** Done. `WorkflowStateHistory` inherits `AuditableEntity` which already has `[Timestamp] RowVersion`. PATCH captures `originalRowVersion` before `delta.Patch()` and handles `DbUpdateConcurrencyException`.
 
-### 2.3 Restrict WorkflowStateHistory PATCH to `ExitDate` only
+### ~~2.3 Restrict WorkflowStateHistory PATCH to `ExitDate` only~~ ✅
 
 - **File:** `Controllers/WorkflowStateHistoryController.cs`
 - **Action:** After applying the delta, validate that `delta.GetChangedPropertyNames()` contains only `ExitDate`. Return `400 Bad Request` if any other property (especially `WorkflowState`) is included.
 - **Source:** WorkflowStateHistory characterization, Weakness #4.
 - **Risk if skipped:** Unguarded mutation path for audit fields that should be immutable after creation.
-
-```csharp
-var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ExitDate" };
-var changed = delta.GetChangedPropertyNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
-if (!changed.IsSubsetOf(allowed))
-    return BadRequest(Problem(
-        title: "Invalid update",
-        detail: "Only ExitDate can be updated on workflow state history entries.",
-        statusCode: StatusCodes.Status400BadRequest));
-```
+- **Status:** Done. PATCH method now validates `delta.GetChangedPropertyNames()` against an allowed set of `{ "ExitDate" }` before applying the delta. Returns `400 Bad Request` with a Problem Details response if any other property is included.
 
 ### 2.4 Add concurrency control to CasesController Checkout/Checkin ⏳
 
@@ -387,7 +379,7 @@ These are larger refactors that require coordinated client and server changes. T
 | Phase | Items | Effort | Risk Reduction | Status |
 |-------|-------|--------|----------------|--------|
 | **1 — Security** | 1.1, 1.2, 1.3, 1.4 | Small | **Critical** — closes auth bypass | ✅ 4/4 |
-| **2 — Concurrency** | 2.1, 2.2, 2.3, 2.4 | Medium | **High** — fixes silent data corruption | ⏳ 2/4 (2.3 not done, 2.4 partial) |
+| **2 — Concurrency** | 2.1, 2.2, 2.3, 2.4 | Medium | **High** — fixes silent data corruption | ⏳ 3/4 (2.4 partial) |
 | **3 — SingleResult** | 3.1, 3.2, 3.3 | Small | Medium — enables proper OData composition | ✅ 3/3 |
 | **4 — Performance** | 4.1–4.7 | Small–Medium | Medium — eliminates N+1, extra round trips, and batches OData calls | ⏳ 6/7 (4.3 partial) |
 | **5 — Caching** | 5.1, 5.2, 5.3 | Small | Medium — prevents stale data in active workflows | ✅ 3/3 |
@@ -396,7 +388,7 @@ These are larger refactors that require coordinated client and server changes. T
 | **8 — RBAC** | 8.1–8.4 | Medium | Medium — adds resource-level authorization | ✅ 4/4 |
 | **Deferred** | D.1–D.6 | Large | Variable — architectural improvements | Not started |
 
-**Total immediate items:** 30 (Phases 1–8) — **26 complete, 1 not done, 3 partial**
+**Total immediate items:** 30 (Phases 1–8) — **28 complete, 0 not done, 2 partial**
 **Deferred items:** 6 (future work items)
 
 ---

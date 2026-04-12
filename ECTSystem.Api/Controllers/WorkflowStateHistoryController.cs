@@ -94,6 +94,16 @@ public class WorkflowStateHistoryController : ODataControllerBase
             return Problem(title: "Not found", detail: $"No workflow state history entry exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ExitDate" };
+        var changed = delta.GetChangedPropertyNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (!changed.IsSubsetOf(allowed))
+        {
+            return Problem(
+                title: "Invalid update",
+                detail: "Only ExitDate can be updated on workflow state history entries.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
         var originalRowVersion = existing.RowVersion;
         delta.Patch(existing);
 
