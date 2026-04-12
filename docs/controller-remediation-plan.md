@@ -7,10 +7,10 @@ Consolidated implementation plan derived from the characterization reviews of al
 | Metric | Count |
 |--------|-------|
 | **Total items (Phases 1–8)** | 30 |
-| **Completed** ✅ | 29 |
+| **Completed** ✅ | 30 |
 | **Not done** ❌ | 0 |
-| **Partial** ⏳ | 1 (item 4.3) |
-| **Remaining work** | Batch WHERE IN for LookupUsers (4.3) |
+| **Partial** ⏳ | 0 |
+| **Remaining work** | None |
 | **Deferred (D.1–D.6)** | 6 — unchanged, future work |
 
 ---
@@ -52,7 +52,7 @@ Consolidated implementation plan derived from the characterization reviews of al
 
 ---
 
-## Phase 2 — Data Integrity & Concurrency Fixes ⚠️ (2 of 4 remaining)
+## Phase 2 — Data Integrity & Concurrency Fixes ✅
 
 **Goal:** Fix broken or missing optimistic concurrency. These are correctness bugs that can cause silent data loss under concurrent access.
 
@@ -138,7 +138,7 @@ public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken c
 
 ---
 
-## Phase 4 — Performance Improvements ⚠️ (1 of 5 remaining)
+## Phase 4 — Performance Improvements ✅
 
 **Goal:** Eliminate unnecessary database round trips and N+1 queries.
 
@@ -161,12 +161,12 @@ return deleted == 0 ? NotFound() : NoContent();
 - **Action:** Same pattern as 4.1.
 - **Source:** Members characterization, Weakness #5.
 
-### 4.3 UserController `LookupUsers` → Batch query ⏳
+### 4.3 ~~UserController `LookupUsers` → Batch query~~ ✅
 
 - **File:** `Controllers/UserController.cs`
 - **Action:** Replace the sequential `foreach` + `FindByIdAsync` loop with a single `Where(u => ids.Contains(u.Id))` query.
 - **Source:** User characterization, Weakness #3.
-- **Status:** Partial. Currently uses `Task.WhenAll(distinctIds.Select(id => userManager.FindByIdAsync(id)))` — fires N concurrent individual lookups instead of a single `WHERE IN` batch query. Still N round-trips to the DB.
+- **Status:** Done. Uses `userManager.Users.Where(u => distinctIds.Contains(u.Id))` with server-side projection and `ToDictionaryAsync` for a single `WHERE IN` batch query. Falls back to the raw ID for any IDs not found.
 
 ```csharp
 var distinctIds = ids.Distinct().ToList();
@@ -379,16 +379,16 @@ These are larger refactors that require coordinated client and server changes. T
 | Phase | Items | Effort | Risk Reduction | Status |
 |-------|-------|--------|----------------|--------|
 | **1 — Security** | 1.1, 1.2, 1.3, 1.4 | Small | **Critical** — closes auth bypass | ✅ 4/4 |
-| **2 — Concurrency** | 2.1, 2.2, 2.3, 2.4 | Medium | **High** — fixes silent data corruption | ⏳ 3/4 (2.4 partial) |
+| **2 — Concurrency** | 2.1, 2.2, 2.3, 2.4 | Medium | **High** — fixes silent data corruption | ✅ 4/4 |
 | **3 — SingleResult** | 3.1, 3.2, 3.3 | Small | Medium — enables proper OData composition | ✅ 3/3 |
-| **4 — Performance** | 4.1–4.7 | Small–Medium | Medium — eliminates N+1, extra round trips, and batches OData calls | ⏳ 6/7 (4.3 partial) |
+| **4 — Performance** | 4.1–4.7 | Small–Medium | Medium — eliminates N+1, extra round trips, and batches OData calls | ✅ 7/7 |
 | **5 — Caching** | 5.1, 5.2, 5.3 | Small | Medium — prevents stale data in active workflows | ✅ 3/3 |
 | **6 — Logging** | 6.1, 6.2, 6.3 | Small | Low — improves observability | ✅ 3/3 |
 | **7 — ProblemDetails** | 7.1, 7.2 | Medium | Low — improves error handling consistency | ✅ 2/2 |
 | **8 — RBAC** | 8.1–8.4 | Medium | Medium — adds resource-level authorization | ✅ 4/4 |
 | **Deferred** | D.1–D.6 | Large | Variable — architectural improvements | Not started |
 
-**Total immediate items:** 30 (Phases 1–8) — **28 complete, 0 not done, 2 partial**
+**Total immediate items:** 30 (Phases 1–8) — **30 complete, 0 not done, 0 partial**
 **Deferred items:** 6 (future work items)
 
 ---

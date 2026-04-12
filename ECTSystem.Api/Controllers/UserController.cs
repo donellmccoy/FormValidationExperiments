@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -33,17 +34,16 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
         if (ids is null || ids.Length == 0)
             return Ok(new Dictionary<string, string>());
 
-        var distinctIds = ids.Distinct().Take(50).ToArray();
+        var distinctIds = ids.Distinct().Take(50).ToList();
 
-        var users = await Task.WhenAll(distinctIds.Select(id => userManager.FindByIdAsync(id)));
+        var users = await userManager.Users
+            .Where(u => distinctIds.Contains(u.Id))
+            .Select(u => new { u.Id, Name = u.UserName ?? u.Email ?? u.Id })
+            .ToDictionaryAsync(u => u.Id, u => u.Name, ct);
 
-        var result = new Dictionary<string, string>(distinctIds.Length);
-        for (var i = 0; i < distinctIds.Length; i++)
-        {
-            var user = users[i];
-            result[distinctIds[i]] = user?.UserName ?? user?.Email ?? distinctIds[i];
-        }
+        foreach (var id in distinctIds)
+            users.TryAdd(id, id);
 
-        return Ok(result);
+        return Ok(users);
     }
 }
