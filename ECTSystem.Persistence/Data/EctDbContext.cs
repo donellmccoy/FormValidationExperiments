@@ -48,5 +48,36 @@ public class EctDbContext : DbContext
             modelBuilder.Entity(entityType.ClrType).Property(nameof(AuditableEntity.CreatedBy)).HasMaxLength(256);
             modelBuilder.Entity(entityType.ClrType).Property(nameof(AuditableEntity.ModifiedBy)).HasMaxLength(256);
         }
+
+        // Normalize all DateTime/DateTime? properties to UTC.
+        // Microsoft.OData.Client serializes DateTime as DateTimeOffset with "+00:00" offset.
+        // System.Text.Json and the OData Delta formatter both deserialize "+00:00" strings
+        // into DateTime with Kind=Local (converted to server-local time). This convention
+        // ensures that all DateTime values are stored as UTC in the database and read back
+        // with Kind=Utc, regardless of the deserialization path.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                {
+                    property.SetValueConverter(
+                        new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
+                            v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+                            v => DateTime.SpecifyKind(v, DateTimeKind.Utc)));
+                }
+                else if (property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(
+                        new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime?, DateTime?>(
+                            v => v.HasValue
+                                ? (v.Value.Kind == DateTimeKind.Utc ? v : v.Value.ToUniversalTime())
+                                : v,
+                            v => v.HasValue
+                                ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)
+                                : v));
+                }
+            }
+        }
     }
 }
