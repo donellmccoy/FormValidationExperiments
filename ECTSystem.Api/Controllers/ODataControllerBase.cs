@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
@@ -19,6 +20,14 @@ public abstract class ODataControllerBase : ODataController
         ContextFactory = contextFactory;
         LoggingService = loggingService;
     }
+
+    /// <summary>
+    /// Returns the authenticated user's unique identifier from the JWT <c>NameIdentifier</c> claim.
+    /// Throws <see cref="UnauthorizedAccessException"/> when the claim is missing.
+    /// </summary>
+    protected string GetAuthenticatedUserId() =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? throw new UnauthorizedAccessException("Missing NameIdentifier claim.");
 
     /// <summary>
     /// Creates a scoped <see cref="EctDbContext"/> and registers it for disposal at the end of the HTTP response.

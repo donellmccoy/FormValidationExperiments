@@ -72,6 +72,19 @@ public interface ILoggingService
     // Authorities
     void SavingAuthorities(int caseId, int count);
     void AuthoritiesSaved(int caseId, int count);
+    void QueryingAuthorities();
+    void RetrievingAuthority(int authorityId);
+    void AuthorityNotFound(int authorityId);
+    void CreatingAuthority();
+    void AuthorityCreated(int authorityId);
+    void PatchingAuthority(int authorityId);
+    void AuthorityPatched(int authorityId);
+    void DeletingAuthority(int authorityId);
+    void AuthorityDeleted(int authorityId);
+
+    // Workflow State Histories
+    void QueryingWorkflowStateHistories();
+    void RetrievingWorkflowStateHistory(int entryId);
 
     // Case Checkout
     void CheckingOutCase(int caseId);

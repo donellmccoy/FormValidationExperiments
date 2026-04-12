@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -28,9 +29,10 @@ public class AuthoritiesController : ODataControllerBase
     /// OData route: GET /odata/Authorities
     /// </summary>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
+        LoggingService.QueryingAuthorities();
         var context = await CreateContextAsync(ct);
         return Ok(context.Authorities.AsNoTracking());
     }
@@ -40,16 +42,12 @@ public class AuthoritiesController : ODataControllerBase
     /// OData route: GET /odata/Authorities({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var authority = await context.Authorities.AsNoTracking().FirstOrDefaultAsync(a => a.Id == key, ct);
-
-        if (authority is null)
-            return NotFound();
-
-        return Ok(authority);
+        LoggingService.RetrievingAuthority(key);
+        var context = await CreateContextAsync(ct);
+        return Ok(SingleResult.Create(context.Authorities.AsNoTracking().Where(a => a.Id == key)));
     }
 
     /// <summary>
@@ -57,15 +55,18 @@ public class AuthoritiesController : ODataControllerBase
     /// OData route: POST /odata/Authorities
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Post([FromBody] LineOfDutyAuthority authority, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
 
+        LoggingService.CreatingAuthority();
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.Authorities.Add(authority);
         await context.SaveChangesAsync(ct);
 
+        LoggingService.AuthorityCreated(authority.Id);
         return Created(authority);
     }
 
@@ -74,21 +75,27 @@ public class AuthoritiesController : ODataControllerBase
     /// OData route: PATCH /odata/Authorities({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyAuthority> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
 
+        LoggingService.PatchingAuthority(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         var existing = await context.Authorities.FindAsync([key], ct);
 
         if (existing is null)
-            return NotFound();
+        {
+            LoggingService.AuthorityNotFound(key);
+            return Problem(title: "Not found", detail: $"No authority exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
+        }
 
+        var originalRowVersion = existing.RowVersion;
         delta.Patch(existing);
 
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowVersion;
 
         try
         {
@@ -96,9 +103,10 @@ public class AuthoritiesController : ODataControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict();
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
         }
 
+        LoggingService.AuthorityPatched(key);
         return Updated(existing);
     }
 
@@ -106,17 +114,20 @@ public class AuthoritiesController : ODataControllerBase
     /// Deletes an authority entry.
     /// OData route: DELETE /odata/Authorities({key})
     /// </summary>
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
+        LoggingService.DeletingAuthority(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var authority = await context.Authorities.FindAsync([key], ct);
+        var deleted = await context.Authorities.Where(a => a.Id == key).ExecuteDeleteAsync(ct);
 
-        if (authority is null)
-            return NotFound();
+        if (deleted == 0)
+        {
+            LoggingService.AuthorityNotFound(key);
+            return Problem(title: "Not found", detail: $"No authority exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
+        }
 
-        context.Authorities.Remove(authority);
-        await context.SaveChangesAsync(ct);
-
+        LoggingService.AuthorityDeleted(key);
         return NoContent();
     }
 }

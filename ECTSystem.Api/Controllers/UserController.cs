@@ -13,31 +13,35 @@ namespace ECTSystem.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-//[Authorize]
+[Authorize]
 public class UserController(UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [HttpGet("me")]
     public IActionResult GetCurrentUser()
     {
-        var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "test-user-id";
-        var email = User?.FindFirstValue(ClaimTypes.Email);
-        var name = User?.FindFirstValue(ClaimTypes.Name) ?? email ?? userId;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedAccessException("Missing NameIdentifier claim.");
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var name = User.FindFirstValue(ClaimTypes.Name) ?? email ?? userId;
 
         return Ok(new { UserId = userId, Name = name });
     }
 
     [HttpGet("lookup")]
-    public async Task<IActionResult> LookupUsers([FromQuery] string[] ids)
+    public async Task<IActionResult> LookupUsers([FromQuery] string[] ids, CancellationToken ct = default)
     {
         if (ids is null || ids.Length == 0)
             return Ok(new Dictionary<string, string>());
 
-        var result = new Dictionary<string, string>(ids.Length);
+        var distinctIds = ids.Distinct().Take(50).ToArray();
 
-        foreach (var id in ids.Distinct())
+        var users = await Task.WhenAll(distinctIds.Select(id => userManager.FindByIdAsync(id)));
+
+        var result = new Dictionary<string, string>(distinctIds.Length);
+        for (var i = 0; i < distinctIds.Length; i++)
         {
-            var user = await userManager.FindByIdAsync(id);
-            result[id] = user?.UserName ?? user?.Email ?? id;
+            var user = users[i];
+            result[distinctIds[i]] = user?.UserName ?? user?.Email ?? distinctIds[i];
         }
 
         return Ok(result);

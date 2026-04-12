@@ -22,7 +22,7 @@ namespace ECTSystem.Api.Controllers;
 /// query parameters which the OData middleware translates directly into EF Core LINQ queries.
 /// Named "CasesController" to match the OData entity set "Cases" (convention routing).
 /// </summary>
-//[Authorize]
+[Authorize]
 public class CasesController : ODataControllerBase
 {
     public CasesController(
@@ -31,9 +31,6 @@ public class CasesController : ODataControllerBase
         : base(contextFactory, loggingService)
     {
     }
-
-    /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
-    private string GetUserId() { var id = User?.FindFirstValue(ClaimTypes.NameIdentifier); Console.WriteLine("USER ID CLAIM IS: " + (id ?? "NULL")); return id ?? "test-user-id"; }
 
     /// <summary>
     /// Returns an IQueryable of LOD cases for OData query composition.
@@ -73,7 +70,7 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.CaseNotFound(key);
 
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
         var etag = $"\"{Convert.ToBase64String(rowVersion)}\"";
@@ -86,7 +83,7 @@ public class CasesController : ODataControllerBase
         Response.Headers.ETag = etag;
         Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
-        var isBookmarked = await context.Bookmarks.AnyAsync(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == key, ct);
+        var isBookmarked = await context.Bookmarks.AnyAsync(b => b.UserId == GetAuthenticatedUserId() && b.LineOfDutyCaseId == key, ct);
 
         Response.Headers["X-Case-IsBookmarked"] = isBookmarked.ToString().ToLowerInvariant();
 
@@ -110,7 +107,7 @@ public class CasesController : ODataControllerBase
         if (!ModelState.IsValid)
         {
             LoggingService.InvalidModelState("Post");
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -211,7 +208,7 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.InvalidModelState("Patch");
 
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         LoggingService.PatchingCase(key);
@@ -224,7 +221,7 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.CaseNotFound(key);
 
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
         delta.Patch(existing);
@@ -238,7 +235,7 @@ public class CasesController : ODataControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict();
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
         }
 
         var patched = await context.Cases.IncludeWorkflowState().AsNoTracking().FirstAsync(c => c.Id == key, ct);
@@ -265,26 +262,37 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.CaseNotFound(key);
 
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
         if (existing.IsCheckedOut)
         {
             LoggingService.CaseAlreadyCheckedOut(key, existing.CheckedOutByName);
 
-            return Conflict();
+            return Problem(title: "Checkout conflict", detail: $"Case {key} is already checked out by {existing.CheckedOutByName}.", statusCode: StatusCodes.Status409Conflict);
         }
 
+        var userId = GetAuthenticatedUserId();
         var userName = User.FindFirstValue(ClaimTypes.Name)
                      ?? User.FindFirstValue(ClaimTypes.Email)
-                     ?? GetUserId();
+                     ?? userId;
 
         existing.IsCheckedOut = true;
-        existing.CheckedOutBy = GetUserId();
+        existing.CheckedOutBy = userId;
         existing.CheckedOutByName = userName;
         existing.CheckedOutDate = DateTime.UtcNow;
 
-        await context.SaveChangesAsync(ct);
+        // Optimistic concurrency — prevents two users checking out simultaneously
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
+        }
 
         LoggingService.CaseCheckedOut(key, userName);
 
@@ -308,7 +316,7 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.CaseNotFound(key);
 
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
         existing.IsCheckedOut = false;
@@ -327,6 +335,7 @@ public class CasesController : ODataControllerBase
     /// Deletes an LOD case and its related entities.
     /// OData route: DELETE /odata/Cases({key})
     /// </summary>
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingCase(key);
@@ -339,7 +348,7 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.CaseNotFound(key);
 
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
         // Prevent deletion of a case that is currently checked out
@@ -347,7 +356,7 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.CaseCheckedOutByAnother(key, lodCase.CheckedOutByName);
 
-            return Conflict();
+            return Problem(title: "Checkout conflict", detail: $"Case {key} is currently checked out by {lodCase.CheckedOutByName} and cannot be deleted.", statusCode: StatusCodes.Status409Conflict);
         }
 
         // ClientCascade handles tracked child collections automatically
@@ -373,7 +382,7 @@ public class CasesController : ODataControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict();
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
         }
 
         LoggingService.CaseDeleted(key);
@@ -397,7 +406,7 @@ public class CasesController : ODataControllerBase
 
         var query = context.Cases
             .AsNoTracking()
-            .Where(c => context.Bookmarks.Any(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == c.Id));
+            .Where(c => context.Bookmarks.Any(b => b.UserId == GetAuthenticatedUserId() && b.LineOfDutyCaseId == c.Id));
 
         return Ok(query);
     }
@@ -445,7 +454,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})/Documents
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetDocuments([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Documents));
@@ -460,7 +469,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})/Notifications
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetNotifications([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.Notifications));
@@ -475,7 +484,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})/WorkflowStateHistories
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetWorkflowStateHistories([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingCaseNavigation(key, nameof(LineOfDutyCase.WorkflowStateHistories));

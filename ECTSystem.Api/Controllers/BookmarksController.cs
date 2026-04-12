@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Formatter;
@@ -22,9 +21,6 @@ public class BookmarksController : ODataControllerBase
     {
     }
 
-    /// <summary>Gets the authenticated user's unique identifier from the JWT claims.</summary>
-    private string GetUserId() => User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "test-user-id";
-
     /// <summary>
     /// Returns all bookmarks owned by the current user.
     /// OData route: GET /odata/Bookmarks
@@ -36,7 +32,7 @@ public class BookmarksController : ODataControllerBase
     {
         LoggingService.QueryingBookmarks();
         var context = await CreateContextAsync(ct);
-        return Ok(context.Bookmarks.AsNoTracking().Where(b => b.UserId == GetUserId()));
+        return Ok(context.Bookmarks.AsNoTracking().Where(b => b.UserId == GetAuthenticatedUserId()));
     }
 
     /// <summary>
@@ -50,13 +46,13 @@ public class BookmarksController : ODataControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var existing = await context.Bookmarks
-            .FirstOrDefaultAsync(b => b.UserId == GetUserId() && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
+            .FirstOrDefaultAsync(b => b.UserId == GetAuthenticatedUserId() && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
 
         if (existing is not null)
         {
@@ -64,7 +60,7 @@ public class BookmarksController : ODataControllerBase
             return Ok(existing);
         }
 
-        bookmark.UserId = GetUserId();
+        bookmark.UserId = GetAuthenticatedUserId();
 
         context.Bookmarks.Add(bookmark);
         await context.SaveChangesAsync(ct);
@@ -81,11 +77,11 @@ public class BookmarksController : ODataControllerBase
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var bookmark = await context.Bookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == GetUserId(), ct);
+        var bookmark = await context.Bookmarks.FirstOrDefaultAsync(b => b.Id == key && b.UserId == GetAuthenticatedUserId(), ct);
 
         if (bookmark is null)
         {
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No bookmark exists with ID {key} for the current user.", statusCode: StatusCodes.Status404NotFound);
         }
 
         LoggingService.DeletingBookmark(bookmark.LineOfDutyCaseId);

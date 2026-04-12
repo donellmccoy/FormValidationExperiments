@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Api.Logging;
@@ -44,18 +45,8 @@ public class MembersController : ODataControllerBase
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.RetrievingMember(key);
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var member = await context.Members
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == key, ct);
-
-        if (member is null)
-        {
-            LoggingService.MemberNotFound(key);
-            return NotFound();
-        }
-
-        return Ok(member);
+        var context = await CreateContextAsync(ct);
+        return Ok(SingleResult.Create(context.Members.AsNoTracking().Where(m => m.Id == key)));
     }
 
     /// <summary>
@@ -71,7 +62,7 @@ public class MembersController : ODataControllerBase
                 .Where(ms => ms.Value?.Errors.Count > 0)
                 .Select(ms => $"{ms.Key}: [{string.Join(", ", ms.Value!.Errors.Select(e => e.ErrorMessage + (e.Exception != null ? $" ({e.Exception.Message})" : "")))}]");
             LoggingService.MemberInvalidModelState($"Post — {string.Join("; ", errors)}");
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -92,12 +83,12 @@ public class MembersController : ODataControllerBase
         if (!ModelState.IsValid)
         {
             LoggingService.MemberInvalidModelState("Put");
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         if (key != member.Id)
         {
-            return BadRequest("The key parameter does not match the entity ID.");
+            return Problem(title: "Bad request", detail: "The key parameter does not match the entity ID.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         LoggingService.UpdatingMember(key);
@@ -106,7 +97,7 @@ public class MembersController : ODataControllerBase
         if (existing is null)
         {
             LoggingService.MemberNotFound(key);
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No member exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
         // Use client-provided RowVersion for optimistic concurrency check
@@ -119,7 +110,7 @@ public class MembersController : ODataControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict();
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
         }
 
         LoggingService.MemberUpdated(key);
@@ -136,7 +127,7 @@ public class MembersController : ODataControllerBase
         if (!ModelState.IsValid)
         {
             LoggingService.MemberInvalidModelState("Patch");
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         LoggingService.PatchingMember(key);
@@ -145,13 +136,14 @@ public class MembersController : ODataControllerBase
         if (existing is null)
         {
             LoggingService.MemberNotFound(key);
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No member exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
+        var originalRowVersion = existing.RowVersion;
         delta.Patch(existing);
 
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowVersion;
 
         try
         {
@@ -159,7 +151,7 @@ public class MembersController : ODataControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict();
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
         }
 
         LoggingService.MemberPatched(key);
@@ -174,15 +166,13 @@ public class MembersController : ODataControllerBase
     {
         LoggingService.DeletingMember(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var member = await context.Members.FindAsync([key], ct);
-        if (member is null)
+        var deleted = await context.Members.Where(m => m.Id == key).ExecuteDeleteAsync(ct);
+
+        if (deleted == 0)
         {
             LoggingService.MemberNotFound(key);
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No member exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
-
-        context.Members.Remove(member);
-        await context.SaveChangesAsync(ct);
 
         LoggingService.MemberDeleted(key);
         return NoContent();
@@ -195,7 +185,7 @@ public class MembersController : ODataControllerBase
     /// OData route: GET /odata/Members({key})/LineOfDutyCases
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> GetLineOfDutyCases([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.QueryingMemberNavigation(key, "LineOfDutyCases");

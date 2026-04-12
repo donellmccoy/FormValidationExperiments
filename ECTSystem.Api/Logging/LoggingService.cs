@@ -192,6 +192,41 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 901, Level = LogLevel.Information, Message = "Saved {Count} authorities for LOD case {CaseId}")]
     public partial void AuthoritiesSaved(int caseId, int count);
 
+    [LoggerMessage(EventId = 902, Level = LogLevel.Information, Message = "Querying authorities")]
+    public partial void QueryingAuthorities();
+
+    [LoggerMessage(EventId = 903, Level = LogLevel.Information, Message = "Retrieving authority {AuthorityId}")]
+    public partial void RetrievingAuthority(int authorityId);
+
+    [LoggerMessage(EventId = 904, Level = LogLevel.Warning, Message = "Authority {AuthorityId} not found")]
+    public partial void AuthorityNotFound(int authorityId);
+
+    [LoggerMessage(EventId = 905, Level = LogLevel.Information, Message = "Creating authority")]
+    public partial void CreatingAuthority();
+
+    [LoggerMessage(EventId = 906, Level = LogLevel.Information, Message = "Authority {AuthorityId} created")]
+    public partial void AuthorityCreated(int authorityId);
+
+    [LoggerMessage(EventId = 907, Level = LogLevel.Information, Message = "Patching authority {AuthorityId}")]
+    public partial void PatchingAuthority(int authorityId);
+
+    [LoggerMessage(EventId = 908, Level = LogLevel.Information, Message = "Authority {AuthorityId} patched")]
+    public partial void AuthorityPatched(int authorityId);
+
+    [LoggerMessage(EventId = 909, Level = LogLevel.Information, Message = "Deleting authority {AuthorityId}")]
+    public partial void DeletingAuthority(int authorityId);
+
+    [LoggerMessage(EventId = 910, Level = LogLevel.Information, Message = "Authority {AuthorityId} deleted")]
+    public partial void AuthorityDeleted(int authorityId);
+
+    // Workflow State Histories GET logging (EventId 704–705)
+
+    [LoggerMessage(EventId = 704, Level = LogLevel.Information, Message = "Querying workflow state histories")]
+    public partial void QueryingWorkflowStateHistories();
+
+    [LoggerMessage(EventId = 705, Level = LogLevel.Information, Message = "Retrieving workflow state history {EntryId}")]
+    public partial void RetrievingWorkflowStateHistory(int entryId);
+
     // Case Checkout (EventId 800–805)
 
     [LoggerMessage(EventId = 800, Level = LogLevel.Information, Message = "Checking out LOD case {CaseId}")]

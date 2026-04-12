@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
@@ -29,9 +30,10 @@ public class WorkflowStateHistoryController : ODataControllerBase
     /// OData route: GET /odata/WorkflowStateHistory
     /// </summary>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
+        LoggingService.QueryingWorkflowStateHistories();
         var context = await CreateContextAsync(ct);
         return Ok(context.WorkflowStateHistories.AsNoTracking());
     }
@@ -41,18 +43,12 @@ public class WorkflowStateHistoryController : ODataControllerBase
     /// OData route: GET /odata/WorkflowStateHistory({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var entry = await context.WorkflowStateHistories
-            .AsNoTracking()
-            .FirstOrDefaultAsync(h => h.Id == key, ct);
-
-        if (entry is null)
-            return NotFound();
-
-        return Ok(entry);
+        LoggingService.RetrievingWorkflowStateHistory(key);
+        var context = await CreateContextAsync(ct);
+        return Ok(SingleResult.Create(context.WorkflowStateHistories.AsNoTracking().Where(h => h.Id == key)));
     }
 
     /// <summary>
@@ -67,7 +63,7 @@ public class WorkflowStateHistoryController : ODataControllerBase
         if (!ModelState.IsValid)
         {
             LoggingService.WorkflowStateHistoryInvalidModelState();
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -86,7 +82,7 @@ public class WorkflowStateHistoryController : ODataControllerBase
         if (delta is null || !ModelState.IsValid)
         {
             LoggingService.WorkflowStateHistoryInvalidModelState();
-            return BadRequest(ModelState);
+            return ValidationProblem(ModelState);
         }
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -95,11 +91,23 @@ public class WorkflowStateHistoryController : ODataControllerBase
 
         if (existing is null)
         {
-            return NotFound();
+            return Problem(title: "Not found", detail: $"No workflow state history entry exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
+        var originalRowVersion = existing.RowVersion;
         delta.Patch(existing);
-        await context.SaveChangesAsync(ct);
+
+        // Use client-provided RowVersion for optimistic concurrency check
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowVersion;
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
+        }
 
         return Updated(existing);
     }
