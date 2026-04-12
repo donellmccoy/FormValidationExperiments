@@ -95,7 +95,8 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
         var result = await _sut.Post(new WorkflowStateHistory(), CancellationToken.None);
 
         var obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(400, obj.StatusCode ?? (obj.Value as ProblemDetails)?.Status);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     /// <summary>

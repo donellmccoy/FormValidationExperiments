@@ -61,7 +61,7 @@ public class AuthoritiesController : ODataControllerBase
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        if (authority.LineOfDutyCaseId <= 0)
+        if (authority.LineOfDutyCaseId is null or <= 0)
         {
             ModelState.AddModelError(nameof(LineOfDutyAuthority.LineOfDutyCaseId), "A valid LineOfDutyCaseId is required.");
             return ValidationProblem(ModelState);

@@ -204,10 +204,16 @@ public class CasesController : ODataControllerBase
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyCase> delta, CancellationToken ct = default)
     {
-        if (delta is null || !ModelState.IsValid)
+        if (delta is null)
+        {
+            ModelState.AddModelError("delta", "Request body is required.");
+            LoggingService.InvalidModelState("Patch");
+            return ValidationProblem(ModelState);
+        }
+
+        if (!ModelState.IsValid)
         {
             LoggingService.InvalidModelState("Patch");
-
             return ValidationProblem(ModelState);
         }
 
