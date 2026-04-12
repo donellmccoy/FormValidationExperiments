@@ -1875,7 +1875,11 @@ else
                                                         </Template>
                                                     </RadzenDataGridColumn>
                                                     <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="EnteredDate" Title="Entered" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
-                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="ExitDate" Title="Exited" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
+                                                    <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="ExitDate" Title="Exited" Width="180px">
+                                                        <Template Context="entry">
+                                                            @(entry.ExitDate.HasValue ? entry.ExitDate.Value.ToString("MM/dd/yyyy h:mm tt") : "In Progress")
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
                                                     <RadzenDataGridColumn TItem="WorkflowStateHistory" Property="CreatedDate" Title="Date" Width="180px" FormatString="{0:MM/dd/yyyy h:mm tt}" />
                                                 </Columns>
                                             </RadzenDataGrid>
