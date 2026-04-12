@@ -104,9 +104,11 @@ Services/
   ICaseService.cs
   IDocumentService.cs
   IMemberService.cs
+  IUserService.cs
   IWorkflowHistoryService.cs
  MemberService.cs
  ODataServiceBase.cs
+ UserService.cs
  WorkflowHistoryService.cs
 Shared/
  CheckOutCaseDialog.razor.cs

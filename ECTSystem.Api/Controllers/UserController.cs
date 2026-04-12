@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using ECTSystem.Persistence.Models;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -12,7 +14,7 @@ namespace ECTSystem.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 //[Authorize]
-public class UserController : ControllerBase
+public class UserController(UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [HttpGet("me")]
     public IActionResult GetCurrentUser()
@@ -22,5 +24,22 @@ public class UserController : ControllerBase
         var name = User?.FindFirstValue(ClaimTypes.Name) ?? email ?? userId;
 
         return Ok(new { UserId = userId, Name = name });
+    }
+
+    [HttpGet("lookup")]
+    public async Task<IActionResult> LookupUsers([FromQuery] string[] ids)
+    {
+        if (ids is null || ids.Length == 0)
+            return Ok(new Dictionary<string, string>());
+
+        var result = new Dictionary<string, string>(ids.Length);
+
+        foreach (var id in ids.Distinct())
+        {
+            var user = await userManager.FindByIdAsync(id);
+            result[id] = user?.UserName ?? user?.Email ?? id;
+        }
+
+        return Ok(result);
     }
 }

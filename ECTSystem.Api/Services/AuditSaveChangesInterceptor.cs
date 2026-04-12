@@ -13,9 +13,8 @@ public class AuditSaveChangesInterceptor(IHttpContextAccessor httpContextAccesso
         if (eventData.Context is null)
             return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        var userIdClaim = httpContextAccessor.HttpContext?.User
+        var userId = httpContextAccessor.HttpContext?.User
             .FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userId = int.TryParse(userIdClaim, out var parsed) ? parsed : 0;
         var now = DateTime.UtcNow;
 
         foreach (var entry in eventData.Context.ChangeTracker.Entries<AuditableEntity>())

@@ -147,6 +147,9 @@ public partial class EditCase : ComponentBase, IDisposable
     [Inject]
     private ILocalStorageService LocalStorage { get; set; }
 
+    [Inject]
+    private IUserService UserService { get; set; }
+
     #endregion
 
     #region Parameters

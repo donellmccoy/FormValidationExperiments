@@ -1704,7 +1704,11 @@ else
                                                             @(doc.UploadDate?.ToLocalTime().ToString("MM/dd/yyyy hh:mm tt") ?? "")
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="By" Width="100px" />
+                                                    <RadzenDataGridColumn TItem="LineOfDutyDocument" Property="CreatedBy" Title="By" Width="100px" Sortable="false" Filterable="false">
+                                                        <Template Context="doc">
+                                                            @GetUserDisplayName(doc.CreatedBy)
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
                                                 </Columns>
                                             </RadzenDataGrid>
                                         </RadzenStack>

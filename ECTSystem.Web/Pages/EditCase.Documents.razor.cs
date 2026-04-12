@@ -15,6 +15,16 @@ public partial class EditCase
     /// </summary>
     private int DocumentCount => _documentsCount;
 
+    private readonly Dictionary<string, string> _userDisplayNames = new();
+
+    private string GetUserDisplayName(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return string.Empty;
+
+        return _userDisplayNames.GetValueOrDefault(userId, userId);
+    }
+
     /// <summary>
     /// Server-side data load handler for the Documents grid.
     /// </summary>
@@ -49,6 +59,24 @@ public partial class EditCase
 
             _documentsData = result?.Value?.AsODataEnumerable();
             _documentsCount = result?.Count ?? 0;
+
+            if (_documentsData is not null)
+            {
+                var userIds = _documentsData
+                    .Select(d => d.CreatedBy)
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .Distinct()
+                    .ToList();
+
+                if (userIds.Count > 0)
+                {
+                    var names = await UserService.GetDisplayNamesAsync(userIds, _cts.Token);
+                    foreach (var kvp in names)
+                    {
+                        _userDisplayNames[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
         }
         catch (OperationCanceledException)
         {
