@@ -212,8 +212,8 @@ public static class ServiceCollectionExtensions
         casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
         casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
 
-        // Bound collection function: GET /odata/Cases/Default.ByCurrentState(...)
-        var byCurrentState = casesEntitySet.EntityType.Collection.Function("ByCurrentState")
+        // Bound collection action: POST /odata/Cases/ByCurrentState
+        var byCurrentState = casesEntitySet.EntityType.Collection.Action("ByCurrentState")
             .ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
         byCurrentState.CollectionParameter<WorkflowState>("includeStates").Optional();
         byCurrentState.CollectionParameter<WorkflowState>("excludeStates").Optional();

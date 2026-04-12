@@ -87,59 +87,23 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         string? expand = null,
         CancellationToken cancellationToken = default)
     {
-        var parameters = new List<UriOperationParameter>();
+        var url = BuildNavigationPropertyUrl("odata/Cases/ByCurrentState", filter, top, skip, orderby, count, select, expand);
 
-        // OData requires bound function parameters to exist in the URL
-        parameters.Add(new UriOperationParameter("includeStates", includeStates ?? Array.Empty<WorkflowState>()));
-        parameters.Add(new UriOperationParameter("excludeStates", excludeStates ?? Array.Empty<WorkflowState>()));
-
-        var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.ByCurrentState", false, parameters.ToArray());
-
-        if (!string.IsNullOrEmpty(filter))
+        var body = new
         {
-            query = query.AddQueryOption("$filter", filter);
-        }
+            includeStates = includeStates ?? Array.Empty<WorkflowState>(),
+            excludeStates = excludeStates ?? Array.Empty<WorkflowState>()
+        };
 
-        if (top.HasValue)
-        {
-            query = query.AddQueryOption("$top", top.Value);
-        }
+        var response = await HttpClient.PostAsJsonAsync(url, body, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-        if (skip.HasValue)
-        {
-            query = query.AddQueryOption("$skip", skip.Value);
-        }
+        var result = await response.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(JsonOptions, cancellationToken);
 
-        if (!string.IsNullOrEmpty(orderby))
-        {
-            query = query.AddQueryOption("$orderby", orderby);
-        }
-
-        if (!string.IsNullOrEmpty(select))
-        {
-            query = query.AddQueryOption("$select", select);
-        }
-
-        if (!string.IsNullOrEmpty(expand))
-        {
-            query = query.AddQueryOption("$expand", expand);
-        }
-
-        if (count == true)
-        {
-            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
-            return new ODataServiceResult<LineOfDutyCase>
-            {
-                Value = items,
-                Count = totalCount
-            };
-        }
-
-        var results = await ExecuteQueryAsync(query, cancellationToken);
         return new ODataServiceResult<LineOfDutyCase>
         {
-            Value = results,
-            Count = results.Count
+            Value = result?.Value ?? [],
+            Count = result?.Count ?? 0
         };
     }
 

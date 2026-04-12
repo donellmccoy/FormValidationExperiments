@@ -414,17 +414,13 @@ public class CasesController : ODataControllerBase
     /// <summary>
     /// Returns cases filtered by their current workflow state — the most recent
     /// <see cref="WorkflowStateHistory"/> entry by <c>CreatedDate</c>/<c>Id</c>.
-    /// Accepts comma-separated state names in <paramref name="includeStates"/> (include mode)
-    /// or <paramref name="excludeStates"/> (exclude mode). Standard OData query options
-    /// (<c>$filter</c>, <c>$orderby</c>, <c>$top</c>, <c>$skip</c>, <c>$count</c>) compose on top.
-    /// OData route: GET /odata/Cases/ByCurrentState(includeStates='...',excludeStates='...')
+    /// Accepts collections of workflow states in the request body (include/exclude mode).
+    /// Standard OData query options (<c>$filter</c>, <c>$orderby</c>, <c>$top</c>, <c>$skip</c>, <c>$count</c>) compose on top.
+    /// OData route: POST /odata/Cases/ByCurrentState
     /// </summary>
-    [HttpGet]
+    [HttpPost]
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
-    public async Task<IActionResult> ByCurrentState(
-        [FromODataUri] IEnumerable<WorkflowState> includeStates,
-        [FromODataUri] IEnumerable<WorkflowState> excludeStates,
-        CancellationToken ct = default)
+    public async Task<IActionResult> ByCurrentState(ODataActionParameters parameters, CancellationToken ct = default)
     {
         LoggingService.QueryingCases();
 
@@ -432,14 +428,22 @@ public class CasesController : ODataControllerBase
 
         IQueryable<LineOfDutyCase> query = context.Cases.AsNoTracking();
 
-        if (includeStates != null && includeStates.Any())
+        var includeStates = parameters?.ContainsKey("includeStates") == true
+            ? ((IEnumerable<WorkflowState>)parameters["includeStates"]).ToArray()
+            : [];
+
+        var excludeStates = parameters?.ContainsKey("excludeStates") == true
+            ? ((IEnumerable<WorkflowState>)parameters["excludeStates"]).ToArray()
+            : [];
+
+        if (includeStates.Length > 0)
         {
-            query = query.WhereCurrentWorkflowStateIn(includeStates.ToArray());
+            query = query.WhereCurrentWorkflowStateIn(includeStates);
         }
 
-        if (excludeStates != null && excludeStates.Any())
+        if (excludeStates.Length > 0)
         {
-            query = query.WhereCurrentWorkflowStateNotIn(excludeStates.ToArray());
+            query = query.WhereCurrentWorkflowStateNotIn(excludeStates);
         }
 
         return Ok(query);

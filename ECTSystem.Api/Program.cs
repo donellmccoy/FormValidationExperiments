@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
@@ -86,6 +87,7 @@ public class Program
             await next();
         });
 
+        app.UseODataBatching();
         app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<OperationCancelledMiddleware>();
         app.UseHttpsRedirection();

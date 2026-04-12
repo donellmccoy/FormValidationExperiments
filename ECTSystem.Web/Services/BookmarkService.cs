@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Microsoft.OData.Client;
@@ -17,40 +18,26 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         string? orderby = null, string? select = null, bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        // Step 1: Get all bookmarked case IDs for the current user.
-        var bookmarkQuery = Context.Bookmarks
-            .AddQueryOption("$select", "LineOfDutyCaseId");
+        var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.Bookmarked", false);
 
-        var bookmarks = await ExecuteQueryAsync(bookmarkQuery, cancellationToken);
-        var bookmarkedIds = bookmarks.Select(b => b.LineOfDutyCaseId).ToList();
-
-        if (bookmarkedIds.Count == 0)
-        {
-            return new ODataServiceResult<LineOfDutyCase> { Value = [], Count = 0 };
-        }
-
-        // Step 2: Query Cases filtered to the bookmarked IDs.
-        var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
-        var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
-
-        var caseQuery = Context.Cases
-            .AddQueryOption("$filter", combinedFilter);
+        if (!string.IsNullOrEmpty(filter))
+            query = query.AddQueryOption("$filter", filter);
 
         if (top.HasValue)
-            caseQuery = caseQuery.AddQueryOption("$top", top.Value);
+            query = query.AddQueryOption("$top", top.Value);
 
         if (skip.HasValue)
-            caseQuery = caseQuery.AddQueryOption("$skip", skip.Value);
+            query = query.AddQueryOption("$skip", skip.Value);
 
         if (!string.IsNullOrEmpty(orderby))
-            caseQuery = caseQuery.AddQueryOption("$orderby", orderby);
+            query = query.AddQueryOption("$orderby", orderby);
 
         if (!string.IsNullOrEmpty(select))
-            caseQuery = caseQuery.AddQueryOption("$select", select);
+            query = query.AddQueryOption("$select", select);
 
         if (count == true)
         {
-            var (items, totalCount) = await ExecutePagedQueryAsync(caseQuery, cancellationToken);
+            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
 
             return new ODataServiceResult<LineOfDutyCase>
             {
@@ -59,7 +46,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
             };
         }
 
-        var results = await ExecuteQueryAsync(caseQuery, cancellationToken);
+        var results = await ExecuteQueryAsync(query, cancellationToken);
 
         return new ODataServiceResult<LineOfDutyCase>
         {
@@ -159,56 +146,46 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         string? orderby = null, string? select = null, bool? count = null,
         CancellationToken cancellationToken = default)
     {
-        // Step 1: Get all bookmarked case IDs for the current user.
-        var bookmarkQuery = Context.Bookmarks
-            .AddQueryOption("$select", "LineOfDutyCaseId");
+        // Step 1: Get bookmarked case IDs via the server-side Bookmarked() function.
+        var bookmarkedQuery = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.Bookmarked", false)
+            .AddQueryOption("$select", "Id");
 
-        var bookmarks = await ExecuteQueryAsync(bookmarkQuery, cancellationToken);
-        var bookmarkedIds = bookmarks.Select(b => b.LineOfDutyCaseId).ToList();
+        var bookmarkedCases = await ExecuteQueryAsync(bookmarkedQuery, cancellationToken);
+        var bookmarkedIds = bookmarkedCases.Select(c => c.Id).ToList();
 
         if (bookmarkedIds.Count == 0)
         {
             return new ODataServiceResult<LineOfDutyCase> { Value = [], Count = 0 };
         }
 
-        // Step 2: Query Cases via ByCurrentState function, filtered to bookmarked IDs.
+        // Step 2: Query Cases via ByCurrentState action (POST), filtered to bookmarked IDs.
         var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
         var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
 
-        var parameters = new List<UriOperationParameter>
+        var url = BuildNavigationPropertyUrl("odata/Cases/ByCurrentState", combinedFilter, top, skip, orderby, count, select);
+
+        var body = new
         {
-            new("includeStates", includeStates ?? Array.Empty<WorkflowState>()),
-            new("excludeStates", excludeStates ?? Array.Empty<WorkflowState>())
+            includeStates = includeStates ?? Array.Empty<WorkflowState>(),
+            excludeStates = excludeStates ?? Array.Empty<WorkflowState>()
         };
 
-        var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.ByCurrentState", false, parameters.ToArray());
-
-        query = query.AddQueryOption("$filter", combinedFilter);
-
-        if (top.HasValue)
-            query = query.AddQueryOption("$top", top.Value);
-
-        if (skip.HasValue)
-            query = query.AddQueryOption("$skip", skip.Value);
-
-        if (!string.IsNullOrEmpty(orderby))
-            query = query.AddQueryOption("$orderby", orderby);
-
-        if (!string.IsNullOrEmpty(select))
-            query = query.AddQueryOption("$select", select);
+        var response = await HttpClient.PostAsJsonAsync(url, body, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
         if (count == true)
         {
-            var (items, totalCount) = await ExecutePagedQueryAsync(query, cancellationToken);
+            var result = await response.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(JsonOptions, cancellationToken);
 
             return new ODataServiceResult<LineOfDutyCase>
             {
-                Value = items,
-                Count = totalCount
+                Value = result?.Value ?? [],
+                Count = result?.Count ?? 0
             };
         }
 
-        var results = await ExecuteQueryAsync(query, cancellationToken);
+        var odataResult = await response.Content.ReadFromJsonAsync<ODataResponse<LineOfDutyCase>>(JsonOptions, cancellationToken);
+        var results = odataResult?.Value ?? [];
 
         return new ODataServiceResult<LineOfDutyCase>
         {

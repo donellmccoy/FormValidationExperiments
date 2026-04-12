@@ -316,6 +316,31 @@ public static class ServiceCollectionExtensions
         container.AddEntitySet("AuditComments", auditType);
         model.AddElement(container);
 
+        // ── Bound collection functions ──────────────────────────────────
+
+        var casesSet = container.FindEntitySet("Cases");
+        var caseEdmType = (EdmEntityType)casesSet.EntityType;
+
+        // Cases/Default.Bookmarked() — returns bookmarked cases for current user
+        var bookmarkedFunction = new EdmFunction(ns, "Bookmarked",
+            new EdmCollectionTypeReference(new EdmCollectionType(new EdmEntityTypeReference(caseEdmType, false))),
+            isBound: true, entitySetPathExpression: null, isComposable: true);
+        bookmarkedFunction.AddParameter("bindingParameter",
+            new EdmCollectionTypeReference(new EdmCollectionType(new EdmEntityTypeReference(caseEdmType, false))));
+        model.AddElement(bookmarkedFunction);
+
+        // Cases/ByCurrentState (POST action — parameters sent in request body)
+        var byCurrentStateAction = new EdmAction(ns, "ByCurrentState",
+            new EdmCollectionTypeReference(new EdmCollectionType(new EdmEntityTypeReference(caseEdmType, false))),
+            isBound: true, entitySetPathExpression: null);
+        byCurrentStateAction.AddParameter("bindingParameter",
+            new EdmCollectionTypeReference(new EdmCollectionType(new EdmEntityTypeReference(caseEdmType, false))));
+        byCurrentStateAction.AddParameter("includeStates",
+            new EdmCollectionTypeReference(new EdmCollectionType(new EdmEnumTypeReference(workflowStateEnum, false))));
+        byCurrentStateAction.AddParameter("excludeStates",
+            new EdmCollectionTypeReference(new EdmCollectionType(new EdmEnumTypeReference(workflowStateEnum, false))));
+        model.AddElement(byCurrentStateAction);
+
         return model;
     }
 

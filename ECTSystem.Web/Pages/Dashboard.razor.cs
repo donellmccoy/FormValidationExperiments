@@ -72,13 +72,11 @@ public partial class Dashboard : ComponentBase
         isLoading = true;
         try
         {
-            // Fire all independent requests concurrently
-            var bookmarksTask = BookmarkService.GetBookmarkedCasesAsync(top: 5, orderby: "Id desc", count: true);
-
+            // Fire all 4 queries concurrently (HTTP/2 multiplexing)
             var actionRequiredTask = CaseService.GetCasesByCurrentStateAsync(
                 includeStates: [WorkflowState.UnitCommanderReview, WorkflowState.MedicalTechnicianReview],
-                top: 5, 
-                orderby: "Id desc", 
+                top: 5,
+                orderby: "Id desc",
                 count: true);
 
             var myActiveCasesTask = CaseService.GetCasesByCurrentStateAsync(
@@ -92,11 +90,9 @@ public partial class Dashboard : ComponentBase
                 top: 1,
                 count: true);
 
-            await Task.WhenAll(bookmarksTask, actionRequiredTask, myActiveCasesTask, completedCasesTask);
+            var bookmarksTask = BookmarkService.GetBookmarkedCasesAsync(top: 5, orderby: "Id desc", count: true);
 
-            var bookmarksResult = bookmarksTask.Result;
-            bookmarkedCases = bookmarksResult.Value;
-            bookmarkedCount = bookmarksResult.Count;
+            await Task.WhenAll(actionRequiredTask, myActiveCasesTask, completedCasesTask, bookmarksTask);
 
             var actionRequiredResult = actionRequiredTask.Result;
             actionRequiredCases = actionRequiredResult.Value;
@@ -104,6 +100,10 @@ public partial class Dashboard : ComponentBase
 
             myActiveCasesCount = myActiveCasesTask.Result.Count;
             completedCasesCount = completedCasesTask.Result.Count;
+
+            var bookmarksResult = bookmarksTask.Result;
+            bookmarkedCases = bookmarksResult.Value;
+            bookmarkedCount = bookmarksResult.Count;
 
             // Mock chart data
             casesOverTimeData =
