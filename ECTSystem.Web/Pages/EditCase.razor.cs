@@ -150,6 +150,12 @@ public partial class EditCase : ComponentBase, IDisposable
     [Inject]
     private IUserService UserService { get; set; }
 
+    [Inject]
+    private ContextMenuService ContextMenuService { get; set; }
+
+    [Inject]
+    private CurrentUserService CurrentUserService { get; set; }
+
     #endregion
 
     #region Parameters
@@ -252,6 +258,7 @@ public partial class EditCase : ComponentBase, IDisposable
     private HashSet<int> _previousCasesBookmarkedIds = [];
     private readonly HashSet<int> _previousCasesAnimatingIds = [];
     private IList<LineOfDutyCase> _selectedPreviousCase;
+    private string _currentUserId;
 
     private RadzenDataGrid<WorkflowStateHistory> _trackingGrid;
     private RadzenTextBox _trackingSearchBox;
@@ -284,6 +291,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        _currentUserId = await CurrentUserService.GetUserIdAsync();
+
         if (IsNewCase)
         {
             _selectedTabIndex = WorkflowTabHelper.GetTabIndexForState(_lineOfDutyCase?.GetCurrentWorkflowState() ?? WorkflowState.Draft);
@@ -458,7 +467,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 top: args.Top,
                 skip: args.Skip,
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
-                select: "Id,CaseId,Unit,InitiationDate,CompletionDate,MemberId",
+                select: "Id,CaseId,Unit,InitiationDate,CompletionDate,MemberId,IsCheckedOut,CheckedOutBy,CheckedOutByName",
                 count: true,
                 cancellationToken: _cts.Token);
 
@@ -738,6 +747,118 @@ public partial class EditCase : ComponentBase, IDisposable
             await Task.Delay(800);
             _previousCasesAnimatingIds.Remove(lodCase.Id);
         }
+    }
+
+    private async Task OnPreviousCaseClick(LineOfDutyCase lodCase)
+    {
+        if (lodCase.IsCheckedOut)
+        {
+            if (string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogInformation("Case {CaseId} already checked out by current user — opening in edit mode", lodCase.CaseId);
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=case&mode=edit");
+            }
+            else
+            {
+                Logger.LogInformation("Case {CaseId} checked out by {CheckedOutBy} — opening read-only", lodCase.CaseId, lodCase.CheckedOutByName);
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=case&mode=readonly");
+            }
+            return;
+        }
+
+        var result = await DialogService.OpenAsync<Shared.CheckOutCaseDialog>(
+            "Check Out Case",
+            new Dictionary<string, object> { { "CaseId", lodCase.CaseId } },
+            new DialogOptions { ShowClose = false, Width = "auto" });
+
+        if (result is "checkout")
+        {
+            var success = await CaseService.CheckOutCaseAsync(lodCase.Id);
+
+            if (success)
+            {
+                Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
+                Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=case&mode=edit");
+            }
+            else
+            {
+                Logger.LogWarning("Checkout failed for case {CaseId} (Id: {Id})", lodCase.CaseId, lodCase.Id);
+                NotificationService.Notify(NotificationSeverity.Error,
+                    "Checkout Failed",
+                    $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.",
+                    closeOnClick: true);
+                await _previousCasesGrid.Reload();
+            }
+        }
+        else if (result is "readonly")
+        {
+            Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=case&mode=readonly");
+        }
+    }
+
+    private void OnPreviousCaseCellContextMenu(DataGridCellMouseEventArgs<LineOfDutyCase> args)
+    {
+        _ = ShowPreviousCaseContextMenuAsync(args);
+    }
+
+    private async Task ShowPreviousCaseContextMenuAsync(DataGridCellMouseEventArgs<LineOfDutyCase> args)
+    {
+        var lodCase = args.Data;
+        var isCheckedOutByMe = lodCase.IsCheckedOut
+            && string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase);
+
+        var items = new List<ContextMenuItem>
+        {
+            new ContextMenuItem { Text = "Open Case", Icon = "open_in_new", Value = "open" },
+            new ContextMenuItem
+            {
+                Text = _previousCasesBookmarkedIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark",
+                Icon = _previousCasesBookmarkedIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add",
+                Value = "bookmark"
+            },
+            new ContextMenuItem { Text = "Copy Case ID", Icon = "content_copy", Value = "copy" }
+        };
+
+        if (isCheckedOutByMe)
+        {
+            items.Add(new ContextMenuItem { Text = "Check In", Icon = "lock_open", Value = "checkin" });
+        }
+
+        ContextMenuService.Open(args, items,
+            async menuItem =>
+            {
+                ContextMenuService.Close();
+
+                switch (menuItem.Value?.ToString())
+                {
+                    case "open":
+                        await OnPreviousCaseClick(lodCase);
+                        break;
+
+                    case "bookmark":
+                        await TogglePreviousBookmark(lodCase);
+                        break;
+
+                    case "copy":
+                        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", lodCase.CaseId);
+                        NotificationService.Notify(NotificationSeverity.Info, "Copied", $"Case ID {lodCase.CaseId} copied to clipboard.", closeOnClick: true);
+                        break;
+
+                    case "checkin":
+                        var success = await CaseService.CheckInCaseAsync(lodCase.Id);
+                        if (success)
+                        {
+                            Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
+                            NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
+                            await _previousCasesGrid.Reload();
+                        }
+                        else
+                        {
+                            NotificationService.Notify(NotificationSeverity.Error, "Check In Failed", $"Could not check in Case {lodCase.CaseId}.", closeOnClick: true);
+                        }
+                        break;
+                }
+            });
     }
 
     #endregion
