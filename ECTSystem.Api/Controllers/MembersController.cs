@@ -166,13 +166,16 @@ public class MembersController : ODataControllerBase
     {
         LoggingService.DeletingMember(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var deleted = await context.Members.Where(m => m.Id == key).ExecuteDeleteAsync(ct);
+        var existing = await context.Members.FindAsync([key], ct);
 
-        if (deleted == 0)
+        if (existing is null)
         {
             LoggingService.MemberNotFound(key);
             return Problem(title: "Not found", detail: $"No member exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
+
+        context.Members.Remove(existing);
+        await context.SaveChangesAsync(ct);
 
         LoggingService.MemberDeleted(key);
         return NoContent();

@@ -163,6 +163,7 @@ public class BookmarksControllerTests : ControllerTestBase
     {
         var result = await _sut.Delete(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 }

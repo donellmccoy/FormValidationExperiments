@@ -167,7 +167,7 @@ public class CasesController : ODataControllerBase
     /// number (001–999) based on existing cases for today's date.
     /// Uses UPDLOCK to serialize concurrent suffix generation and prevent races.
     /// </summary>
-    private static async Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
+    protected virtual async Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
     {
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
         var prefix = $"{today}-";

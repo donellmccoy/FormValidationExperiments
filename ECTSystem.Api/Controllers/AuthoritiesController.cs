@@ -61,6 +61,12 @@ public class AuthoritiesController : ODataControllerBase
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
+        if (authority.LineOfDutyCaseId <= 0)
+        {
+            ModelState.AddModelError(nameof(LineOfDutyAuthority.LineOfDutyCaseId), "A valid LineOfDutyCaseId is required.");
+            return ValidationProblem(ModelState);
+        }
+
         LoggingService.CreatingAuthority();
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.Authorities.Add(authority);
@@ -119,13 +125,16 @@ public class AuthoritiesController : ODataControllerBase
     {
         LoggingService.DeletingAuthority(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var deleted = await context.Authorities.Where(a => a.Id == key).ExecuteDeleteAsync(ct);
+        var existing = await context.Authorities.FindAsync([key], ct);
 
-        if (deleted == 0)
+        if (existing is null)
         {
             LoggingService.AuthorityNotFound(key);
             return Problem(title: "Not found", detail: $"No authority exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
+
+        context.Authorities.Remove(existing);
+        await context.SaveChangesAsync(ct);
 
         LoggingService.AuthorityDeleted(key);
         return NoContent();

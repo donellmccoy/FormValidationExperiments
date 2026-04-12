@@ -15,6 +15,24 @@ using Xunit;
 namespace ECTSystem.Tests.Controllers;
 
 /// <summary>
+/// Test-only subclass that replaces the T-SQL–based ID generation with a simple
+/// in-memory counter so unit tests can run against the InMemory provider.
+/// </summary>
+internal class TestCasesController : CasesController
+{
+    private int _counter;
+
+    public TestCasesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
+        : base(contextFactory, loggingService) { }
+
+    protected override Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        return Task.FromResult($"{today}-{++_counter:D3}");
+    }
+}
+
+/// <summary>
 /// Unit tests for <see cref="CasesController"/>, the primary OData controller managing
 /// Line of Duty (LOD) case records in the ECT System API.
 /// </summary>
@@ -82,7 +100,7 @@ public class CasesControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _sut = new CasesController(
+        _sut = new TestCasesController(
             _mockContextFactory.Object,
             _mockLog.Object);
 
@@ -163,7 +181,8 @@ public class CasesControllerTests : ControllerTestBase
     {
         var result = await _sut.Get(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 
     // ─────────────────────────────── Post ────────────────────────────────────
@@ -195,7 +214,9 @@ public class CasesControllerTests : ControllerTestBase
 
         var result = await _sut.Post(new LineOfDutyCase());
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     /// <summary>
@@ -248,7 +269,8 @@ public class CasesControllerTests : ControllerTestBase
 
         var result = await _sut.Patch(999, delta);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 
     /// <summary>
@@ -260,7 +282,9 @@ public class CasesControllerTests : ControllerTestBase
     {
         var result = await _sut.Patch(1, null);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     /// <summary>
@@ -275,7 +299,9 @@ public class CasesControllerTests : ControllerTestBase
 
         var result = await _sut.Patch(1, delta);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     // ─────────────────────────────── Delete ──────────────────────────────────
@@ -303,7 +329,8 @@ public class CasesControllerTests : ControllerTestBase
     {
         var result = await _sut.Delete(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 
 }

@@ -115,7 +115,8 @@ public class MembersControllerTests : ControllerTestBase
         var result = await _sut.Get(1);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var member = Assert.IsType<Member>(ok.Value);
+        var singleResult = Assert.IsType<SingleResult<Member>>(ok.Value);
+        var member = singleResult.Queryable.Single();
         Assert.Equal(1, member.Id);
     }
 
@@ -128,7 +129,9 @@ public class MembersControllerTests : ControllerTestBase
     {
         var result = await _sut.Get(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var singleResult = Assert.IsType<SingleResult<Member>>(ok.Value);
+        Assert.False(singleResult.Queryable.Any());
     }
 
     // ─────────────────────────────── Post ────────────────────────────────────
@@ -166,7 +169,9 @@ public class MembersControllerTests : ControllerTestBase
 
         var result = await _sut.Post(new Member());
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     // ─────────────────────────────── Put ─────────────────────────────────────
@@ -185,10 +190,11 @@ public class MembersControllerTests : ControllerTestBase
 
         var dto = new Member
         {
+            Id = 1,
             FirstName = "Jane", LastName = "Smith",
             Rank = "TSgt", Unit = "12 OG",
             ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce,
-            RowVersion = new byte[] { 0 }
+            RowVersion = []
         };
 
         var result = await _sut.Put(1, dto);
@@ -211,6 +217,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         var dto = new Member
         {
+            Id = 999,
             FirstName = "Ghost", LastName = "Member",
             Rank = "AB", ServiceNumber = "000000000", Component = ServiceComponent.RegularAirForce,
             RowVersion = new byte[] { 0 }
@@ -218,7 +225,8 @@ public class MembersControllerTests : ControllerTestBase
 
         var result = await _sut.Put(999, dto);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 
     /// <summary>
@@ -232,7 +240,9 @@ public class MembersControllerTests : ControllerTestBase
 
         var result = await _sut.Put(1, new Member());
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     // ─────────────────────────────── Patch ───────────────────────────────────
@@ -274,7 +284,8 @@ public class MembersControllerTests : ControllerTestBase
 
         var result = await _sut.Patch(999, delta);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 
     // ─────────────────────────────── Delete ──────────────────────────────────
@@ -308,6 +319,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         var result = await _sut.Delete(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 }

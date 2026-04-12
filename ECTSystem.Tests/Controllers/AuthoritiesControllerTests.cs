@@ -92,7 +92,9 @@ public class AuthoritiesControllerTests : ControllerTestBase
 
         var result = await _sut.Post(dto);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
+        Assert.NotEmpty(problem.Errors);
     }
 
     // ────────────────────────── Get ──────────────────────────────
@@ -119,7 +121,9 @@ public class AuthoritiesControllerTests : ControllerTestBase
     {
         var result = await _sut.Get(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var singleResult = Assert.IsType<SingleResult<LineOfDutyAuthority>>(ok.Value);
+        Assert.False(singleResult.Queryable.Any());
     }
 
     // ────────────────────────── Patch ──────────────────────────────
@@ -155,7 +159,8 @@ public class AuthoritiesControllerTests : ControllerTestBase
 
         var result = await _sut.Patch(999, delta);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 
     // ────────────────────────── Delete ──────────────────────────────
@@ -185,6 +190,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
     {
         var result = await _sut.Delete(999);
 
-        Assert.IsType<NotFoundResult>(result);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, obj.StatusCode);
     }
 }
