@@ -1,3 +1,5 @@
+using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
@@ -47,5 +49,19 @@ internal class LineOfDutyStateMachineFactory
         _logger.LogDebug("Creating state machine for new case (Draft)");
 
         return new LineOfDutyStateMachine(_historyService);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="LineOfDutyStateMachine"/> in the specified starting state
+    /// for a brand-new LOD case that has already been persisted with an initial workflow
+    /// state history entry.
+    /// </summary>
+    /// <param name="workflowState">The workflow state to start the state machine in.</param>
+    /// <returns>A fully configured <see cref="LineOfDutyStateMachine"/> in the specified state.</returns>
+    public LineOfDutyStateMachine CreateAtState(WorkflowState workflowState)
+    {
+        _logger.LogDebug("Creating state machine for new case at state {State}", workflowState);
+
+        return new LineOfDutyStateMachine(_historyService, workflowState);
     }
 }

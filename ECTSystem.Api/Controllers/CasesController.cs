@@ -124,6 +124,20 @@ public class CasesController : ODataControllerBase
         {
             try
             {
+                // Create the initial workflow state history entry so the case is
+                // never persisted without a state. Cases always start at
+                // MemberInformationEntry — Draft is a transient client-side state
+                // that is never stored in the database.
+                var now = DateTime.UtcNow;
+                lodCase.WorkflowStateHistories ??= [];
+                lodCase.WorkflowStateHistories.Add(new WorkflowStateHistory
+                {
+                    WorkflowState = WorkflowState.MemberInformationEntry,
+                    EnteredDate = now,
+                    CreatedDate = now,
+                    ModifiedDate = now
+                });
+
                 context.Cases.Add(lodCase);
 
                 await context.SaveChangesAsync(ct);
@@ -134,6 +148,10 @@ public class CasesController : ODataControllerBase
             {
                 // Detach the failed entity so EF doesn't try to re-insert it
                 context.Entry(lodCase).State = EntityState.Detached;
+
+                // Clear history entries added in the failed attempt so they
+                // are not duplicated on retry.
+                lodCase.WorkflowStateHistories?.Clear();
 
                 // Re-generate a new CaseId suffix
                 lodCase.CaseId = await GenerateCaseIdAsync(context, ct);

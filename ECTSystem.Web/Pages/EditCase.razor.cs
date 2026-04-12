@@ -802,19 +802,17 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
 
-                // Persist the case first so it gets a real DB Id — the state machine's
-                // HandleTransitionAsync creates WorkflowStateHistory rows that reference
-                // LineOfDutyCaseId via FK, which fails if Id is still 0.
+                // Persist the case first so it gets a real DB Id — the API creates the
+                // case with an initial MemberInformationEntry workflow state history
+                // entry, so the case is never in Draft state on the server.
                 lineOfDutyCase = await CaseService.SaveCaseAsync(lineOfDutyCase, _cts.Token);
 
-                _stateMachine = StateMachineFactory.CreateDefault();
+                // The API already created the MemberInformationEntry state, so start
+                // the client-side state machine at MemberInformationEntry and advance
+                // to MedicalTechnicianReview.
+                _stateMachine = StateMachineFactory.CreateAtState(WorkflowState.MemberInformationEntry);
 
-                var result = await _stateMachine.FireAsync(lineOfDutyCase, WorkflowTrigger.ForwardToMemberInformationEntry);
-
-                if (result.Success)
-                {
-                    result = await _stateMachine.FireAsync(result.Case, WorkflowTrigger.ForwardToMedicalTechnician);
-                }
+                var result = await _stateMachine.FireAsync(lineOfDutyCase, WorkflowTrigger.ForwardToMedicalTechnician);
 
                 if (result.Success)
                 {
