@@ -14,6 +14,7 @@ public partial class EditCase
     private string form348BlobUrl;
     private bool isLoadingForm348;
     private string form348Error;
+    private bool _isPrintingCase;
 
     private bool form348Loaded;
 
@@ -46,6 +47,35 @@ public partial class EditCase
             {
                 await _trackingSearchBox.FocusAsync();
             }
+        }
+    }
+
+    private async Task OnPrintCaseClick()
+    {
+        if (_lineOfDutyCase?.Id is null or 0)
+        {
+            return;
+        }
+
+        _isPrintingCase = true;
+        StateHasChanged();
+
+        try
+        {
+            var pdfBytes = await DocumentService.GetForm348PdfAsync(_lineOfDutyCase.Id, _cts.Token);
+            var base64 = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("pdfViewerInterop.printPdf", base64);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to print Form 348 for case {CaseId}", _lineOfDutyCase.Id);
+            NotificationService.Notify(Radzen.NotificationSeverity.Error, "Print Error",
+                "Unable to generate the print preview. Please try again.");
+        }
+        finally
+        {
+            _isPrintingCase = false;
+            StateHasChanged();
         }
     }
 

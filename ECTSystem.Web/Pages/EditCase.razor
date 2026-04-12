@@ -98,7 +98,7 @@ else
                                 </RadzenStack>
                             </RadzenStack>
                             <RadzenStack Gap="0.5rem">
-                                <RadzenButton Variant="Variant.Text" Icon="print" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="Print Case" />
+                                <RadzenButton Variant="Variant.Text" Icon="print" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="Print Case" Click="@OnPrintCaseClick" Disabled="@_isPrintingCase" />
                                 <RadzenButton Variant="Variant.Text" Icon="history" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="History" Click="@OnHistoryClick" />
                             </RadzenStack>
                         </RadzenStack>

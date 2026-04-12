@@ -34,5 +34,43 @@ window.pdfViewerInterop = {
         if (url) {
             URL.revokeObjectURL(url);
         }
+    },
+
+    /**
+     * Creates a blob URL from a base64-encoded PDF and opens the browser print dialog.
+     * Uses a hidden iframe to load the PDF, then triggers print on it.
+     * @param {string} base64 - Base64-encoded PDF content.
+     */
+    printPdf: function (base64) {
+        var byteChars = atob(base64);
+        var byteNumbers = new Uint8Array(byteChars.length);
+        for (var i = 0; i < byteChars.length; i++) {
+            byteNumbers[i] = byteChars.charCodeAt(i);
+        }
+        var blob = new Blob([byteNumbers], { type: 'application/pdf' });
+        var url = URL.createObjectURL(blob);
+
+        var printFrame = document.getElementById('print-pdf-frame');
+        if (!printFrame) {
+            printFrame = document.createElement('iframe');
+            printFrame.id = 'print-pdf-frame';
+            printFrame.style.position = 'fixed';
+            printFrame.style.right = '0';
+            printFrame.style.bottom = '0';
+            printFrame.style.width = '0';
+            printFrame.style.height = '0';
+            printFrame.style.border = 'none';
+            document.body.appendChild(printFrame);
+        }
+
+        printFrame.onload = function () {
+            try {
+                printFrame.contentWindow.print();
+            } catch (e) {
+                // Cross-origin fallback: open in new tab
+                window.open(url, '_blank');
+            }
+        };
+        printFrame.src = url;
     }
 };
