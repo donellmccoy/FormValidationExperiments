@@ -38,5 +38,15 @@ public class EctDbContext : DbContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EctDbContext).Assembly);
         modelBuilder.DisableDatabaseCascadeDelete();
+
+        // Constrain AuditableEntity string columns across all entity types.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(AuditableEntity).IsAssignableFrom(entityType.ClrType))
+                continue;
+
+            modelBuilder.Entity(entityType.ClrType).Property(nameof(AuditableEntity.CreatedBy)).HasMaxLength(256);
+            modelBuilder.Entity(entityType.ClrType).Property(nameof(AuditableEntity.ModifiedBy)).HasMaxLength(256);
+        }
     }
 }
