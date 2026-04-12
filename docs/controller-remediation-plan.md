@@ -7,10 +7,10 @@ Consolidated implementation plan derived from the characterization reviews of al
 | Metric | Count |
 |--------|-------|
 | **Total items (Phases 1–8)** | 30 |
-| **Completed** ✅ | 28 |
+| **Completed** ✅ | 29 |
 | **Not done** ❌ | 0 |
-| **Partial** ⏳ | 2 (items 2.4, 4.3) |
-| **Remaining work** | Client RowVersion on Checkout + Checkin concurrency (2.4), batch WHERE IN for LookupUsers (4.3) |
+| **Partial** ⏳ | 1 (item 4.3) |
+| **Remaining work** | Batch WHERE IN for LookupUsers (4.3) |
 | **Deferred (D.1–D.6)** | 6 — unchanged, future work |
 
 ---
@@ -93,13 +93,13 @@ context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowV
 - **Risk if skipped:** Unguarded mutation path for audit fields that should be immutable after creation.
 - **Status:** Done. PATCH method now validates `delta.GetChangedPropertyNames()` against an allowed set of `{ "ExitDate" }` before applying the delta. Returns `400 Bad Request` with a Problem Details response if any other property is included.
 
-### 2.4 Add concurrency control to CasesController Checkout/Checkin ⏳
+### 2.4 ~~Add concurrency control to CasesController Checkout/Checkin~~ ✅
 
-- **File:** `Controllers/CasesController.cs`
-- **Action:** Accept `RowVersion` (from request body or `If-Match` header) in both `Checkout` and `Checkin` actions. Set `OriginalValue` before `SaveChangesAsync` and catch `DbUpdateConcurrencyException` → `409 Conflict`.
+- **File:** `Controllers/CasesController.cs`, `Extensions/ServiceCollectionExtensions.cs`, `ECTSystem.Web/Services/CaseService.cs`, `ECTSystem.Web/Services/Interfaces/ICaseService.cs`, `ECTSystem.Shared/ViewModels/CaseListItemViewModel.cs`, `ECTSystem.Shared/Mapping/LineOfDutyCaseMapper.cs`
+- **Action:** Accept optional `RowVersion` parameter (via `ODataActionParameters`) in both `Checkout` and `Checkin` actions. Set `OriginalValue` before `SaveChangesAsync` and catch `DbUpdateConcurrencyException` → `409 Conflict`. Updated EDM model to define RowVersion parameter on both actions. Client sends RowVersion via `HttpClient.PostAsJsonAsync`. Added `RowVersion` to `CaseListItemViewModel` and its mapper. Updated all call sites in `EditCase`, `CaseList`, and `MyBookmarks` pages.
 - **Source:** Cases characterization, Weakness #5.
 - **Risk if skipped:** TOCTOU race condition — two concurrent checkout requests both succeed.
-- **Status:** Partial. Checkout handles `DbUpdateConcurrencyException` using DB-loaded RowVersion (protects against races) but does not accept client-supplied RowVersion. Checkin has NO concurrency handling at all.
+- **Status:** Complete. Both Checkout and Checkin accept client-supplied RowVersion for optimistic concurrency, falling back to DB-loaded RowVersion when not supplied (backward-compatible).
 
 ---
 
