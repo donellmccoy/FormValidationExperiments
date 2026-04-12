@@ -68,6 +68,7 @@ public partial class CaseList : ComponentBase, IDisposable
     private bool _searchBoxFocused;
 
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
+    private const string ListExpand = "WorkflowStateHistories($select=Id,WorkflowState)";
     private string _currentUserId;
 
     private WorkflowState? _workflowStateFilter;
@@ -152,6 +153,7 @@ public partial class CaseList : ComponentBase, IDisposable
                     orderby: args.OrderBy,
                     select: ListSelect,
                     count: true,
+                    expand: ListExpand,
                     cancellationToken: ct);
             }
             else
@@ -163,6 +165,7 @@ public partial class CaseList : ComponentBase, IDisposable
                     orderby: args.OrderBy,
                     select: ListSelect,
                     count: true,
+                    expand: ListExpand,
                     cancellationToken: ct);
             }
 

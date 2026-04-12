@@ -1,5 +1,4 @@
 using ECTSystem.Shared.Enums;
-using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;

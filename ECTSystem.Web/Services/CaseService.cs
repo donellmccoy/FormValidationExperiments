@@ -20,6 +20,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         string? orderby = null,
         string? select = null,
         bool? count = null,
+        string? expand = null,
         CancellationToken cancellationToken = default)
     {
         var query = Context.Cases;
@@ -47,6 +48,11 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         if (!string.IsNullOrEmpty(select))
         {
             query = query.AddQueryOption("$select", select);
+        }
+
+        if (!string.IsNullOrEmpty(expand))
+        {
+            query = query.AddQueryOption("$expand", expand);
         }
 
         if (count == true)
@@ -78,6 +84,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         string? orderby = null,
         string? select = null,
         bool? count = null,
+        string? expand = null,
         CancellationToken cancellationToken = default)
     {
         var parameters = new List<UriOperationParameter>();
@@ -111,6 +118,11 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         if (!string.IsNullOrEmpty(select))
         {
             query = query.AddQueryOption("$select", select);
+        }
+
+        if (!string.IsNullOrEmpty(expand))
+        {
+            query = query.AddQueryOption("$expand", expand);
         }
 
         if (count == true)

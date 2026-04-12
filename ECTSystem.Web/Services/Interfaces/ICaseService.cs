@@ -23,12 +23,13 @@ public interface ICaseService
     /// <param name="orderby">An OData <c>$orderby</c> expression (e.g., <c>"CreatedDate desc"</c>), or <c>null</c> for default ordering.</param>
     /// <param name="select">An OData <c>$select</c> expression to limit returned properties, or <c>null</c> to return all properties.</param>
     /// <param name="count">If <c>true</c>, requests an inline count of total matching records for paging UI.</param>
+    /// <param name="expand">An OData <c>$expand</c> expression to include navigation properties, or <c>null</c> for no expansion.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>An <see cref="ODataServiceResult{T}"/> containing the matching cases and optional total count.</returns>
     Task<ODataServiceResult<LineOfDutyCase>> GetCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
-        CancellationToken cancellationToken = default);
+        string? expand = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Queries LOD cases filtered by their current workflow state using the server-side
@@ -42,6 +43,7 @@ public interface ICaseService
     /// <param name="skip">The number of cases to skip for paging (<c>$skip</c>), or <c>null</c> for no offset.</param>
     /// <param name="orderby">An OData <c>$orderby</c> expression, or <c>null</c> for default ordering.</param>
     /// <param name="count">If <c>true</c>, requests an inline count of total matching records for paging UI.</param>
+    /// <param name="expand">An OData <c>$expand</c> expression to include navigation properties, or <c>null</c> for no expansion.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>An <see cref="ODataServiceResult{T}"/> containing the matching cases and optional total count.</returns>
     Task<ODataServiceResult<LineOfDutyCase>> GetCasesByCurrentStateAsync(
@@ -53,6 +55,7 @@ public interface ICaseService
         string? orderby = null,
         string? select = null,
         bool? count = null,
+        string? expand = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
