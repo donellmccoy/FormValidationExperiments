@@ -109,7 +109,6 @@ public class DocumentsController : ODataControllerBase
     /// OData route: PATCH /odata/Documents({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [Authorize(Policy = "CanManageDocuments")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyDocument> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
@@ -154,7 +153,6 @@ public class DocumentsController : ODataControllerBase
     /// OData route: PUT /odata/Documents({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [Authorize(Policy = "CanManageDocuments")]
     public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] LineOfDutyDocument document, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -244,7 +242,6 @@ public class DocumentsController : ODataControllerBase
     /// </summary>
     [HttpPost("odata/Cases({caseId})/Documents")]
     [RequestSizeLimit(50 * 1024 * 1024)] // 50 MB total for multiple files
-    [Authorize(Policy = "CanManageDocuments")]
     public async Task<IActionResult> Upload(
         [FromRoute] int caseId,
         List<IFormFile> file, // Expected by RadzenUpload
@@ -372,7 +369,6 @@ public class DocumentsController : ODataControllerBase
     /// Deletes a document by its identifier.
     /// Standard OData route: DELETE /odata/Documents({key})
     /// </summary>
-    [Authorize(Policy = "CanManageDocuments")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingDocument(key, 0);

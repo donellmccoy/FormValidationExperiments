@@ -194,7 +194,10 @@ public partial class EditCase
         _documents.IsUploading = false;
         _documents.UploadProgress = 0;
         _documents.UploadFileName = null;
-        NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", args.Message);
+
+        var detail = !string.IsNullOrWhiteSpace(args.Message) ? args.Message : "The server did not return details. Check that you are signed in and try again.";
+        Logger.LogError("Document upload failed: {Message}", args.Message);
+        NotificationService.Notify(NotificationSeverity.Error, "Upload Failed", detail);
     }
 
     /// <summary>
