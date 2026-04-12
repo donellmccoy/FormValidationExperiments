@@ -807,6 +807,18 @@ public partial class EditCase : ComponentBase, IDisposable
                 // entry, so the case is never in Draft state on the server.
                 lineOfDutyCase = await CaseService.SaveCaseAsync(lineOfDutyCase, _cts.Token);
 
+                // The OData client doesn't merge navigation collections from the POST
+                // response, so WorkflowStateHistories is empty. Fetch the initial
+                // history entries so the state machine can properly close out the
+                // MemberInformationEntry entry when advancing to MedicalTechnicianReview.
+                var initialHistories = await WorkflowHistoryService.GetWorkflowStateHistoriesAsync(
+                    lineOfDutyCase.Id, cancellationToken: _cts.Token);
+
+                if (initialHistories.Value is not null)
+                {
+                    lineOfDutyCase.WorkflowStateHistories = new List<WorkflowStateHistory>(initialHistories.Value);
+                }
+
                 // The API already created the MemberInformationEntry state, so start
                 // the client-side state machine at MemberInformationEntry and advance
                 // to MedicalTechnicianReview.
@@ -831,6 +843,14 @@ public partial class EditCase : ComponentBase, IDisposable
                     _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
 
                     _selectedTabIndex = result.TabIndex;
+
+                    // The tracking grid's LoadData fired during initial render (create
+                    // mode) but returned early because Id was 0. Reload it now so it
+                    // picks up the workflow history entries created during case setup.
+                    if (_trackingGrid is not null)
+                    {
+                        await _trackingGrid.Reload();
+                    }
 
                     NotificationService.Notify(
                         NotificationSeverity.Success,
