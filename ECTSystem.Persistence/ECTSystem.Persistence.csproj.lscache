@@ -179,6 +179,10 @@ Migrations/
  20260412003053_ConstrainNvarcharMaxColumns.Designer.cs
  20260412062333_ConstrainAuditColumns.cs
  20260412062333_ConstrainAuditColumns.Designer.cs
+ 20260413010711_AddBlobPath.cs
+ 20260413010711_AddBlobPath.Designer.cs
+ 20260413011300_DropDocumentContent.cs
+ 20260413011300_DropDocumentContent.Designer.cs
  EctDbContextModelSnapshot.cs
  Identity/
   20260222031829_InitialIdentity.cs

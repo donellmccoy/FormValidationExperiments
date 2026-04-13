@@ -83,6 +83,9 @@ Program.cs
 Services/
  AF348PdfService.cs
  AuditSaveChangesInterceptor.cs
+ AzureBlobStorageService.cs
+ BlobContainerInitializer.cs
+ IBlobStorageService.cs
 
 [metadataReferences]
 ../
@@ -400,6 +403,8 @@ Services/
 <NUGET>/
  azure.core/1.51.1/lib/net10.0/Azure.Core.dll
  azure.identity/1.19.0/lib/net10.0/Azure.Identity.dll
+ azure.storage.blobs/12.24.0/lib/net8.0/Azure.Storage.Blobs.dll
+ azure.storage.common/12.23.0/lib/net8.0/Azure.Storage.Common.dll
  humanizer.core/3.0.1/lib/net10.0/Humanizer.dll
  microsoft.aspnetcore.identity.entityframeworkcore/10.0.3/lib/net10.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
  microsoft.aspnetcore.odata/9.4.1/lib/net8.0/Microsoft.AspNetCore.OData.dll
@@ -438,6 +443,7 @@ Services/
  riok.mapperly/4.3.1/lib/netstandard2.0/Riok.Mapperly.Abstractions.dll
  system.clientmodel/1.9.0/lib/net10.0/System.ClientModel.dll
  system.identitymodel.tokens.jwt/7.7.1/lib/net8.0/System.IdentityModel.Tokens.Jwt.dll
+ system.io.hashing/6.0.0/lib/net6.0/System.IO.Hashing.dll
  system.memory.data/10.0.1/lib/net10.0/System.Memory.Data.dll
  system.security.cryptography.pkcs/9.0.4/lib/net9.0/System.Security.Cryptography.Pkcs.dll
  system.security.cryptography.protecteddata/9.0.4/lib/net9.0/System.Security.Cryptography.ProtectedData.dll

@@ -428,6 +428,8 @@ ViewModels/
 <NUGET>/
  azure.core/1.51.1/lib/net10.0/Azure.Core.dll
  azure.identity/1.19.0/lib/net10.0/Azure.Identity.dll
+ azure.storage.blobs/12.24.0/lib/net8.0/Azure.Storage.Blobs.dll
+ azure.storage.common/12.23.0/lib/net8.0/Azure.Storage.Common.dll
  benchmarkdotnet.annotations/0.14.0/lib/netstandard2.0/BenchmarkDotNet.Annotations.dll
  benchmarkdotnet/0.14.0/lib/net8.0/BenchmarkDotNet.dll
  blazored.localstorage/4.5.0/lib/net8.0/Blazored.LocalStorage.dll
@@ -557,6 +559,7 @@ ViewModels/
  system.clientmodel/1.9.0/lib/net10.0/System.ClientModel.dll
  system.codedom/5.0.0/ref/netstandard2.0/System.CodeDom.dll
  system.identitymodel.tokens.jwt/8.8.0/lib/net9.0/System.IdentityModel.Tokens.Jwt.dll
+ system.io.hashing/6.0.0/lib/net6.0/System.IO.Hashing.dll
  system.management/5.0.0/ref/netstandard2.0/System.Management.dll
  system.memory.data/10.0.1/lib/net10.0/System.Memory.Data.dll
  system.reactive/6.0.1/lib/net6.0/System.Reactive.dll
