@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Azure.Storage.Blobs;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
@@ -24,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddDatabase(configuration)
                 .AddIdentity()
                 .AddApiLogging()
+                .AddBlobStorage(configuration)
                 .AddODataControllers()
                 .AddPdfServices()
                 .AddCorsPolicy()
@@ -146,6 +148,16 @@ public static class ServiceCollectionExtensions
                       .WithExposedHeaders("X-Case-IsBookmarked");
             });
         });
+
+        return services;
+    }
+
+    private static IServiceCollection AddBlobStorage(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("BlobStorage");
+        services.AddSingleton(_ => new BlobServiceClient(connectionString));
+        services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
+        services.AddHostedService<BlobContainerInitializer>();
 
         return services;
     }

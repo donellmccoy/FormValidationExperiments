@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
+using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Models;
 using Xunit;
@@ -23,6 +24,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
 {
     private readonly Mock<ILoggingService> _mockLog;
     private readonly Mock<IDbContextFactory<EctDbContext>> _mockContextFactory;
+    private readonly Mock<IBlobStorageService> _mockBlobStorage;
     private readonly DbContextOptions<EctDbContext> _dbOptions;
     private readonly SqliteConnection _connection;
     private readonly DocumentsController _sut;
@@ -58,13 +60,14 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         }
 
         _mockLog = new Mock<ILoggingService>();
+        _mockBlobStorage = new Mock<IBlobStorageService>();
         _mockContextFactory = new Mock<IDbContextFactory<EctDbContext>>();
 
         _mockContextFactory
             .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => new SqliteEctDbContext(_dbOptions));
 
-        _sut = new DocumentsController(_mockContextFactory.Object, _mockLog.Object, CreatePdfService());
+        _sut = new DocumentsController(_mockContextFactory.Object, _mockLog.Object, CreatePdfService(), _mockBlobStorage.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 

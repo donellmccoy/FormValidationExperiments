@@ -234,6 +234,7 @@ public static class ServiceCollectionExtensions
 
         var documentType = new EdmEntityType(ns, "LineOfDutyDocument", baseType: null, isAbstract: false, isOpen: false, hasStream: true);
         documentType.AddKeys(documentType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
+        documentType.AddStructuralProperty("BlobPath", EdmPrimitiveTypeKind.String, true);
         model.AddElement(documentType);
 
         var appealType = new EdmEntityType(ns, "LineOfDutyAppeal");

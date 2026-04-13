@@ -50,6 +50,7 @@ public interface ILoggingService
     void DocumentPatched(int documentId, int caseId);
     void UpdatingDocument(int documentId, int caseId);
     void DocumentUpdated(int documentId, int caseId);
+    void BlobDeleteFailed(string blobPath, int documentId, string error);
 
     // Bookmarks
     void QueryingBookmarks();

@@ -64,14 +64,17 @@ public class DocumentsController : ODataControllerBase
     };
 
     private readonly AF348PdfService _pdfService;
+    private readonly IBlobStorageService _blobStorage;
 
     public DocumentsController(
         IDbContextFactory<EctDbContext> contextFactory, 
         ILoggingService loggingService,
-        AF348PdfService pdfService)
+        AF348PdfService pdfService,
+        IBlobStorageService blobStorage)
         : base(contextFactory, loggingService)
     {
         _pdfService = pdfService;
+        _blobStorage = blobStorage;
     }
 
     /// <summary>
@@ -208,7 +211,7 @@ public class DocumentsController : ODataControllerBase
         var doc = await context.Documents
             .AsNoTracking()
             .Where(d => d.Id == key)
-            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId, d.Content })
+            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId, d.BlobPath, d.Content })
             .FirstOrDefaultAsync(ct);
 
         if (doc is null)
@@ -220,6 +223,16 @@ public class DocumentsController : ODataControllerBase
                 statusCode: StatusCodes.Status404NotFound);
         }
 
+        LoggingService.DownloadingDocument(key, doc.LineOfDutyCaseId);
+
+        // Prefer blob storage; fall back to inline Content for legacy rows
+        if (!string.IsNullOrEmpty(doc.BlobPath))
+        {
+            var stream = await _blobStorage.OpenReadAsync(doc.BlobPath, ct);
+            Response.Headers.ContentDisposition = $"attachment; filename=\"{doc.FileName}\"";
+            return File(stream, doc.ContentType, doc.FileName);
+        }
+
         if (doc.Content is null || doc.Content.Length == 0)
         {
             LoggingService.DocumentContentNotFound(key);
@@ -228,8 +241,6 @@ public class DocumentsController : ODataControllerBase
                 detail: $"Document {key} exists but has no binary content.",
                 statusCode: StatusCodes.Status404NotFound);
         }
-
-        LoggingService.DownloadingDocument(key, doc.LineOfDutyCaseId);
 
         Response.Headers.ContentDisposition = $"attachment; filename=\"{doc.FileName}\"";
         return File(doc.Content, doc.ContentType, doc.FileName);
@@ -324,21 +335,27 @@ public class DocumentsController : ODataControllerBase
                 foreach (var f in file)
                 {
                     LoggingService.UploadingDocument(caseId);
-                    using var ms = new MemoryStream();
-                    await using var stream = f.OpenReadStream();
-                    await stream.CopyToAsync(ms, ct);
-                    var bytes = ms.ToArray();
 
                     var ext = Path.GetExtension(f.FileName);
+                    var contentType = MimeMap.GetValueOrDefault(ext, "application/octet-stream");
+
+                    // Stream directly to blob storage
+                    string blobPath;
+                    using (var stream = f.OpenReadStream())
+                    {
+                        blobPath = await _blobStorage.UploadAsync(stream, f.FileName, contentType, caseId, ct);
+                    }
+
                     var document = new LineOfDutyDocument
                     {
                         LineOfDutyCaseId = caseId,
                         FileName = f.FileName,
-                        ContentType = MimeMap.GetValueOrDefault(ext, "application/octet-stream"),
+                        ContentType = contentType,
                         DocumentType = documentType,
                         Description = description,
-                        Content = bytes,
-                        FileSize = bytes.Length,
+                        BlobPath = blobPath,
+                        Content = Array.Empty<byte>(),
+                        FileSize = f.Length,
                         UploadDate = DateTime.UtcNow
                     };
 
@@ -374,17 +391,35 @@ public class DocumentsController : ODataControllerBase
         LoggingService.DeletingDocument(key, 0);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
-        var deleted = await context.Documents
+        var doc = await context.Documents
             .Where(d => d.Id == key)
-            .ExecuteDeleteAsync(ct);
+            .Select(d => new { d.Id, d.BlobPath })
+            .FirstOrDefaultAsync(ct);
 
-        if (deleted == 0)
+        if (doc is null)
         {
             LoggingService.DocumentNotFound(key, 0);
             return Problem(
                 title: "Document not found",
                 detail: $"No document exists with ID {key}.",
                 statusCode: StatusCodes.Status404NotFound);
+        }
+
+        await context.Documents
+            .Where(d => d.Id == key)
+            .ExecuteDeleteAsync(ct);
+
+        // Best-effort blob cleanup — don't fail the request if blob delete fails
+        if (!string.IsNullOrEmpty(doc.BlobPath))
+        {
+            try
+            {
+                await _blobStorage.DeleteAsync(doc.BlobPath, ct);
+            }
+            catch (Exception ex)
+            {
+                LoggingService.BlobDeleteFailed(doc.BlobPath, key, ex.Message);
+            }
         }
 
         LoggingService.DocumentDeleted(key, 0);

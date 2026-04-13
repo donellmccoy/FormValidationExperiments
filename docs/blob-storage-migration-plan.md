@@ -101,7 +101,7 @@ Metadata queries already exclude `Content` via `$select` — no change needed fo
 | Binary storage | `varbinary(max)` in SQL Server | Azure Blob Storage container |
 | Upload flow | File → `MemoryStream` → EF → SQL | File → `BlobClient.UploadAsync(stream)` |
 | Download flow | SQL → `byte[]` → `File()` | SAS URL redirect **or** `BlobClient.OpenReadAsync()` → stream |
-| Model property | `byte[] Content` | `string BlobUri` (relative blob path) |
+| Model property | `byte[] Content` | `string BlobPath` (relative blob path) |
 | Memory pressure | Full file buffered in RAM | Streamed end-to-end |
 | CDN support | None | Azure CDN on Blob Storage endpoint |
 

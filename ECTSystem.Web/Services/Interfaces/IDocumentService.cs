@@ -71,4 +71,11 @@ public interface IDocumentService
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A byte array containing the populated AF Form 348 PDF file content.</returns>
     Task<byte[]> GetForm348PdfAsync(int caseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the API download URL for the given document.
+    /// </summary>
+    /// <param name="documentId">The database primary key of the document.</param>
+    /// <returns>A relative URL suitable for passing to <c>NavigationManager</c> or <c>window.open</c>.</returns>
+    string GetDocumentDownloadUrl(int documentId);
 }

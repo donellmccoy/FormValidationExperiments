@@ -139,6 +139,9 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 315, Level = LogLevel.Information, Message = "Document {DocumentId} updated for case {CaseId}")]
     public partial void DocumentUpdated(int documentId, int caseId);
 
+    [LoggerMessage(EventId = 316, Level = LogLevel.Warning, Message = "Failed to delete blob {BlobPath} for document {DocumentId}: {Error}")]
+    public partial void BlobDeleteFailed(string blobPath, int documentId, string error);
+
     // Bookmarks (EventId 500–506)
 
     [LoggerMessage(EventId = 500, Level = LogLevel.Information, Message = "Querying bookmarks")]
