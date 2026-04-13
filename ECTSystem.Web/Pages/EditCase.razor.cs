@@ -264,11 +264,11 @@ public partial class EditCase : ComponentBase, IDisposable
     private RadzenTextBox _trackingSearchBox;
     private string _trackingSearchText = string.Empty;
     private CancellationTokenSource _trackingSearchCts = new();
+    private CancellationTokenSource _trackingLoadCts = new();
     private bool _trackingLoading;
     private IList<WorkflowStateHistory> _selectedTrackingEntry;
     private ODataEnumerable<WorkflowStateHistory> _trackingData;
     private int _trackingCount;
-    private int _trackingLoadGeneration;
     private bool _trackingPreloaded;
 
     private async Task RefreshCaseHistoryGrid()
@@ -602,7 +602,11 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var generation = ++_trackingLoadGeneration;
+        // Cancel any previous in-flight request
+        await _trackingLoadCts.CancelAsync();
+        _trackingLoadCts.Dispose();
+        _trackingLoadCts = new CancellationTokenSource();
+        var ct = _trackingLoadCts.Token;
 
         _trackingLoading = true;
 
@@ -617,12 +621,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 skip: args.Skip,
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "CreatedDate desc,Id desc",
                 count: true,
-                cancellationToken: _cts.Token);
-
-            if (generation != _trackingLoadGeneration)
-            {
-                return;
-            }
+                cancellationToken: ct);
 
             _trackingData = result?.Value?.AsODataEnumerable();
             _trackingCount = result?.Count ?? 0;
@@ -633,27 +632,17 @@ public partial class EditCase : ComponentBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Component disposed — ignore
-        }
-        catch (ObjectDisposedException)
-        {
-            // CancellationTokenSource disposed — ignore
+            Logger.LogDebug("LoadTrackingData cancelled — superseded by newer request");
         }
         catch (Exception ex)
         {
-            if (generation == _trackingLoadGeneration)
-            {
-                Logger.LogWarning(ex, "Failed to load tracking history for case {CaseId}", _lineOfDutyCase?.Id);
-                _trackingData = null;
-                _trackingCount = 0;
-            }
+            Logger.LogWarning(ex, "Failed to load tracking history for case {CaseId}", _lineOfDutyCase?.Id);
+            _trackingData = null;
+            _trackingCount = 0;
         }
         finally
         {
-            if (generation == _trackingLoadGeneration)
-            {
-                _trackingLoading = false;
-            }
+            _trackingLoading = false;
         }
     }
 
@@ -665,7 +654,22 @@ public partial class EditCase : ComponentBase, IDisposable
         }
 
         var escaped = text.Replace("'", "''");
-        return $"contains(PerformedBy,'{escaped}') or contains(SignedBy,'{escaped}')";
+
+        var parts = new List<string>
+        {
+            $"contains(CreatedBy,'{escaped}')",
+            $"contains(ModifiedBy,'{escaped}')"
+        };
+
+        foreach (var state in Enum.GetValues<WorkflowState>())
+        {
+            if (state.ToDisplayString().Contains(text, StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add($"WorkflowState eq '{state}'");
+            }
+        }
+
+        return string.Join(" or ", parts);
     }
 
     private static string CombineTrackingFilters(string columnFilter, string searchFilter)
@@ -1627,6 +1631,8 @@ public partial class EditCase : ComponentBase, IDisposable
         _previousCasesSearchCts.Dispose();
         _trackingSearchCts.Cancel();
         _trackingSearchCts.Dispose();
+        _trackingLoadCts.Cancel();
+        _trackingLoadCts.Dispose();
         _documentsSearchCts.Cancel();
         _documentsSearchCts.Dispose();
     }
