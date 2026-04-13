@@ -108,8 +108,7 @@ public partial class EditCase
         {
             $"contains(FileName,'{escaped}')",
             $"contains(DocumentType,'{escaped}')",
-            $"contains(Description,'{escaped}')",
-            $"(UploadDate ne null and contains(cast(UploadDate,'Edm.String'),'{escaped}'))"
+            $"contains(Description,'{escaped}')"
         };
 
         return string.Join(" or ", parts);
@@ -311,7 +310,7 @@ public partial class EditCase
 
         try
         {
-            await Task.Delay(300, token);
+            await Task.Delay(700, token);
         }
         catch (OperationCanceledException)
         {

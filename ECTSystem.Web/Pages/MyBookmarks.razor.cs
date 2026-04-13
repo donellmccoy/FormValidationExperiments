@@ -267,7 +267,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         try
         {
-            await Task.Delay(500, token);
+            await Task.Delay(700, token);
         }
         catch (OperationCanceledException)
         {

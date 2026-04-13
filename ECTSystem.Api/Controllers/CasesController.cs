@@ -114,6 +114,11 @@ public class CasesController : ODataControllerBase
 
         lodCase.CaseId = await GenerateCaseIdAsync(context, ct);
 
+        if (lodCase.InitiationDate == default)
+        {
+            lodCase.InitiationDate = DateTime.UtcNow;
+        }
+
         // Retry loop: CaseId suffix is generated from MAX() and concurrent inserts
         // can race to the same value, violating the unique index on CaseId.
         const int maxRetries = 3;

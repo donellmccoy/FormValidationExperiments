@@ -1836,8 +1836,16 @@ else
                                                             @lodCase.GetCurrentWorkflowState().ToDisplayString()
                                                         </Template>
                                                     </RadzenDataGridColumn>
-                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="InitiationDate" Title="Created" FormatString="{0:yyyy-MM-dd}" Width="120px" />
-                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CompletionDate" Title="Completed" FormatString="{0:yyyy-MM-dd}" Width="120px" />
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="InitiationDate" Title="Created" Width="120px">
+                                                        <Template Context="lodCase">
+                                                            @(lodCase.InitiationDate > DateTime.MinValue ? lodCase.InitiationDate.ToString("yyyy-MM-dd") : "")
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
+                                                    <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CompletionDate" Title="Completed" Width="120px">
+                                                        <Template Context="lodCase">
+                                                            @(lodCase.CompletionDate.HasValue ? lodCase.CompletionDate.Value.ToString("yyyy-MM-dd") : "No")
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
                                                 </Columns>
                                             </RadzenDataGrid>
                                         </RadzenStack>

@@ -516,7 +516,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            await Task.Delay(500, token);
+            await Task.Delay(700, token);
         }
         catch (OperationCanceledException)
         {
@@ -540,7 +540,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
         try
         {
-            await Task.Delay(500, token);
+            await Task.Delay(700, token);
         }
         catch (OperationCanceledException)
         {
@@ -642,10 +642,7 @@ public partial class EditCase : ComponentBase, IDisposable
         var parts = new List<string>
         {
             $"contains(CreatedBy,'{escaped}')",
-            $"contains(ModifiedBy,'{escaped}')",
-            $"contains(cast(EnteredDate,'Edm.String'),'{escaped}')",
-            $"contains(cast(CreatedDate,'Edm.String'),'{escaped}')",
-            $"(ExitDate ne null and contains(cast(ExitDate,'Edm.String'),'{escaped}'))"
+            $"contains(ModifiedBy,'{escaped}')"
         };
 
         foreach (var state in Enum.GetValues<WorkflowState>())
