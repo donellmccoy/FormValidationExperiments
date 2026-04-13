@@ -89,11 +89,6 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         {
             base.OnModelCreating(modelBuilder);
 
-            // Replace varbinary(max) with BLOB
-            modelBuilder.Entity<LineOfDutyDocument>()
-                .Property(e => e.Content)
-                .HasColumnType("BLOB");
-
             // Replace GETUTCDATE() with SQLite equivalent
             modelBuilder.Entity<WorkflowModule>()
                 .Property(e => e.CreatedDate).HasDefaultValueSql("datetime('now')");
@@ -119,7 +114,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         FileName = "test-report.pdf",
         ContentType = "application/pdf",
         FileSize = 1024,
-        Content = new byte[] { 0x25, 0x50, 0x44, 0x46 },
+        BlobPath = "cases/1/test-blob-path",
         UploadDate = DateTime.UtcNow,
         Description = "Unit test document"
     };

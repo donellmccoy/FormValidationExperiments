@@ -11,7 +11,6 @@ public class LineOfDutyDocument : AuditableEntity
     public string FileName { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty; // MIME type, e.g. "application/pdf"
     public long FileSize { get; set; }
-    public byte[] Content { get; set; } = Array.Empty<byte>(); // File bytes stored as varbinary(max)
     public string BlobPath { get; set; } = string.Empty;
     public DateTime? UploadDate { get; set; }
     public string Description { get; set; } = string.Empty;

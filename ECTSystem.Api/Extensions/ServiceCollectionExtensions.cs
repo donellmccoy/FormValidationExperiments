@@ -206,7 +206,6 @@ public static class ServiceCollectionExtensions
 
         odataBuilder.EntitySet<LineOfDutyDocument>("Documents");
         odataBuilder.EntityType<LineOfDutyDocument>().MediaType();
-        odataBuilder.EntityType<LineOfDutyDocument>().Ignore(d => d.Content);
         odataBuilder.EntityType<LineOfDutyDocument>()
             .Property(d => d.RowVersion).IsConcurrencyToken();
 

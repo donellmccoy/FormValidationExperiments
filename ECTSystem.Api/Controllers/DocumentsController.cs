@@ -211,7 +211,7 @@ public class DocumentsController : ODataControllerBase
         var doc = await context.Documents
             .AsNoTracking()
             .Where(d => d.Id == key)
-            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId, d.BlobPath, d.Content })
+            .Select(d => new { d.FileName, d.ContentType, d.LineOfDutyCaseId, d.BlobPath })
             .FirstOrDefaultAsync(ct);
 
         if (doc is null)
@@ -225,15 +225,7 @@ public class DocumentsController : ODataControllerBase
 
         LoggingService.DownloadingDocument(key, doc.LineOfDutyCaseId);
 
-        // Prefer blob storage; fall back to inline Content for legacy rows
-        if (!string.IsNullOrEmpty(doc.BlobPath))
-        {
-            var stream = await _blobStorage.OpenReadAsync(doc.BlobPath, ct);
-            Response.Headers.ContentDisposition = $"attachment; filename=\"{doc.FileName}\"";
-            return File(stream, doc.ContentType, doc.FileName);
-        }
-
-        if (doc.Content is null || doc.Content.Length == 0)
+        if (string.IsNullOrEmpty(doc.BlobPath))
         {
             LoggingService.DocumentContentNotFound(key);
             return Problem(
@@ -242,8 +234,9 @@ public class DocumentsController : ODataControllerBase
                 statusCode: StatusCodes.Status404NotFound);
         }
 
+        var stream = await _blobStorage.OpenReadAsync(doc.BlobPath, ct);
         Response.Headers.ContentDisposition = $"attachment; filename=\"{doc.FileName}\"";
-        return File(doc.Content, doc.ContentType, doc.FileName);
+        return File(stream, doc.ContentType, doc.FileName);
     }
 
     /// <summary>
@@ -354,7 +347,6 @@ public class DocumentsController : ODataControllerBase
                         DocumentType = documentType,
                         Description = description,
                         BlobPath = blobPath,
-                        Content = Array.Empty<byte>(),
                         FileSize = f.Length,
                         UploadDate = DateTime.UtcNow
                     };
@@ -369,7 +361,6 @@ public class DocumentsController : ODataControllerBase
 
             foreach (var document in documents)
             {
-                document.Content = null!;
                 LoggingService.DocumentUploaded(document.Id, caseId);
             }
 
