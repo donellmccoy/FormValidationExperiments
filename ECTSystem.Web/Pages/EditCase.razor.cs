@@ -210,9 +210,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private string _documentsSearchText = string.Empty;
     private CancellationTokenSource _documentsSearchCts = new();
+    private CancellationTokenSource _documentsLoadCts = new();
     private ODataEnumerable<LineOfDutyDocument> _documentsData;
     private int _documentsCount;
-    private int _documentsLoadGeneration;
 
     private readonly CancellationTokenSource _cts = new();
 
@@ -253,7 +253,7 @@ public partial class EditCase : ComponentBase, IDisposable
     private bool _previousCasesLoading;
     private string _previousCasesSearchText = string.Empty;
     private CancellationTokenSource _previousCasesSearchCts = new();
-    private int _previousCasesLoadGeneration;
+    private CancellationTokenSource _previousCasesLoadCts = new();
     private int _previousCasesMemberId;
     private HashSet<int> _previousCasesBookmarkedIds = [];
     private readonly HashSet<int> _previousCasesAnimatingIds = [];
@@ -449,7 +449,11 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var generation = ++_previousCasesLoadGeneration;
+        // Cancel any previous in-flight request
+        await _previousCasesLoadCts.CancelAsync();
+        _previousCasesLoadCts.Dispose();
+        _previousCasesLoadCts = new CancellationTokenSource();
+        var ct = _previousCasesLoadCts.Token;
 
         _previousCasesLoading = true;
 
@@ -469,12 +473,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
                 select: "Id,CaseId,Unit,InitiationDate,CompletionDate,MemberId,IsCheckedOut,CheckedOutBy,CheckedOutByName",
                 count: true,
-                cancellationToken: _cts.Token);
-
-            if (generation != _previousCasesLoadGeneration)
-            {
-                return;
-            }
+                cancellationToken: ct);
 
             _previousCases = result?.Value?.AsODataEnumerable();
             _previousCasesCount = result?.Count ?? 0;
@@ -486,38 +485,23 @@ public partial class EditCase : ComponentBase, IDisposable
 
             if (_previousCases is not null)
             {
-                if (generation != _previousCasesLoadGeneration)
-                {
-                    return;
-                }
-
                 var ids = _previousCases.Select(c => c.Id).ToArray();
-                _previousCasesBookmarkedIds = await BookmarkService.GetBookmarkedCaseIdsAsync(ids, _cts.Token);
+                _previousCasesBookmarkedIds = await BookmarkService.GetBookmarkedCaseIdsAsync(ids, ct);
             }
         }
         catch (OperationCanceledException)
         {
-            // Component disposed — ignore
-        }
-        catch (ObjectDisposedException)
-        {
-            // CancellationTokenSource disposed — ignore
+            Logger.LogDebug("LoadPreviousCasesData cancelled — superseded by newer request");
         }
         catch (Exception ex)
         {
-            if (generation == _previousCasesLoadGeneration)
-            {
-                Logger.LogWarning(ex, "Failed to load previous cases for member {MemberId}", _previousCasesMemberId);
-                _previousCases = null;
-                _previousCasesCount = 0;
-            }
+            Logger.LogWarning(ex, "Failed to load previous cases for member {MemberId}", _previousCasesMemberId);
+            _previousCases = null;
+            _previousCasesCount = 0;
         }
         finally
         {
-            if (generation == _previousCasesLoadGeneration)
-            {
-                _previousCasesLoading = false;
-            }
+            _previousCasesLoading = false;
         }
     }
 
@@ -658,7 +642,10 @@ public partial class EditCase : ComponentBase, IDisposable
         var parts = new List<string>
         {
             $"contains(CreatedBy,'{escaped}')",
-            $"contains(ModifiedBy,'{escaped}')"
+            $"contains(ModifiedBy,'{escaped}')",
+            $"contains(cast(EnteredDate,'Edm.String'),'{escaped}')",
+            $"contains(cast(CreatedDate,'Edm.String'),'{escaped}')",
+            $"(ExitDate ne null and contains(cast(ExitDate,'Edm.String'),'{escaped}'))"
         };
 
         foreach (var state in Enum.GetValues<WorkflowState>())
@@ -1629,12 +1616,16 @@ public partial class EditCase : ComponentBase, IDisposable
         _searchCts.Dispose();
         _previousCasesSearchCts.Cancel();
         _previousCasesSearchCts.Dispose();
+        _previousCasesLoadCts.Cancel();
+        _previousCasesLoadCts.Dispose();
         _trackingSearchCts.Cancel();
         _trackingSearchCts.Dispose();
         _trackingLoadCts.Cancel();
         _trackingLoadCts.Dispose();
         _documentsSearchCts.Cancel();
         _documentsSearchCts.Dispose();
+        _documentsLoadCts.Cancel();
+        _documentsLoadCts.Dispose();
     }
 
     #endregion

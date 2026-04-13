@@ -35,7 +35,11 @@ public partial class EditCase
             return;
         }
 
-        var generation = ++_documentsLoadGeneration;
+        // Cancel any previous in-flight request
+        await _documentsLoadCts.CancelAsync();
+        _documentsLoadCts.Dispose();
+        _documentsLoadCts = new CancellationTokenSource();
+        var ct = _documentsLoadCts.Token;
 
         _documents.IsLoading = true;
 
@@ -50,12 +54,7 @@ public partial class EditCase
                 skip: args.Skip,
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "UploadDate desc,Id desc",
                 count: true,
-                cancellationToken: _cts.Token);
-
-            if (generation != _documentsLoadGeneration)
-            {
-                return;
-            }
+                cancellationToken: ct);
 
             _documentsData = result?.Value?.AsODataEnumerable();
             _documentsCount = result?.Count ?? 0;
@@ -70,7 +69,7 @@ public partial class EditCase
 
                 if (userIds.Count > 0)
                 {
-                    var names = await UserService.GetDisplayNamesAsync(userIds, _cts.Token);
+                    var names = await UserService.GetDisplayNamesAsync(userIds, ct);
                     foreach (var kvp in names)
                     {
                         _userDisplayNames[kvp.Key] = kvp.Value;
@@ -80,23 +79,17 @@ public partial class EditCase
         }
         catch (OperationCanceledException)
         {
-            // Component disposed — ignore
+            Logger.LogDebug("LoadDocumentsData cancelled — superseded by newer request");
         }
         catch (Exception ex)
         {
-            if (generation == _documentsLoadGeneration)
-            {
-                Logger.LogWarning(ex, "Failed to load documents for case {CaseId}", _lineOfDutyCase.Id);
-                _documentsData = null;
-                _documentsCount = 0;
-            }
+            Logger.LogWarning(ex, "Failed to load documents for case {CaseId}", _lineOfDutyCase.Id);
+            _documentsData = null;
+            _documentsCount = 0;
         }
         finally
         {
-            if (generation == _documentsLoadGeneration)
-            {
-                _documents.IsLoading = false;
-            }
+            _documents.IsLoading = false;
 
             await InvokeAsync(StateHasChanged);
         }
@@ -110,7 +103,16 @@ public partial class EditCase
         }
 
         var escaped = text.Replace("'", "''");
-        return $"contains(FileName,'{escaped}') or contains(DocumentType,'{escaped}') or contains(Description,'{escaped}')";
+
+        var parts = new List<string>
+        {
+            $"contains(FileName,'{escaped}')",
+            $"contains(DocumentType,'{escaped}')",
+            $"contains(Description,'{escaped}')",
+            $"(UploadDate ne null and contains(cast(UploadDate,'Edm.String'),'{escaped}'))"
+        };
+
+        return string.Join(" or ", parts);
     }
 
     private static string CombineDocumentsFilters(string columnFilter, string searchFilter)
