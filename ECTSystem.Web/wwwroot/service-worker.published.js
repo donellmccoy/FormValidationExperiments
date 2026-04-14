@@ -18,11 +18,21 @@ async function onInstall(event) {
 
     const assetsRequests = self.assetsManifest.assets
         .filter(asset => offlineAssetsInclude.some(pattern => pattern.test(asset.url)))
-        .filter(asset => !offlineAssetsExclude.some(pattern => pattern.test(asset.url)))
-        .map(asset => new Request(asset.url, { integrity: asset.hash, cache: 'no-cache' }));
+        .filter(asset => !offlineAssetsExclude.some(pattern => pattern.test(asset.url)));
 
     const cache = await caches.open(cacheName);
-    await cache.addAll(assetsRequests);
+    await Promise.all(assetsRequests.map(async asset => {
+        try {
+            const response = await fetch(new Request(asset.url, { cache: 'no-cache' }));
+            if (response.ok) {
+                await cache.put(asset.url, response);
+            } else {
+                console.warn(`Service worker: Failed to cache ${asset.url} (${response.status})`);
+            }
+        } catch (error) {
+            console.warn(`Service worker: Failed to fetch ${asset.url}`, error);
+        }
+    }));
 }
 
 async function onActivate(event) {

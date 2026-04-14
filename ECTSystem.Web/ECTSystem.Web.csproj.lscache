@@ -299,7 +299,6 @@ ViewModels/StateMachineResult.cs
  microsoft.aspnetcore.components/10.0.3/lib/net10.0/Microsoft.AspNetCore.Components.dll
  microsoft.aspnetcore.metadata/10.0.3/lib/net10.0/Microsoft.AspNetCore.Metadata.dll
  microsoft.bcl.asyncinterfaces/8.0.0/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
- microsoft.dotnet.hotreload.webassembly.browser/10.0.201/lib/net10.0/Microsoft.DotNet.HotReload.WebAssembly.Browser.dll
  microsoft.extensions.ambientmetadata.application/10.3.0/lib/net10.0/Microsoft.Extensions.AmbientMetadata.Application.dll
  microsoft.extensions.compliance.abstractions/10.3.0/lib/net10.0/Microsoft.Extensions.Compliance.Abstractions.dll
  microsoft.extensions.configuration.abstractions/10.0.3/lib/net10.0/Microsoft.Extensions.Configuration.Abstractions.dll
