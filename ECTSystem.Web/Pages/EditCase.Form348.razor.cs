@@ -32,10 +32,7 @@ public partial class EditCase
         if (index == OuterDocumentsTabIndex)
         {
             _documentsGrid?.Reload();
-            if (_documentsSearchBox is not null)
-            {
-                await _documentsSearchBox.FocusAsync();
-            }
+            await TryFocusAsync(_documentsSearchBox);
         }
         else if (index == OuterForm348TabIndex && !form348Loaded)
         {
@@ -43,18 +40,30 @@ public partial class EditCase
         }
         else if (index == OuterCaseHistoryTabIndex)
         {
-            if (_previousCasesSearchBox is not null)
-            {
-                await _previousCasesSearchBox.FocusAsync();
-            }
+            await TryFocusAsync(_previousCasesSearchBox);
         }
         else if (index == OuterTrackingTabIndex)
         {
             await RefreshTrackingGrid();
-            if (_trackingSearchBox is not null)
-            {
-                await _trackingSearchBox.FocusAsync();
-            }
+            await TryFocusAsync(_trackingSearchBox);
+        }
+    }
+
+    private async Task TryFocusAsync(Radzen.FormComponent<string> component)
+    {
+        if (component is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Yield();
+            await component.FocusAsync();
+        }
+        catch (JSException)
+        {
+            // Element may not be rendered yet; focus is non-critical.
         }
     }
 
