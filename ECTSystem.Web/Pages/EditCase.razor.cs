@@ -473,6 +473,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
                 select: "Id,CaseId,Unit,InitiationDate,CompletionDate,MemberId,IsCheckedOut,CheckedOutBy,CheckedOutByName",
                 count: true,
+                expand: "WorkflowStateHistories($select=Id,WorkflowState)",
                 cancellationToken: ct);
 
             _previousCases = result?.Value?.AsODataEnumerable();
