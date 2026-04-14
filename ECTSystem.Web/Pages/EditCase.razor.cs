@@ -56,12 +56,6 @@ public partial class EditCase : ComponentBase, IDisposable
         ("Board Medical Review",    "medical_services"),
         ("Board Legal Review",      "balance"),
         ("Board Admin Review",      "admin_panel_settings"),
-        ("Case Dialogue",           "forum"),
-        ("Notifications",           "notifications"),
-        ("Documents",               "folder"),
-        ("Air Force Form 348",      "description"),
-        ("Case History",            "history"),
-        ("Tracking",                "track_changes"),
     ];
 
     private static readonly Dictionary<string, (WorkflowState State, string DisplayName)> ReturnTargets = new()
@@ -1453,7 +1447,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnHistoryClick()
     {
-        await OnTabIndexChanged(CaseHistoryTabIndex);
+        await OnOuterTabIndexChanged(OuterCaseHistoryTabIndex);
     }
 
     private async Task OnBookmarkClick()

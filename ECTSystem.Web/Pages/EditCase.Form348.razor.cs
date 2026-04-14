@@ -7,10 +7,12 @@ namespace ECTSystem.Web.Pages;
 /// </summary>
 public partial class EditCase
 {
-    private const int DocumentsTabIndex = 13;
-    private const int Form348TabIndex = 14;
-    private const int CaseHistoryTabIndex = 15;
-    private const int TrackingTabIndex = 16;
+    private const int OuterDocumentsTabIndex = 3;
+    private const int OuterForm348TabIndex = 4;
+    private const int OuterCaseHistoryTabIndex = 5;
+    private const int OuterTrackingTabIndex = 6;
+
+    private int _selectedOuterTabIndex;
     private string form348BlobUrl;
     private bool isLoadingForm348;
     private string form348Error;
@@ -18,10 +20,16 @@ public partial class EditCase
 
     private bool form348Loaded;
 
-    private async Task OnTabIndexChanged(int index)
+    private void OnTabIndexChanged(int index)
     {
         _selectedTabIndex = index;
-        if (index == DocumentsTabIndex)
+    }
+
+    private async Task OnOuterTabIndexChanged(int index)
+    {
+        _selectedOuterTabIndex = index;
+
+        if (index == OuterDocumentsTabIndex)
         {
             _documentsGrid?.Reload();
             if (_documentsSearchBox is not null)
@@ -29,18 +37,18 @@ public partial class EditCase
                 await _documentsSearchBox.FocusAsync();
             }
         }
-        else if (index == Form348TabIndex && !form348Loaded)
+        else if (index == OuterForm348TabIndex && !form348Loaded)
         {
             await LoadForm348Async();
         }
-        else if (index == CaseHistoryTabIndex)
+        else if (index == OuterCaseHistoryTabIndex)
         {
             if (_previousCasesSearchBox is not null)
             {
                 await _previousCasesSearchBox.FocusAsync();
             }
         }
-        else if (index == TrackingTabIndex)
+        else if (index == OuterTrackingTabIndex)
         {
             await RefreshTrackingGrid();
             if (_trackingSearchBox is not null)
