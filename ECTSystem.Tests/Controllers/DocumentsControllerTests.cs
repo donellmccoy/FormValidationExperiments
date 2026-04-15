@@ -9,6 +9,7 @@ using ECTSystem.Api.Controllers;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Xunit;
 
@@ -110,7 +111,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
     private LineOfDutyDocument BuildDocument(int caseId = 1) => new()
     {
         LineOfDutyCaseId = caseId,
-        DocumentType = "Supporting Document",
+        DocumentType = DocumentType.Miscellaneous,
         FileName = "test-report.pdf",
         ContentType = "application/pdf",
         FileSize = 1024,
@@ -176,13 +177,13 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
 
         var delta = new Delta<LineOfDutyDocument>();
         delta.TrySetPropertyValue(nameof(LineOfDutyDocument.Description), "Updated description");
-        delta.TrySetPropertyValue(nameof(LineOfDutyDocument.DocumentType), "Medical Record");
+        delta.TrySetPropertyValue(nameof(LineOfDutyDocument.DocumentType), DocumentType.MilitaryMedicalDocumentation);
 
         var result = await _sut.Patch(docId, delta);
 
         var updated = Assert.IsType<UpdatedODataResult<LineOfDutyDocument>>(result);
         Assert.Equal("Updated description", updated.Entity.Description);
-        Assert.Equal("Medical Record", updated.Entity.DocumentType);
+        Assert.Equal(DocumentType.MilitaryMedicalDocumentation, updated.Entity.DocumentType);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Persistence.Data.Configurations;
@@ -16,7 +17,9 @@ public class LineOfDutyDocumentConfiguration : IEntityTypeConfiguration<LineOfDu
         builder.Property(e => e.ContentType).HasMaxLength(256);
         builder.Property(e => e.FileName).HasMaxLength(512);
 
-        builder.Property(e => e.DocumentType).HasMaxLength(100);
+        builder.Property(e => e.DocumentType)
+            .HasConversion<string>()
+            .HasMaxLength(100);
         builder.Property(e => e.Description).HasMaxLength(1000);
     }
 }

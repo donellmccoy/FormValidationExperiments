@@ -203,6 +203,26 @@ public static class ServiceCollectionExtensions
         workflowStateEnum.AddMember("Cancelled", new EdmEnumMemberValue(14));
         model.AddElement(workflowStateEnum);
 
+        var documentTypeEnum = new EdmEnumType(enumNs, "DocumentType");
+        documentTypeEnum.AddMember("AfForm348DdForm261", new EdmEnumMemberValue(0));
+        documentTypeEnum.AddMember("Memorandum", new EdmEnumMemberValue(1));
+        documentTypeEnum.AddMember("MilitaryMedicalDocumentation", new EdmEnumMemberValue(2));
+        documentTypeEnum.AddMember("CivilianMedicalDocumentation", new EdmEnumMemberValue(3));
+        documentTypeEnum.AddMember("Labs", new EdmEnumMemberValue(4));
+        documentTypeEnum.AddMember("RadiologyAndImaging", new EdmEnumMemberValue(5));
+        documentTypeEnum.AddMember("Studies", new EdmEnumMemberValue(6));
+        documentTypeEnum.AddMember("SpecialtyConsults", new EdmEnumMemberValue(7));
+        documentTypeEnum.AddMember("ProofOfMilitaryStatus", new EdmEnumMemberValue(8));
+        documentTypeEnum.AddMember("Pcars", new EdmEnumMemberValue(9));
+        documentTypeEnum.AddMember("MembersStatement", new EdmEnumMemberValue(10));
+        documentTypeEnum.AddMember("Maps", new EdmEnumMemberValue(11));
+        documentTypeEnum.AddMember("AccidentReport", new EdmEnumMemberValue(12));
+        documentTypeEnum.AddMember("AutopsyReportDeathCertificate", new EdmEnumMemberValue(13));
+        documentTypeEnum.AddMember("UntimelySubmissionOfIncidentReport", new EdmEnumMemberValue(14));
+        documentTypeEnum.AddMember("SignedNotificationMemo", new EdmEnumMemberValue(15));
+        documentTypeEnum.AddMember("Miscellaneous", new EdmEnumMemberValue(16));
+        model.AddElement(documentTypeEnum);
+
         // ── Entity types ────────────────────────────────────────────────
 
         var caseType = new EdmEntityType(ns, "LineOfDutyCase");
@@ -235,6 +255,7 @@ public static class ServiceCollectionExtensions
         var documentType = new EdmEntityType(ns, "LineOfDutyDocument", baseType: null, isAbstract: false, isOpen: false, hasStream: true);
         documentType.AddKeys(documentType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
         documentType.AddStructuralProperty("BlobPath", EdmPrimitiveTypeKind.String, true);
+        documentType.AddStructuralProperty("DocumentType", new EdmEnumTypeReference(documentTypeEnum, false));
         model.AddElement(documentType);
 
         var appealType = new EdmEntityType(ns, "LineOfDutyAppeal");

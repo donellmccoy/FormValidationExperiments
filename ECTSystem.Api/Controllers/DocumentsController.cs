@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Api.Controllers;
@@ -249,7 +250,7 @@ public class DocumentsController : ODataControllerBase
     public async Task<IActionResult> Upload(
         [FromRoute] int caseId,
         List<IFormFile> file, // Expected by RadzenUpload
-        [FromForm] string documentType = "Supporting Document",
+        [FromForm] string documentType = "Miscellaneous",
         [FromForm] string description = "",
         CancellationToken ct = default)
     {
@@ -339,12 +340,17 @@ public class DocumentsController : ODataControllerBase
                         blobPath = await _blobStorage.UploadAsync(stream, f.FileName, contentType, caseId, ct);
                     }
 
+                    if (!Enum.TryParse<DocumentType>(documentType, ignoreCase: true, out var parsedDocType))
+                    {
+                        parsedDocType = DocumentType.Miscellaneous;
+                    }
+
                     var document = new LineOfDutyDocument
                     {
                         LineOfDutyCaseId = caseId,
                         FileName = f.FileName,
                         ContentType = contentType,
-                        DocumentType = documentType,
+                        DocumentType = parsedDocType,
                         Description = description,
                         BlobPath = blobPath,
                         FileSize = f.Length,

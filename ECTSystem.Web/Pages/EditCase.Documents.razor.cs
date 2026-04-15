@@ -1,3 +1,5 @@
+using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Extensions;
 using ECTSystem.Shared.Models;
 using ECTSystem.Web.Services;
 using Microsoft.AspNetCore.Components;
@@ -132,9 +134,23 @@ public partial class EditCase
         var parts = new List<string>
         {
             $"contains(FileName,'{escaped}')",
-            $"contains(DocumentType,'{escaped}')",
             $"contains(Description,'{escaped}')"
         };
+
+        // DocumentType is an enum — match any member whose display name contains the search text
+        var matchingTypes = Enum.GetValues<DocumentType>()
+            .Where(dt => dt.ToDisplayString().Contains(text, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matchingTypes.Count == 1)
+        {
+            parts.Add($"DocumentType eq '{matchingTypes[0]}'");
+        }
+        else if (matchingTypes.Count > 1)
+        {
+            var typeFilters = matchingTypes.Select(dt => $"DocumentType eq '{dt}'");
+            parts.Add($"({string.Join(" or ", typeFilters)})");
+        }
 
         return string.Join(" or ", parts);
     }

@@ -80,7 +80,7 @@ public class DocumentService : ODataServiceBase, IDocumentService
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
 
         form.Add(fileContent, "file", fileName);
-        form.Add(new StringContent("Supporting Document"), "documentType");
+        form.Add(new StringContent("Miscellaneous"), "documentType");
         form.Add(new StringContent(string.Empty), "description");
 
         var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Documents", form, cancellationToken);
