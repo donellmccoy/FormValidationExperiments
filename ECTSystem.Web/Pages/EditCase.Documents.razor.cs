@@ -15,6 +15,31 @@ public partial class EditCase
     /// </summary>
     private int DocumentCount => _documentsCount;
 
+    /// <summary>
+    /// Fetches only the document count for the badge without loading document rows.
+    /// </summary>
+    private async Task LoadDocumentCountAsync(int caseId)
+    {
+        try
+        {
+            var result = await DocumentService.GetDocumentsAsync(
+                caseId: caseId,
+                top: 0,
+                count: true,
+                cancellationToken: _cts.Token);
+
+            _documentsCount = result?.Count ?? 0;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore — component disposed
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load document count for case {CaseId}", caseId);
+        }
+    }
+
     private readonly Dictionary<string, string> _userDisplayNames = new();
 
     private string GetUserDisplayName(string userId)

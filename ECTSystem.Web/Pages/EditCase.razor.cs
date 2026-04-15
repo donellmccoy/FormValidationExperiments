@@ -367,10 +367,11 @@ public partial class EditCase : ComponentBase, IDisposable
                 await CheckBookmarkAsync();
             }
 
-            // Load previous cases concurrently
+            // Load previous cases and document count concurrently
             var previousCasesTask = LoadPreviousCasesAsync(_lineOfDutyCase.MemberId);
+            var documentCountTask = LoadDocumentCountAsync(_lineOfDutyCase.Id);
 
-            await previousCasesTask;
+            await Task.WhenAll(previousCasesTask, documentCountTask);
 
             _loadedCaseId = CaseId;
 

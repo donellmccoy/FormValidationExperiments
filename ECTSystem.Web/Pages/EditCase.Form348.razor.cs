@@ -13,7 +13,7 @@ public partial class EditCase
     private const int OuterTrackingTabIndex = 6;
 
     private int _selectedOuterTabIndex;
-    private string form348BlobUrl;
+    private string form348DataUrl;
     private bool isLoadingForm348;
     private string form348Error;
     private bool _isPrintingCase;
@@ -40,6 +40,7 @@ public partial class EditCase
         }
         else if (index == OuterCaseHistoryTabIndex)
         {
+            _previousCasesGrid?.Reload();
             await TryFocusAsync(_previousCasesSearchBox);
         }
         else if (index == OuterTrackingTabIndex)
@@ -106,24 +107,14 @@ public partial class EditCase
         isLoadingForm348 = true;
         form348Error = null;
         form348Loaded = false;
+        form348DataUrl = null;
         StateHasChanged();
 
         try
         {
-            // Revoke any previously created blob URL
-            if (!string.IsNullOrEmpty(form348BlobUrl))
-            {
-                await JSRuntime.InvokeVoidAsync("pdfViewerInterop.revokeBlobUrl", form348BlobUrl);
-                form348BlobUrl = null;
-            }
-
             var pdfBytes = await DocumentService.GetForm348PdfAsync(_lineOfDutyCase.Id, _cts.Token);
             var base64 = Convert.ToBase64String(pdfBytes);
-
-            // Pass iframe selector so JS sets the src directly — works around
-            // RadzenTabs Client-mode not re-rendering inactive panel content.
-            form348BlobUrl = await JSRuntime.InvokeAsync<string>(
-                "pdfViewerInterop.createBlobUrl", base64, ".form348-iframe");
+            form348DataUrl = $"data:application/pdf;base64,{base64}#zoom=100";
         }
         catch (Exception ex)
         {

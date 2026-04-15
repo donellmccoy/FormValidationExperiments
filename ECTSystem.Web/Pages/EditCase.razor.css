@@ -14,11 +14,11 @@
 /* ═══════════════════ Main Content ═══════════════════ */
 
 .assessment-main {
-    width: 1000px;
+    flex: 1;
     height: 100%;
     /*flex-shrink: 0;*/
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .assessment-main::-webkit-scrollbar {
@@ -36,8 +36,13 @@
 
 ::deep .assessment-tabs .rz-tabview-panel {
     min-height: 0;
+    padding: 0;
 }
 
+/*.rz-tabview-panel {
+    padding: 0;
+}
+*/
 /* ═══════════════════ Case Card ═══════════════════ */
 
 .case-card {
