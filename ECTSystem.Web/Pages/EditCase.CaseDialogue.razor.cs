@@ -61,17 +61,6 @@ public partial class EditCase
         _replyToCommentId = null;
     }
 
-    private async Task AcknowledgeCommentAsync(int commentId)
-    {
-        await CaseDialogueService.AcknowledgeAsync(commentId, string.Empty, _cts.Token);
-        var comment = _dialogueComments.FirstOrDefault(c => c.Id == commentId);
-        if (comment != null)
-        {
-            comment.IsAcknowledged = true;
-            comment.AcknowledgedDate = DateTime.UtcNow;
-        }
-    }
-
     private void StartReply(int parentId)
     {
         _replyToCommentId = parentId;
@@ -88,24 +77,9 @@ public partial class EditCase
         await LoadDialogueCommentsAsync();
     }
 
-    private static string FormatRelativeTime(DateTime date)
+    private static string FormatCommentDateTime(DateTime date)
     {
-        var span = DateTime.UtcNow - date;
-        if (span.TotalMinutes < 1) return "just now";
-        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
-        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
-        if (span.TotalDays < 2) return "Yesterday";
-        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
-        return date.ToString("MMM d, yyyy");
-    }
-
-    private static string GetAuthorInitials(string authorName)
-    {
-        if (string.IsNullOrWhiteSpace(authorName)) return "?";
-        var parts = authorName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length >= 2
-            ? $"{parts[0][0]}{parts[1][0]}"
-            : authorName[..1];
+        return date.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
     }
 
     private IEnumerable<IGrouping<string, CaseDialogueComment>> GetDateGroupedComments()
