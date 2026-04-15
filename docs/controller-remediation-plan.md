@@ -366,11 +366,12 @@ These are larger refactors that require coordinated client and server changes. T
 - **Rationale:** File uploads and PDF generation are CPU/memory intensive. Unthrottled access allows resource exhaustion.
 - **Source:** Documents characterization, Weakness #7.
 
-### D.6 UserController → Named DTO instead of anonymous object
+### D.6 UserController → Named DTO instead of anonymous object ✅
 
-- **Scope:** `Controllers/UserController.cs`, new `CurrentUserDto`
+- **Scope:** `Controllers/UserController.cs`, new `CurrentUserDto`, new `UserLookupDto`
 - **Rationale:** Anonymous types cannot be documented in OpenAPI schemas.
 - **Source:** User characterization, Weakness #8.
+- **Status:** Complete — replaced anonymous objects with `CurrentUserDto` (GetCurrentUser) and `UserLookupDto` (LookupUsers).
 
 ---
 
@@ -386,7 +387,7 @@ These are larger refactors that require coordinated client and server changes. T
 | **6 — Logging** | 6.1, 6.2, 6.3 | Small | Low — improves observability | ✅ 3/3 |
 | **7 — ProblemDetails** | 7.1, 7.2 | Medium | Low — improves error handling consistency | ✅ 2/2 |
 | **8 — RBAC** | 8.1–8.4 | Medium | Medium — adds resource-level authorization | ✅ 4/4 |
-| **Deferred** | D.1–D.6 | Large | Variable — architectural improvements | Not started |
+| **Deferred** | D.1–D.6 | Large | Variable — architectural improvements | D.3 ✅, D.5 partial, D.6 ✅ |
 
 **Total immediate items:** 30 (Phases 1–8) — **30 complete, 0 not done, 0 partial**
 **Deferred items:** 6 (future work items)

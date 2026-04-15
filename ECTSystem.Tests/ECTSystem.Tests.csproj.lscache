@@ -69,6 +69,7 @@ Controllers/
  ControllerTestBase.cs
  DocumentsControllerTests.cs
  MembersControllerTests.cs
+ UserControllerTests.cs
  WorkflowStateHistoryControllerTests.cs
 E2E/
  AlphabeticalOrderer.cs

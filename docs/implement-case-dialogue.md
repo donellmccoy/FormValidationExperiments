@@ -1,5 +1,7 @@
 # Case Dialogue Implementation Plan
 
+> **Status:** ✅ Implemented — All phases complete
+
 ## Overview
 
 Replace the placeholder content in the **Case Dialogue** outer tab (index 2) on `EditCase.razor` with a comment thread. Users can post comments and reply to comments. All markup and logic is implemented **inline** in `EditCase.razor` / `EditCase.razor.cs` — no shared components. Comments are standalone records tied to a case; they are **not** associated with any workflow state, documents, or system events.
@@ -22,17 +24,17 @@ Replace the placeholder content in the **Case Dialogue** outer tab (index 2) on 
 
 | Asset | Status |
 |-------|--------|
-| **Case Dialogue tab** (`EditCase.razor` line ~1709) | Placeholder `RadzenText` only |
-| `AuditComment` model | Minimal (Id, LineOfDutyCaseId, Text) — needs expansion or replacement |
-| Outer tab constants (`EditCase.Form348.razor.cs`) | No constant for Case Dialogue (index 2) |
+| **Case Dialogue tab** (`EditCase.razor` line ~1709) | ✅ Full comment thread UI with date groups, replies, compose area |
+| `CaseDialogueComment` model | ✅ Created — replaced minimal `AuditComment` |
+| Outer tab constants (`EditCase.Form348.razor.cs`) | ✅ `OuterCaseDialogueTabIndex = 2` |
 
 ---
 
 ## Implementation Steps
 
-### Phase 1 — Domain Model
+### Phase 1 — Domain Model ✅
 
-#### 1.1 Create `CaseDialogueComment` model
+#### 1.1 Create `CaseDialogueComment` model ✅
 
 **File:** `ECTSystem.Shared/Models/CaseDialogueComment.cs`
 
@@ -57,7 +59,7 @@ public class CaseDialogueComment : AuditableEntity
 }
 ```
 
-#### 1.2 Add navigation property to `LineOfDutyCase`
+#### 1.2 Add navigation property to `LineOfDutyCase` ✅
 
 **File:** `ECTSystem.Shared/Models/LineOfDutyCase.cs`
 
@@ -65,7 +67,7 @@ public class CaseDialogueComment : AuditableEntity
 public ICollection<CaseDialogueComment> CaseDialogueComments { get; set; } = new HashSet<CaseDialogueComment>();
 ```
 
-#### 1.3 Create EF configuration
+#### 1.3 Create EF configuration ✅
 
 **File:** `ECTSystem.Persistence/Configurations/CaseDialogueCommentConfiguration.cs`
 
@@ -74,7 +76,7 @@ public ICollection<CaseDialogueComment> CaseDialogueComments { get; set; } = new
 - Index on `ParentCommentId` for reply lookups
 - Configure FK to `LineOfDutyCase`
 
-#### 1.4 Add EF migration
+#### 1.4 Add EF migration ✅
 
 ```
 dotnet ef migrations add AddCaseDialogueComments --project ECTSystem.Persistence
@@ -82,9 +84,9 @@ dotnet ef migrations add AddCaseDialogueComments --project ECTSystem.Persistence
 
 ---
 
-### Phase 2 — API Layer
+### Phase 2 — API Layer ✅
 
-#### 2.1 Create `CaseDialogueCommentsController`
+#### 2.1 Create `CaseDialogueCommentsController` ✅
 
 **File:** `ECTSystem.Api/Controllers/CaseDialogueCommentsController.cs`
 
@@ -99,7 +101,7 @@ Follow the existing OData controller pattern in the project. The controller shou
 - Automatically populate `AuthorName`, `AuthorRole`, `CreatedBy`, `CreatedDate` from the authenticated user
 - Restrict updates to acknowledgement and text edits by the original author
 
-#### 2.2 Register in EDM model
+#### 2.2 Register in EDM model ✅
 
 **File:** `ECTSystem.Api/Extensions/` (OData model builder)
 
@@ -107,7 +109,7 @@ Follow the existing OData controller pattern in the project. The controller shou
 builder.EntitySet<CaseDialogueComment>("CaseDialogueComments");
 ```
 
-#### 2.3 Register in client EDM model
+#### 2.3 Register in client EDM model ✅
 
 **File:** `ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs` — `BuildClientEdmModel()`
 
@@ -115,9 +117,9 @@ Add `CaseDialogueComment` as an `EdmEntityType`. No enum registration needed —
 
 ---
 
-### Phase 3 — Client Service Layer
+### Phase 3 — Client Service Layer ✅
 
-#### 3.1 Create `ICaseDialogueService` interface
+#### 3.1 Create `ICaseDialogueService` interface ✅
 
 **File:** `ECTSystem.Web/Services/Interfaces/ICaseDialogueService.cs`
 
@@ -130,14 +132,14 @@ public interface ICaseDialogueService
 }
 ```
 
-#### 3.2 Create `CaseDialogueService` implementation
+#### 3.2 Create `CaseDialogueService` implementation ✅
 
 **File:** `ECTSystem.Web/Services/CaseDialogueService.cs`
 
 - Extend `ODataServiceBase` following the existing service pattern
 - Use `_context.CaseDialogueComments` DataServiceQuery with `$filter`, `$orderby`, `$skip`, `$top`
 
-#### 3.3 Register in DI
+#### 3.3 Register in DI ✅
 
 **File:** `ECTSystem.Web/Program.cs` (or `ServiceCollectionExtensions.cs`)
 
@@ -147,11 +149,11 @@ builder.Services.AddScoped<ICaseDialogueService, CaseDialogueService>();
 
 ---
 
-### Phase 4 — Inline UI in EditCase
+### Phase 4 — Inline UI in EditCase ✅
 
 All UI is implemented directly in `EditCase.razor` and `EditCase.razor.cs` — no shared components.
 
-#### 4.1 Add tab constant
+#### 4.1 Add tab constant ✅
 
 **File:** `ECTSystem.Web/Pages/EditCase.Form348.razor.cs`
 
@@ -159,7 +161,7 @@ All UI is implemented directly in `EditCase.razor` and `EditCase.razor.cs` — n
 private const int OuterCaseDialogueTabIndex = 2;
 ```
 
-#### 4.2 Add fields and methods to a separate partial class
+#### 4.2 Add fields and methods to a separate partial class ✅
 
 **File:** `ECTSystem.Web/Pages/EditCase.CaseDialogue.razor.cs` *(new file — follows the existing partial-class pattern: `EditCase.Documents.razor.cs`, `EditCase.State.razor.cs`, etc.)*
 
@@ -247,7 +249,7 @@ private IEnumerable<CaseDialogueComment> GetReplies(int parentId)
 }
 ```
 
-#### 4.3 Replace Case Dialogue tab markup
+#### 4.3 Replace Case Dialogue tab markup ✅
 
 **File:** `ECTSystem.Web/Pages/EditCase.razor` (line ~1709)
 
@@ -415,7 +417,7 @@ Replace the placeholder with inline markup:
 </RadzenTabsItem>
 ```
 
-#### 4.4 Scoped CSS additions
+#### 4.4 Scoped CSS additions ✅
 
 **File:** `ECTSystem.Web/Pages/EditCase.razor.css`
 
@@ -423,7 +425,7 @@ Minimal additions if needed for the inline layout. Most styling uses Radzen util
 
 ---
 
-### Phase 5 — Pagination
+### Phase 5 — Pagination ✅
 
 - The initial load fetches the first `CommentPageSize` (20) comments via `$orderby=CreatedDate desc&$top=20`
 - "Load older comments" button at the top increments `$skip` and appends results
@@ -433,22 +435,22 @@ Minimal additions if needed for the inline layout. Most styling uses Radzen util
 
 ## File Change Summary
 
-| File | Action | Description |
-|------|--------|-------------|
-| `ECTSystem.Shared/Models/CaseDialogueComment.cs` | **New** | Comment model |
-| `ECTSystem.Shared/Models/LineOfDutyCase.cs` | **Edit** | Add `CaseDialogueComments` collection |
-| `ECTSystem.Persistence/Configurations/CaseDialogueCommentConfiguration.cs` | **New** | EF config + indexes |
-| `ECTSystem.Persistence/ECTSystemDbContext.cs` | **Edit** | Add `DbSet<CaseDialogueComment>` |
-| `ECTSystem.Api/Controllers/CaseDialogueCommentsController.cs` | **New** | OData CRUD controller |
-| `ECTSystem.Api/Extensions/` (OData model builder) | **Edit** | Register `CaseDialogueComments` entity set |
-| `ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs` | **Edit** | Add `CaseDialogueComment` to client EDM model |
-| `ECTSystem.Web/Services/Interfaces/ICaseDialogueService.cs` | **New** | Service interface |
-| `ECTSystem.Web/Services/CaseDialogueService.cs` | **New** | OData service implementation |
-| `ECTSystem.Web/Program.cs` | **Edit** | Register `ICaseDialogueService` |
-| `ECTSystem.Web/Pages/EditCase.razor` | **Edit** | Replace Case Dialogue placeholder with inline comment thread |
-| `ECTSystem.Web/Pages/EditCase.CaseDialogue.razor.cs` | **New** | Separate partial class with dialogue fields, methods, and injected service |
-| `ECTSystem.Web/Pages/EditCase.Form348.razor.cs` | **Edit** | Add `OuterCaseDialogueTabIndex` constant |
-| `ECTSystem.Web/Pages/EditCase.razor.css` | **Edit** | Minor scoped CSS if needed |
+| File | Action | Description | Status |
+|------|--------|-------------|--------|
+| `ECTSystem.Shared/Models/CaseDialogueComment.cs` | **New** | Comment model | ✅ |
+| `ECTSystem.Shared/Models/LineOfDutyCase.cs` | **Edit** | Add `CaseDialogueComments` collection | ✅ |
+| `ECTSystem.Persistence/Configurations/CaseDialogueCommentConfiguration.cs` | **New** | EF config + indexes | ✅ |
+| `ECTSystem.Persistence/ECTSystemDbContext.cs` | **Edit** | Add `DbSet<CaseDialogueComment>` | ✅ |
+| `ECTSystem.Api/Controllers/CaseDialogueCommentsController.cs` | **New** | OData CRUD controller | ✅ |
+| `ECTSystem.Api/Extensions/` (OData model builder) | **Edit** | Register `CaseDialogueComments` entity set | ✅ |
+| `ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs` | **Edit** | Add `CaseDialogueComment` to client EDM model | ✅ |
+| `ECTSystem.Web/Services/Interfaces/ICaseDialogueService.cs` | **New** | Service interface | ✅ |
+| `ECTSystem.Web/Services/CaseDialogueService.cs` | **New** | OData service implementation | ✅ |
+| `ECTSystem.Web/Program.cs` | **Edit** | Register `ICaseDialogueService` | ✅ |
+| `ECTSystem.Web/Pages/EditCase.razor` | **Edit** | Replace Case Dialogue placeholder with inline comment thread | ✅ |
+| `ECTSystem.Web/Pages/EditCase.CaseDialogue.razor.cs` | **New** | Separate partial class with dialogue fields, methods, and injected service | ✅ |
+| `ECTSystem.Web/Pages/EditCase.Form348.razor.cs` | **Edit** | Add `OuterCaseDialogueTabIndex` constant | ✅ |
+| `ECTSystem.Web/Pages/EditCase.razor.css` | **Edit** | Minor scoped CSS if needed | ✅ |
 
 ---
 

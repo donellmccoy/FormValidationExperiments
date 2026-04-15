@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -25,7 +26,7 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
         var email = User.FindFirstValue(ClaimTypes.Email);
         var name = User.FindFirstValue(ClaimTypes.Name) ?? email ?? userId;
 
-        return Ok(new { UserId = userId, Name = name });
+        return Ok(new CurrentUserDto { UserId = userId, Name = name });
     }
 
     [HttpGet("lookup")]
@@ -38,7 +39,7 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
 
         var users = await userManager.Users
             .Where(u => distinctIds.Contains(u.Id))
-            .Select(u => new { u.Id, Name = u.UserName ?? u.Email ?? u.Id })
+            .Select(u => new UserLookupDto { Id = u.Id, Name = u.UserName ?? u.Email ?? u.Id })
             .ToDictionaryAsync(u => u.Id, u => u.Name, ct);
 
         foreach (var id in distinctIds)

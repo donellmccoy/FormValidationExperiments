@@ -123,12 +123,14 @@ ViewModels/
  CreateBookmarkDto.cs
  CreateMemberDto.cs
  CreateWorkflowStateHistoryDto.cs
+ CurrentUserDto.cs
  DocumentItem.cs
  FormSectionAttribute.cs
  LineOfDutyViewModel.cs
  PagedResult.cs
  TrackableModel.cs
  UpdateMemberDto.cs
+ UserLookupDto.cs
 
 [metadataReferences]
 <DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.5/ref/net10.0/
