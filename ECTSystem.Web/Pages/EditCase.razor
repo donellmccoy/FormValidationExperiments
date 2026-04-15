@@ -1757,9 +1757,12 @@ else
                                                         <RadzenText TextStyle="TextStyle.Body1"
                                                                     Style="font-weight:600;"
                                                                     Text="@comment.AuthorName" />
-                                                        <RadzenBadge BadgeStyle="BadgeStyle.Info"
-                                                                     Text="@comment.AuthorRole"
-                                                                     IsPill="true" Shade="Shade.Dark" />
+                                                        @if (!string.IsNullOrWhiteSpace(comment.AuthorRole))
+                                                        {
+                                                            <RadzenBadge BadgeStyle="BadgeStyle.Info"
+                                                                         Text="@comment.AuthorRole"
+                                                                         IsPill="true" Shade="Shade.Dark" />
+                                                        }
                                                         <RadzenText TextStyle="TextStyle.Caption"
                                                                     Style="color:var(--rz-text-tertiary-color); margin-left:auto;"
                                                                     Text="@FormatCommentDateTime(comment.CreatedDate)" />
@@ -1784,10 +1787,13 @@ else
                                                                 <RadzenText TextStyle="TextStyle.Body2"
                                                                             Style="font-weight:600;"
                                                                             Text="@reply.AuthorName" />
-                                                                <RadzenBadge BadgeStyle="BadgeStyle.Info"
-                                                                             Text="@reply.AuthorRole"
-                                                                             IsPill="true" Shade="Shade.Dark"
-                                                                             Style="font-size:0.7rem;" />
+                                                                @if (!string.IsNullOrWhiteSpace(reply.AuthorRole))
+                                                                {
+                                                                    <RadzenBadge BadgeStyle="BadgeStyle.Info"
+                                                                                 Text="@reply.AuthorRole"
+                                                                                 IsPill="true" Shade="Shade.Dark"
+                                                                                 Style="font-size:0.7rem;" />
+                                                                }
                                                                 <RadzenText TextStyle="TextStyle.Caption"
                                                                             Style="color:var(--rz-text-tertiary-color); margin-left:auto;"
                                                                             Text="@FormatCommentDateTime(reply.CreatedDate)" />
