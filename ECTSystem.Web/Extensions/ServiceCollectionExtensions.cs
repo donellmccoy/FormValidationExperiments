@@ -291,6 +291,10 @@ public static class ServiceCollectionExtensions
         auditType.AddKeys(auditType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
         model.AddElement(auditType);
 
+        var dialogueCommentType = new EdmEntityType(ns, "CaseDialogueComment");
+        dialogueCommentType.AddKeys(dialogueCommentType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
+        model.AddElement(dialogueCommentType);
+
         // ── Navigation properties ───────────────────────────────────────
 
         // LineOfDutyCase → single references
@@ -316,6 +320,8 @@ public static class ServiceCollectionExtensions
         { Name = "WitnessStatements", Target = witnessType, TargetMultiplicity = EdmMultiplicity.Many });
         caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
         { Name = "AuditComments", Target = auditType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "CaseDialogueComments", Target = dialogueCommentType, TargetMultiplicity = EdmMultiplicity.Many });
 
         // LineOfDutyAppeal → AppellateAuthority
         appealType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
@@ -336,6 +342,7 @@ public static class ServiceCollectionExtensions
         container.AddEntitySet("WorkflowStateHistory", historyType);
         container.AddEntitySet("WitnessStatements", witnessType);
         container.AddEntitySet("AuditComments", auditType);
+        container.AddEntitySet("CaseDialogueComments", dialogueCommentType);
         model.AddElement(container);
 
         // ── Bound collection functions ──────────────────────────────────

@@ -26,6 +26,7 @@ public class EctDbContext : DbContext
     public DbSet<WorkflowStateHistory> WorkflowStateHistories { get; set; }
     public DbSet<WitnessStatement> WitnessStatements { get; set; }
     public DbSet<AuditComment> AuditComments { get; set; }
+    public DbSet<CaseDialogueComment> CaseDialogueComments { get; set; }
     public DbSet<WorkflowType> WorkflowTypes { get; set; }
     public DbSet<WorkflowModule> WorkflowModules { get; set; }
 

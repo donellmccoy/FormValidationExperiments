@@ -95,6 +95,7 @@ Models/
  AuditableEntity.cs
  AuditComment.cs
  Bookmark.cs
+ CaseDialogueComment.cs
  CaseTransitionRequest.cs
  CaseTransitionResponse.cs
  INCAPDetails.cs

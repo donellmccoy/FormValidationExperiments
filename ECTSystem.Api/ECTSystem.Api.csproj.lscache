@@ -60,6 +60,7 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 Controllers/
  AuthoritiesController.cs
  BookmarksController.cs
+ CaseDialogueCommentsController.cs
  CasesController.cs
  DocumentsController.cs
  MembersController.cs

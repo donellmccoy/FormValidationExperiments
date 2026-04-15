@@ -59,6 +59,7 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 Data/Configurations/
  AuditCommentConfiguration.cs
  BookmarkConfiguration.cs
+ CaseDialogueCommentConfiguration.cs
  INCAPDetailsConfiguration.cs
  LineOfDutyAppealConfiguration.cs
  LineOfDutyAuthorityConfiguration.cs

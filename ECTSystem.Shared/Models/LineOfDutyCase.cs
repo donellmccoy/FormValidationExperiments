@@ -193,5 +193,6 @@ public class LineOfDutyCase : AuditableEntity
     // Audit and Notes
     public bool IsAudited { get; set; }
     public ICollection<AuditComment> AuditComments { get; set; } = new HashSet<AuditComment>();
+    public ICollection<CaseDialogueComment> CaseDialogueComments { get; set; } = new HashSet<CaseDialogueComment>();
     public string PointOfContact { get; set; } = string.Empty; // e.g., AF/A1PP email
 }

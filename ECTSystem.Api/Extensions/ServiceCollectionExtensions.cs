@@ -218,6 +218,7 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistory");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
         odataBuilder.EntitySet<AuditComment>("AuditComments");
+        odataBuilder.EntitySet<CaseDialogueComment>("CaseDialogueComments");
 
         // Bound actions: POST /odata/Cases({key})/Checkout, /Checkin
         var checkoutAction = casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
