@@ -68,6 +68,7 @@ AlternateModels/
  SJASection.cs
 Enums/
  CommanderRecommendation.cs
+ DocumentType.cs
  DutyStatus.cs
  FindingType.cs
  IncidentType.cs
@@ -309,7 +310,7 @@ ViewModels/
  Microsoft.Interop.SourceGeneration.dll
  System.Text.Json.SourceGeneration.dll
  System.Text.RegularExpressions.Generator.dll
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.300-preview.0.26177.108/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 <NUGET>/
@@ -319,5 +320,5 @@ ViewModels/
   Riok.Mapperly.dll
 
 [analyzerConfigFiles]
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
+<DOTNET>/sdk/10.0.300-preview.0.26177.108/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/ECTSystem.Shared.GeneratedMSBuildEditorConfig.editorconfig

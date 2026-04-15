@@ -475,7 +475,6 @@ ViewModels/
   Microsoft.Diagnostics.FastSerialization.dll
   Microsoft.Diagnostics.Tracing.TraceEvent.dll
   TraceReloggerLib.dll
- microsoft.dotnet.hotreload.webassembly.browser/10.0.201/lib/net10.0/Microsoft.DotNet.HotReload.WebAssembly.Browser.dll
  microsoft.dotnet.platformabstractions/3.1.6/lib/netstandard2.0/Microsoft.DotNet.PlatformAbstractions.dll
  microsoft.entityframeworkcore.abstractions/10.0.5/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
  microsoft.entityframeworkcore.inmemory/10.0.3/lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll
@@ -588,7 +587,7 @@ ViewModels/
  Microsoft.Interop.SourceGeneration.dll
  System.Text.Json.SourceGeneration.dll
  System.Text.RegularExpressions.Generator.dll
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.300-preview.0.26177.108/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 <NUGET>/
@@ -610,5 +609,5 @@ ViewModels/
   xunit.analyzers.fixes.dll
 
 [analyzerConfigFiles]
-<DOTNET>/sdk/10.0.201/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
+<DOTNET>/sdk/10.0.300-preview.0.26177.108/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/ECTSystem.Tests.GeneratedMSBuildEditorConfig.editorconfig
