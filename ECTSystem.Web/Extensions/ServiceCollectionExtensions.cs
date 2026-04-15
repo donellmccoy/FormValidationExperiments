@@ -92,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IWorkflowHistoryService, WorkflowHistoryService>();
         services.AddScoped<IBookmarkService, BookmarkService>();
+        services.AddScoped<ICaseDialogueService, CaseDialogueService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<BookmarkCountService>();
         services.AddScoped<CurrentUserService>();

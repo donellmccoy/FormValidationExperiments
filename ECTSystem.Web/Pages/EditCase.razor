@@ -1711,10 +1711,156 @@ else
                                 <span class="tab-label">Case Dialogue</span>
                             </Template>
                             <ChildContent>
-                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
-                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                    Case dialogue and communication thread between stakeholders will be presented here.
-                                </RadzenText>
+                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px; display:flex; flex-direction:column;"
+                                             class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
+
+                                    @* ── Header bar ── *@
+                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                                 JustifyContent="JustifyContent.SpaceBetween"
+                                                 class="rz-p-3 rz-border-bottom rz-border-color-base-700">
+                                        <RadzenText TextStyle="TextStyle.H6" Text="CASE DIALOGUE" />
+                                        <RadzenButton Text="Export Logs" Icon="download"
+                                                      ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                                    </RadzenStack>
+
+                                    @* ── Scrollable comment thread ── *@
+                                    <div style="flex:1; overflow-y:auto; padding:1rem;">
+
+                                        @if (_hasMoreComments)
+                                        {
+                                            <RadzenStack JustifyContent="JustifyContent.Center" class="rz-mb-4">
+                                                <RadzenButton Text="Load older comments" Variant="Variant.Text"
+                                                              Size="ButtonSize.Small" Click="LoadMoreCommentsAsync"
+                                                              IsBusy="_isLoadingComments" />
+                                            </RadzenStack>
+                                        }
+
+                                        @foreach (var dateGroup in GetDateGroupedComments())
+                                        {
+                                            @* ── Date separator ── *@
+                                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                                         class="rz-my-3" Gap="0.5rem">
+                                                <hr style="flex:1; border-color:var(--rz-base-700);" />
+                                                <RadzenText TextStyle="TextStyle.Overline"
+                                                            Style="color:var(--rz-text-secondary-color);"
+                                                            Text="@dateGroup.Key" />
+                                                <hr style="flex:1; border-color:var(--rz-base-700);" />
+                                            </RadzenStack>
+
+                                            @foreach (var comment in dateGroup)
+                                            {
+                                                @* ── Comment entry ── *@
+                                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem"
+                                                             class="rz-py-2 rz-border-bottom rz-border-color-base-700">
+                                                    @* Avatar *@
+                                                    <div style="width:36px; height:36px; border-radius:50%;
+                                                                background:var(--rz-primary); display:flex;
+                                                                align-items:center; justify-content:center;
+                                                                font-size:0.8rem; font-weight:600;
+                                                                color:var(--rz-text-contrast-color); flex-shrink:0;">
+                                                        @GetAuthorInitials(comment.AuthorName)
+                                                    </div>
+                                                    <RadzenStack Gap="0.25rem" Style="flex:1;">
+                                                        @* Author line *@
+                                                        <RadzenStack Orientation="Orientation.Horizontal"
+                                                                     AlignItems="AlignItems.Center" Gap="0.5rem">
+                                                            <RadzenText TextStyle="TextStyle.Body1"
+                                                                        Style="font-weight:600;"
+                                                                        Text="@comment.AuthorName" />
+                                                            <RadzenBadge BadgeStyle="BadgeStyle.Info"
+                                                                         Text="@comment.AuthorRole"
+                                                                         IsPill="true" Shade="Shade.Dark" />
+                                                            <RadzenText TextStyle="TextStyle.Caption"
+                                                                        Style="color:var(--rz-text-tertiary-color);"
+                                                                        Text="@FormatRelativeTime(comment.CreatedDate)" />
+                                                        </RadzenStack>
+                                                        @* Message body *@
+                                                        <RadzenText TextStyle="TextStyle.Body2"
+                                                                    Text="@comment.Text" />
+                                                        @* Actions *@
+                                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                                            <RadzenButton Text="Reply" Icon="reply"
+                                                                          Variant="Variant.Text" Size="ButtonSize.ExtraSmall"
+                                                                          Click="@(() => StartReply(comment.Id))" />
+                                                            @if (!comment.IsAcknowledged)
+                                                            {
+                                                                <RadzenButton Text="Acknowledge" Icon="check_circle"
+                                                                              Variant="Variant.Text" Size="ButtonSize.ExtraSmall"
+                                                                              Click="@(() => AcknowledgeCommentAsync(comment.Id))" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <RadzenText TextStyle="TextStyle.Caption"
+                                                                            Style="color:var(--rz-success);"
+                                                                            Text="Acknowledged" />
+                                                            }
+                                                        </RadzenStack>
+
+                                                        @* ── Replies (indented) ── *@
+                                                        @foreach (var reply in GetReplies(comment.Id))
+                                                        {
+                                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem"
+                                                                         class="rz-pl-6 rz-pt-2">
+                                                                <div style="width:28px; height:28px; border-radius:50%;
+                                                                            background:var(--rz-secondary); display:flex;
+                                                                            align-items:center; justify-content:center;
+                                                                            font-size:0.7rem; font-weight:600;
+                                                                            color:var(--rz-text-contrast-color); flex-shrink:0;">
+                                                                    @GetAuthorInitials(reply.AuthorName)
+                                                                </div>
+                                                                <RadzenStack Gap="0.15rem" Style="flex:1;">
+                                                                    <RadzenStack Orientation="Orientation.Horizontal"
+                                                                                 AlignItems="AlignItems.Center" Gap="0.5rem">
+                                                                        <RadzenText TextStyle="TextStyle.Body2"
+                                                                                    Style="font-weight:600;"
+                                                                                    Text="@reply.AuthorName" />
+                                                                        <RadzenText TextStyle="TextStyle.Caption"
+                                                                                    Style="color:var(--rz-text-tertiary-color);"
+                                                                                    Text="@FormatRelativeTime(reply.CreatedDate)" />
+                                                                    </RadzenStack>
+                                                                    <RadzenText TextStyle="TextStyle.Body2"
+                                                                                Text="@reply.Text" />
+                                                                </RadzenStack>
+                                                            </RadzenStack>
+                                                        }
+                                                    </RadzenStack>
+                                                </RadzenStack>
+                                            }
+                                        }
+
+                                        @if (_isLoadingComments)
+                                        {
+                                            <RadzenStack JustifyContent="JustifyContent.Center" class="rz-p-4">
+                                                <RadzenProgressBarCircular ShowValue="false" Size="ProgressBarCircularSize.Small" />
+                                            </RadzenStack>
+                                        }
+                                    </div>
+
+                                    @* ── Compose area ── *@
+                                    <RadzenStack class="rz-p-3 rz-border-top rz-border-color-base-700" Gap="0.5rem">
+                                        @if (_replyToCommentId != null)
+                                        {
+                                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                                         Gap="0.5rem">
+                                                <RadzenText TextStyle="TextStyle.Caption"
+                                                            Style="color:var(--rz-info);"
+                                                            Text="Replying to comment..." />
+                                                <RadzenButton Icon="close" Variant="Variant.Text"
+                                                              Size="ButtonSize.ExtraSmall"
+                                                              Click="CancelReply" />
+                                            </RadzenStack>
+                                        }
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem"
+                                                     AlignItems="AlignItems.End">
+                                            <RadzenTextArea @bind-Value="_newCommentText"
+                                                            Placeholder="Type a comment..."
+                                                            Style="flex:1;" Rows="2" />
+                                            <RadzenButton Icon="send" ButtonStyle="ButtonStyle.Primary"
+                                                          Click="PostCommentAsync"
+                                                          Disabled="@string.IsNullOrWhiteSpace(_newCommentText)" />
+                                        </RadzenStack>
+                                    </RadzenStack>
+
                                 </RadzenPanel>
                             </ChildContent>
                         </RadzenTabsItem>

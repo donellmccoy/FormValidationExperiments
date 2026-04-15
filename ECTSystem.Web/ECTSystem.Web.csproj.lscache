@@ -78,6 +78,7 @@ obj/Debug/net10.0/
 Pages/
  CaseList.razor.cs
  Dashboard.razor.cs
+ EditCase.CaseDialogue.razor.cs
  EditCase.Documents.razor.cs
  EditCase.Form348.razor.cs
  EditCase.MemberSearch.razor.cs
@@ -94,6 +95,7 @@ Services/
  AuthService.cs
  BookmarkCountService.cs
  BookmarkService.cs
+ CaseDialogueService.cs
  CaseService.cs
  CurrentUserService.cs
  DocumentService.cs
@@ -101,6 +103,7 @@ Services/
  Interfaces/
   IAuthorityService.cs
   IBookmarkService.cs
+  ICaseDialogueService.cs
   ICaseService.cs
   IDocumentService.cs
   IMemberService.cs

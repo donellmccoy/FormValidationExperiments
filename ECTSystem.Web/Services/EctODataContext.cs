@@ -45,6 +45,9 @@ public class EctODataContext : DataServiceContext
     public DataServiceQuery<AuditComment> AuditComments
         => CreateQuery<AuditComment>("AuditComments");
 
+    public DataServiceQuery<CaseDialogueComment> CaseDialogueComments
+        => CreateQuery<CaseDialogueComment>("CaseDialogueComments");
+
     private static string ResolveEntitySetName(Type type)
     {
         return type.Name switch
@@ -59,6 +62,7 @@ public class EctODataContext : DataServiceContext
             nameof(LineOfDutyAppeal) => "Appeals",
             nameof(WitnessStatement) => "WitnessStatements",
             nameof(AuditComment) => "AuditComments",
+            nameof(CaseDialogueComment) => "CaseDialogueComments",
             nameof(MEDCONDetail) => "MEDCONDetails",
             nameof(INCAPDetails) => "INCAPDetails",
             _ => type.Name
@@ -80,6 +84,7 @@ public class EctODataContext : DataServiceContext
             nameof(LineOfDutyAppeal) => typeof(LineOfDutyAppeal),
             nameof(WitnessStatement) => typeof(WitnessStatement),
             nameof(AuditComment) => typeof(AuditComment),
+            nameof(CaseDialogueComment) => typeof(CaseDialogueComment),
             nameof(MEDCONDetail) => typeof(MEDCONDetail),
             nameof(INCAPDetails) => typeof(INCAPDetails),
             _ => typeof(object)

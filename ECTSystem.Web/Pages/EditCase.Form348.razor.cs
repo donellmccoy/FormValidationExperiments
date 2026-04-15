@@ -8,6 +8,7 @@ namespace ECTSystem.Web.Pages;
 public partial class EditCase
 {
     private const int OuterDocumentsTabIndex = 1;
+    private const int OuterCaseDialogueTabIndex = 2;
     private const int OuterCaseHistoryTabIndex = 5;
     private const int OuterTrackingTabIndex = 6;
     private const int OuterForm348TabIndex = 7;
@@ -33,6 +34,10 @@ public partial class EditCase
         {
             _documentsGrid?.Reload();
             await TryFocusAsync(_documentsSearchBox);
+        }
+        else if (index == OuterCaseDialogueTabIndex)
+        {
+            await LoadDialogueCommentsInitialAsync();
         }
         else if (index == OuterForm348TabIndex && !form348Loaded)
         {
