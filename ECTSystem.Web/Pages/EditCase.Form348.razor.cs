@@ -7,10 +7,10 @@ namespace ECTSystem.Web.Pages;
 /// </summary>
 public partial class EditCase
 {
-    private const int OuterDocumentsTabIndex = 3;
-    private const int OuterForm348TabIndex = 4;
+    private const int OuterDocumentsTabIndex = 1;
     private const int OuterCaseHistoryTabIndex = 5;
     private const int OuterTrackingTabIndex = 6;
+    private const int OuterForm348TabIndex = 7;
 
     private int _selectedOuterTabIndex;
     private string form348DataUrl;

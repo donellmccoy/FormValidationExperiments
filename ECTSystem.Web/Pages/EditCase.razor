@@ -1571,51 +1571,6 @@ else
                                 </RadzenPanel>
                             </ChildContent>
                         </RadzenTabsItem>
-                        @* ─── Case Dialogue Tab ─── *@
-                        <RadzenTabsItem Text="Case Dialogue">
-                            <Template>
-                                <span class="tab-label">Case Dialogue</span>
-                            </Template>
-                            <ChildContent>
-                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
-                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                    Case dialogue and communication thread between stakeholders will be presented here.
-                                </RadzenText>
-                                </RadzenPanel>
-                            </ChildContent>
-                        </RadzenTabsItem>
-                        @* ─── Comments Tab ─── *@
-                        <RadzenTabsItem Text="Comments">
-                            <Template>
-                                <span class="tab-label">Comments</span>
-                            </Template>
-                            <ChildContent>
-                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
-                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                    Comments and communication thread between stakeholders will be presented here.
-                                </RadzenText>
-                                </RadzenPanel>
-                            </ChildContent>
-                        </RadzenTabsItem>
-                        @* ─── Notifications Tab ─── *@
-                        <RadzenTabsItem Text="Notifications">
-                            <Template>
-                                <span class="tab-label">
-                                    Notifications
-                                    @if (NotificationCount > 0)
-                                    {
-                                        <RadzenBadge Text="@NotificationCount.ToString()" BadgeStyle="BadgeStyle.Info" IsPill="true" class="rz-ml-1" />
-                                    }
-                                </span>
-                            </Template>
-                            <ChildContent>
-                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
-                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
-                                    Notifications for this LOD case will be presented here.
-                                </RadzenText>
-                                </RadzenPanel>
-                            </ChildContent>
-                        </RadzenTabsItem>
                         @* ─── Documents Tab ─── *@
                         <RadzenTabsItem Text="Documents">
                             <Template>
@@ -1750,40 +1705,48 @@ else
                                 </RadzenPanel>
                             </ChildContent>
                         </RadzenTabsItem>
-                        @* ─── Form 348 Tab ─── *@
-                        <RadzenTabsItem Text="AF Form 348">
+                        @* ─── Case Dialogue Tab ─── *@
+                        <RadzenTabsItem Text="Case Dialogue">
+                            <Template>
+                                <span class="tab-label">Case Dialogue</span>
+                            </Template>
+                            <ChildContent>
+                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
+                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                    Case dialogue and communication thread between stakeholders will be presented here.
+                                </RadzenText>
+                                </RadzenPanel>
+                            </ChildContent>
+                        </RadzenTabsItem>
+                        @* ─── Comments Tab ─── *@
+                        <RadzenTabsItem Text="Comments">
+                            <Template>
+                                <span class="tab-label">Comments</span>
+                            </Template>
+                            <ChildContent>
+                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
+                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                    Comments and communication thread between stakeholders will be presented here.
+                                </RadzenText>
+                                </RadzenPanel>
+                            </ChildContent>
+                        </RadzenTabsItem>
+                        @* ─── Notifications Tab ─── *@
+                        <RadzenTabsItem Text="Notifications">
                             <Template>
                                 <span class="tab-label">
-                                    AF Form 348
+                                    Notifications
+                                    @if (NotificationCount > 0)
+                                    {
+                                        <RadzenBadge Text="@NotificationCount.ToString()" BadgeStyle="BadgeStyle.Info" IsPill="true" class="rz-ml-1" />
+                                    }
                                 </span>
                             </Template>
                             <ChildContent>
                                 <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
-                                <div class="form348-viewer-container">
-                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                                                 JustifyContent="JustifyContent.End"
-                                                 Gap="0.5rem" class="rz-p-2 form348-toolbar">
-                                        <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light"
-                                                      Size="ButtonSize.Small" Click="@LoadForm348Async"
-                                                      Variant="Variant.Text" Disabled="@isLoadingForm348" />
-                                    </RadzenStack>
-                                    @if (!string.IsNullOrEmpty(form348Error))
-                                    {
-                                        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" class="rz-m-4">
-                                            @form348Error
-                                        </RadzenAlert>
-                                        <RadzenButton Text="Retry" Icon="refresh" ButtonStyle="ButtonStyle.Secondary"
-                                                      Click="@LoadForm348Async" class="rz-ml-4" />
-                                    }
-                                    else if (isLoadingForm348)
-                                    {
-                                        <RadzenSkeleton Style="width: 100%; flex: 1;" Animation="SkeletonAnimation.Wave" />
-                                    }
-                                    else
-                                    {
-                                        <iframe src="@form348DataUrl" class="form348-iframe"></iframe>
-                                    }
-                                </div>
+                                <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
+                                    Notifications for this LOD case will be presented here.
+                                </RadzenText>
                                 </RadzenPanel>
                             </ChildContent>
                         </RadzenTabsItem>
@@ -1950,6 +1913,43 @@ else
                                         </Columns>
                                     </RadzenDataGrid>
                                 </RadzenStack>
+                                </RadzenPanel>
+                            </ChildContent>
+                        </RadzenTabsItem>
+                        @* ─── Form 348 Tab ─── *@
+                        <RadzenTabsItem Text="AF Form 348">
+                            <Template>
+                                <span class="tab-label">
+                                    AF Form 348
+                                </span>
+                            </Template>
+                            <ChildContent>
+                                <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
+                                <div class="form348-viewer-container">
+                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                                 JustifyContent="JustifyContent.End"
+                                                 Gap="0.5rem" class="rz-p-2 form348-toolbar">
+                                        <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light"
+                                                      Size="ButtonSize.Small" Click="@LoadForm348Async"
+                                                      Variant="Variant.Text" Disabled="@isLoadingForm348" />
+                                    </RadzenStack>
+                                    @if (!string.IsNullOrEmpty(form348Error))
+                                    {
+                                        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" class="rz-m-4">
+                                            @form348Error
+                                        </RadzenAlert>
+                                        <RadzenButton Text="Retry" Icon="refresh" ButtonStyle="ButtonStyle.Secondary"
+                                                      Click="@LoadForm348Async" class="rz-ml-4" />
+                                    }
+                                    else if (isLoadingForm348)
+                                    {
+                                        <RadzenSkeleton Style="width: 100%; flex: 1;" Animation="SkeletonAnimation.Wave" />
+                                    }
+                                    else
+                                    {
+                                        <iframe src="@form348DataUrl" class="form348-iframe"></iframe>
+                                    }
+                                </div>
                                 </RadzenPanel>
                             </ChildContent>
                         </RadzenTabsItem>
