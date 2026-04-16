@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
@@ -102,13 +101,15 @@ public class CasesController : ODataControllerBase
     /// OData route: POST /odata/Cases
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] LineOfDutyCase lodCase, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateCaseDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
             LoggingService.InvalidModelState("Post");
             return ValidationProblem(ModelState);
         }
+
+        var lodCase = CaseDtoMapper.ToEntity(dto);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
@@ -197,21 +198,17 @@ public class CasesController : ODataControllerBase
     }
 
     /// <summary>
-    /// Partially updates an existing LOD case using OData Delta semantics.
-    /// Only the properties present in the request body are applied to the entity.
+    /// Partially updates an existing LOD case using an <see cref="UpdateCaseDto"/>.
+    /// The client must supply the current ETag (RowVersion) in the <c>If-Match</c> header
+    /// for optimistic concurrency control.
     /// OData route: PATCH /odata/Cases({key})
     /// </summary>
-    /// <remarks>
-    /// Do NOT add [FromBody] — OData's own input formatter must handle Delta&lt;T&gt;
-    /// deserialization. [FromBody] would route through SystemTextJsonInputFormatter
-    /// which cannot construct a Delta instance.
-    /// </remarks>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyCase> delta, CancellationToken ct = default)
+    public async Task<IActionResult> Patch([FromODataUri] int key, [FromBody] UpdateCaseDto dto, CancellationToken ct = default)
     {
-        if (delta is null)
+        if (dto is null)
         {
-            ModelState.AddModelError("delta", "Request body is required.");
+            ModelState.AddModelError("dto", "Request body is required.");
             LoggingService.InvalidModelState("Patch");
             return ValidationProblem(ModelState);
         }
@@ -220,6 +217,25 @@ public class CasesController : ODataControllerBase
         {
             LoggingService.InvalidModelState("Patch");
             return ValidationProblem(ModelState);
+        }
+
+        // Extract RowVersion from If-Match header for optimistic concurrency
+        var ifMatch = Request.Headers.IfMatch.ToString();
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            return Problem(title: "Precondition required", detail: "An If-Match header with the current ETag is required for updates.", statusCode: StatusCodes.Status428PreconditionRequired);
+        }
+
+        byte[] clientRowVersion;
+        try
+        {
+            // Strip surrounding quotes: "base64..." → base64...
+            var raw = ifMatch.Trim('"');
+            clientRowVersion = Convert.FromBase64String(raw);
+        }
+        catch (FormatException)
+        {
+            return Problem(title: "Bad request", detail: "The If-Match header contains an invalid ETag value.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         LoggingService.PatchingCase(key);
@@ -235,10 +251,10 @@ public class CasesController : ODataControllerBase
             return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
-        delta.Patch(existing);
-
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion;
+
+        CaseDtoMapper.ApplyUpdate(dto, existing);
 
         try
         {
@@ -250,6 +266,9 @@ public class CasesController : ODataControllerBase
         }
 
         var patched = await context.Cases.IncludeWorkflowState().AsNoTracking().FirstAsync(c => c.Id == key, ct);
+
+        // Return updated ETag
+        Response.Headers.ETag = $"\"{Convert.ToBase64String(patched.RowVersion)}\"";
 
         LoggingService.CasePatched(key);
 

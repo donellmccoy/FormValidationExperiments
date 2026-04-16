@@ -88,6 +88,7 @@ Factories/LineOfDutyCaseFactory.cs
 Mapping/
  AuthorityDtoMapper.cs
  BookmarkDtoMapper.cs
+ CaseDtoMapper.cs
  LineOfDutyCaseMapper.cs
  MemberDtoMapper.cs
  WorkflowStateHistoryDtoMapper.cs
@@ -119,6 +120,7 @@ ViewModels/
  CaseListItemViewModel.cs
  CreateAuthorityDto.cs
  CreateBookmarkDto.cs
+ CreateCaseDto.cs
  CreateMemberDto.cs
  CreateWorkflowStateHistoryDto.cs
  CurrentUserDto.cs
@@ -127,6 +129,7 @@ ViewModels/
  LineOfDutyViewModel.cs
  PagedResult.cs
  TrackableModel.cs
+ UpdateCaseDto.cs
  UpdateMemberDto.cs
  UserLookupDto.cs
 

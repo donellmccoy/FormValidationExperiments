@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Api.Logging;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -54,7 +56,7 @@ public class MembersController : ODataControllerBase
     /// OData route: POST /odata/Members
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] Member member, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateMemberDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -64,6 +66,8 @@ public class MembersController : ODataControllerBase
             LoggingService.MemberInvalidModelState($"Post — {string.Join("; ", errors)}");
             return ValidationProblem(ModelState);
         }
+
+        var member = MemberDtoMapper.ToEntity(dto);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.Members.Add(member);
@@ -78,17 +82,12 @@ public class MembersController : ODataControllerBase
     /// OData route: PUT /odata/Members({key})
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] Member member, CancellationToken ct = default)
+    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] UpdateMemberDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
             LoggingService.MemberInvalidModelState("Put");
             return ValidationProblem(ModelState);
-        }
-
-        if (key != member.Id)
-        {
-            return Problem(title: "Bad request", detail: "The key parameter does not match the entity ID.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         LoggingService.UpdatingMember(key);
@@ -101,14 +100,9 @@ public class MembersController : ODataControllerBase
         }
 
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = member.RowVersion;
-        context.Entry(existing).CurrentValues.SetValues(member);
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = dto.RowVersion;
 
-        // Prevent client from overwriting server-managed audit fields
-        context.Entry(existing).Property(e => e.CreatedBy).IsModified = false;
-        context.Entry(existing).Property(e => e.CreatedDate).IsModified = false;
-        context.Entry(existing).Property(e => e.ModifiedBy).IsModified = false;
-        context.Entry(existing).Property(e => e.ModifiedDate).IsModified = false;
+        MemberDtoMapper.ApplyUpdate(dto, existing);
 
         try
         {

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -125,16 +124,21 @@ public class CasesControllerTests : ControllerTestBase
     }
 
     /// <summary>
-    /// Builds a minimal <see cref="LineOfDutyCase"/> suitable for Post tests. 
+    /// Builds a minimal <see cref="CreateCaseDto"/> suitable for Post tests. 
     /// </summary>
-    private static LineOfDutyCase BuildCaseDto() => new LineOfDutyCase
+    private static CreateCaseDto BuildCaseDto() => new CreateCaseDto
     {
         MemberId            = DefaultMemberId,
+        ProcessType         = ECTSystem.Shared.Enums.ProcessType.Informal,
+        Component           = ECTSystem.Shared.Enums.ServiceComponent.RegularAirForce,
         MemberName          = "SSgt John Doe",
         MemberRank          = "SSgt",
+        ServiceNumber       = "123456789",
         Unit                = "99 ABW",
+        IncidentType        = ECTSystem.Shared.Enums.IncidentType.Injury,
+        IncidentDate        = new DateTime(2025, 1, 15),
         IncidentDescription = "Training injury",
-        InitiationDate      = new DateTime(2025, 1, 15)
+        IncidentDutyStatus  = ECTSystem.Shared.Enums.DutyStatus.Title10ActiveDuty
     };
 
     // ─────────────────────────── Get (collection) ────────────────────────────
@@ -212,7 +216,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("MemberName", "Required");
 
-        var result = await _sut.Post(new LineOfDutyCase());
+        var result = await _sut.Post(new CreateCaseDto());
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -243,17 +247,30 @@ public class CasesControllerTests : ControllerTestBase
     // ─────────────────────────────── Patch ───────────────────────────────────
 
     /// <summary>
-    /// Verifies that <see cref="CasesController.Patch(int, Delta{LineOfDutyCase})"/> applies the
-    /// delta and returns <see cref="UpdatedODataResult{LineOfDutyCase}"/> when the case exists.
+    /// Verifies that <see cref="CasesController.Patch"/> applies the
+    /// update and returns <see cref="UpdatedODataResult{LineOfDutyCase}"/> when the case exists.
     /// </summary>
     [Fact]
     public async Task Patch_WhenCaseExists_ReturnsUpdated()
     {
         SeedCase(BuildCase(1));
-        var delta = new Delta<LineOfDutyCase>();
-        delta.TrySetPropertyValue(nameof(LineOfDutyCase.MemberName), "Updated Name");
+        var dto = new UpdateCaseDto
+        {
+            MemberName          = "Updated Name",
+            MemberRank          = "SSgt",
+            ServiceNumber       = "123456789",
+            ProcessType         = ECTSystem.Shared.Enums.ProcessType.Informal,
+            Component           = ECTSystem.Shared.Enums.ServiceComponent.RegularAirForce,
+            IncidentType        = ECTSystem.Shared.Enums.IncidentType.Injury,
+            IncidentDate        = new DateTime(2025, 1, 15),
+            IncidentDescription = "Training injury",
+            IncidentDutyStatus  = ECTSystem.Shared.Enums.DutyStatus.Title10ActiveDuty
+        };
 
-        var result = await _sut.Patch(1, delta);
+        // Simulate a valid ETag (base64 of {1,2,3})
+        _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
+
+        var result = await _sut.Patch(1, dto);
 
         Assert.IsType<UpdatedODataResult<LineOfDutyCase>>(result);
     }
@@ -265,9 +282,22 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task Patch_WhenCaseNotFound_ReturnsNotFound()
     {
-        var delta = new Delta<LineOfDutyCase>();
+        var dto = new UpdateCaseDto
+        {
+            MemberName          = "Updated Name",
+            MemberRank          = "SSgt",
+            ServiceNumber       = "123456789",
+            ProcessType         = ECTSystem.Shared.Enums.ProcessType.Informal,
+            Component           = ECTSystem.Shared.Enums.ServiceComponent.RegularAirForce,
+            IncidentType        = ECTSystem.Shared.Enums.IncidentType.Injury,
+            IncidentDate        = new DateTime(2025, 1, 15),
+            IncidentDescription = "Training injury",
+            IncidentDutyStatus  = ECTSystem.Shared.Enums.DutyStatus.Title10ActiveDuty
+        };
 
-        var result = await _sut.Patch(999, delta);
+        _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
+
+        var result = await _sut.Patch(999, dto);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
@@ -280,7 +310,7 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task Patch_WhenDeltaIsNull_ReturnsBadRequest()
     {
-        var result = await _sut.Patch(1, null);
+        var result = await _sut.Patch(1, (UpdateCaseDto)null);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -295,9 +325,9 @@ public class CasesControllerTests : ControllerTestBase
     public async Task Patch_WhenModelStateInvalid_ReturnsBadRequest()
     {
         _sut.ModelState.AddModelError("key", "error");
-        var delta = new Delta<LineOfDutyCase>();
+        var dto = new UpdateCaseDto();
 
-        var result = await _sut.Patch(1, delta);
+        var result = await _sut.Patch(1, dto);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);

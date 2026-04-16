@@ -69,7 +69,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_InsertsNewAuthority()
     {
-        var dto = new LineOfDutyAuthority
+        var dto = new CreateAuthorityDto
         {
             Role = "Commander", Name = "Smith, John", Rank = "Col",
             LineOfDutyCaseId = 1
@@ -85,7 +85,9 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenNoCaseId_ReturnsBadRequest()
     {
-        var dto = new LineOfDutyAuthority
+        _sut.ModelState.AddModelError("LineOfDutyCaseId", "The field LineOfDutyCaseId must be between 1 and 2147483647.");
+
+        var dto = new CreateAuthorityDto
         {
             Role = "Commander", Name = "Smith, John", Rank = "Col"
         };

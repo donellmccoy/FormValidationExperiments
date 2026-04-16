@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -39,10 +41,10 @@ public class BookmarksController : ODataControllerBase
     /// Creates a new bookmark for the current user, or returns the existing one if already bookmarked.
     /// OData route: POST /odata/Bookmarks
     /// </summary>
-    /// <param name="bookmark">The bookmark entity; only <c>LineOfDutyCaseId</c> is required.</param>
+    /// <param name="dto">The bookmark data; only <c>LineOfDutyCaseId</c> is required.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery]
-    public async Task<IActionResult> Post([FromBody] Bookmark bookmark, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateBookmarkDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
@@ -52,19 +54,20 @@ public class BookmarksController : ODataControllerBase
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
         var existing = await context.Bookmarks
-            .FirstOrDefaultAsync(b => b.UserId == GetAuthenticatedUserId() && b.LineOfDutyCaseId == bookmark.LineOfDutyCaseId, ct);
+            .FirstOrDefaultAsync(b => b.UserId == GetAuthenticatedUserId() && b.LineOfDutyCaseId == dto.LineOfDutyCaseId, ct);
 
         if (existing is not null)
         {
-            LoggingService.BookmarkAlreadyExists(bookmark.LineOfDutyCaseId);
+            LoggingService.BookmarkAlreadyExists(dto.LineOfDutyCaseId);
             return Ok(existing);
         }
 
+        var bookmark = BookmarkDtoMapper.ToEntity(dto);
         bookmark.UserId = GetAuthenticatedUserId();
 
         context.Bookmarks.Add(bookmark);
         await context.SaveChangesAsync(ct);
-        LoggingService.BookmarkCreated(bookmark.LineOfDutyCaseId);
+        LoggingService.BookmarkCreated(dto.LineOfDutyCaseId);
         return Created(bookmark);
     }
 

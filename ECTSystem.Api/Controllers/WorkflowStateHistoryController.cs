@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -55,16 +57,18 @@ public class WorkflowStateHistoryController : ODataControllerBase
     /// Creates a single workflow state history entry.
     /// OData route: POST /odata/WorkflowStateHistory
     /// </summary>
-    /// <param name="entry">The workflow state history to persist.</param>
+    /// <param name="dto">The workflow state history data to persist.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Post([FromBody] WorkflowStateHistory entry, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateWorkflowStateHistoryDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
             LoggingService.WorkflowStateHistoryInvalidModelState();
             return ValidationProblem(ModelState);
         }
+
+        var entry = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.Add(entry);

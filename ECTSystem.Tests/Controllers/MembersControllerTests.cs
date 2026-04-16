@@ -144,7 +144,7 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Post_WhenModelValid_PersistsMemberAndReturnsCreated()
     {
-        var dto = new Member
+        var dto = new CreateMemberDto
         {
             FirstName = "New", LastName = "Recruit",
             Rank = "AB", ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce
@@ -167,7 +167,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Post(new Member());
+        var result = await _sut.Post(new CreateMemberDto());
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -188,9 +188,8 @@ public class MembersControllerTests : ControllerTestBase
         seedCtx.Members.Add(BuildMember(1, "John", "Doe"));
         await seedCtx.SaveChangesAsync();
 
-        var dto = new Member
+        var dto = new UpdateMemberDto
         {
-            Id = 1,
             FirstName = "Jane", LastName = "Smith",
             Rank = "TSgt", Unit = "12 OG",
             ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce,
@@ -215,9 +214,8 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Put_WhenMemberNotFound_ReturnsNotFound()
     {
-        var dto = new Member
+        var dto = new UpdateMemberDto
         {
-            Id = 999,
             FirstName = "Ghost", LastName = "Member",
             Rank = "AB", ServiceNumber = "000000000", Component = ServiceComponent.RegularAirForce,
             RowVersion = new byte[] { 0 }
@@ -238,7 +236,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Put(1, new Member());
+        var result = await _sut.Put(1, new UpdateMemberDto());
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);

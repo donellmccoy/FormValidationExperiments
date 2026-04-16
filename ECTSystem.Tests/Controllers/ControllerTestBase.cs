@@ -103,6 +103,7 @@ public abstract class ControllerTestBase
         Unit                = "99 ABW",
         IncidentDescription = "Training injury",
         InitiationDate      = new DateTime(2025, 1, 15),
+        RowVersion          = [1, 2, 3],
         MEDCON              = new MEDCONDetail(),
         INCAP               = new INCAPDetails(),
         Authorities         = [],

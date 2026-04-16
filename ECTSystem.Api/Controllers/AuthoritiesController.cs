@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -56,18 +58,15 @@ public class AuthoritiesController : ODataControllerBase
     /// </summary>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     [Authorize(Roles = "Admin,CaseManager")]
-    public async Task<IActionResult> Post([FromBody] LineOfDutyAuthority authority, CancellationToken ct = default)
+    public async Task<IActionResult> Post([FromBody] CreateAuthorityDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        if (authority.LineOfDutyCaseId is null or <= 0)
-        {
-            ModelState.AddModelError(nameof(LineOfDutyAuthority.LineOfDutyCaseId), "A valid LineOfDutyCaseId is required.");
-            return ValidationProblem(ModelState);
-        }
-
         LoggingService.CreatingAuthority();
+
+        var authority = AuthorityDtoMapper.ToEntity(dto);
+
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.Authorities.Add(authority);
         await context.SaveChangesAsync(ct);
