@@ -308,7 +308,7 @@ public class CasesController : ODataControllerBase
 
         LoggingService.CaseCheckedOut(key, userName);
 
-        return Ok(existing);
+        return NoContent();
     }
 
     /// <summary>
@@ -351,7 +351,7 @@ public class CasesController : ODataControllerBase
 
         LoggingService.CaseCheckedIn(key);
 
-        return Ok(existing);
+        return NoContent();
     }
 
     /// <summary>

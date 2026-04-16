@@ -50,7 +50,7 @@ public class CaseDialogueCommentsController : ODataControllerBase
         return Created(comment);
     }
 
-    public async Task<IActionResult> Patch([FromODataUri] int key, [FromBody] Delta<CaseDialogueComment> delta, CancellationToken ct = default)
+    public async Task<IActionResult> Patch([FromODataUri] int key, Delta<CaseDialogueComment> delta, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {

@@ -185,6 +185,12 @@ public class DocumentsController : ODataControllerBase
         context.Entry(existing).Property(e => e.RowVersion).OriginalValue = document.RowVersion;
         context.Entry(existing).CurrentValues.SetValues(document);
 
+        // Prevent client from overwriting server-managed audit fields
+        context.Entry(existing).Property(e => e.CreatedBy).IsModified = false;
+        context.Entry(existing).Property(e => e.CreatedDate).IsModified = false;
+        context.Entry(existing).Property(e => e.ModifiedBy).IsModified = false;
+        context.Entry(existing).Property(e => e.ModifiedDate).IsModified = false;
+
         try
         {
             await context.SaveChangesAsync(ct);

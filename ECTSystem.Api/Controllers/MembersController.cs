@@ -104,6 +104,12 @@ public class MembersController : ODataControllerBase
         context.Entry(existing).Property(e => e.RowVersion).OriginalValue = member.RowVersion;
         context.Entry(existing).CurrentValues.SetValues(member);
 
+        // Prevent client from overwriting server-managed audit fields
+        context.Entry(existing).Property(e => e.CreatedBy).IsModified = false;
+        context.Entry(existing).Property(e => e.CreatedDate).IsModified = false;
+        context.Entry(existing).Property(e => e.ModifiedBy).IsModified = false;
+        context.Entry(existing).Property(e => e.ModifiedDate).IsModified = false;
+
         try
         {
             await context.SaveChangesAsync(ct);
