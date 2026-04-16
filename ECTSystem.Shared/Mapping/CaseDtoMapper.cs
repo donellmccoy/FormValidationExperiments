@@ -25,6 +25,176 @@ public static class CaseDtoMapper
         };
     }
 
+    public static UpdateCaseDto ToUpdateDto(LineOfDutyCase entity)
+    {
+        return new UpdateCaseDto
+        {
+            // Basic Case Information
+            ProcessType = entity.ProcessType,
+            Component = entity.Component,
+            MemberName = entity.MemberName,
+            MemberRank = entity.MemberRank,
+            ServiceNumber = entity.ServiceNumber,
+            MemberDateOfBirth = entity.MemberDateOfBirth,
+            Unit = entity.Unit,
+            FromLine = entity.FromLine,
+            IncidentType = entity.IncidentType,
+            IncidentDate = entity.IncidentDate,
+            IncidentDescription = entity.IncidentDescription,
+            IncidentDutyStatus = entity.IncidentDutyStatus,
+
+            // Part I: Orders / Duty Period
+            MemberOrdersStartTime = entity.MemberOrdersStartTime,
+            MemberOrdersEndDate = entity.MemberOrdersEndDate,
+            MemberOrdersEndTime = entity.MemberOrdersEndTime,
+
+            // Part I Item 2: Type of Medical Unit Reporting
+            IsMTF = entity.IsMTF,
+            IsRMU = entity.IsRMU,
+            IsGMU = entity.IsGMU,
+            IsDeployedLocation = entity.IsDeployedLocation,
+
+            // Part I Item 8
+            IsUSAFA = entity.IsUSAFA,
+            IsAFROTC = entity.IsAFROTC,
+
+            // Medical Assessment
+            IsMilitaryFacility = entity.IsMilitaryFacility,
+            TreatmentFacilityName = entity.TreatmentFacilityName,
+            TreatmentDateTime = entity.TreatmentDateTime,
+            ClinicalDiagnosis = entity.ClinicalDiagnosis,
+            MedicalFindings = entity.MedicalFindings,
+            WasUnderInfluence = entity.WasUnderInfluence,
+            SubstanceType = entity.SubstanceType,
+            WasMentallyResponsible = entity.WasMentallyResponsible,
+            PsychiatricEvalCompleted = entity.PsychiatricEvalCompleted,
+            PsychiatricEvalDate = entity.PsychiatricEvalDate,
+            PsychiatricEvalResults = entity.PsychiatricEvalResults,
+            OtherRelevantConditions = entity.OtherRelevantConditions,
+            OtherTestsDone = entity.OtherTestsDone,
+            OtherTestDate = entity.OtherTestDate,
+            OtherTestResults = entity.OtherTestResults,
+            IsServiceAggravated = entity.IsServiceAggravated,
+            IsPotentiallyUnfitting = entity.IsPotentiallyUnfitting,
+            IsAtDeployedLocation = entity.IsAtDeployedLocation,
+            RequiresArcBoard = entity.RequiresArcBoard,
+            MedicalRecommendation = entity.MedicalRecommendation,
+
+            // Commander Review — Sources of Information
+            MemberStatementReviewed = entity.MemberStatementReviewed,
+            MedicalRecordsReviewed = entity.MedicalRecordsReviewed,
+            WitnessStatementsReviewed = entity.WitnessStatementsReviewed,
+            PoliceReportsReviewed = entity.PoliceReportsReviewed,
+            CommanderReportReviewed = entity.CommanderReportReviewed,
+            OsiReportsReviewed = entity.OsiReportsReviewed,
+            MilitaryPoliceReportsReviewed = entity.MilitaryPoliceReportsReviewed,
+            OtherSourcesReviewed = entity.OtherSourcesReviewed,
+            OtherSourcesDescription = entity.OtherSourcesDescription,
+            MisconductExplanation = entity.MisconductExplanation,
+            CommanderToLine = entity.CommanderToLine,
+            CommanderFromLine = entity.CommanderFromLine,
+
+            // Commander Review — Duty Status
+            WasPresentForDuty = entity.WasPresentForDuty,
+            WasOnDuty = entity.WasOnDuty,
+            WasOnIDT = entity.WasOnIDT,
+            WasAbsentWithLeave = entity.WasAbsentWithLeave,
+            WasAbsentWithoutLeave = entity.WasAbsentWithoutLeave,
+            AbsentWithoutLeaveDate1 = entity.AbsentWithoutLeaveDate1,
+            AbsentWithoutLeaveTime1 = entity.AbsentWithoutLeaveTime1,
+            AbsentWithoutLeaveDate2 = entity.AbsentWithoutLeaveDate2,
+            AbsentWithoutLeaveTime2 = entity.AbsentWithoutLeaveTime2,
+
+            // Commander Review — Witnesses
+            WitnessNameAddress1 = entity.WitnessNameAddress1,
+            WitnessNameAddress2 = entity.WitnessNameAddress2,
+            WitnessNameAddress3 = entity.WitnessNameAddress3,
+            WitnessNameAddress4 = entity.WitnessNameAddress4,
+            WitnessNameAddress5 = entity.WitnessNameAddress5,
+
+            // Process Details
+            InitiationDate = entity.InitiationDate,
+            CompletionDate = entity.CompletionDate,
+            TotalTimelineDays = entity.TotalTimelineDays,
+            IsInterimLOD = entity.IsInterimLOD,
+            InterimLODExpiration = entity.InterimLODExpiration,
+
+            // Findings and Determinations
+            FinalFinding = entity.FinalFinding,
+            ProximateCause = entity.ProximateCause,
+            IsPriorServiceCondition = entity.IsPriorServiceCondition,
+            PSCDocumentation = entity.PSCDocumentation,
+            EightYearRuleApplies = entity.EightYearRuleApplies,
+            YearsOfService = entity.YearsOfService,
+
+            // Signatures — Provider
+            ProviderNameRank = entity.ProviderNameRank,
+            ProviderDate = entity.ProviderDate,
+            ProviderSignature = entity.ProviderSignature,
+
+            // Signatures — Commander
+            CommanderNameRank = entity.CommanderNameRank,
+            CommanderDate = entity.CommanderDate,
+            CommanderSignature = entity.CommanderSignature,
+
+            // SJA/Legal Review
+            SjaNameRank = entity.SjaNameRank,
+            SjaDate = entity.SjaDate,
+            SjaConcurs = entity.SjaConcurs,
+
+            // Wing CC / Appointing Authority
+            WingCcSignature = entity.WingCcSignature,
+            AppointingAuthorityNameRank = entity.AppointingAuthorityNameRank,
+            AppointingAuthorityDate = entity.AppointingAuthorityDate,
+            AppointingAuthoritySignature = entity.AppointingAuthoritySignature,
+
+            // Formal Board Review
+            MedicalReviewText = entity.MedicalReviewText,
+            MedicalReviewerNameRank = entity.MedicalReviewerNameRank,
+            MedicalReviewDate = entity.MedicalReviewDate,
+            MedicalReviewerSignature = entity.MedicalReviewerSignature,
+            LegalReviewText = entity.LegalReviewText,
+            LegalReviewerNameRank = entity.LegalReviewerNameRank,
+            LegalReviewDate = entity.LegalReviewDate,
+            LegalReviewerSignature = entity.LegalReviewerSignature,
+            LodBoardChairNameRank = entity.LodBoardChairNameRank,
+            LodBoardChairDate = entity.LodBoardChairDate,
+            LodBoardChairSignature = entity.LodBoardChairSignature,
+            BoardFinding = entity.BoardFinding,
+            BoardReferForFormal = entity.BoardReferForFormal,
+
+            // Approving Authority
+            ApprovingAuthorityNameRank = entity.ApprovingAuthorityNameRank,
+            ApprovingAuthorityDate = entity.ApprovingAuthorityDate,
+            ApprovingAuthoritySignature = entity.ApprovingAuthoritySignature,
+            ApprovingFinding = entity.ApprovingFinding,
+            ApprovingReferForFormal = entity.ApprovingReferForFormal,
+
+            // Notification & Reporting
+            NotifiedMedicalUnitTimely = entity.NotifiedMedicalUnitTimely,
+            SubmittedMedicalDocumentsTimely = entity.SubmittedMedicalDocumentsTimely,
+
+            // Special Handling
+            IsSexualAssaultCase = entity.IsSexualAssaultCase,
+            RestrictedReporting = entity.RestrictedReporting,
+            SARCCoordination = entity.SARCCoordination,
+
+            ToxicologyReport = entity.ToxicologyReport,
+
+            // Related Benefits
+            MEDCONId = entity.MEDCONId,
+            INCAPId = entity.INCAPId,
+            MemberChoseMEDCON = entity.MemberChoseMEDCON,
+
+            // Member FK
+            MemberId = entity.MemberId,
+
+            // Audit flags
+            IsAudited = entity.IsAudited,
+            PointOfContact = entity.PointOfContact,
+        };
+    }
+
     public static void ApplyUpdate(UpdateCaseDto dto, LineOfDutyCase entity)
     {
         // Basic Case Information

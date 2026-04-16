@@ -1,4 +1,6 @@
+using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Microsoft.OData.Client;
 
 #nullable enable
@@ -20,21 +22,27 @@ public class AuthorityService : ODataServiceBase, IAuthorityService
             .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}");
 
         var existingAuthorities = await ExecuteQueryAsync(query, cancellationToken);
-        var incomingRoles = authorities.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // Step 2: Queue deletes for authorities whose role is not in the incoming list.
-        foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
+        // Detach all queried entities so OData context doesn't interfere with HttpClient calls.
+        foreach (var entity in existingAuthorities)
         {
-            if (Context.GetEntityDescriptor(toRemove) == null)
+            if (Context.GetEntityDescriptor(entity) != null)
             {
-                Context.AttachTo("Authorities", toRemove);
+                Context.Detach(entity);
             }
-            Context.DeleteObject(toRemove);
         }
 
-        // Step 3: Queue upserts — update existing or add new.
-        var trackedEntities = new List<LineOfDutyAuthority>();
+        var incomingRoles = authorities.Select(a => a.Role).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var savedAuthorities = new List<LineOfDutyAuthority>();
 
+        // Step 2: Delete authorities whose role is not in the incoming list.
+        foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
+        {
+            var response = await HttpClient.DeleteAsync($"odata/Authorities({toRemove.Id})", cancellationToken);
+            response.EnsureSuccessStatusCode();
+        }
+
+        // Step 3: Upsert — update existing or add new.
         foreach (var incoming in authorities)
         {
             var match = existingAuthorities.FirstOrDefault(
@@ -42,46 +50,49 @@ public class AuthorityService : ODataServiceBase, IAuthorityService
 
             if (match is not null)
             {
-                match.Name = incoming.Name;
-                match.Rank = incoming.Rank;
-                match.Title = incoming.Title;
-                match.ActionDate = incoming.ActionDate;
-                match.Recommendation = incoming.Recommendation;
-                match.Comments = incoming.Comments;
-
-                if (Context.GetEntityDescriptor(match) == null)
+                var patchBody = new
                 {
-                    Context.AttachTo("Authorities", match);
-                }
+                    incoming.Name,
+                    incoming.Rank,
+                    incoming.Title,
+                    incoming.ActionDate,
+                    incoming.Recommendation,
+                    incoming.Comments
+                };
 
-                Context.UpdateObject(match);
-                trackedEntities.Add(match);
+                var patchRequest = new HttpRequestMessage(HttpMethod.Patch, $"odata/Authorities({match.Id})")
+                {
+                    Content = JsonContent.Create(patchBody, options: JsonOptions)
+                };
+
+                var response = await HttpClient.SendAsync(patchRequest, cancellationToken);
+                response.EnsureSuccessStatusCode();
+
+                var updated = await response.Content.ReadFromJsonAsync<LineOfDutyAuthority>(JsonOptions, cancellationToken);
+                savedAuthorities.Add(updated!);
             }
             else
             {
-                incoming.LineOfDutyCaseId = caseId;
-                incoming.Id = 0;
+                var dto = new CreateAuthorityDto
+                {
+                    LineOfDutyCaseId = caseId,
+                    Role = incoming.Role,
+                    Name = incoming.Name,
+                    Rank = incoming.Rank,
+                    Title = incoming.Title,
+                    ActionDate = incoming.ActionDate,
+                    Recommendation = incoming.Recommendation,
+                    Comments = incoming.Comments
+                };
 
-                Context.AddObject("Authorities", incoming);
-                trackedEntities.Add(incoming);
+                var response = await HttpClient.PostAsJsonAsync("odata/Authorities", dto, JsonOptions, cancellationToken);
+                response.EnsureSuccessStatusCode();
+
+                var created = await response.Content.ReadFromJsonAsync<LineOfDutyAuthority>(JsonOptions, cancellationToken);
+                savedAuthorities.Add(created!);
             }
         }
 
-        // Step 4: Send all changes in a single $batch request.
-        await Context.SaveChangesAsync(
-            SaveChangesOptions.BatchWithSingleChangeset | SaveChangesOptions.UseJsonBatch,
-            cancellationToken);
-
-        // Detach all tracked entities.
-        foreach (var entity in trackedEntities)
-            Context.Detach(entity);
-
-        foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
-        {
-            if (Context.Entities.Any(e => e.Entity == toRemove))
-                Context.Detach(toRemove);
-        }
-
-        return trackedEntities;
+        return savedAuthorities;
     }
 }

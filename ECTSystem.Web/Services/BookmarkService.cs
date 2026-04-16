@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -59,17 +60,9 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var bookmark = new Bookmark { LineOfDutyCaseId = caseId };
-
-        try
-        {
-            Context.AddObject("Bookmarks", bookmark);
-            await Context.SaveChangesAsync(SaveChangesOptions.None, cancellationToken);
-        }
-        finally
-        {
-            Context.Detach(bookmark);
-        }
+        var dto = new CreateBookmarkDto { LineOfDutyCaseId = caseId };
+        var response = await HttpClient.PostAsJsonAsync("odata/Bookmarks", dto, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
@@ -89,23 +82,19 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
             return;
         }
 
-        try
-        {
-            if (Context.GetEntityDescriptor(bookmark) == null)
-            {
-                Context.AttachTo("Bookmarks", bookmark);
-            }
-            Context.DeleteObject(bookmark);
-            await Context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DataServiceRequestException ex) when (ex.InnerException is DataServiceClientException { StatusCode: 404 })
-        {
-            // Already deleted on the server, safely ignore
-        }
-        finally
+        if (Context.GetEntityDescriptor(bookmark) != null)
         {
             Context.Detach(bookmark);
         }
+
+        var response = await HttpClient.DeleteAsync($"odata/Bookmarks({bookmark.Id})", cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return;
+        }
+
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)

@@ -32,16 +32,9 @@ public class CaseDialogueService : ODataServiceBase, ICaseDialogueService
 
     public async Task<CaseDialogueComment> PostCommentAsync(CaseDialogueComment comment, CancellationToken ct = default)
     {
-        try
-        {
-            Context.AddObject("CaseDialogueComments", comment);
-            await Context.SaveChangesAsync(Microsoft.OData.Client.SaveChangesOptions.None, ct);
-            return comment;
-        }
-        finally
-        {
-            Context.Detach(comment);
-        }
+        var response = await HttpClient.PostAsJsonAsync("odata/CaseDialogueComments", comment, JsonOptions, ct);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<CaseDialogueComment>(JsonOptions, ct))!;
     }
 
     public async Task AcknowledgeAsync(int commentId, string acknowledgedBy, CancellationToken ct = default)

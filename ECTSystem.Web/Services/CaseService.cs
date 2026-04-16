@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -143,18 +145,32 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
     {
         if (lodCase.Id == 0)
         {
-            Context.AddObject("Cases", lodCase);
-            await Context.SaveChangesAsync(cancellationToken);
+            var createDto = new CreateCaseDto
+            {
+                MemberId = lodCase.MemberId,
+                ProcessType = lodCase.ProcessType,
+                Component = lodCase.Component,
+                MemberName = lodCase.MemberName,
+                MemberRank = lodCase.MemberRank,
+                ServiceNumber = lodCase.ServiceNumber,
+                MemberDateOfBirth = lodCase.MemberDateOfBirth,
+                Unit = lodCase.Unit,
+                FromLine = lodCase.FromLine,
+                IncidentType = lodCase.IncidentType,
+                IncidentDate = lodCase.IncidentDate,
+                IncidentDescription = lodCase.IncidentDescription,
+                IncidentDutyStatus = lodCase.IncidentDutyStatus
+            };
 
-            Context.Detach(lodCase);
+            var createResponse = await HttpClient.PostAsJsonAsync("odata/Cases", createDto, JsonOptions, cancellationToken);
+            createResponse.EnsureSuccessStatusCode();
 
-            return lodCase;
+            return (await createResponse.Content.ReadFromJsonAsync<LineOfDutyCase>(JsonOptions, cancellationToken))!;
         }
 
-        // Capture navigation data before SaveChangesAsync — the slim PATCH
-        // response only includes WorkflowStateHistories and scalar fields
-        // (RowVersion, etc.), so the OData client may null out other nav
-        // properties when it applies the response in-place.
+        // Capture navigation data before the PATCH — the slim response
+        // only includes scalar fields (RowVersion, etc.), so we need to
+        // restore navigation properties afterward.
         var documents = lodCase.Documents;
         var authorities = lodCase.Authorities;
         var appeals = lodCase.Appeals;
@@ -165,27 +181,43 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         var witnessStatements = lodCase.WitnessStatements;
         var auditComments = lodCase.AuditComments;
 
-        if (Context.GetEntityDescriptor(lodCase) == null)
+        // Detach from OData context if tracked.
+        if (Context.GetEntityDescriptor(lodCase) != null)
         {
-            Context.AttachTo("Cases", lodCase);
+            Context.Detach(lodCase);
         }
-        Context.UpdateObject(lodCase);
-        await Context.SaveChangesAsync(cancellationToken);
 
-        Context.Detach(lodCase);
+        var updateDto = CaseDtoMapper.ToUpdateDto(lodCase);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"odata/Cases({lodCase.Id})")
+        {
+            Content = JsonContent.Create(updateDto, options: JsonOptions)
+        };
+
+        if (lodCase.RowVersion is { Length: > 0 })
+        {
+            request.Headers.IfMatch.Add(
+                new System.Net.Http.Headers.EntityTagHeaderValue(
+                    $"\"{ Convert.ToBase64String(lodCase.RowVersion) }\""));
+        }
+
+        var response = await HttpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var updatedCase = (await response.Content.ReadFromJsonAsync<LineOfDutyCase>(JsonOptions, cancellationToken))!;
 
         // Restore captured navigation properties
-        lodCase.Documents = documents;
-        lodCase.Authorities = authorities;
-        lodCase.Appeals = appeals;
-        lodCase.Member = member;
-        lodCase.MEDCON = medcon;
-        lodCase.INCAP = incap;
-        lodCase.Notifications = notifications;
-        lodCase.WitnessStatements = witnessStatements;
-        lodCase.AuditComments = auditComments;
+        updatedCase.Documents = documents;
+        updatedCase.Authorities = authorities;
+        updatedCase.Appeals = appeals;
+        updatedCase.Member = member;
+        updatedCase.MEDCON = medcon;
+        updatedCase.INCAP = incap;
+        updatedCase.Notifications = notifications;
+        updatedCase.WitnessStatements = witnessStatements;
+        updatedCase.AuditComments = auditComments;
 
-        return lodCase;
+        return updatedCase;
     }
 
     public async Task<bool> CheckOutCaseAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)

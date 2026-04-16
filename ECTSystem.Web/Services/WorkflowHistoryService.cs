@@ -1,4 +1,6 @@
+using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -57,36 +59,41 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        Context.AddObject("WorkflowStateHistory", entry);
-        await Context.SaveChangesAsync(cancellationToken);
-        Context.Detach(entry);
+        var dto = new CreateWorkflowStateHistoryDto
+        {
+            LineOfDutyCaseId = entry.LineOfDutyCaseId,
+            WorkflowState = entry.WorkflowState,
+            EnteredDate = entry.EnteredDate,
+            ExitDate = entry.ExitDate
+        };
 
-        return entry;
+        var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistory", dto, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken))!;
     }
 
     public async Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(List<WorkflowStateHistory> entries, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
+        var savedEntries = new List<WorkflowStateHistory>(entries.Count);
+
         foreach (var entry in entries)
         {
-            Context.AddObject("WorkflowStateHistory", entry);
-        }
+            var dto = new CreateWorkflowStateHistoryDto
+            {
+                LineOfDutyCaseId = entry.LineOfDutyCaseId,
+                WorkflowState = entry.WorkflowState,
+                EnteredDate = entry.EnteredDate,
+                ExitDate = entry.ExitDate
+            };
 
-        var response = await Context.SaveChangesAsync(
-            SaveChangesOptions.BatchWithSingleChangeset | SaveChangesOptions.UseJsonBatch,
-            cancellationToken);
+            var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistory", dto, JsonOptions, cancellationToken);
+            response.EnsureSuccessStatusCode();
 
-        var savedEntries = response
-            .OfType<ChangeOperationResponse>()
-            .Select(r => (r.Descriptor as EntityDescriptor)?.Entity as WorkflowStateHistory)
-            .Where(e => e is not null)
-            .Cast<WorkflowStateHistory>()
-            .ToList();
-
-        foreach (var entry in savedEntries)
-        {
-            Context.Detach(entry);
+            var saved = await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken);
+            savedEntries.Add(saved!);
         }
 
         return savedEntries;
@@ -96,25 +103,16 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(entryId);
 
-        var query = Context.WorkflowStateHistories
-            .AddQueryOption("$filter", $"Id eq {entryId}")
-            .AddQueryOption("$top", 1);
+        var patchBody = new { ExitDate = endDate };
 
-        var results = await ExecuteQueryAsync(query, cancellationToken);
-        var entry = results.FirstOrDefault()
-            ?? throw new InvalidOperationException($"Workflow state history entry {entryId} not found.");
-
-        entry.ExitDate = endDate;
-
-        if (Context.GetEntityDescriptor(entry) == null)
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"odata/WorkflowStateHistory({entryId})")
         {
-            Context.AttachTo("WorkflowStateHistory", entry);
-        }
+            Content = JsonContent.Create(patchBody, options: JsonOptions)
+        };
 
-        Context.UpdateObject(entry);
-        await Context.SaveChangesAsync(cancellationToken);
-        Context.Detach(entry);
+        var response = await HttpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-        return entry;
+        return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken))!;
     }
 }

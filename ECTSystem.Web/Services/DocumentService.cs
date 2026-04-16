@@ -95,23 +95,8 @@ public class DocumentService : ODataServiceBase, IDocumentService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentId);
 
-        var documentUri = new Uri(Context.BaseUri, $"Documents({documentId})");
-        var trackedDocument = Context.Entities.FirstOrDefault(e => e.Identity == documentUri)?.Entity as LineOfDutyDocument;
-
-        if (trackedDocument != null)
-        {
-            Context.DeleteObject(trackedDocument);
-        }
-        else
-        {
-            // Attach a stub entity to the context for deletion if not already tracked.
-            // This avoids a GET request to fetch the entity before deleting it.
-            var documentToDelete = new LineOfDutyDocument { Id = documentId };
-            Context.AttachTo("Documents", documentToDelete);
-            Context.DeleteObject(documentToDelete);
-        }
-
-        await Context.SaveChangesAsync(cancellationToken);
+        var response = await HttpClient.DeleteAsync($"odata/Documents({documentId})", cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
     // Binary stream download — HttpClient required (OData client doesn't support raw byte responses)
