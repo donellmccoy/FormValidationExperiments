@@ -40,7 +40,7 @@ public class CreateCaseDto
     public DateTime IncidentDate { get; set; }
 
     [StringLength(4000)]
-    public string? IncidentDescription { get; set; }
+    public string IncidentDescription { get; set; } = string.Empty;
 
     public DutyStatus IncidentDutyStatus { get; set; }
 }

@@ -185,6 +185,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         var notifications = lodCase.Notifications;
         var witnessStatements = lodCase.WitnessStatements;
         var auditComments = lodCase.AuditComments;
+        var workflowStateHistories = lodCase.WorkflowStateHistories;
 
         // Detach from OData context if tracked.
         if (Context.GetEntityDescriptor(lodCase) != null)
@@ -226,6 +227,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         updatedCase.Notifications = notifications;
         updatedCase.WitnessStatements = witnessStatements;
         updatedCase.AuditComments = auditComments;
+        updatedCase.WorkflowStateHistories = workflowStateHistories;
 
         return updatedCase;
     }
