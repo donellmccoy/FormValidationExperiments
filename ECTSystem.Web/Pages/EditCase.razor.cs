@@ -961,6 +961,12 @@ public partial class EditCase : ComponentBase, IDisposable
                         NotificationSeverity.Success,
                         "Line of Duty Case Started",
                         $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
+
+                    // Update the URL from /case/new to /case/{id} so the page is
+                    // in proper edit mode. Set _loadedCaseId first so that
+                    // OnParametersSetAsync does not re-fetch the case we just set up.
+                    _loadedCaseId = CaseId;
+                    Navigation.NavigateTo($"/case/{CaseId}?from=case&mode=edit", replace: true);
                 }
             }
             catch (Exception ex)

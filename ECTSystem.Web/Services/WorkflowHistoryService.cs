@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
@@ -112,6 +113,12 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
 
         var response = await HttpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
+
+        // OData Updated() returns 204 No Content by default — no body to deserialize.
+        if (response.StatusCode is HttpStatusCode.NoContent)
+        {
+            return null!;
+        }
 
         return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken))!;
     }

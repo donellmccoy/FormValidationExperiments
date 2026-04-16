@@ -29,7 +29,7 @@ public interface IBookmarkService
     Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
-        CancellationToken cancellationToken = default);
+        string? expand = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Adds a bookmark for the given case, associating it with the currently authenticated user.
@@ -72,5 +72,5 @@ public interface IBookmarkService
         WorkflowState[]? excludeStates = null,
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
-        CancellationToken cancellationToken = default);
+        string? expand = null, CancellationToken cancellationToken = default);
 }

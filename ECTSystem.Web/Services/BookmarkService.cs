@@ -17,7 +17,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
-        CancellationToken cancellationToken = default)
+        string? expand = null, CancellationToken cancellationToken = default)
     {
         var query = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.Bookmarked", false);
 
@@ -35,6 +35,9 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
 
         if (!string.IsNullOrEmpty(select))
             query = query.AddQueryOption("$select", select);
+
+        if (!string.IsNullOrEmpty(expand))
+            query = query.AddQueryOption("$expand", expand);
 
         if (count == true)
         {
@@ -133,7 +136,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         WorkflowState[]? excludeStates = null,
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
-        CancellationToken cancellationToken = default)
+        string? expand = null, CancellationToken cancellationToken = default)
     {
         // Step 1: Get bookmarked case IDs via the server-side Bookmarked() function.
         var bookmarkedQuery = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.Bookmarked", false)
@@ -151,7 +154,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
         var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
 
-        var url = BuildNavigationPropertyUrl("odata/Cases/ByCurrentState", combinedFilter, top, skip, orderby, count, select);
+        var url = BuildNavigationPropertyUrl("odata/Cases/ByCurrentState", combinedFilter, top, skip, orderby, count, select, expand);
 
         var body = new
         {

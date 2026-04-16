@@ -1,4 +1,6 @@
-# Phase 6: Blazor WASM Client — Migrate Write Operations to HttpClient + DTOs
+# Phase 6: Blazor WASM Client — Migrate Write Operations to HttpClient + DTOs ✅
+
+> **Status:** ✅ Complete. All 10 write methods have been migrated to `HttpClient` + DTOs. No `Context.AddObject`, `Context.UpdateObject`, or `Context.DeleteObject` calls remain in `ECTSystem.Web/Services/`. `CaseDtoMapper.ToUpdateDto` is in place and `SaveCaseAsync` uses `If-Match` ETag concurrency.
 
 ## Overview
 
@@ -74,11 +76,15 @@ No new shared DTOs are needed — the `CaseDialogueCommentsController.Post` acce
 
 ## Implementation Plan
 
-### Phase 6A: LOW Complexity Migrations (5 methods)
+### Phase 6A: LOW Complexity Migrations (5 methods) ✅
+
+> **Status:** Done. All five low-complexity migrations shipped — see the individual sub-sections below.
 
 These are simple create/delete operations with no batching, diffing, or concurrency concerns.
 
-#### 6A.1 — BookmarkService.AddBookmarkAsync
+#### 6A.1 — BookmarkService.AddBookmarkAsync ✅
+
+> **Status:** Done. Uses `HttpClient.PostAsJsonAsync("odata/Bookmarks", createDto, JsonOptions, ct)` with `CreateBookmarkDto`.
 
 **Current code:**
 ```csharp
@@ -116,7 +122,9 @@ public async Task AddBookmarkAsync(int caseId, CancellationToken cancellationTok
 
 ---
 
-#### 6A.2 — BookmarkService.RemoveBookmarkAsync
+#### 6A.2 — BookmarkService.RemoveBookmarkAsync ✅
+
+> **Status:** Done. OData query is retained to resolve the bookmark id, tracked entity is detached, then `HttpClient.DeleteAsync("odata/Bookmarks({id})")` is issued with 404 tolerance.
 
 **Current code:**
 ```csharp
@@ -193,7 +201,9 @@ public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellation
 
 ---
 
-#### 6A.3 — DocumentService.DeleteDocumentAsync
+#### 6A.3 — DocumentService.DeleteDocumentAsync ✅
+
+> **Status:** Done. Stub-attach pattern eliminated; now a direct `HttpClient.DeleteAsync("odata/Documents({documentId})")`.
 
 **Current code:**
 ```csharp
@@ -236,7 +246,9 @@ public async Task DeleteDocumentAsync(int caseId, int documentId, CancellationTo
 
 ---
 
-#### 6A.4 — CaseDialogueService.PostCommentAsync
+#### 6A.4 — CaseDialogueService.PostCommentAsync ✅
+
+> **Status:** Done. Uses `HttpClient.PostAsJsonAsync("odata/CaseDialogueComments", comment, JsonOptions, ct)`.
 
 **Current code:**
 ```csharp
@@ -263,7 +275,9 @@ public async Task<CaseDialogueComment> PostCommentAsync(CaseDialogueComment comm
 
 ---
 
-#### 6A.5 — WorkflowHistoryService.AddHistoryEntryAsync
+#### 6A.5 — WorkflowHistoryService.AddHistoryEntryAsync ✅
+
+> **Status:** Done. Uses `HttpClient.PostAsJsonAsync("odata/WorkflowStateHistory", dto, JsonOptions, ct)` with `CreateWorkflowStateHistoryDto`.
 
 **Current code:**
 ```csharp
@@ -297,11 +311,15 @@ public async Task<WorkflowStateHistory> AddHistoryEntryAsync(WorkflowStateHistor
 
 ---
 
-### Phase 6B: MEDIUM Complexity Migrations (2 methods)
+### Phase 6B: MEDIUM Complexity Migrations (2 methods) ✅
+
+> **Status:** Done. Both medium-complexity migrations shipped — see the individual sub-sections below.
 
 These involve batch operations or partial updates that require more careful handling.
 
-#### 6B.1 — WorkflowHistoryService.AddHistoryEntriesAsync (batch)
+#### 6B.1 — WorkflowHistoryService.AddHistoryEntriesAsync (batch) ✅
+
+> **Status:** Done. Loops and posts each entry via `HttpClient.PostAsJsonAsync`; the OData `UseJsonBatch` path has been removed.
 
 **Current code:**
 ```csharp
@@ -360,7 +378,9 @@ Add a `PostBatch` action on `WorkflowStateHistoryController` that accepts `List<
 
 ---
 
-#### 6B.2 — WorkflowHistoryService.UpdateHistoryEndDateAsync
+#### 6B.2 — WorkflowHistoryService.UpdateHistoryEndDateAsync ✅
+
+> **Status:** Done. Issues a PATCH to `odata/WorkflowStateHistory({id})` with a partial `{ ExitDate }` JSON body; tolerates 204 No Content.
 
 **Current code:**
 ```csharp
@@ -413,11 +433,15 @@ public async Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, D
 
 ---
 
-### Phase 6C: HIGH Complexity Migrations (3 methods)
+### Phase 6C: HIGH Complexity Migrations (3 methods) ✅
+
+> **Status:** Done. All three high-complexity migrations shipped — see the individual sub-sections below.
 
 These involve batch upsert logic, navigation property management, or concurrency control.
 
-#### 6C.1 — AuthorityService.SaveAuthoritiesAsync
+#### 6C.1 — AuthorityService.SaveAuthoritiesAsync ✅
+
+> **Status:** Done. Existing authorities are queried via OData, detached, then diffed by `Role`; deletes/updates/creates are issued as individual `HttpClient` calls (`DELETE`, `PATCH`, `POST` with `CreateAuthorityDto`).
 
 **Current code (summary):**
 1. Query existing authorities for the case via OData
@@ -503,7 +527,9 @@ public async Task SaveAuthoritiesAsync(int caseId, List<LineOfDutyAuthority> aut
 
 ---
 
-#### 6C.2 — CaseService.SaveCaseAsync (CREATE path)
+#### 6C.2 — CaseService.SaveCaseAsync (CREATE path) ✅
+
+> **Status:** Done. `Id == 0` path builds a `CreateCaseDto` and posts to `odata/Cases`; response deserialized back into `LineOfDutyCase`.
 
 **Current code:**
 ```csharp
@@ -549,7 +575,9 @@ if (lodCase.Id == 0)
 
 ---
 
-#### 6C.3 — CaseService.SaveCaseAsync (UPDATE path)
+#### 6C.3 — CaseService.SaveCaseAsync (UPDATE path) ✅
+
+> **Status:** Done. Navigation properties are captured before the PATCH, the entity is detached from the OData context, `CaseDtoMapper.ToUpdateDto` builds an `UpdateCaseDto`, and the PATCH is sent with an `If-Match` header containing the Base64-encoded `RowVersion`. Navigation properties are restored on the response. The 9-nav-prop hack is eliminated from the write path.
 
 **Current code (summary):**
 1. Capture 9 navigation properties (Documents, Authorities, Appeals, Member, MEDCON, INCAP, Notifications, WitnessStatements, AuditComments)
@@ -619,7 +647,9 @@ public static UpdateCaseDto ToUpdateDto(LineOfDutyCase entity)
 
 ---
 
-### Phase 6D: Interface Updates
+### Phase 6D: Interface Updates ✅
+
+> **Status:** Done. No interface changes were required — DTO mapping is encapsulated inside each service implementation.
 
 Update service interfaces to reflect any parameter type changes. Most methods keep the same signatures since the DTO conversion happens inside the service implementation. However, consider these changes:
 
@@ -637,7 +667,9 @@ Update service interfaces to reflect any parameter type changes. Most methods ke
 
 ---
 
-### Phase 6E: New Mapper Method
+### Phase 6E: New Mapper Method ✅
+
+> **Status:** Done. `CaseDtoMapper.ToUpdateDto(LineOfDutyCase)` is implemented in `ECTSystem.Shared/Mapping/CaseDtoMapper.cs` and is consumed by `CaseService.SaveCaseAsync`.
 
 Add `ToUpdateDto` to `CaseDtoMapper` in `ECTSystem.Shared/Mapping/CaseDtoMapper.cs`:
 
@@ -744,12 +776,12 @@ For each migrated method:
 
 ## Success Criteria
 
-- [ ] All 10 write methods migrated to `HttpClient` + DTOs
-- [ ] No `Context.AddObject`, `Context.UpdateObject`, or `Context.DeleteObject` calls remain for write operations
-- [ ] `SaveCaseAsync` navigation-property preservation hack eliminated
-- [ ] `AuthorityService.SaveAuthoritiesAsync` batch-upsert pattern replaced with individual HTTP calls
-- [ ] `DocumentService.DeleteDocumentAsync` stub-attach pattern eliminated
-- [ ] All existing 137 tests still pass
-- [ ] New unit tests added for each migrated method
-- [ ] End-to-end smoke test passes (create → edit → transition → complete)
-- [ ] No interface changes required (DTO mapping encapsulated in services)
+- [x] All 10 write methods migrated to `HttpClient` + DTOs
+- [x] No `Context.AddObject`, `Context.UpdateObject`, or `Context.DeleteObject` calls remain for write operations
+- [x] `SaveCaseAsync` navigation-property preservation hack eliminated (from the write path; nav props are now captured/restored only around the slim PATCH response)
+- [x] `AuthorityService.SaveAuthoritiesAsync` batch-upsert pattern replaced with individual HTTP calls
+- [x] `DocumentService.DeleteDocumentAsync` stub-attach pattern eliminated
+- [x] All existing 137 tests still pass
+- [x] New unit tests added for each migrated method
+- [x] End-to-end smoke test passes (create → edit → transition → complete)
+- [x] No interface changes required (DTO mapping encapsulated in services)
