@@ -35,16 +35,12 @@ public class CreateCaseDto
     [StringLength(200)]
     public string FromLine { get; set; } = string.Empty;
 
-    [Required]
     public IncidentType IncidentType { get; set; }
 
-    [Required]
     public DateTime IncidentDate { get; set; }
 
-    [Required]
     [StringLength(4000)]
-    public string IncidentDescription { get; set; } = string.Empty;
+    public string? IncidentDescription { get; set; }
 
-    [Required]
     public DutyStatus IncidentDutyStatus { get; set; }
 }

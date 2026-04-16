@@ -20,7 +20,7 @@ public static class CaseDtoMapper
             FromLine = dto.FromLine,
             IncidentType = dto.IncidentType,
             IncidentDate = dto.IncidentDate,
-            IncidentDescription = dto.IncidentDescription,
+            IncidentDescription = dto.IncidentDescription ?? string.Empty,
             IncidentDutyStatus = dto.IncidentDutyStatus,
         };
     }

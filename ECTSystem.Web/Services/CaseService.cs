@@ -163,7 +163,12 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
             };
 
             var createResponse = await HttpClient.PostAsJsonAsync("odata/Cases", createDto, JsonOptions, cancellationToken);
-            createResponse.EnsureSuccessStatusCode();
+
+            if (!createResponse.IsSuccessStatusCode)
+            {
+                var errorBody = await createResponse.Content.ReadAsStringAsync(cancellationToken);
+                throw new HttpRequestException($"POST odata/Cases failed ({createResponse.StatusCode}): {errorBody}");
+            }
 
             return (await createResponse.Content.ReadFromJsonAsync<LineOfDutyCase>(JsonOptions, cancellationToken))!;
         }
@@ -202,7 +207,12 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         }
 
         var response = await HttpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"PATCH odata/Cases({lodCase.Id}) failed ({response.StatusCode}): {errorBody}");
+        }
 
         var updatedCase = (await response.Content.ReadFromJsonAsync<LineOfDutyCase>(JsonOptions, cancellationToken))!;
 
