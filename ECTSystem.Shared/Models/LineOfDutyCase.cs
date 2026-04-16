@@ -184,6 +184,11 @@ public class LineOfDutyCase : AuditableEntity
     public INCAPDetails INCAP { get; set; }
     public bool MemberChoseMEDCON { get; set; } // If eligible for both
 
+    // Soft Delete
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public string DeletedBy { get; set; } = string.Empty;
+
     // Checkout
     public bool IsCheckedOut { get; set; }
     public string CheckedOutBy { get; set; } = string.Empty;

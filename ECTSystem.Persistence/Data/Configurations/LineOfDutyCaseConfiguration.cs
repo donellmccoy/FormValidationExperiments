@@ -11,9 +11,16 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
         builder.HasKey(e => e.Id);
         builder.HasIndex(e => e.CaseId).IsUnique();
 
+        // Global query filter: exclude soft-deleted cases from all queries by default.
+        // Use IgnoreQueryFilters() to include soft-deleted cases when needed (e.g., admin restore).
+        builder.HasQueryFilter(e => !e.IsDeleted);
+
         // Indexes for common query patterns
         builder.HasIndex(e => e.MemberId);
         builder.HasIndex(e => e.CreatedDate);
+        builder.HasIndex(e => e.IsDeleted)
+               .HasDatabaseName("IX_Cases_IsDeleted")
+               .HasFilter("[IsDeleted] = 0");
         builder.HasIndex(e => new { e.MemberId, e.CreatedDate })
                .HasDatabaseName("IX_Cases_MemberId_CreatedDate");
 
@@ -63,6 +70,9 @@ public class LineOfDutyCaseConfiguration : IEntityTypeConfiguration<LineOfDutyCa
                .OnDelete(DeleteBehavior.NoAction);
 
         // ── String length constraints ──
+
+        // Soft delete
+        builder.Property(e => e.DeletedBy).HasMaxLength(256);
 
         // Basic case info
         builder.Property(e => e.MemberName).HasMaxLength(150);

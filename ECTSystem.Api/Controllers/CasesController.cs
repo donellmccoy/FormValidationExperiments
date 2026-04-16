@@ -355,7 +355,8 @@ public class CasesController : ODataControllerBase
     }
 
     /// <summary>
-    /// Deletes an LOD case and its related entities.
+    /// Soft-deletes an LOD case by setting IsDeleted = true.
+    /// The global query filter on LineOfDutyCase excludes soft-deleted cases from all subsequent queries.
     /// OData route: DELETE /odata/Cases({key})
     /// </summary>
     [Authorize(Roles = "Admin")]
@@ -365,7 +366,7 @@ public class CasesController : ODataControllerBase
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
-        var lodCase = await context.Cases.IncludeAllNavigations().FirstOrDefaultAsync(c => c.Id == key, ct);
+        var lodCase = await context.Cases.FirstOrDefaultAsync(c => c.Id == key, ct);
 
         if (lodCase is null)
         {
@@ -382,19 +383,9 @@ public class CasesController : ODataControllerBase
             return Problem(title: "Checkout conflict", detail: $"Case {key} is currently checked out by {lodCase.CheckedOutByName} and cannot be deleted.", statusCode: StatusCodes.Status409Conflict);
         }
 
-        // ClientCascade handles tracked child collections automatically
-        context.Cases.Remove(lodCase);
-
-        // MEDCON/INCAP are already loaded via extensions — remove directly from the tracked entities
-        if (lodCase.MEDCON is not null)
-        {
-            context.MEDCONDetails.Remove(lodCase.MEDCON);
-        }
-
-        if (lodCase.INCAP is not null)
-        {
-            context.INCAPDetails.Remove(lodCase.INCAP);
-        }
+        lodCase.IsDeleted = true;
+        lodCase.DeletedAt = DateTime.UtcNow;
+        lodCase.DeletedBy = User.Identity?.Name ?? string.Empty;
 
         // Use client-provided RowVersion for optimistic concurrency check
         context.Entry(lodCase).Property(e => e.RowVersion).OriginalValue = lodCase.RowVersion;
