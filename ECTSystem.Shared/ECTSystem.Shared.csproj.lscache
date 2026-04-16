@@ -96,8 +96,6 @@ Models/
  AuditComment.cs
  Bookmark.cs
  CaseDialogueComment.cs
- CaseTransitionRequest.cs
- CaseTransitionResponse.cs
  INCAPDetails.cs
  LineOfDutyAppeal.cs
  LineOfDutyAuthority.cs

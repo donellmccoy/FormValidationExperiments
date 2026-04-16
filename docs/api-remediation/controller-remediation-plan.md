@@ -6,11 +6,11 @@ Consolidated implementation plan derived from the characterization reviews of al
 
 | Metric | Count |
 |--------|-------|
-| **Total items (Phases 1–8)** | 30 |
+| **Total items (Phases 1–9)** | 36 |
 | **Completed** ✅ | 30 |
-| **Not done** ❌ | 0 |
+| **Not done** ❌ | 6 |
 | **Partial** ⏳ | 0 |
-| **Remaining work** | None |
+| **Remaining work** | 6 items (Phase 9) |
 | **Deferred (D.1–D.6)** | 6 — unchanged, future work |
 
 ---
@@ -331,6 +331,97 @@ return Problem(title: "Case already checked out",
 
 ---
 
+## Phase 9 — Over-Posting Guards & Controller Coverage Gaps ❌
+
+**Goal:** Prevent mass assignment of server-managed fields, add missing protections to controllers not covered in earlier phases, and tighten authorization on destructive operations.
+
+### 9.1 Guard server-managed fields on `CasesController.Post` ❌
+
+- **File:** `Controllers/CasesController.cs`
+- **Action:** After model binding in `Post()`, explicitly reset all server-managed properties before `SaveChangesAsync`. A client can currently set `IsDeleted`, `DeletedAt`, `DeletedBy`, `IsCheckedOut`, `CheckedOutBy`, `CheckedOutByName`, `CheckedOutDate`, `IsAudited`, `CompletionDate`, `TotalTimelineDays`, `Id`, and all audit fields (`CreatedBy`, `CreatedDate`, `ModifiedBy`, `ModifiedDate`).
+- **Source:** Code review — `LineOfDutyCase` has 150+ properties; `Post` accepts the raw entity with no field filtering.
+- **Risk if skipped:** Over-posting allows a client to bypass soft-delete visibility, fake checkout status, forge audit trails, or inject arbitrary key values.
+- **Severity:** HIGH
+
+```csharp
+// After model binding, before SaveChangesAsync:
+lodCase.Id = 0;
+lodCase.IsDeleted = false;
+lodCase.DeletedAt = null;
+lodCase.DeletedBy = null;
+lodCase.IsCheckedOut = false;
+lodCase.CheckedOutBy = null;
+lodCase.CheckedOutByName = null;
+lodCase.CheckedOutDate = null;
+lodCase.IsAudited = false;
+lodCase.CompletionDate = null;
+lodCase.TotalTimelineDays = null;
+lodCase.CreatedBy = userId;
+lodCase.CreatedDate = DateTime.UtcNow;
+lodCase.ModifiedBy = null;
+lodCase.ModifiedDate = null;
+```
+
+### 9.2 Guard server-managed fields on `CasesController.Patch` ❌
+
+- **File:** `Controllers/CasesController.cs`
+- **Action:** After `delta.Patch(existing)`, mark server-managed properties as unmodified so they cannot be overwritten by a client-supplied delta. Currently a client can PATCH `IsDeleted = true`, `IsCheckedOut = true`, `CheckedOutBy = "attacker"`, or overwrite audit fields.
+- **Source:** Code review — contrast with `MembersController.Put` and `DocumentsController.Put` which already protect audit fields via `IsModified = false`.
+- **Risk if skipped:** Any authenticated user can soft-delete cases, fake checkout, or forge audit trail via PATCH.
+- **Severity:** HIGH
+
+```csharp
+// After delta.Patch(existing):
+context.Entry(existing).Property(e => e.IsDeleted).IsModified = false;
+context.Entry(existing).Property(e => e.DeletedAt).IsModified = false;
+context.Entry(existing).Property(e => e.DeletedBy).IsModified = false;
+context.Entry(existing).Property(e => e.IsCheckedOut).IsModified = false;
+context.Entry(existing).Property(e => e.CheckedOutBy).IsModified = false;
+context.Entry(existing).Property(e => e.CheckedOutByName).IsModified = false;
+context.Entry(existing).Property(e => e.CheckedOutDate).IsModified = false;
+context.Entry(existing).Property(e => e.IsAudited).IsModified = false;
+context.Entry(existing).Property(e => e.CompletionDate).IsModified = false;
+context.Entry(existing).Property(e => e.TotalTimelineDays).IsModified = false;
+context.Entry(existing).Property(e => e.CreatedBy).IsModified = false;
+context.Entry(existing).Property(e => e.CreatedDate).IsModified = false;
+```
+
+### 9.3 Add role-based authorization to `CasesController.Patch` ❌
+
+- **File:** `Controllers/CasesController.cs`
+- **Action:** Add `[Authorize(Roles = "Admin,CaseManager")]` on the `Patch` method. Currently any authenticated user can PATCH any field on any case, including workflow-sensitive fields like `FinalFinding`, `BoardFinding`, `ApprovingFinding`.
+- **Source:** Code review — `Delete` has `[Authorize(Roles = "Admin")]` but `Patch` has no role restriction.
+- **Risk if skipped:** A low-privilege authenticated user (e.g., Viewer) can modify case findings and workflow data.
+- **Severity:** MEDIUM
+
+### 9.4 Add protections to `CaseDialogueCommentsController` ❌
+
+- **Files:** `Controllers/CaseDialogueCommentsController.cs`
+- **Action:**
+  1. **Patch** — Add concurrency control (capture `RowVersion` before `delta.Patch()`, set `OriginalValue`, catch `DbUpdateConcurrencyException` → `409`). Add field restrictions to prevent changing `LineOfDutyCaseId` (moving a comment to another case) and audit fields (`CreatedBy`, `CreatedDate`). Follow the same `IsModified = false` pattern used elsewhere.
+  2. **Delete** — Add `[Authorize(Roles = "Admin")]` or implement owner-check logic (only the comment author or an Admin can delete).
+- **Source:** Code review — this controller was not included in the original remediation plan. It has no concurrency handling, no field guards, and no role restriction on delete.
+- **Risk if skipped:** Comments can be silently overwritten, moved between cases, or deleted by any user.
+- **Severity:** MEDIUM
+
+### 9.5 Add role-based authorization to `MembersController.Delete` ❌
+
+- **File:** `Controllers/MembersController.cs`
+- **Action:** Add `[Authorize(Roles = "Admin")]` on the `Delete` method. Currently any authenticated user can hard-delete any Member record. A Member linked to Cases could also cause FK constraint violations.
+- **Source:** Code review — contrast with `CasesController.Delete` which has `[Authorize(Roles = "Admin")]`.
+- **Risk if skipped:** Unrestricted hard deletion of military member records in a legal/military application.
+- **Severity:** MEDIUM
+
+### 9.6 Add role-based authorization to `AuthoritiesController.Delete` ❌
+
+- **File:** `Controllers/AuthoritiesController.cs`
+- **Action:** Add `[Authorize(Roles = "Admin")]` on the `Delete` method. Phase 8.2 added `[Authorize(Roles = "Admin,CaseManager")]` on `Post` and `Patch`, but `Delete` was left unrestricted beyond class-level `[Authorize]`. Consider adding existence-check for dependent records before deletion.
+- **Source:** Code review — hard delete on reviewing authority records with no elevated role requirement.
+- **Risk if skipped:** Any authenticated user can delete authority records that may be referenced by case decisions.
+- **Severity:** LOW-MEDIUM
+
+---
+
 ## Deferred — Architectural Changes (Future Phases)
 
 These are larger refactors that require coordinated client and server changes. They should be planned as separate work items.
@@ -389,9 +480,10 @@ These are larger refactors that require coordinated client and server changes. T
 | **6 — Logging** | 6.1, 6.2, 6.3 | Small | Low — improves observability | ✅ 3/3 |
 | **7 — ProblemDetails** | 7.1, 7.2 | Medium | Low — improves error handling consistency | ✅ 2/2 |
 | **8 — RBAC** | 8.1–8.4 | Medium | Medium — adds resource-level authorization | ✅ 4/4 |
+| **9 — Over-Posting & Coverage Gaps** | 9.1–9.6 | Medium | **High** — prevents mass assignment, closes controller coverage gaps | ❌ 0/6 |
 | **Deferred** | D.1–D.6 | Large | Variable — architectural improvements | D.3 ✅, D.4 ✅, D.5 partial, D.6 ✅ |
 
-**Total immediate items:** 30 (Phases 1–8) — **30 complete, 0 not done, 0 partial**
+**Total immediate items:** 36 (Phases 1–9) — **30 complete, 6 not done, 0 partial**
 **Deferred items:** 6 (future work items)
 
 ---
@@ -407,6 +499,7 @@ Phase 5 (Caching) ← no dependencies
 Phase 6 (Logging) ← requires LoggingService interface/implementation updates
 Phase 7 (ProblemDetails) ← 7.1 (DI registration) before 7.2 (controller updates)
 Phase 8 (RBAC) ← 8.1 (policy definitions) before 8.2–8.4; depends on Phase 1
+Phase 9 (Over-Posting) ← 9.3, 9.5, 9.6 depend on Phase 8 (role definitions); 9.1, 9.2, 9.4 have no dependencies
 ```
 
-Phases 1–5 can be executed in parallel across developers once Phase 1 is merged (Phase 8 depends on it). Phase 6 and 7 are independent of all other phases.
+Phases 1–5 can be executed in parallel across developers once Phase 1 is merged (Phase 8 depends on it). Phase 6 and 7 are independent of all other phases. Phase 9 items 9.1, 9.2, and 9.4 can start immediately; 9.3, 9.5, and 9.6 depend on Phase 8 role definitions.
