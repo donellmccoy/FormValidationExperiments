@@ -90,6 +90,7 @@ public class Program
         app.UseODataBatching();
         app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<OperationCancelledMiddleware>();
+        app.UseMiddleware<UnauthorizedAccessMiddleware>();
         app.UseHttpsRedirection();
         app.UseCors("BlazorClient");
 

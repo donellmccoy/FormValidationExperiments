@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
@@ -26,8 +27,9 @@ public class CasesController : ODataControllerBase
 {
     public CasesController(
         IDbContextFactory<EctDbContext> contextFactory,
-        ILoggingService loggingService)
-        : base(contextFactory, loggingService)
+        ILoggingService loggingService,
+        TimeProvider timeProvider)
+        : base(contextFactory, loggingService, timeProvider)
     {
     }
 
@@ -100,7 +102,6 @@ public class CasesController : ODataControllerBase
     /// in YYYYMMDD-XXX format (001–999 sequential suffix per date).
     /// OData route: POST /odata/Cases
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Post([FromBody] CreateCaseDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -117,7 +118,7 @@ public class CasesController : ODataControllerBase
 
         if (lodCase.InitiationDate == default)
         {
-            lodCase.InitiationDate = DateTime.UtcNow;
+            lodCase.InitiationDate = TimeProvider.GetUtcNow().UtcDateTime;
         }
 
         // Retry loop: CaseId suffix is generated from MAX() and concurrent inserts
@@ -131,7 +132,7 @@ public class CasesController : ODataControllerBase
                 // never persisted without a state. Cases always start at
                 // MemberInformationEntry — Draft is a transient client-side state
                 // that is never stored in the database.
-                var now = DateTime.UtcNow;
+                var now = TimeProvider.GetUtcNow().UtcDateTime;
                 lodCase.WorkflowStateHistories ??= [];
                 lodCase.WorkflowStateHistories.Add(new WorkflowStateHistory
                 {
@@ -147,7 +148,7 @@ public class CasesController : ODataControllerBase
 
                 break;
             }
-            catch (DbUpdateException) when (attempt < maxRetries)
+            catch (DbUpdateException ex) when (attempt < maxRetries && ex.InnerException is SqlException { Number: 2601 or 2627 })
             {
                 // Detach the failed entity so EF doesn't try to re-insert it
                 context.Entry(lodCase).State = EntityState.Detached;
@@ -175,7 +176,7 @@ public class CasesController : ODataControllerBase
     /// </summary>
     protected virtual async Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var today = TimeProvider.GetUtcNow().UtcDateTime.ToString("yyyyMMdd");
         var prefix = $"{today}-";
 
         // UPDLOCK serializes concurrent readers on the same date prefix so two
@@ -203,7 +204,6 @@ public class CasesController : ODataControllerBase
     /// for optimistic concurrency control.
     /// OData route: PATCH /odata/Cases({key})
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Patch([FromODataUri] int key, [FromBody] UpdateCaseDto dto, CancellationToken ct = default)
     {
         if (dto is null)
@@ -310,7 +310,7 @@ public class CasesController : ODataControllerBase
         existing.IsCheckedOut = true;
         existing.CheckedOutBy = userId;
         existing.CheckedOutByName = userName;
-        existing.CheckedOutDate = DateTime.UtcNow;
+        existing.CheckedOutDate = TimeProvider.GetUtcNow().UtcDateTime;
 
         // Optimistic concurrency — use client-supplied RowVersion if available, otherwise fall back to DB-loaded value
         var clientRowVersion = parameters?.TryGetValue("RowVersion", out var rv) == true ? rv as byte[] : null;
@@ -350,6 +350,16 @@ public class CasesController : ODataControllerBase
             return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
 
+        // Only the user who checked out the case (or an Admin) may check it back in
+        var userId = GetAuthenticatedUserId();
+        if (existing.CheckedOutBy != userId && !User.IsInRole("Admin"))
+        {
+            return Problem(
+                title: "Forbidden",
+                detail: "You can only check in cases that you checked out.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         existing.IsCheckedOut = false;
         existing.CheckedOutBy = string.Empty;
         existing.CheckedOutByName = string.Empty;
@@ -381,6 +391,24 @@ public class CasesController : ODataControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
+        // Extract RowVersion from If-Match header for optimistic concurrency
+        var ifMatch = Request.Headers.IfMatch.ToString();
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            return Problem(title: "Precondition required", detail: "An If-Match header with the current ETag is required for deletes.", statusCode: StatusCodes.Status428PreconditionRequired);
+        }
+
+        byte[] clientRowVersion;
+        try
+        {
+            var raw = ifMatch.Trim('"');
+            clientRowVersion = Convert.FromBase64String(raw);
+        }
+        catch (FormatException)
+        {
+            return Problem(title: "Bad request", detail: "The If-Match header contains an invalid ETag value.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
         LoggingService.DeletingCase(key);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -403,11 +431,11 @@ public class CasesController : ODataControllerBase
         }
 
         lodCase.IsDeleted = true;
-        lodCase.DeletedAt = DateTime.UtcNow;
+        lodCase.DeletedAt = TimeProvider.GetUtcNow().UtcDateTime;
         lodCase.DeletedBy = User.Identity?.Name ?? string.Empty;
 
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(lodCase).Property(e => e.RowVersion).OriginalValue = lodCase.RowVersion;
+        context.Entry(lodCase).Property(e => e.RowVersion).OriginalValue = clientRowVersion;
 
         try
         {

@@ -18,8 +18,8 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class BookmarksController : ODataControllerBase
 {
-    public BookmarksController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
-        : base(contextFactory, loggingService)
+    public BookmarksController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
+        : base(contextFactory, loggingService, timeProvider)
     {
     }
 
@@ -29,7 +29,7 @@ public class BookmarksController : ODataControllerBase
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(NoStore = true)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         LoggingService.QueryingBookmarks();
@@ -43,7 +43,6 @@ public class BookmarksController : ODataControllerBase
     /// </summary>
     /// <param name="dto">The bookmark data; only <c>LineOfDutyCaseId</c> is required.</param>
     /// <param name="ct">Cancellation token.</param>
-    [EnableQuery]
     public async Task<IActionResult> Post([FromBody] CreateBookmarkDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)

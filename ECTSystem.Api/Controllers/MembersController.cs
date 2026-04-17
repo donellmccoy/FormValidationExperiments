@@ -20,8 +20,8 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class MembersController : ODataControllerBase
 {
-    public MembersController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
-        : base(contextFactory, loggingService)
+    public MembersController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
+        : base(contextFactory, loggingService, timeProvider)
     {
     }
 
@@ -55,14 +55,14 @@ public class MembersController : ODataControllerBase
     /// Creates a new Member.
     /// OData route: POST /odata/Members
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Post([FromBody] CreateMemberDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
         {
             var errors = ModelState
                 .Where(ms => ms.Value?.Errors.Count > 0)
-                .Select(ms => $"{ms.Key}: [{string.Join(", ", ms.Value!.Errors.Select(e => e.ErrorMessage + (e.Exception != null ? $" ({e.Exception.Message})" : "")))}]");
+                .Select(ms => $"{ms.Key}: [{string.Join(", ", ms.Value!.Errors.Select(e => e.ErrorMessage))}]");
             LoggingService.MemberInvalidModelState($"Post — {string.Join("; ", errors)}");
             return ValidationProblem(ModelState);
         }
@@ -81,7 +81,7 @@ public class MembersController : ODataControllerBase
     /// Fully replaces an existing Member.
     /// OData route: PUT /odata/Members({key})
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] UpdateMemberDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -121,7 +121,7 @@ public class MembersController : ODataControllerBase
     /// Partially updates an existing Member.
     /// OData route: PATCH /odata/Members({key})
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<Member> delta, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -162,6 +162,7 @@ public class MembersController : ODataControllerBase
     /// Deletes a Member.
     /// OData route: DELETE /odata/Members({key})
     /// </summary>
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingMember(key);

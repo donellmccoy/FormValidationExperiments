@@ -9,7 +9,9 @@ using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
+using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -68,11 +70,12 @@ public class DocumentsController : ODataControllerBase
     private readonly IBlobStorageService _blobStorage;
 
     public DocumentsController(
-        IDbContextFactory<EctDbContext> contextFactory, 
+        IDbContextFactory<EctDbContext> contextFactory,
         ILoggingService loggingService,
+        TimeProvider timeProvider,
         AF348PdfService pdfService,
         IBlobStorageService blobStorage)
-        : base(contextFactory, loggingService)
+        : base(contextFactory, loggingService, timeProvider)
     {
         _pdfService = pdfService;
         _blobStorage = blobStorage;
@@ -84,7 +87,7 @@ public class DocumentsController : ODataControllerBase
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(NoStore = true)]     
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get(CancellationToken ct = default)        
     {
         LoggingService.QueryingDocuments();
@@ -99,7 +102,7 @@ public class DocumentsController : ODataControllerBase
     /// <param name="key">The document identifier.</param>
     /// <param name="ct">Cancellation token.</param>
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    [ResponseCache(NoStore = true)]     
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<SingleResult<LineOfDutyDocument>> Get([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.RetrievingDocument(key, 0);
@@ -112,7 +115,7 @@ public class DocumentsController : ODataControllerBase
     /// Partially updates an existing document's metadata using OData Delta semantics.
     /// OData route: PATCH /odata/Documents({key})
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyDocument> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
@@ -131,10 +134,11 @@ public class DocumentsController : ODataControllerBase
                 statusCode: StatusCodes.Status404NotFound);
         }
 
+        var originalRowVersion = existing.RowVersion;
         delta.Patch(existing);
 
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = existing.RowVersion;
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowVersion;
 
         try
         {
@@ -156,17 +160,11 @@ public class DocumentsController : ODataControllerBase
     /// Fully replaces an existing document's metadata.
     /// OData route: PUT /odata/Documents({key})
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
-    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] LineOfDutyDocument document, CancellationToken ct = default)
+    [Authorize(Roles = "Admin,CaseManager")]
+    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] UpdateDocumentDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
-
-        if (key != document.Id)
-            return Problem(
-                title: "Key mismatch",
-                detail: "The key parameter does not match the entity ID.",
-                statusCode: StatusCodes.Status400BadRequest);
 
         LoggingService.UpdatingDocument(key, 0);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -182,14 +180,9 @@ public class DocumentsController : ODataControllerBase
         }
 
         // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = document.RowVersion;
-        context.Entry(existing).CurrentValues.SetValues(document);
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = dto.RowVersion;
 
-        // Prevent client from overwriting server-managed audit fields
-        context.Entry(existing).Property(e => e.CreatedBy).IsModified = false;
-        context.Entry(existing).Property(e => e.CreatedDate).IsModified = false;
-        context.Entry(existing).Property(e => e.ModifiedBy).IsModified = false;
-        context.Entry(existing).Property(e => e.ModifiedDate).IsModified = false;
+        DocumentDtoMapper.ApplyUpdate(dto, existing);
 
         try
         {
@@ -242,7 +235,8 @@ public class DocumentsController : ODataControllerBase
         }
 
         var stream = await _blobStorage.OpenReadAsync(doc.BlobPath, ct);
-        Response.Headers.ContentDisposition = $"attachment; filename=\"{doc.FileName}\"";
+        var cd = new System.Net.Mime.ContentDisposition { FileName = doc.FileName, Inline = false };
+        Response.Headers.ContentDisposition = cd.ToString();
         return File(stream, doc.ContentType, doc.FileName);
     }
 
@@ -252,6 +246,7 @@ public class DocumentsController : ODataControllerBase
     /// Route: POST /odata/Cases({caseId})/Documents
     /// </summary>
     [HttpPost("odata/Cases({caseId})/Documents")]
+    [Authorize(Roles = "Admin,CaseManager")]
     [RequestSizeLimit(50 * 1024 * 1024)] // 50 MB total for multiple files
     public async Task<IActionResult> Upload(
         [FromRoute] int caseId,
@@ -360,7 +355,7 @@ public class DocumentsController : ODataControllerBase
                         Description = description,
                         BlobPath = blobPath,
                         FileSize = f.Length,
-                        UploadDate = DateTime.UtcNow
+                        UploadDate = TimeProvider.GetUtcNow().UtcDateTime
                     };
 
                     context.Documents.Add(document);
@@ -389,6 +384,7 @@ public class DocumentsController : ODataControllerBase
     /// Deletes a document by its identifier.
     /// Standard OData route: DELETE /odata/Documents({key})
     /// </summary>
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingDocument(key, 0);

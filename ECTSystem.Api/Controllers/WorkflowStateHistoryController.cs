@@ -22,8 +22,8 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class WorkflowStateHistoryController : ODataControllerBase
 {
-    public WorkflowStateHistoryController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
-        : base(contextFactory, loggingService)
+    public WorkflowStateHistoryController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
+        : base(contextFactory, loggingService, timeProvider)
     {
     }
 
@@ -59,7 +59,7 @@ public class WorkflowStateHistoryController : ODataControllerBase
     /// </summary>
     /// <param name="dto">The workflow state history data to persist.</param>
     /// <param name="ct">Cancellation token.</param>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Post([FromBody] CreateWorkflowStateHistoryDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -81,6 +81,7 @@ public class WorkflowStateHistoryController : ODataControllerBase
     /// Updates a workflow state history entry (typically to set EndDate when completing a step).
     /// OData route: PATCH /odata/WorkflowStateHistory({key})
     /// </summary>
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<WorkflowStateHistory> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)

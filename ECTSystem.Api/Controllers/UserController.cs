@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ECTSystem.Api.Extensions;
 using ECTSystem.Persistence.Models;
 using ECTSystem.Shared.ViewModels;
 
@@ -21,8 +22,7 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
     [HttpGet("me")]
     public IActionResult GetCurrentUser()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? throw new UnauthorizedAccessException("Missing NameIdentifier claim.");
+        var userId = User.GetRequiredUserId();
         var email = User.FindFirstValue(ClaimTypes.Email);
         var name = User.FindFirstValue(ClaimTypes.Name) ?? email ?? userId;
 
@@ -30,6 +30,7 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
     }
 
     [HttpGet("lookup")]
+    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> LookupUsers([FromQuery] string[] ids, CancellationToken ct = default)
     {
         if (ids is null || ids.Length == 0)

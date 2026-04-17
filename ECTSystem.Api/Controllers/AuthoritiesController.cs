@@ -21,8 +21,8 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class AuthoritiesController : ODataControllerBase
 {
-    public AuthoritiesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
-        : base(contextFactory, loggingService)
+    public AuthoritiesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
+        : base(contextFactory, loggingService, timeProvider)
     {
     }
 
@@ -56,7 +56,6 @@ public class AuthoritiesController : ODataControllerBase
     /// Creates a new authority entry.
     /// OData route: POST /odata/Authorities
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Post([FromBody] CreateAuthorityDto dto, CancellationToken ct = default)
     {
@@ -79,7 +78,6 @@ public class AuthoritiesController : ODataControllerBase
     /// Partially updates an existing authority using OData Delta semantics.
     /// OData route: PATCH /odata/Authorities({key})
     /// </summary>
-    [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyAuthority> delta, CancellationToken ct = default)
     {
