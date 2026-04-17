@@ -11,6 +11,7 @@ using ECTSystem.Api.Services;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using ECTSystem.Shared.ViewModels;
 using Xunit;
 
 namespace ECTSystem.Tests.Controllers;
@@ -68,7 +69,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
             .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => new SqliteEctDbContext(_dbOptions));
 
-        _sut = new DocumentsController(_mockContextFactory.Object, _mockLog.Object, CreatePdfService(), _mockBlobStorage.Object);
+        _sut = new DocumentsController(_mockContextFactory.Object, _mockLog.Object, TimeProvider.System, CreatePdfService(), _mockBlobStorage.Object);
         _sut.ControllerContext = CreateControllerContext();
     }
 
@@ -234,44 +235,33 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         using var ctx = CreateSeedContext();
         var persisted = await ctx.Documents.FindAsync(docId);
 
-        var replacement = BuildDocument();
-        replacement.Id = docId;
-        replacement.FileName = "replaced-report.pdf";
-        replacement.Description = "Fully replaced document";
-        replacement.RowVersion = persisted!.RowVersion;
+        var dto = new UpdateDocumentDto
+        {
+            DocumentType = DocumentType.Miscellaneous,
+            Description = "Fully replaced document",
+            RowVersion = persisted!.RowVersion
+        };
 
-        var result = await _sut.Put(docId, replacement);
+        var result = await _sut.Put(docId, dto);
 
         var updated = Assert.IsType<UpdatedODataResult<LineOfDutyDocument>>(result);
-        Assert.Equal("replaced-report.pdf", updated.Entity.FileName);
         Assert.Equal("Fully replaced document", updated.Entity.Description);
     }
 
     [Fact]
     public async Task Put_WhenNotFound_ReturnsNotFound()
     {
-        var document = BuildDocument();
-        document.Id = 999;
+        var dto = new UpdateDocumentDto
+        {
+            DocumentType = DocumentType.Miscellaneous,
+            Description = "No such doc",
+            RowVersion = [0x00]
+        };
 
-        var result = await _sut.Put(999, document);
+        var result = await _sut.Put(999, dto);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, obj.StatusCode);
-        Assert.IsType<ProblemDetails>(obj.Value);
-    }
-
-    [Fact]
-    public async Task Put_WhenKeyMismatch_ReturnsBadRequest()
-    {
-        var docId = SeedDocument();
-
-        var document = BuildDocument();
-        document.Id = docId + 100; // Mismatch
-
-        var result = await _sut.Put(docId, document);
-
-        var obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status400BadRequest, obj.StatusCode);
         Assert.IsType<ProblemDetails>(obj.Value);
     }
 

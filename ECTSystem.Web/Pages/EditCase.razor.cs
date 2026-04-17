@@ -851,16 +851,14 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task OnMemberForwardClick(RadzenSplitButtonItem item)
     {
-        bool? confirmed = null;
-
         if (item?.Value == "cancel")
         {
-            confirmed = await DialogService.Confirm(
+            var cancelConfirmed = await DialogService.Confirm(
                 "Are you sure you want to cancel this line of duty case?",
                 "Confirm Cancellation",
                 new ConfirmOptions { OkButtonText = "Cancel Case", CancelButtonText = "Don't Cancel Case" });
 
-            if (confirmed != true)
+            if (cancelConfirmed != true)
             {
                 return;
             }
@@ -870,125 +868,24 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        if (item?.Value == "revert")
+        // For existing cases, delegate to the shared workflow action handler
+        // which handles IsReadOnly, error handling, result application, and grid reload.
+        if (!IsNewCase)
         {
-            await OnRevertChanges();
-
+            await OnForwardClick(item, WorkflowTrigger.ForwardToMedicalTechnician);
             return;
         }
 
-        if (IsNewCase)
+        // New case creation — unique to the Member Information tab.
+        if (_selectedMemberId == 0)
         {
-            if (_selectedMemberId == 0)
-            {
-                NotificationService.Notify(NotificationSeverity.Warning, "Member Required", "Please search for and select a member before starting a case.");
-                return;
-            }
-
-            confirmed = await DialogService.Confirm(
-                "Are you sure you want to start this line of duty case?",
-                "Start Line of Duty Case",
-                new ConfirmOptions
-                {
-                    OkButtonText = "Yes",
-                    CancelButtonText = "Cancel"
-                });
-
-            if (confirmed != true)
-            {
-                return;
-            }
-
-            await SetBusyAsync("Creating line of duty case...");
-
-            try
-            {
-                var lineOfDutyCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
-
-                LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
-
-                // Persist the case first so it gets a real DB Id — the API creates the
-                // case with an initial MemberInformationEntry workflow state history
-                // entry, so the case is never in Draft state on the server.
-                lineOfDutyCase = await CaseService.SaveCaseAsync(lineOfDutyCase, _cts.Token);
-
-                // The OData client doesn't merge navigation collections from the POST
-                // response, so WorkflowStateHistories is empty. Fetch the initial
-                // history entries so the state machine can properly close out the
-                // MemberInformationEntry entry when advancing to MedicalTechnicianReview.
-                var initialHistories = await WorkflowHistoryService.GetWorkflowStateHistoriesAsync(
-                    lineOfDutyCase.Id, cancellationToken: _cts.Token);
-
-                if (initialHistories.Value is not null)
-                {
-                    lineOfDutyCase.WorkflowStateHistories = new List<WorkflowStateHistory>(initialHistories.Value);
-                }
-
-                // The API already created the MemberInformationEntry state, so start
-                // the client-side state machine at MemberInformationEntry and advance
-                // to MedicalTechnicianReview.
-                _stateMachine = StateMachineFactory.CreateAtState(WorkflowState.MemberInformationEntry);
-
-                var result = await _stateMachine.FireAsync(lineOfDutyCase, WorkflowTrigger.ForwardToMedicalTechnician);
-
-                if (result.Success)
-                {
-                    _lineOfDutyCase = result.Case;
-
-                    CaseId = _lineOfDutyCase.CaseId;
-
-                    // Auto-checkout the newly created case so the creator can edit immediately
-                    await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion, _cts.Token);
-                    Mode = "edit";
-
-                    _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
-
-                    TakeSnapshots();
-
-                    _workflowSidebar.ApplyWorkflowState(_lineOfDutyCase);
-
-                    _selectedTabIndex = result.TabIndex;
-
-                    // The tracking grid's LoadData fired during initial render (create
-                    // mode) but returned early because Id was 0. Reload it now so it
-                    // picks up the workflow history entries created during case setup.
-                    if (_trackingGrid is not null)
-                    {
-                        await _trackingGrid.Reload();
-                    }
-
-                    NotificationService.Notify(
-                        NotificationSeverity.Success,
-                        "Line of Duty Case Started",
-                        $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
-
-                    // Update the URL from /case/new to /case/{id} so the page is
-                    // in proper edit mode. Set _loadedCaseId first so that
-                    // OnParametersSetAsync does not re-fetch the case we just set up.
-                    _loadedCaseId = CaseId;
-                    Navigation.NavigateTo($"/case/{CaseId}?from=case&mode=edit", replace: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to create case: {CaseId}", CaseId);
-
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Create Line of Duty Case Failed",
-                    ex.Message);
-            }
-            finally
-            {
-                await SetBusyAsync(isBusy: false);
-            }
-
+            NotificationService.Notify(NotificationSeverity.Warning, "Member Required", "Please search for and select a member before starting a case.");
             return;
         }
 
-        confirmed = await DialogService.Confirm(
-            "Are you sure you want to forward the case to the Medical Technician?",
-            "Forward to Medical Technician",
+        var confirmed = await DialogService.Confirm(
+            "Are you sure you want to start this line of duty case?",
+            "Start Line of Duty Case",
             new ConfirmOptions
             {
                 OkButtonText = "Yes",
@@ -1000,19 +897,47 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        await SetBusyAsync("Forwarding case to Medical Technician...");
+        await SetBusyAsync("Creating line of duty case...");
 
         try
         {
-            LineOfDutyCaseMapper.ApplyToCase(_viewModel, _lineOfDutyCase);
+            var lineOfDutyCase = LineOfDutyCaseFactory.Create(_selectedMemberId);
 
-            var result = await _stateMachine.FireAsync(_lineOfDutyCase, WorkflowTrigger.ForwardToMedicalTechnician);
+            LineOfDutyCaseMapper.ApplyToCase(_viewModel, lineOfDutyCase);
+
+            // Persist the case first so it gets a real DB Id — the API creates the
+            // case with an initial MemberInformationEntry workflow state history
+            // entry, so the case is never in Draft state on the server.
+            lineOfDutyCase = await CaseService.SaveCaseAsync(lineOfDutyCase, _cts.Token);
+
+            // The OData client doesn't merge navigation collections from the POST
+            // response, so WorkflowStateHistories is empty. Fetch the initial
+            // history entries so the state machine can properly close out the
+            // MemberInformationEntry entry when advancing to MedicalTechnicianReview.
+            var initialHistories = await WorkflowHistoryService.GetWorkflowStateHistoriesAsync(
+                lineOfDutyCase.Id, cancellationToken: _cts.Token);
+
+            if (initialHistories.Value is not null)
+            {
+                lineOfDutyCase.WorkflowStateHistories = new List<WorkflowStateHistory>(initialHistories.Value);
+            }
+
+            // The API already created the MemberInformationEntry state, so start
+            // the client-side state machine at MemberInformationEntry and advance
+            // to MedicalTechnicianReview.
+            _stateMachine = StateMachineFactory.CreateAtState(WorkflowState.MemberInformationEntry);
+
+            var result = await _stateMachine.FireAsync(lineOfDutyCase, WorkflowTrigger.ForwardToMedicalTechnician);
 
             if (result.Success)
             {
                 _lineOfDutyCase = result.Case;
 
                 CaseId = _lineOfDutyCase.CaseId;
+
+                // Auto-checkout the newly created case so the creator can edit immediately
+                await CaseService.CheckOutCaseAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion, _cts.Token);
+                Mode = "edit";
 
                 _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
 
@@ -1022,11 +947,34 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _selectedTabIndex = result.TabIndex;
 
+                // The tracking grid's LoadData fired during initial render (create
+                // mode) but returned early because Id was 0. Reload it now so it
+                // picks up the workflow history entries created during case setup.
+                if (_trackingGrid is not null)
+                {
+                    await _trackingGrid.Reload();
+                }
+
                 NotificationService.Notify(
                     NotificationSeverity.Success,
-                    "Line of Duty Case Updated",
-                    $"Case: {_lineOfDutyCase.CaseId} updated for: {_lineOfDutyCase.MemberName}.");
+                    "Line of Duty Case Started",
+                    $"Case: {_lineOfDutyCase.CaseId} created for: {_lineOfDutyCase.MemberName}.");
+
+                // Update the URL from /case/new to /case/{id} so the page is
+                // in proper edit mode. Set _loadedCaseId first so that
+                // OnParametersSetAsync does not re-fetch the case we just set up.
+                _loadedCaseId = CaseId;
+                Navigation.NavigateTo($"/case/{CaseId}?from=case&mode=edit", replace: true);
             }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create case: {CaseId}", CaseId);
+
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Create Line of Duty Case Failed",
+                ex.Message);
         }
         finally
         {

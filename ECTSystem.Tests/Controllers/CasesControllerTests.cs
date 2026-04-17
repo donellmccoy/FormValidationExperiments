@@ -21,8 +21,8 @@ internal class TestCasesController : CasesController
 {
     private int _counter;
 
-    public TestCasesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService)
-        : base(contextFactory, loggingService) { }
+    public TestCasesController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
+        : base(contextFactory, loggingService, timeProvider) { }
 
     protected override Task<string> GenerateCaseIdAsync(EctDbContext context, CancellationToken ct)
     {
@@ -101,7 +101,8 @@ public class CasesControllerTests : ControllerTestBase
 
         _sut = new TestCasesController(
             _mockContextFactory.Object,
-            _mockLog.Object);
+            _mockLog.Object,
+            TimeProvider.System);
 
         _sut.ControllerContext = CreateControllerContext();
     }

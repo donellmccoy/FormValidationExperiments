@@ -51,7 +51,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => new EctDbContext(_dbOptions));
 
-        _sut = new AuthoritiesController(_mockContextFactory.Object, _mockLog.Object);
+        _sut = new AuthoritiesController(_mockContextFactory.Object, _mockLog.Object, TimeProvider.System);
         _sut.ControllerContext = CreateControllerContext();
     }
 

@@ -59,7 +59,7 @@ public class MembersControllerTests : ControllerTestBase
 
         _mockLog = new Mock<ILoggingService>();
 
-        _sut = new MembersController(_mockFactory.Object, _mockLog.Object);
+        _sut = new MembersController(_mockFactory.Object, _mockLog.Object, TimeProvider.System);
         _sut.ControllerContext = CreateControllerContext();
     }
 

@@ -60,7 +60,7 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
 
         _mockLog = new Mock<ILoggingService>();
 
-        _sut = new WorkflowStateHistoryController(_mockContextFactory.Object, _mockLog.Object);
+        _sut = new WorkflowStateHistoryController(_mockContextFactory.Object, _mockLog.Object, TimeProvider.System);
         _sut.ControllerContext = CreateControllerContext();
     }
 

@@ -58,7 +58,7 @@ public class BookmarksControllerTests : ControllerTestBase
             .Setup(f => f.CreateDbContext())
             .Returns(() => new EctDbContext(_dbOptions));
 
-        _sut = new BookmarksController(_mockContextFactory.Object, _mockLog.Object);
+        _sut = new BookmarksController(_mockContextFactory.Object, _mockLog.Object, TimeProvider.System);
         _sut.ControllerContext = CreateControllerContext();
     }
 
