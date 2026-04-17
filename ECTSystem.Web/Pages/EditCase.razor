@@ -64,8 +64,8 @@ else
                 @* ─── Case Info Card ─── *@
                 <RadzenPanel AllowCollapse="false" class="rz-border-primary-lighter rz-border-radius-2 rz-p-6">
                     <ChildContent>
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1.5rem" AlignItems="AlignItems.Start" Wrap="FlexWrap.NoWrap">
-                            <RadzenStack Gap="0.5rem" class="case-details">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
                                     <RadzenText TextStyle="TextStyle.H6">
                                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Style="display: inline-flex;">
@@ -75,31 +75,64 @@ else
                                     </RadzenText>
                                     <RadzenBadge Text="@_viewModel.WorkflowState.ToDisplayString()" BadgeStyle="BadgeStyle.Primary" />
                                 </RadzenStack>
-                                <RadzenText TextStyle="TextStyle.Body1" class="case-member-name">
-                                    Member: @_viewModel.MemberName
-                                </RadzenText>
-                                <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem" Wrap="FlexWrap.Wrap" class="case-meta">
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-                                        <span class="material-symbols-outlined">shield</span>
-                                        <span>Component: @_viewModel.Component</span>
-                                    </RadzenStack>
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-                                        <span class="material-symbols-outlined">military_tech</span>
-                                        <span>Rank: @_viewModel.Rank</span>
-                                    </RadzenStack>
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-                                        <span class="material-symbols-outlined">star</span>
-                                        <span>Grade: @_viewModel.Grade</span>
-                                    </RadzenStack>
-                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-                                        <span class="material-symbols-outlined">groups</span>
-                                        <span>Unit: @_viewModel.Unit</span>
-                                    </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" AlignItems="AlignItems.Center">
+                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                    Click="@OnBookmarkClick"
+                                                    Disabled="@(_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)"
+                                                    class="toolbar-icon-btn"
+                                                    title="@((_lineOfDutyCase is null || _lineOfDutyCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _bookmark.IsBookmarked ? "Remove bookmark" : "Add bookmark")">
+                                        <ChildContent>
+                                            <span class="material-symbols-outlined @(_bookmark.IsAnimating ? "bookmark-flash" : "")">@_bookmark.Icon</span>
+                                        </ChildContent>
+                                    </RadzenButton>
+
+                                    @if (IsCheckedOutByMe)
+                                    {
+                                        <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                        Click="@OnCheckInClick"
+                                                        class="toolbar-icon-btn"
+                                                        title="Release the case so others can edit it">
+                                            <ChildContent>
+                                                <span class="material-symbols-outlined">lock_open</span>
+                                            </ChildContent>
+                                        </RadzenButton>
+                                    }
+                                    else if (!IsNewCase && !(_lineOfDutyCase?.IsCheckedOut ?? false))
+                                    {
+                                        <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                                        Click="@OnCheckOutClick"
+                                                        class="toolbar-icon-btn"
+                                                        title="Check out the case for editing">
+                                            <ChildContent>
+                                                <span class="material-symbols-outlined">lock</span>
+                                            </ChildContent>
+                                        </RadzenButton>
+                                    }
+
+                                    <RadzenButton Variant="Variant.Text" Icon="print" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="Print Case" Click="@OnPrintCaseClick" Disabled="@_isPrintingCase" />
+                                    <RadzenButton Variant="Variant.Text" Icon="history" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="History" Click="@OnHistoryClick" />
                                 </RadzenStack>
                             </RadzenStack>
-                            <RadzenStack Gap="0.5rem">
-                                <RadzenButton Variant="Variant.Text" Icon="print" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="Print Case" Click="@OnPrintCaseClick" Disabled="@_isPrintingCase" />
-                                <RadzenButton Variant="Variant.Text" Icon="history" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" title="History" Click="@OnHistoryClick" />
+                            <RadzenText TextStyle="TextStyle.Body1" class="case-member-name">
+                                Member: @_viewModel.MemberName
+                            </RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem" Wrap="FlexWrap.Wrap" class="case-meta">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined">shield</span>
+                                    <span>Component: @_viewModel.Component</span>
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined">military_tech</span>
+                                    <span>Rank: @_viewModel.Rank</span>
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined">star</span>
+                                    <span>Grade: @_viewModel.Grade</span>
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                    <span class="material-symbols-outlined">groups</span>
+                                    <span>Unit: @_viewModel.Unit</span>
+                                </RadzenStack>
                             </RadzenStack>
                         </RadzenStack>
                     </ChildContent>
@@ -129,51 +162,14 @@ else
                                 @* ─── Assessment Panel ─── *@
                                 <RadzenPanel AllowCollapse="false" Style="width:1135px; height:1125px" class="assessment-panel rz-border-primary-lighter rz-border-radius-2 rz-overflow-hidden">
                                     <HeaderTemplate>
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
-                                                        Style="width: 100%"
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center"
                                                         class="rz-py-4 rz-pe-6 rz-ps-2">
-                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
-                                                <div class="panel-icon-box">
-                                                    <span class="material-symbols-outlined">@CurrentTabIcon</span>
-                                                </div>
-                                                <RadzenText TextStyle="TextStyle.H6" class="panel-title">
-                                                    @CurrentTabName
-                                                </RadzenText>
-                                            </RadzenStack>
-                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" AlignItems="AlignItems.Center">
-                                                <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                                                Click="@OnBookmarkClick"
-                                                                Disabled="@(_lineOfDutyCase is null || _lineOfDutyCase.Id == 0)"
-                                                                class="toolbar-icon-btn"
-                                                                title="@((_lineOfDutyCase is null || _lineOfDutyCase.Id == 0) ? "Save the LOD first to enable bookmarking" : _bookmark.IsBookmarked ? "Remove bookmark" : "Add bookmark")">
-                                                    <ChildContent>
-                                                        <span class="material-symbols-outlined @(_bookmark.IsAnimating ? "bookmark-flash" : "")">@_bookmark.Icon</span>
-                                                    </ChildContent>
-                                                </RadzenButton>
-
-                                                @if (IsCheckedOutByMe)
-                                                {
-                                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                                                    Click="@OnCheckInClick"
-                                                                    class="toolbar-icon-btn"
-                                                                    title="Release the case so others can edit it">
-                                                        <ChildContent>
-                                                            <span class="material-symbols-outlined">lock_open</span>
-                                                        </ChildContent>
-                                                    </RadzenButton>
-                                                }
-                                                else if (!IsNewCase && !(_lineOfDutyCase?.IsCheckedOut ?? false))
-                                                {
-                                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                                                    Click="@OnCheckOutClick"
-                                                                    class="toolbar-icon-btn"
-                                                                    title="Check out the case for editing">
-                                                        <ChildContent>
-                                                            <span class="material-symbols-outlined">lock</span>
-                                                        </ChildContent>
-                                                    </RadzenButton>
-                                                }
-                                            </RadzenStack>
+                                            <div class="panel-icon-box">
+                                                <span class="material-symbols-outlined">@CurrentTabIcon</span>
+                                            </div>
+                                            <RadzenText TextStyle="TextStyle.H6" class="panel-title">
+                                                @CurrentTabName
+                                            </RadzenText>
                                         </RadzenStack>
                                     </HeaderTemplate>
                                     <ChildContent>
@@ -189,7 +185,7 @@ else
                                                     </span>
                                                 </Template>
                                                 <ChildContent>
-                                                    <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MemberInformation))">
+                                                    <RadzenTemplateForm class="rz-p-7" TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MemberInformation))">
 
                                                         @* ═══ Fieldset A: Items 4–6 — Member Identification ═══ *@
                                                         <RadzenFieldset Text="Member Identification">
@@ -294,7 +290,7 @@ else
                                                         </RadzenFieldset>
 
                                                         @* ═══ Fieldset: Notification & Reporting ═══ *@
-                                                        <RadzenFieldset Text="Notification &amp; Reporting" class="rz-mt-4 arc-fieldset">
+                                                        <RadzenFieldset Text="Notification &amp; Reporting" class="arc-fieldset">
                                                             <RadzenStack Gap="1.25rem">
                                                                 <div class="detail-section">
                                                                     <RadzenLabel Text="Did the member notify the Medical Unit timely IAW AFI 36-2910:" class="fieldset-label" />
@@ -341,7 +337,7 @@ else
                                                         </RadzenFieldset>
 
                                                         @* ═══ Routing ═══ *@
-                                                        <RadzenFieldset Text="Routing" class="routing-fieldset rz-mt-2 rz-mb-4">
+                                                        <RadzenFieldset Text="Routing" class="routing-fieldset">
                                                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center">
                                                                 <RadzenSplitButton Click="@(item => OnMemberForwardClick(item))"
                                                                                     Text="Forward to Medical Technician"
@@ -368,7 +364,7 @@ else
                                                         </span>
                                                     </Template>
                                                     <ChildContent>
-                                                        <RadzenTemplateForm TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MedicalTechnician))">
+                                                        <RadzenTemplateForm class="rz-p-7" TItem="LineOfDutyViewModel" Data="@_viewModel" Submit="@(() => SaveTabFormDataAsync(TabNames.MedicalTechnician))">
                                                         <RadzenText TextStyle="TextStyle.Body1" class="rz-p-4 rz-color-secondary">
                                                             Medical Technician review content will be added here.
                                                         </RadzenText>

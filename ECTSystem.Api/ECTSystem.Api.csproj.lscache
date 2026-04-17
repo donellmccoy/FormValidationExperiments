@@ -68,6 +68,7 @@ Controllers/
  UserController.cs
  WorkflowStateHistoryController.cs
 Extensions/
+ ClaimsPrincipalExtensions.cs
  LineOfDutyCaseQueryExtensions.cs
  ServiceCollectionExtensions.cs
 Logging/
@@ -76,6 +77,7 @@ Logging/
 Middleware/
  OperationCancelledMiddleware.cs
  RequestLoggingMiddleware.cs
+ UnauthorizedAccessMiddleware.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  ECTSystem.Api.AssemblyInfo.cs

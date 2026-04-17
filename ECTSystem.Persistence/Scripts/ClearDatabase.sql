@@ -9,6 +9,9 @@
 USE [ect];
 GO
 
+SET QUOTED_IDENTIFIER ON;
+GO
+
 BEGIN TRANSACTION;
 BEGIN TRY
 
@@ -16,11 +19,14 @@ BEGIN TRY
     -- 1. Domain child tables (depend on Cases / Authorities)
     -- --------------------------------------------------------
     DELETE FROM [dbo].[Appeals];
+    DELETE FROM [dbo].[AuditComments];
+    DELETE FROM [dbo].[CaseDialogueComments];
     DELETE FROM [dbo].[Authorities];
     DELETE FROM [dbo].[WorkflowStateHistory];
     DELETE FROM [dbo].[Bookmarks];
     DELETE FROM [dbo].[Documents];
     DELETE FROM [dbo].[Notifications];
+    DELETE FROM [dbo].[WitnessStatements];
 
     -- --------------------------------------------------------
     -- 2. Root aggregate (depends on Members, INCAPDetails, MEDCONDetails)
@@ -36,12 +42,15 @@ BEGIN TRY
     -- --------------------------------------------------------
     -- 4. Reseed identity columns
     -- --------------------------------------------------------
-    DBCC CHECKIDENT ('[dbo].[Appeals]',          RESEED, 0);
-    DBCC CHECKIDENT ('[dbo].[Authorities]',      RESEED, 0);
-    DBCC CHECKIDENT ('[dbo].[WorkflowStateHistory]', RESEED, 0);
-    DBCC CHECKIDENT ('[dbo].[Bookmarks]',              RESEED, 0);
-    DBCC CHECKIDENT ('[dbo].[Documents]',        RESEED, 0);
-    DBCC CHECKIDENT ('[dbo].[Notifications]',    RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[Appeals]',               RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[AuditComments]',         RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[CaseDialogueComments]',  RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[Authorities]',           RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[WorkflowStateHistory]',  RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[Bookmarks]',             RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[Documents]',             RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[Notifications]',         RESEED, 0);
+    DBCC CHECKIDENT ('[dbo].[WitnessStatements]',     RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[Cases]',            RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[INCAPDetails]',     RESEED, 0);
     DBCC CHECKIDENT ('[dbo].[MEDCONDetails]',    RESEED, 0);
