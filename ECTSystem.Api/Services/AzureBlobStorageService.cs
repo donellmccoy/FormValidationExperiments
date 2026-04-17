@@ -48,11 +48,17 @@ public sealed class AzureBlobStorageService : IBlobStorageService
             BlobName = blobPath,
             Resource = "b",
             ExpiresOn = DateTimeOffset.UtcNow.Add(expiry),
-            ContentDisposition = $"attachment; filename=\"{fileName}\""
+            ContentDisposition = $"attachment; filename=\"{SanitizeFileName(fileName)}\""
         };
         sasBuilder.SetPermissions(BlobSasPermissions.Read);
 
         return blobClient.GenerateSasUri(sasBuilder);
+    }
+
+    private static string SanitizeFileName(string fileName)
+    {
+        var safe = Path.GetFileName(fileName);
+        return safe.Replace("\r", "").Replace("\n", "").Replace("\"", "'");
     }
 
     public async Task DeleteBatchAsync(IEnumerable<string> blobPaths, CancellationToken ct)

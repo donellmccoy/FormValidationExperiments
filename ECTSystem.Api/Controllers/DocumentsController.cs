@@ -331,14 +331,15 @@ public class DocumentsController : ODataControllerBase
                 {
                     LoggingService.UploadingDocument(caseId);
 
-                    var ext = Path.GetExtension(f.FileName);
+                    var safeFileName = Path.GetFileName(f.FileName);
+                    var ext = Path.GetExtension(safeFileName);
                     var contentType = MimeMap.GetValueOrDefault(ext, "application/octet-stream");
 
                     // Stream directly to blob storage
                     string blobPath;
                     using (var stream = f.OpenReadStream())
                     {
-                        blobPath = await _blobStorage.UploadAsync(stream, f.FileName, contentType, caseId, ct);
+                        blobPath = await _blobStorage.UploadAsync(stream, safeFileName, contentType, caseId, ct);
                     }
 
                     if (!Enum.TryParse<DocumentType>(documentType, ignoreCase: true, out var parsedDocType))
@@ -349,7 +350,7 @@ public class DocumentsController : ODataControllerBase
                     var document = new LineOfDutyDocument
                     {
                         LineOfDutyCaseId = caseId,
-                        FileName = f.FileName,
+                        FileName = safeFileName,
                         ContentType = contentType,
                         DocumentType = parsedDocType,
                         Description = description,

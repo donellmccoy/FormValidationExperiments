@@ -71,6 +71,7 @@ public static class ServiceCollectionExtensions
             options.Password.RequireNonAlphanumeric = false;
             options.Password.RequiredLength = 6;
         })
+        .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<EctIdentityDbContext>();
 
         services.AddAuthorization(options =>
