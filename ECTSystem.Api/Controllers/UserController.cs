@@ -30,7 +30,6 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
     }
 
     [HttpGet("lookup")]
-    [Authorize(Roles = "Admin,CaseManager")]
     public async Task<IActionResult> LookupUsers([FromQuery] string[] ids, CancellationToken ct = default)
     {
         if (ids is null || ids.Length == 0)

@@ -92,7 +92,7 @@
                     </span>
                     <RadzenButton ButtonStyle="ButtonStyle.Light"
                                   Variant="Variant.Text"
-                                  Size="ButtonSize.ExtraSmall"
+                                  Size="ButtonSize.Medium"
                                   class="bookmark-btn"
                                   title="Remove bookmark"
                                   Click="@(() => OnRemoveBookmark(lodCase))">
@@ -107,7 +107,7 @@
             <Template Context="lodCase">
                 @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
                 {
-                    @($"***-**-{lodCase.ServiceNumber[^4..]}")
+                    @($"{lodCase.ServiceNumber[^4..]}")
                 }
                 else
                 {

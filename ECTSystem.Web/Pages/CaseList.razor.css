@@ -19,7 +19,7 @@
 }
 
 ::deep .case-id-cell .checkout-lock-icon {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--rz-warning);
     margin-bottom: 4px;
     margin-left: 50px;
@@ -34,7 +34,7 @@
 }
 
 ::deep .case-id-cell .bookmark-btn .material-symbols-outlined {
-    font-size: 16px;
+    font-size: 21px;
 }
 
 ::deep .case-id-cell:hover .bookmark-btn {
