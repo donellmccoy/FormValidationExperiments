@@ -493,6 +493,14 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     #region Navigation & Actions
 
     /// <summary>
+    /// Navigates to the new-case wizard, tagging the origin as the bookmarks page.
+    /// </summary>
+    private void OnCreateCase()
+    {
+        Navigation.NavigateTo("/case/new?from=bookmarks");
+    }
+
+    /// <summary>
     /// Handles a click on a case row. If the case is already checked out by the current user,
     /// it opens in edit mode; if checked out by someone else, it opens read-only; otherwise the
     /// user is prompted to check out, view read-only, or cancel.
@@ -540,14 +548,6 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         {
             Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=readonly");
         }
-    }
-
-    /// <summary>
-    /// Navigates to the new-case wizard, tagging the origin as the bookmarks page.
-    /// </summary>
-    private void OnCreateCase()
-    {
-        Navigation.NavigateTo("/case/new?from=bookmarks");
     }
 
     #endregion
