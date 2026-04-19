@@ -343,7 +343,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             if (lodCase.BookmarkId is null)
             {
                 Logger.LogWarning("BookmarkId is null for case {CaseId} — cannot remove bookmark", lodCase.CaseId);
+
                 NotificationService.Notify(NotificationSeverity.Error, "Error", "Bookmark data is unavailable. Please refresh and try again.");
+
                 return;
             }
 
@@ -360,6 +362,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to remove bookmark for case {CaseId}", lodCase.CaseId);
+
             NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove bookmark. Please try again.");
         }
     }
@@ -369,16 +372,22 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     #region Search & Filtering
 
     /// <summary>
+    /// Long-form tooltip describing the fields covered by the free-text search.
+    /// </summary>
+    private const string SearchTooltipText =
+        "Search across case number, member name, rank, SSN, unit, incident description, " +
+        "clinical diagnosis, medical findings, commander review details, witness information, " +
+        "SJA and board review fields, and signature blocks. Results match any field containing " +
+        "your search text.";
+
+    /// <summary>
     /// Opens the long-form tooltip describing the fields covered by the free-text search.
     /// </summary>
     /// <param name="args">The DOM element reference to anchor the tooltip on.</param>
     private void ShowSearchTooltip(ElementReference args)
     {
         TooltipService.Open(args,
-            "Search across case number, member name, rank, SSN, unit, incident description, " +
-            "clinical diagnosis, medical findings, commander review details, witness information, " +
-            "SJA and board review fields, and signature blocks. Results match any field containing " +
-            "your search text.",
+            SearchTooltipText,
             new TooltipOptions { Duration = null, Position = TooltipPosition.Right, Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);" });
     }
 
@@ -400,13 +409,18 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         try
         {
             await Task.Delay(700, token);
+
+            if (token.IsCancellationRequested || _grid is null)
+            {
+                return;
+            }
+
+            await _grid.FirstPage(true);
         }
         catch (OperationCanceledException)
         {
-            return;
+            // Superseded by a newer keystroke — nothing to do.
         }
-
-        await _grid.FirstPage(true);
     }
 
     /// <summary>
@@ -572,7 +586,23 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     /// <param name="args">The cell mouse event from the grid.</param>
     private void OnCellContextMenu(DataGridCellMouseEventArgs<CaseListItemViewModel> args)
     {
-        _ = ShowContextMenuAsync(args);
+        _ = SafeRun(() => ShowContextMenuAsync(args));
+    }
+
+    /// <summary>
+    /// Runs a fire-and-forget asynchronous action and logs any exception so it isn't swallowed.
+    /// </summary>
+    /// <param name="work">The asynchronous work to run.</param>
+    private async Task SafeRun(Func<Task> work)
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Background context-menu action failed");
+        }
     }
 
     /// <summary>
@@ -668,10 +698,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     /// </summary>
     public void Dispose()
     {
-        _loadCts.Cancel();
         _loadCts.Dispose();
-        _searchCts.Cancel();
         _searchCts.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     #endregion

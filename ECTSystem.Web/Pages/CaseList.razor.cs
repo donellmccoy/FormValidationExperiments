@@ -91,7 +91,7 @@ public partial class CaseList : ComponentBase, IDisposable
     /// Radzen tooltip service used to show the search field tooltip.
     /// </summary>
     [Inject]
-    private TooltipService _tooltipService { get; set; }
+    private TooltipService TooltipService { get; set; }
 
     #endregion
 
@@ -135,7 +135,16 @@ public partial class CaseList : ComponentBase, IDisposable
     /// <summary>
     /// Current free-text search value; debounced before triggering a reload.
     /// </summary>
-    private string searchText = string.Empty;
+    private string _searchText = string.Empty;
+
+    /// <summary>
+    /// Long-form tooltip describing the fields covered by the free-text search.
+    /// </summary>
+    private const string SearchTooltipText =
+        "Search across case number, member name, rank, SSN, unit, incident description, " +
+        "clinical diagnosis, medical findings, commander review details, witness information, " +
+        "SJA and board review fields, and signature blocks. Results match any field containing " +
+        "your search text.";
 
     /// <summary>
     /// Most recent <see cref="LoadDataArgs"/> received from the grid; used for manual reloads.
@@ -348,23 +357,37 @@ public partial class CaseList : ComponentBase, IDisposable
                 return;
             }
 
+            if (lodCase.BookmarkId is null)
+            {
+                Logger.LogWarning("BookmarkId is null for case {CaseId} — cannot remove bookmark", lodCase.CaseId);
+
+                NotificationService.Notify(NotificationSeverity.Error, "Error", "Bookmark data is unavailable. Please refresh and try again.", closeOnClick: true);
+
+                return;
+            }
+
             try
             {
-                await BookmarkService.DeleteBookmarkAsync(lodCase.Id, lodCase.BookmarkId!.Value);
+                await BookmarkService.DeleteBookmarkAsync(lodCase.Id, lodCase.BookmarkId.Value);
 
                 lodCase.IsBookmarked = false;
 
                 lodCase.BookmarkId = null;
 
+                BookmarkCountService.Decrement();
+
+                // CaseListItemViewModel inherits TrackableModel, which does not implement INotifyPropertyChanged.
+                // RadzenDataGrid won't repaint a row on plain property mutation, so force a render here.
+                StateHasChanged();
+
                 Logger.LogInformation("Bookmark removed for case {CaseId}", lodCase.CaseId);
 
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
-
-                BookmarkCountService.Decrement();
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Failed to remove bookmark for case {CaseId}", lodCase.CaseId);
+
                 NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to remove bookmark. Please try again.", closeOnClick: true);
             }
         }
@@ -374,23 +397,39 @@ public partial class CaseList : ComponentBase, IDisposable
 
             StateHasChanged();
 
+            var addSucceeded = false;
+
             try
             {
                 lodCase.BookmarkId = await BookmarkService.AddBookmarkAsync(lodCase.Id);
 
                 lodCase.IsBookmarked = true;
 
+                BookmarkCountService.Increment();
+
+                addSucceeded = true;
+
+                // Force a render so the bookmark icon flips before the 800ms animation delay below.
+                // (TrackableModel does not implement INPC, so the grid won't repaint on its own.)
+                StateHasChanged();
+
                 Logger.LogInformation("Bookmark added for case {CaseId}", lodCase.CaseId);
 
                 NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
-
-                BookmarkCountService.Increment();
 
                 await Task.Delay(800);
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Failed to add bookmark for case {CaseId}", lodCase.CaseId);
+
+                if (!addSucceeded)
+                {
+                    lodCase.IsBookmarked = false;
+                    lodCase.BookmarkId = null;
+                    StateHasChanged();
+                }
+
                 NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to add bookmark. Please try again.", closeOnClick: true);
             }
             finally
@@ -434,17 +473,14 @@ public partial class CaseList : ComponentBase, IDisposable
     /// <param name="args">The DOM element reference to anchor the tooltip on.</param>
     private void ShowSearchTooltip(ElementReference args)
     {
-        _tooltipService.Open(args,
-            "Search across case number, member name, rank, SSN, unit, incident description, " +
-            "clinical diagnosis, medical findings, commander review details, witness information, " +
-            "SJA and board review fields, and signature blocks. Results match any field containing " +
-            "your search text.",
-            new TooltipOptions 
-            { 
-                Duration = null, 
-                Position = TooltipPosition.Right, 
-                Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);" 
-             });
+        TooltipService.Open(args,
+            SearchTooltipText,
+            new TooltipOptions
+            {
+                Duration = null,
+                Position = TooltipPosition.Right,
+                Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);"
+            });
     }
 
     /// <summary>
@@ -455,7 +491,7 @@ public partial class CaseList : ComponentBase, IDisposable
     /// <param name="args">The change event carrying the current text-box value.</param>
     private async Task OnSearchInput(ChangeEventArgs args)
     {
-        searchText = args.Value?.ToString() ?? string.Empty;
+        _searchText = args.Value?.ToString() ?? string.Empty;
 
         await _searchCts.CancelAsync();
         _searchCts.Dispose();
@@ -465,13 +501,18 @@ public partial class CaseList : ComponentBase, IDisposable
         try
         {
             await Task.Delay(900, token);
+
+            if (token.IsCancellationRequested || _grid is null)
+            {
+                return;
+            }
+
+            await _grid.FirstPage(true);
         }
         catch (OperationCanceledException)
         {
-            return;
+            // Superseded by a newer keystroke — nothing to do.
         }
-
-        await _grid.FirstPage(true);
     }
 
     /// <summary>
@@ -504,9 +545,9 @@ public partial class CaseList : ComponentBase, IDisposable
             filters.Add($"ProcessType eq '{_processTypeFilter.Value}'");
         }
 
-        if (!string.IsNullOrWhiteSpace(searchText))
+        if (!string.IsNullOrWhiteSpace(_searchText))
         {
-            var escaped = searchText.Replace("'", "''");
+            var escaped = _searchText.Replace("'", "''");
             string[] columns =
             [
                 // Case / Member identification
@@ -639,7 +680,23 @@ public partial class CaseList : ComponentBase, IDisposable
     /// <param name="args">The cell mouse event from the grid.</param>
     private void OnCellContextMenu(DataGridCellMouseEventArgs<CaseListItemViewModel> args)
     {
-        _ = ShowContextMenuAsync(args);
+        _ = SafeRun(() => ShowContextMenuAsync(args));
+    }
+
+    /// <summary>
+    /// Runs a fire-and-forget asynchronous action and logs any exception so it isn't swallowed.
+    /// </summary>
+    /// <param name="work">The asynchronous work to run.</param>
+    private async Task SafeRun(Func<Task> work)
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Background context-menu action failed");
+        }
     }
 
     /// <summary>
@@ -651,9 +708,11 @@ public partial class CaseList : ComponentBase, IDisposable
     private async Task ShowContextMenuAsync(DataGridCellMouseEventArgs<CaseListItemViewModel> args)
     {
         var lodCase = args.Data;
-        var isBookmarked = await BookmarkService.IsBookmarkedAsync(lodCase.Id);
+        var isBookmarked = lodCase.IsBookmarked;
         var isCheckedOutByMe = lodCase.IsCheckedOut
             && string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase);
+
+        await Task.CompletedTask;
 
         var items = new List<ContextMenuItem>
         {
@@ -737,10 +796,9 @@ public partial class CaseList : ComponentBase, IDisposable
     /// </summary>
     public void Dispose()
     {
-        _loadCts.Cancel();
         _loadCts.Dispose();
-        _searchCts.Cancel();
         _searchCts.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     #endregion

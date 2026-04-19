@@ -27,12 +27,12 @@
 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center"
               class="rz-mb-4">
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Style="width: 51%;">
-        <RadzenTextBox @ref="_searchBox" Value="@searchText"
+        <RadzenTextBox @ref="_searchBox" Value="@_searchText"
                        @oninput="@OnSearchInput"
                        Placeholder="Search cases..." Style="width: 100%;" />
         <RadzenIcon Icon="info" Style="font-size: 20px; color: var(--rz-text-secondary-color); cursor: help;"
                     MouseEnter="@ShowSearchTooltip"
-                    MouseLeave="@(_ => _tooltipService.Close())" />
+                    MouseLeave="@(_ => TooltipService.Close())" />
     </RadzenStack>
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
