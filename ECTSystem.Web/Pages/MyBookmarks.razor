@@ -38,14 +38,14 @@
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
 </RadzenStack>
 
-<RadzenDataGrid @ref="_grid" TItem="LineOfDutyCase"
-                Data="@_bookmarks"
+<RadzenDataGrid @ref="_grid" TItem="CaseListItemViewModel"
+                Data="@_cases"
                 Count="@_count"
                 LoadData="@LoadData"
                 IsLoading="@_isLoading"
                 SelectionMode="DataGridSelectionMode.Multiple"
                 AllowRowSelectOnRowClick="true"
-                @bind-Value="_selectedBookmarks"
+                @bind-Value="_selectedCases"
                 AllowSorting="true"
                 AllowFiltering="true"
                 AllowGrouping="true" 
@@ -69,7 +69,7 @@
         </RadzenStack>
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="" Width="55px" Sortable="false" Filterable="false" Resizable="false" Reorderable="false" Groupable="false" TextAlign="TextAlign.Center" >
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Title="" Width="55px" Sortable="false" Filterable="false" Resizable="false" Reorderable="false" Groupable="false" TextAlign="TextAlign.Center" >
             <Template Context="lodCase">
                 @if (lodCase.IsCheckedOut)
                 {
@@ -84,7 +84,7 @@
                 }
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="CaseId" Title="Case Number" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="CaseId" Title="Case Number" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 <div class="case-id-cell">
                     <span class="case-id-link" @onclick="@(() => OnCaseClick(lodCase))">
@@ -103,7 +103,7 @@
                 </div>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ServiceNumber" Title="SSN" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="ServiceNumber" Title="SSN" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
                 {
@@ -115,12 +115,12 @@
                 }
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberName" Title="Member Name" TextAlign="TextAlign.Center"/>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="MemberRank" Title="Rank" TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="Unit" Title="Unit" TextAlign="TextAlign.Center" />
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Title="Current Status" TextAlign="TextAlign.Center" Sortable="false">
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="MemberName" Title="Member Name" TextAlign="TextAlign.Center"/>
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="MemberRank" Title="Rank" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="Unit" Title="Unit" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Title="Current Status" TextAlign="TextAlign.Center" Sortable="false">
             <Template Context="lodCase">
-                @lodCase.GetCurrentWorkflowState().ToDisplayString()
+                @lodCase.CurrentWorkflowState.ToDisplayString()
             </Template>
             <FilterTemplate>
                 <RadzenDropDown @bind-Value="_workflowStateFilter"
@@ -133,7 +133,7 @@
                                 Change="@(args => _grid.Reload())" />
             </FilterTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.IncidentType.ToDisplayString()
             </Template>
@@ -148,8 +148,8 @@
                                 Change="@(args => _grid.Reload())" />
             </FilterTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center"/>
-        <RadzenDataGridColumn TItem="LineOfDutyCase" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center"/>
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="ProcessType" Title="Process Type" TextAlign="TextAlign.Center">
             <Template Context="lodCase">
                 @lodCase.ProcessType.ToDisplayString()
             </Template>

@@ -39,10 +39,10 @@
 </RadzenStack>
 
 <RadzenDataGrid @ref="_grid" TItem="CaseListItemViewModel"
-                Data="@cases"
-                Count="@count"
+                Data="@_cases"
+                Count="@_count"
                 LoadData="@LoadData"
-                IsLoading="@isLoading"
+                IsLoading="@_isLoading"
                 SelectionMode="DataGridSelectionMode.Single"
                 AllowRowSelectOnRowClick="true"
                 @bind-Value="_selectedCases"
@@ -97,7 +97,7 @@
                                   Click="@(() => ToggleBookmark(lodCase))"
                                   title="@(lodCase.IsBookmarked ? "Remove Bookmark" : "Add Bookmark")">
                         <ChildContent>
-                            <span class="material-symbols-outlined @(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark-flash" : "")">@(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark_added" : lodCase.IsBookmarked ? "bookmark_remove" : "bookmark_add")</span>
+                            <span class="material-symbols-outlined @GetBookmarkIconClass(lodCase)">@GetBookmarkIcon(lodCase)</span>
                         </ChildContent>
                     </RadzenButton>
                 </div>

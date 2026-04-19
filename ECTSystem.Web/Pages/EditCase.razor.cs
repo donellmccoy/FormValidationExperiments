@@ -485,7 +485,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 orderby: !string.IsNullOrEmpty(args.OrderBy) ? args.OrderBy : "InitiationDate desc",
                 select: "Id,CaseId,Unit,InitiationDate,CompletionDate,MemberId,IsCheckedOut,CheckedOutBy,CheckedOutByName",
                 count: true,
-                expand: "WorkflowStateHistories($select=Id,WorkflowState)",
+                expand: $"WorkflowStateHistories($select=Id,WorkflowState),Bookmarks($filter=UserId eq '{_currentUserId}';$select=Id,UserId)",
                 cancellationToken: ct);
 
             _previousCases = result?.Value?.AsODataEnumerable();
@@ -494,13 +494,10 @@ public partial class EditCase : ComponentBase, IDisposable
             var firstCase = _previousCases?.FirstOrDefault();
             _selectedPreviousCase = firstCase is not null ? new List<LineOfDutyCase> { firstCase } : null;
 
-            _previousCasesBookmarkedIds.Clear();
-
-            if (_previousCases is not null)
-            {
-                var ids = _previousCases.Select(c => c.Id).ToArray();
-                _previousCasesBookmarkedIds = await BookmarkService.GetBookmarkedCaseIdsAsync(ids, ct);
-            }
+            _previousCasesBookmarkedIds = (_previousCases ?? Enumerable.Empty<LineOfDutyCase>())
+                .Where(c => c.Bookmarks is not null)
+                .SelectMany(c => c.Bookmarks.Select(b => new { CaseId = c.Id, BookmarkId = b.Id }))
+                .ToDictionary(x => x.CaseId, x => x.BookmarkId);
         }
         catch (OperationCanceledException)
         {

@@ -325,6 +325,8 @@ public static class ServiceCollectionExtensions
         { Name = "AuditComments", Target = auditType, TargetMultiplicity = EdmMultiplicity.Many });
         caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
         { Name = "CaseDialogueComments", Target = dialogueCommentType, TargetMultiplicity = EdmMultiplicity.Many });
+        caseType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
+        { Name = "Bookmarks", Target = bookmarkType, TargetMultiplicity = EdmMultiplicity.Many });
 
         // LineOfDutyAppeal → AppellateAuthority
         appealType.AddUnidirectionalNavigation(new EdmNavigationPropertyInfo
