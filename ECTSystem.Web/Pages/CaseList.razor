@@ -95,9 +95,9 @@
                                   Size="ButtonSize.Medium"
                                   class="bookmark-btn"
                                   Click="@(() => ToggleBookmark(lodCase))"
-                                  title="@(bookmarkedCaseIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark")">
+                                  title="@(lodCase.IsBookmarked ? "Remove Bookmark" : "Add Bookmark")">
                         <ChildContent>
-                            <span class="material-symbols-outlined @(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark-flash" : "")">@(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark_added" : bookmarkedCaseIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add")</span>
+                            <span class="material-symbols-outlined @(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark-flash" : "")">@(animatingBookmarkIds.Contains(lodCase.Id) ? "bookmark_added" : lodCase.IsBookmarked ? "bookmark_remove" : "bookmark_add")</span>
                         </ChildContent>
                     </RadzenButton>
                 </div>

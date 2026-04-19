@@ -277,6 +277,8 @@ public static class ServiceCollectionExtensions
 
         var bookmarkType = new EdmEntityType(ns, "Bookmark");
         bookmarkType.AddKeys(bookmarkType.AddStructuralProperty("Id", EdmPrimitiveTypeKind.Int32, false));
+        bookmarkType.AddStructuralProperty("UserId", EdmPrimitiveTypeKind.String, true);
+        bookmarkType.AddStructuralProperty("LineOfDutyCaseId", EdmPrimitiveTypeKind.Int32, false);
         model.AddElement(bookmarkType);
 
         var historyType = new EdmEntityType(ns, "WorkflowStateHistory");

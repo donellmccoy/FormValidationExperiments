@@ -58,6 +58,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName";
     private const string ListExpand = "WorkflowStateHistories($select=Id,WorkflowState)";
     private string _currentUserId;
+    private Dictionary<int, int> _bookmarkIdMap = [];
 
     private WorkflowState? _workflowStateFilter;
     private IncidentType? _incidentTypeFilter;
@@ -149,6 +150,12 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             _count = result.Count;
             _initialLoadComplete = true;
 
+            var caseIds = _bookmarks.Select(b => b.Id).ToArray();
+            if (caseIds.Length > 0)
+            {
+                _bookmarkIdMap = await BookmarkService.GetBookmarkedCaseIdsAsync(caseIds, ct);
+            }
+
             var firstItem = _bookmarks.FirstOrDefault();
             if (firstItem != null && !_selectedBookmarks.Any(b => b.Id == firstItem.Id))
             {
@@ -189,7 +196,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         try
         {
-            await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
+            var bookmarkId = _bookmarkIdMap[lodCase.Id];
+            await BookmarkService.DeleteBookmarkAsync(lodCase.Id, bookmarkId);
+            _bookmarkIdMap.Remove(lodCase.Id);
             BookmarkCountService.Decrement();
             await _grid.Reload();
 

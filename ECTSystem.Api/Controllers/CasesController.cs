@@ -38,6 +38,7 @@ public class CasesController : ODataControllerBase
     /// The [EnableQuery] attribute lets the OData middleware apply $filter, $orderby,
     /// $top, $skip, and $count automatically against the IQueryable.
     /// </summary>
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
@@ -54,6 +55,7 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases({key})
     /// Supports conditional GET via ETag (RowVersion) — returns 304 when unmodified.
     /// </summary>
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [EnableQuery(MaxExpansionDepth = 3, MaxNodeCount = 200)]
     public async Task<IActionResult> Get([FromODataUri] int key, CancellationToken ct = default)
     {

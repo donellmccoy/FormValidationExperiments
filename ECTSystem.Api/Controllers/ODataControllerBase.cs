@@ -13,9 +13,11 @@ namespace ECTSystem.Api.Controllers;
 /// </summary>
 public abstract class ODataControllerBase : ODataController
 {
-    protected readonly ILoggingService LoggingService;
-    protected readonly IDbContextFactory<EctDbContext> ContextFactory;
-    protected readonly TimeProvider TimeProvider;
+    protected ILoggingService LoggingService { get; }
+
+    protected IDbContextFactory<EctDbContext> ContextFactory { get; }
+
+    protected TimeProvider TimeProvider { get; }
 
     protected ODataControllerBase(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
     {
@@ -37,7 +39,9 @@ public abstract class ODataControllerBase : ODataController
     protected async Task<EctDbContext> CreateContextAsync(CancellationToken ct = default)
     {
         var context = await ContextFactory.CreateDbContextAsync(ct);
+
         HttpContext.Response.RegisterForDispose(context);
+
         return context;
     }
 }

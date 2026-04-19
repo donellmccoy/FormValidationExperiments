@@ -30,6 +30,9 @@ public partial class EditCase
         /// <summary>Gets or sets whether the current case is bookmarked.</summary>
         public bool IsBookmarked { get; set; }
 
+        /// <summary>Gets or sets the bookmark ID when bookmarked, or null when not.</summary>
+        public int? BookmarkId { get; set; }
+
         /// <summary>Gets or sets whether a bookmark animation is playing.</summary>
         public bool IsAnimating { get; set; }
 

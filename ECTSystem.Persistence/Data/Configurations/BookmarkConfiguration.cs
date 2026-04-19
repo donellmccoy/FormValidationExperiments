@@ -17,7 +17,7 @@ public class BookmarkConfiguration : IEntityTypeConfiguration<Bookmark>
         builder.Property(e => e.UserId).HasMaxLength(256);
 
         builder.HasOne<LineOfDutyCase>()
-               .WithMany()
+               .WithMany(e => e.Bookmarks)
                .HasForeignKey(e => e.LineOfDutyCaseId)
                .OnDelete(DeleteBehavior.Cascade);
     }

@@ -32,18 +32,13 @@ public interface IBookmarkService
         string? expand = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Adds a bookmark for the given case, associating it with the currently authenticated user.
+    /// Adds a bookmark for the given case via the <c>AddBookmark</c> OData action,
+    /// associating it with the currently authenticated user.
     /// </summary>
     /// <param name="caseId">The database primary key of the LOD case to bookmark.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    Task AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Removes the current user's bookmark for the given case. No-op if the case is not bookmarked.
-    /// </summary>
-    /// <param name="caseId">The database primary key of the LOD case to un-bookmark.</param>
-    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default);
+    /// <returns>The database primary key of the newly created bookmark.</returns>
+    Task<int> AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Checks whether the current user has bookmarked the given case.
@@ -59,8 +54,8 @@ public interface IBookmarkService
     /// </summary>
     /// <param name="caseIds">An array of LOD case primary keys to check for bookmarks.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    /// <returns>A <see cref="HashSet{T}"/> of case IDs from <paramref name="caseIds"/> that are bookmarked by the current user.</returns>
-    Task<HashSet<int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default);
+    /// <returns>A dictionary mapping case IDs to their bookmark IDs for cases bookmarked by the current user.</returns>
+    Task<Dictionary<int, int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Queries bookmarked LOD cases filtered by current workflow state via the <c>ByCurrentState</c> OData function.
@@ -73,4 +68,12 @@ public interface IBookmarkService
         string? filter = null, int? top = null, int? skip = null,
         string? orderby = null, string? select = null, bool? count = null,
         string? expand = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a bookmark by case ID and bookmark ID via the <c>DeleteBookmark</c> OData action.
+    /// </summary>
+    /// <param name="caseId">The database primary key of the LOD case.</param>
+    /// <param name="bookmarkId">The database primary key of the bookmark to delete.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    Task DeleteBookmarkAsync(int caseId, int bookmarkId, CancellationToken cancellationToken = default);
 }

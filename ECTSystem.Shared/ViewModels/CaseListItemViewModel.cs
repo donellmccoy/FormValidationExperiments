@@ -18,4 +18,6 @@ public class CaseListItemViewModel
     public string CheckedOutBy { get; set; }
     public string CheckedOutByName { get; set; }
     public byte[] RowVersion { get; set; } = [];
+    public bool IsBookmarked { get; set; }
+    public int? BookmarkId { get; set; }
 }

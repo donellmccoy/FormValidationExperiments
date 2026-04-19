@@ -249,7 +249,7 @@ public partial class EditCase : ComponentBase, IDisposable
     private CancellationTokenSource _previousCasesSearchCts = new();
     private CancellationTokenSource _previousCasesLoadCts = new();
     private int _previousCasesMemberId;
-    private HashSet<int> _previousCasesBookmarkedIds = [];
+    private Dictionary<int, int> _previousCasesBookmarkedIds = [];
     private readonly HashSet<int> _previousCasesAnimatingIds = [];
     private IList<LineOfDutyCase> _selectedPreviousCase;
     private string _currentUserId;
@@ -361,6 +361,13 @@ public partial class EditCase : ComponentBase, IDisposable
             if (isBookmarked.HasValue)
             {
                 _bookmark.IsBookmarked = isBookmarked.Value;
+                if (isBookmarked.Value)
+                {
+                    // Header confirms bookmarked — fetch the bookmark ID for deletion
+                    var map = await BookmarkService.GetBookmarkedCaseIdsAsync([_lineOfDutyCase.Id], _cts.Token);
+                    map.TryGetValue(_lineOfDutyCase.Id, out var bid);
+                    _bookmark.BookmarkId = bid;
+                }
             }
             else
             {
@@ -418,7 +425,17 @@ public partial class EditCase : ComponentBase, IDisposable
     {
         try
         {
-            _bookmark.IsBookmarked = await BookmarkService.IsBookmarkedAsync(_lineOfDutyCase.Id, _cts.Token);
+            var map = await BookmarkService.GetBookmarkedCaseIdsAsync([_lineOfDutyCase.Id], _cts.Token);
+            if (map.TryGetValue(_lineOfDutyCase.Id, out var bookmarkId))
+            {
+                _bookmark.IsBookmarked = true;
+                _bookmark.BookmarkId = bookmarkId;
+            }
+            else
+            {
+                _bookmark.IsBookmarked = false;
+                _bookmark.BookmarkId = null;
+            }
         }
         catch (Exception ex)
         {
@@ -685,7 +702,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private async Task TogglePreviousBookmark(LineOfDutyCase lodCase)
     {
-        var isBookmarked = _previousCasesBookmarkedIds.Contains(lodCase.Id);
+        var isBookmarked = _previousCasesBookmarkedIds.ContainsKey(lodCase.Id);
 
         if (isBookmarked)
         {
@@ -701,7 +718,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
+                var bookmarkId = _previousCasesBookmarkedIds[lodCase.Id];
+                await BookmarkService.DeleteBookmarkAsync(lodCase.Id, bookmarkId);
                 _previousCasesBookmarkedIds.Remove(lodCase.Id);
                 BookmarkCountService.Decrement();
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
@@ -718,8 +736,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await BookmarkService.AddBookmarkAsync(lodCase.Id);
-                _previousCasesBookmarkedIds.Add(lodCase.Id);
+                var newBookmarkId = await BookmarkService.AddBookmarkAsync(lodCase.Id);
+                _previousCasesBookmarkedIds[lodCase.Id] = newBookmarkId;
                 BookmarkCountService.Increment();
                 NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
             }
@@ -796,8 +814,8 @@ public partial class EditCase : ComponentBase, IDisposable
             new ContextMenuItem { Text = "Open Case", Icon = "open_in_new", Value = "open" },
             new ContextMenuItem
             {
-                Text = _previousCasesBookmarkedIds.Contains(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark",
-                Icon = _previousCasesBookmarkedIds.Contains(lodCase.Id) ? "bookmark_remove" : "bookmark_add",
+                Text = _previousCasesBookmarkedIds.ContainsKey(lodCase.Id) ? "Remove Bookmark" : "Add Bookmark",
+                Icon = _previousCasesBookmarkedIds.ContainsKey(lodCase.Id) ? "bookmark_remove" : "bookmark_add",
                 Value = "bookmark"
             },
             new ContextMenuItem { Text = "Copy Case ID", Icon = "content_copy", Value = "copy" }
@@ -1421,7 +1439,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await BookmarkService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
+                _bookmark.BookmarkId = await BookmarkService.AddBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
                 BookmarkCountService.Increment();
                 NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {_viewModel?.CaseNumber} added to bookmarks.", closeOnClick: true);
             }
@@ -1453,7 +1471,8 @@ public partial class EditCase : ComponentBase, IDisposable
 
             try
             {
-                await BookmarkService.RemoveBookmarkAsync(_lineOfDutyCase.Id, _cts.Token);
+                await BookmarkService.DeleteBookmarkAsync(_lineOfDutyCase.Id, _bookmark.BookmarkId!.Value, _cts.Token);
+                _bookmark.BookmarkId = null;
                 BookmarkCountService.Decrement();
                 NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {_viewModel?.CaseNumber} removed from bookmarks.", closeOnClick: true);
             }

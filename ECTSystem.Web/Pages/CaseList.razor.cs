@@ -54,9 +54,8 @@ public partial class CaseList : ComponentBase, IDisposable
 
     private RadzenDataGrid<CaseListItemViewModel> _grid;
     private RadzenTextBox _searchBox;
-    private IEnumerable<CaseListItemViewModel> cases;
+    private IEnumerable<CaseListItemViewModel> cases = [];
     private IList<CaseListItemViewModel> _selectedCases = [];
-    private HashSet<int> bookmarkedCaseIds = [];
     private HashSet<int> animatingBookmarkIds = [];
     private int count;
     private bool isLoading;
@@ -91,7 +90,6 @@ public partial class CaseList : ComponentBase, IDisposable
             .ToArray();
 
     #endregion
-
     #region Lifecycle
 
     protected override async Task OnInitializedAsync()
@@ -101,6 +99,11 @@ public partial class CaseList : ComponentBase, IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender && _grid is not null)
+        {
+            await _grid.Reload();
+        }
+
         if (!_searchBoxFocused && _searchBox is not null && cases is not null)
         {
             _searchBoxFocused = true;
@@ -126,55 +129,41 @@ public partial class CaseList : ComponentBase, IDisposable
 
         try
         {
-            // Build enum filters manually — bypasses Radzen's auto-filter for enum columns
-            var enumFilters = new List<string>();
-            if (_incidentTypeFilter.HasValue)
-                enumFilters.Add($"IncidentType eq '{_incidentTypeFilter.Value}'");
-            if (_processTypeFilter.HasValue)
-                enumFilters.Add($"ProcessType eq '{_processTypeFilter.Value}'");
-            var enumFilter = enumFilters.Count > 0 ? string.Join(" and ", enumFilters) : null;
+            var filter = BuildFilter(args.Filter);
 
-            var filter = CombineFilters(
-                CombineFilters(args.Filter, enumFilter),
-                BuildSearchFilter(searchText));
+            Logger.LogDebug("Loading cases — Top: {Top}, Skip: {Skip}, OrderBy: {OrderBy}, Filter: {Filter}", args.Top, args.Skip, args.OrderBy, filter);
 
-            Logger.LogDebug("Loading cases — Top: {Top}, Skip: {Skip}, OrderBy: {OrderBy}, Filter: {Filter}",
-                args.Top, args.Skip, args.OrderBy, filter);
+            var result = await CaseService.GetCasesAsync(
+                filter: filter,
+                top: args.Top,
+                skip: args.Skip,
+                orderby: args.OrderBy,
+                select: ListSelect,
+                count: true,
+                expand: ListExpand,
+                cancellationToken: ct);
 
-            ODataServiceResult<LineOfDutyCase> result;
-
-            if (_workflowStateFilter.HasValue)
-            {
-                result = await CaseService.GetCasesByCurrentStateAsync(
-                    includeStates: [_workflowStateFilter.Value],
-                    filter: filter,
-                    top: args.Top,
-                    skip: args.Skip,
-                    orderby: args.OrderBy,
-                    select: ListSelect,
-                    count: true,
-                    expand: ListExpand,
-                    cancellationToken: ct);
-            }
-            else
-            {
-                result = await CaseService.GetCasesAsync(
-                    filter: filter,
-                    top: args.Top,
-                    skip: args.Skip,
-                    orderby: args.OrderBy,
-                    select: ListSelect,
-                    count: true,
-                    expand: ListExpand,
-                    cancellationToken: ct);
-            }
-
-            cases = result.Value.Select(LineOfDutyCaseMapper.ToCaseListItem).ToList();
+            cases = [.. result.Value.Select(item => LineOfDutyCaseMapper.ToCaseListItem(item, _currentUserId))];
             count = result.Count;
+
+            var caseIds = cases.Select(c => c.Id).ToArray();
+            if (caseIds.Length > 0)
+            {
+                var bookmarkMap = await BookmarkService.GetBookmarkedCaseIdsAsync(caseIds, ct);
+                foreach (var c in cases)
+                {
+                    if (bookmarkMap.TryGetValue(c.Id, out var bookmarkId))
+                    {
+                        c.IsBookmarked = true;
+                        c.BookmarkId = bookmarkId;
+                    }
+                }
+            }
 
             Logger.LogDebug("Loaded {Count} cases (total: {Total})", cases.Count(), count);
 
             var firstItem = cases.FirstOrDefault();
+
             if (firstItem != null && !_selectedCases.Any(c => c.Id == firstItem.Id))
             {
                 _selectedCases = [firstItem];
@@ -183,8 +172,6 @@ public partial class CaseList : ComponentBase, IDisposable
             {
                 _selectedCases = [];
             }
-
-            await LoadBookmarkStates(ct);
 
             _initialLoadComplete = true;
         }
@@ -205,30 +192,13 @@ public partial class CaseList : ComponentBase, IDisposable
         }
     }
 
-    private async Task LoadBookmarkStates(CancellationToken ct = default)
-    {
-        bookmarkedCaseIds.Clear();
-
-        if (cases == null)
-        {
-            return;
-        }
-
-        var caseIds = cases.Select(c => c.Id).ToArray();
-        bookmarkedCaseIds = await BookmarkService.GetBookmarkedCaseIdsAsync(caseIds, ct);
-
-        Logger.LogDebug("Loaded {BookmarkCount} bookmarks for {CaseCount} cases", bookmarkedCaseIds.Count, caseIds.Length);
-    }
-
     #endregion
 
     #region Bookmarks
 
     private async Task ToggleBookmark(CaseListItemViewModel lodCase)
     {
-        var isBookmarked = bookmarkedCaseIds.Contains(lodCase.Id);
-
-        if (isBookmarked)
+        if (lodCase.IsBookmarked)
         {
             var confirmed = await DialogService.Confirm(
                 $"Remove bookmark for case {lodCase.CaseId}?",
@@ -240,24 +210,35 @@ public partial class CaseList : ComponentBase, IDisposable
                 return;
             }
 
-            await BookmarkService.RemoveBookmarkAsync(lodCase.Id);
-            bookmarkedCaseIds.Remove(lodCase.Id);
+            await BookmarkService.DeleteBookmarkAsync(lodCase.Id, lodCase.BookmarkId!.Value);
+
+            lodCase.IsBookmarked = false;
+            lodCase.BookmarkId = null;
+
             Logger.LogInformation("Bookmark removed for case {CaseId}", lodCase.CaseId);
+
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
+
             BookmarkCountService.Decrement();
         }
         else
         {
             animatingBookmarkIds.Add(lodCase.Id);
+
             StateHasChanged();
 
-            await BookmarkService.AddBookmarkAsync(lodCase.Id);
-            bookmarkedCaseIds.Add(lodCase.Id);
+            lodCase.BookmarkId = await BookmarkService.AddBookmarkAsync(lodCase.Id);
+
+            lodCase.IsBookmarked = true;
+
             Logger.LogInformation("Bookmark added for case {CaseId}", lodCase.CaseId);
+
             NotificationService.Notify(NotificationSeverity.Success, "Bookmark Added", $"Case {lodCase.CaseId} added to bookmarks.", closeOnClick: true);
+
             BookmarkCountService.Increment();
 
             await Task.Delay(800);
+
             animatingBookmarkIds.Remove(lodCase.Id);
         }
     }
@@ -273,7 +254,12 @@ public partial class CaseList : ComponentBase, IDisposable
             "clinical diagnosis, medical findings, commander review details, witness information, " +
             "SJA and board review fields, and signature blocks. Results match any field containing " +
             "your search text.",
-            new TooltipOptions { Duration = null, Position = TooltipPosition.Right, Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);" });
+            new TooltipOptions 
+            { 
+                Duration = null, 
+                Position = TooltipPosition.Right, 
+                Style = "max-width: 480px; white-space: normal; padding: 12px 16px; background: var(--rz-panel-background-color); color: var(--rz-text-color); border: 1px solid var(--rz-border-color); box-shadow: var(--rz-shadow-2);" 
+             });
     }
 
     private async Task OnSearchInput(ChangeEventArgs args)
@@ -287,7 +273,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
         try
         {
-            await Task.Delay(500, token);
+            await Task.Delay(900, token);
         }
         catch (OperationCanceledException)
         {
@@ -295,6 +281,30 @@ public partial class CaseList : ComponentBase, IDisposable
         }
 
         await _grid.FirstPage(true);
+    }
+
+    private string BuildFilter(string argsFilter)
+    {
+        var filters = new List<string>();
+
+        if (_workflowStateFilter.HasValue)
+        {
+            filters.Add($"WorkflowStateHistories/any(h: h/WorkflowState eq '{_workflowStateFilter.Value}')");
+        }
+
+        if (_incidentTypeFilter.HasValue)
+        {
+            filters.Add($"IncidentType eq '{_incidentTypeFilter.Value}'");
+        }
+
+        if (_processTypeFilter.HasValue)
+        {
+            filters.Add($"ProcessType eq '{_processTypeFilter.Value}'");
+        }
+
+        var enumFilter = filters.Count > 0 ? string.Join(" and ", filters) : null;
+
+        return CombineFilters(CombineFilters(argsFilter, enumFilter),BuildSearchFilter(searchText));
     }
 
     private static string BuildSearchFilter(string text)

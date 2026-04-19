@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
-using ECTSystem.Shared.ViewModels;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -59,45 +58,24 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         };
     }
 
-    public async Task AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
+    public async Task<int> AddBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var dto = new CreateBookmarkDto { LineOfDutyCaseId = caseId };
-        var response = await HttpClient.PostAsJsonAsync("odata/Bookmarks", dto, JsonOptions, cancellationToken);
+        var body = new { caseId };
+
+        var response = await HttpClient.PostAsJsonAsync("odata/Bookmarks/AddBookmark", body, JsonOptions, cancellationToken);
+
         response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<AddBookmarkResponse>(JsonOptions, cancellationToken);
+
+        return result?.Id ?? throw new InvalidOperationException("AddBookmark did not return a bookmark ID.");
     }
 
-    public async Task RemoveBookmarkAsync(int caseId, CancellationToken cancellationToken = default)
+    private sealed class AddBookmarkResponse
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
-
-        var query = Context.Bookmarks
-            .AddQueryOption("$filter", $"LineOfDutyCaseId eq {caseId}")
-            .AddQueryOption("$top", 1)
-            .AddQueryOption("$select", "Id");
-
-        var bookmarks = await ExecuteQueryAsync(query, cancellationToken);
-        var bookmark = bookmarks.FirstOrDefault();
-
-        if (bookmark is null || bookmark.Id == 0)
-        {
-            return;
-        }
-
-        if (Context.GetEntityDescriptor(bookmark) != null)
-        {
-            Context.Detach(bookmark);
-        }
-
-        var response = await HttpClient.DeleteAsync($"odata/Bookmarks({bookmark.Id})", cancellationToken);
-
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            return;
-        }
-
-        response.EnsureSuccessStatusCode();
+        public int Id { get; set; }
     }
 
     public async Task<bool> IsBookmarkedAsync(int caseId, CancellationToken cancellationToken = default)
@@ -114,7 +92,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         return bookmarks.Count > 0;
     }
 
-    public async Task<HashSet<int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default)
+    public async Task<Dictionary<int, int>> GetBookmarkedCaseIdsAsync(int[] caseIds, CancellationToken cancellationToken = default)
     {
         if (caseIds is { Length: 0 })
         {
@@ -124,11 +102,11 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         var ids = string.Join(",", caseIds);
         var query = Context.Bookmarks
             .AddQueryOption("$filter", $"LineOfDutyCaseId in ({ids})")
-            .AddQueryOption("$select", "LineOfDutyCaseId");
+            .AddQueryOption("$select", "Id,LineOfDutyCaseId");
 
         var bookmarks = await ExecuteQueryAsync(query, cancellationToken);
 
-        return bookmarks.Select(b => b.LineOfDutyCaseId).ToHashSet();
+        return bookmarks.ToDictionary(b => b.LineOfDutyCaseId, b => b.Id);
     }
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesByCurrentStateAsync(
@@ -184,5 +162,17 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
             Value = results,
             Count = results.Count
         };
+    }
+
+    public async Task DeleteBookmarkAsync(int caseId, int bookmarkId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bookmarkId);
+
+        var body = new { caseId, bookmarkId };
+
+        var response = await HttpClient.PostAsJsonAsync("odata/Bookmarks/DeleteBookmark", body, JsonOptions, cancellationToken);
+
+        response.EnsureSuccessStatusCode();
     }
 }

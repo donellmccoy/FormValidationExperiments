@@ -692,7 +692,31 @@ public static partial class LineOfDutyCaseMapper
             CheckedOutBy = source.CheckedOutBy,
             CheckedOutByName = source.CheckedOutByName,
             RowVersion = source.RowVersion,
+            IsBookmarked = false,
+            BookmarkId = null
         };
     }
 
+    public static CaseListItemViewModel ToCaseListItem(LineOfDutyCase source, string userId)
+    {
+        return new CaseListItemViewModel
+        {
+            Id = source.Id,
+            CaseId = source.CaseId,
+            ServiceNumber = source.ServiceNumber,
+            MemberName = source.MemberName,
+            MemberRank = source.MemberRank,
+            Unit = source.Unit,
+            IncidentType = source.IncidentType,
+            IncidentDate = source.IncidentDate,
+            ProcessType = source.ProcessType,
+            CurrentWorkflowState = source.GetCurrentWorkflowState(),
+            IsCheckedOut = source.IsCheckedOut,
+            CheckedOutBy = source.CheckedOutBy,
+            CheckedOutByName = source.CheckedOutByName,
+            RowVersion = source.RowVersion,
+            IsBookmarked = source.Bookmarks?.Any(b => b.UserId == userId) ?? false,
+            BookmarkId = source.Bookmarks?.FirstOrDefault(b => b.UserId == userId)?.Id
+        };
+    }
 }

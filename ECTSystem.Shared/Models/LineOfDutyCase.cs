@@ -173,6 +173,9 @@ public class LineOfDutyCase : AuditableEntity
     // Notifications
     public ICollection<Notification> Notifications { get; set; } = new HashSet<Notification>();
 
+    // Bookmarks
+    public ICollection<Bookmark> Bookmarks { get; set; } = new HashSet<Bookmark>();
+
     // Member
     public int MemberId { get; set; }
     public Member Member { get; set; }

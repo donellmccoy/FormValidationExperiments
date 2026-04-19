@@ -216,6 +216,14 @@ public static class ServiceCollectionExtensions
 
         odataBuilder.EntitySet<Bookmark>("Bookmarks");
 
+        var addBookmarkAction = odataBuilder.EntityType<Bookmark>().Collection.Action("AddBookmark");
+        addBookmarkAction.Parameter<int>("caseId");
+        addBookmarkAction.ReturnsFromEntitySet<Bookmark>("Bookmarks");
+
+        var deleteBookmarkAction = odataBuilder.EntityType<Bookmark>().Collection.Action("DeleteBookmark");
+        deleteBookmarkAction.Parameter<int>("caseId");
+        deleteBookmarkAction.Parameter<int>("bookmarkId");
+
         odataBuilder.EntitySet<WorkflowStateHistory>("WorkflowStateHistory");
         odataBuilder.EntitySet<WitnessStatement>("WitnessStatements");
         odataBuilder.EntitySet<AuditComment>("AuditComments");
