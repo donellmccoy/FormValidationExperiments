@@ -283,6 +283,8 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             _cases = [.. result.Value.Select(item => LineOfDutyCaseMapper.ToCaseListItem(item, _currentUserId))];
             _count = result.Count;
 
+            Logger.LogDebug("Loaded {Count} cases (total: {Total})", _cases.Count(), _count);
+
             var firstItem = _cases.FirstOrDefault();
 
             if (firstItem != null && !_selectedCases.Any(c => c.Id == firstItem.Id))
@@ -298,7 +300,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Request was superseded by a newer one or component disposed — ignore
+            Logger.LogDebug("LoadData cancelled — superseded by newer request");
         }
         catch (Exception ex)
         {
@@ -348,6 +350,8 @@ public partial class MyBookmarks : ComponentBase, IDisposable
             BookmarkCountService.Decrement();
 
             await _grid.Reload();
+
+            Logger.LogInformation("Bookmark removed for case {CaseId}", lodCase.CaseId);
 
             NotificationService.Notify(NotificationSeverity.Info, "Bookmark Removed", $"Case {lodCase.CaseId} removed from bookmarks.", closeOnClick: true);
         }
@@ -497,6 +501,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     /// </summary>
     private void OnCreateCase()
     {
+        Logger.LogInformation("Navigating to create new case");
         Navigation.NavigateTo("/case/new?from=bookmarks");
     }
 
@@ -512,10 +517,12 @@ public partial class MyBookmarks : ComponentBase, IDisposable
         {
             if (string.Equals(lodCase.CheckedOutBy, _currentUserId, StringComparison.OrdinalIgnoreCase))
             {
+                Logger.LogInformation("Case {CaseId} already checked out by current user — opening in edit mode", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=edit");
             }
             else
             {
+                Logger.LogInformation("Case {CaseId} checked out by {CheckedOutBy} — opening read-only", lodCase.CaseId, lodCase.CheckedOutByName);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=readonly");
             }
             return;
@@ -532,10 +539,12 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             if (success)
             {
+                Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=edit");
             }
             else
             {
+                Logger.LogWarning("Checkout failed for case {CaseId} (Id: {Id}) — may be checked out by another user", lodCase.CaseId, lodCase.Id);
                 NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {lodCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
                 
                 if (_lastArgs is not null)
@@ -631,6 +640,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
                         var success = await CaseService.CheckInCaseAsync(lodCase.Id, lodCase.RowVersion);
                         if (success)
                         {
+                            Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
                             NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
                             if (_lastArgs is not null)
                             {
