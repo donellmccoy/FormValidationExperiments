@@ -177,7 +177,7 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     /// Workflow histories are narrowed to the latest entry (matching <c>GetCurrentWorkflowState</c>),
     /// and the bookmark expand omits <c>UserId</c> since it's already constrained by the <c>$filter</c>.
     /// </summary>
-    private string ListExpand => $"WorkflowStateHistories($select=WorkflowState;$orderby=Id desc;$top=1),Bookmarks($filter=UserId eq '{_currentUserId}';$select=Id;$top=1)";
+    private string ListExpand => $"WorkflowStateHistories($select=WorkflowState;$orderby=Id desc;$top=1),Bookmarks($filter=UserId eq '{_currentUserId}';$select=Id,UserId;$top=1)";
 
     /// <summary>
     /// Optional workflow-state filter applied via the toolbar dropdown.

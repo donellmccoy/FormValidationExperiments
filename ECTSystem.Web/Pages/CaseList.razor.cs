@@ -174,10 +174,11 @@ public partial class CaseList : ComponentBase, IDisposable
 
     /// <summary>
     /// OData <c>$expand</c> clause that pulls bookmark and workflow-state data scoped to the current user.
-    /// Workflow histories are narrowed to the latest entry (matching <c>GetCurrentWorkflowState</c>),
-    /// and the bookmark expand omits <c>UserId</c> since it's already constrained by the <c>$filter</c>.
+    /// Workflow histories are narrowed to the latest entry (matching <c>GetCurrentWorkflowState</c>).
+    /// <c>UserId</c> is included in the Bookmarks projection because the client-side mapper
+    /// (<c>LineOfDutyCaseMapper.ToCaseListItem</c>) filters by <c>b.UserId == userId</c>.
     /// </summary>
-    private string ListExpand => $"WorkflowStateHistories($select=WorkflowState;$orderby=Id desc;$top=1),Bookmarks($filter=UserId eq '{_currentUserId}';$select=Id;$top=1)";
+    private string ListExpand => $"WorkflowStateHistories($select=WorkflowState;$orderby=Id desc;$top=1),Bookmarks($filter=UserId eq '{_currentUserId}';$select=Id,UserId;$top=1)";
 
     /// <summary>
     /// Optional workflow-state filter applied via the toolbar dropdown.
