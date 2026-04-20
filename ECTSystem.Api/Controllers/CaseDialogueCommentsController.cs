@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
@@ -58,7 +59,14 @@ public class CaseDialogueCommentsController : ODataControllerBase
         }
 
         var comment = CaseDialogueCommentDtoMapper.ToEntity(dto);
-        comment.AuthorName = GetAuthenticatedUserId();
+        var userId = GetAuthenticatedUserId();
+        comment.AuthorName = User.FindFirstValue(ClaimTypes.Name)
+                          ?? User.FindFirstValue(ClaimTypes.Email)
+                          ?? userId;
+        if (string.IsNullOrWhiteSpace(comment.AuthorRole))
+        {
+            comment.AuthorRole = User.FindFirstValue(ClaimTypes.Role);
+        }
 
         context.CaseDialogueComments.Add(comment);
         await context.SaveChangesAsync(ct);
