@@ -192,6 +192,8 @@ Migrations/
  Identity/
   20260222031829_InitialIdentity.cs
   20260222031829_InitialIdentity.Designer.cs
+  20260420230400_AddUserFirstLastName.cs
+  20260420230400_AddUserFirstLastName.Designer.cs
   EctIdentityDbContextModelSnapshot.cs
 Models/ApplicationUser.cs
 obj/Debug/net10.0/

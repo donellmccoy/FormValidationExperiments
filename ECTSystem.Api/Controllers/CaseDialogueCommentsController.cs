@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Formatter;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Logging;
 using ECTSystem.Persistence.Data;
+using ECTSystem.Persistence.Models;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
@@ -16,9 +18,41 @@ namespace ECTSystem.Api.Controllers;
 [Authorize]
 public class CaseDialogueCommentsController : ODataControllerBase
 {
-    public CaseDialogueCommentsController(IDbContextFactory<EctDbContext> contextFactory, ILoggingService loggingService, TimeProvider timeProvider)
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    public CaseDialogueCommentsController(
+        IDbContextFactory<EctDbContext> contextFactory,
+        ILoggingService loggingService,
+        TimeProvider timeProvider,
+        UserManager<ApplicationUser> userManager)
         : base(contextFactory, loggingService, timeProvider)
     {
+        _userManager = userManager;
+    }
+
+    private async Task<string> ResolveAuthorNameAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is not null)
+        {
+            var fullName = $"{user.FirstName} {user.LastName}".Trim();
+            if (!string.IsNullOrWhiteSpace(fullName))
+            {
+                return fullName;
+            }
+            if (!string.IsNullOrWhiteSpace(user.UserName))
+            {
+                return user.UserName;
+            }
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                return user.Email;
+            }
+        }
+
+        return User.FindFirstValue(ClaimTypes.Name)
+            ?? User.FindFirstValue(ClaimTypes.Email)
+            ?? userId;
     }
 
     /// <summary>
@@ -60,9 +94,7 @@ public class CaseDialogueCommentsController : ODataControllerBase
 
         var comment = CaseDialogueCommentDtoMapper.ToEntity(dto);
         var userId = GetAuthenticatedUserId();
-        comment.AuthorName = User.FindFirstValue(ClaimTypes.Name)
-                          ?? User.FindFirstValue(ClaimTypes.Email)
-                          ?? userId;
+        comment.AuthorName = await ResolveAuthorNameAsync(userId);
         if (string.IsNullOrWhiteSpace(comment.AuthorRole))
         {
             comment.AuthorRole = User.FindFirstValue(ClaimTypes.Role);

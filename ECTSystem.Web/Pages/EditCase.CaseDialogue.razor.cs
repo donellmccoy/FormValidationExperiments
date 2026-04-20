@@ -26,6 +26,14 @@ public partial class EditCase
         _dialogueLoaded = true;
     }
 
+    private async Task RefreshDialogueCommentsAsync()
+    {
+        _dialogueComments.Clear();
+        _commentSkip = 0;
+        await LoadDialogueCommentsAsync();
+        _dialogueLoaded = true;
+    }
+
     private async Task LoadDialogueCommentsAsync()
     {
         _isLoadingComments = true;
