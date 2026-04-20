@@ -1731,75 +1731,93 @@ else
 
                                         @foreach (var dateGroup in GetDateGroupedComments())
                                         {
-                                            @* ── Date separator ── *@
-                                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                                                         class="rz-my-3" Gap="0.5rem">
-                                                <hr style="flex:1; border-color:var(--rz-base-700);" />
-                                                <RadzenText TextStyle="TextStyle.Overline"
-                                                            Style="color:var(--rz-text-secondary-color);"
-                                                            Text="@dateGroup.Key" />
-                                                <hr style="flex:1; border-color:var(--rz-base-700);" />
-                                            </RadzenStack>
+                                            <RadzenTimeline LinePosition="LinePosition.Start" AlignItems="AlignItems.Center"
+                                                            class="rz-mb-3" Style="--rz-timeline-line-color: var(--rz-base-700);">
+                                                <Items>
+                                                @* ── Date marker ── *@
+                                                <RadzenTimelineItem PointStyle="PointStyle.Base" PointVariant="Variant.Outlined"
+                                                                    PointSize="PointSize.Medium">
+                                                    <PointContent>
+                                                        <RadzenIcon Icon="calendar_month" />
+                                                    </PointContent>
+                                                    <ChildContent>
+                                                        <RadzenText TextStyle="TextStyle.Overline"
+                                                                    Style="font-weight:700; letter-spacing:0.08em;"
+                                                                    Text="@dateGroup.Key" />
+                                                    </ChildContent>
+                                                </RadzenTimelineItem>
 
-                                            @foreach (var comment in dateGroup)
-                                            {
-                                                @* ── Comment card ── *@
-                                                <div style="background:var(--rz-base-800); border:1px solid var(--rz-base-600);
-                                                            border-radius:8px; padding:0.75rem 1rem; margin-bottom:0.75rem;">
-                                                    @* Header: name, role, date *@
-                                                    <RadzenStack Orientation="Orientation.Horizontal"
-                                                                 AlignItems="AlignItems.Center" Gap="0.5rem"
-                                                                 class="rz-mb-2">
-                                                        <RadzenText TextStyle="TextStyle.Body1"
-                                                                    Style="font-weight:600;"
-                                                                    Text="@comment.AuthorName" />
-                                                        @if (!string.IsNullOrWhiteSpace(comment.AuthorRole))
-                                                        {
-                                                            <RadzenBadge BadgeStyle="BadgeStyle.Info"
-                                                                         Text="@comment.AuthorRole"
-                                                                         IsPill="true" Shade="Shade.Dark" />
-                                                        }
-                                                        <RadzenText TextStyle="TextStyle.Caption"
-                                                                    Style="color:var(--rz-text-tertiary-color); margin-left:auto;"
-                                                                    Text="@FormatCommentDateTime(comment.CreatedDate)" />
-                                                    </RadzenStack>
-                                                    @* Message body *@
-                                                    <RadzenText TextStyle="TextStyle.Body2"
-                                                                Text="@comment.Text" class="rz-mb-2" />
-                                                    @* Actions *@
-                                                    <RadzenButton Text="Reply" Icon="reply"
-                                                                  Variant="Variant.Text" Size="ButtonSize.ExtraSmall"
-                                                                  Click="@(() => StartReply(comment.Id))" />
-
-                                                    @* ── Replies (indented cards) ── *@
-                                                    @foreach (var reply in GetReplies(comment.Id))
-                                                    {
-                                                        <div style="background:var(--rz-base-700); border:1px solid var(--rz-base-600);
-                                                                    border-radius:6px; padding:0.5rem 0.75rem;
-                                                                    margin-top:0.5rem; margin-left:1.5rem;">
-                                                            <RadzenStack Orientation="Orientation.Horizontal"
-                                                                         AlignItems="AlignItems.Center" Gap="0.5rem"
-                                                                         class="rz-mb-1">
+                                                @* ── Comments for this date ── *@
+                                                @foreach (var comment in dateGroup)
+                                                {
+                                                    <RadzenTimelineItem PointStyle="PointStyle.Primary" PointVariant="Variant.Filled"
+                                                                        PointSize="PointSize.Small" PointShadow="0">
+                                                        <ChildContent>
+                                                            <RadzenCard class="rz-mb-2" Style="background:var(--rz-base-800); border:1px solid var(--rz-base-600);">
+                                                                @* Header: name, role, time *@
+                                                                <RadzenStack Orientation="Orientation.Horizontal"
+                                                                             AlignItems="AlignItems.Center" Gap="0.5rem"
+                                                                             class="rz-mb-2">
+                                                                    <RadzenText TextStyle="TextStyle.Body1"
+                                                                                Style="font-weight:600; color:var(--rz-primary);"
+                                                                                Text="@comment.AuthorName" />
+                                                                    @if (!string.IsNullOrWhiteSpace(comment.AuthorRole))
+                                                                    {
+                                                                        <RadzenText TextStyle="TextStyle.Caption"
+                                                                                    Style="color:var(--rz-text-secondary-color);"
+                                                                                    Text="@($"• {comment.AuthorRole}")" />
+                                                                    }
+                                                                    <RadzenText TextStyle="TextStyle.Caption"
+                                                                                Style="color:var(--rz-text-tertiary-color); margin-left:auto; font-family:var(--rz-font-family-monospace, monospace);"
+                                                                                Text="@FormatCommentDateTime(comment.CreatedDate)" />
+                                                                </RadzenStack>
+                                                                @* Message body *@
                                                                 <RadzenText TextStyle="TextStyle.Body2"
-                                                                            Style="font-weight:600;"
-                                                                            Text="@reply.AuthorName" />
-                                                                @if (!string.IsNullOrWhiteSpace(reply.AuthorRole))
+                                                                            Text="@comment.Text" class="rz-mb-3" />
+                                                                @* Actions *@
+                                                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                                                    <RadzenButton Text="Reply" Icon="reply"
+                                                                                  Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light"
+                                                                                  Size="ButtonSize.Small"
+                                                                                  Click="@(() => StartReply(comment.Id))" />
+                                                                    <RadzenButton Text="Acknowledge" Icon="thumb_up"
+                                                                                  Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light"
+                                                                                  Size="ButtonSize.Small"
+                                                                                  Disabled="@comment.IsAcknowledged" />
+                                                                </RadzenStack>
+
+                                                                @* ── Replies (indented) ── *@
+                                                                @foreach (var reply in GetReplies(comment.Id))
                                                                 {
-                                                                    <RadzenBadge BadgeStyle="BadgeStyle.Info"
-                                                                                 Text="@reply.AuthorRole"
-                                                                                 IsPill="true" Shade="Shade.Dark"
-                                                                                 Style="font-size:0.7rem;" />
+                                                                    <div style="background:var(--rz-base-700); border:1px solid var(--rz-base-600);
+                                                                                border-radius:6px; padding:0.5rem 0.75rem;
+                                                                                margin-top:0.75rem; margin-left:1.5rem;">
+                                                                        <RadzenStack Orientation="Orientation.Horizontal"
+                                                                                     AlignItems="AlignItems.Center" Gap="0.5rem"
+                                                                                     class="rz-mb-1">
+                                                                            <RadzenText TextStyle="TextStyle.Body2"
+                                                                                        Style="font-weight:600; color:var(--rz-primary);"
+                                                                                        Text="@reply.AuthorName" />
+                                                                            @if (!string.IsNullOrWhiteSpace(reply.AuthorRole))
+                                                                            {
+                                                                                <RadzenText TextStyle="TextStyle.Caption"
+                                                                                            Style="color:var(--rz-text-secondary-color);"
+                                                                                            Text="@($"• {reply.AuthorRole}")" />
+                                                                            }
+                                                                            <RadzenText TextStyle="TextStyle.Caption"
+                                                                                        Style="color:var(--rz-text-tertiary-color); margin-left:auto; font-family:var(--rz-font-family-monospace, monospace);"
+                                                                                        Text="@FormatCommentDateTime(reply.CreatedDate)" />
+                                                                        </RadzenStack>
+                                                                        <RadzenText TextStyle="TextStyle.Body2"
+                                                                                    Text="@reply.Text" />
+                                                                    </div>
                                                                 }
-                                                                <RadzenText TextStyle="TextStyle.Caption"
-                                                                            Style="color:var(--rz-text-tertiary-color); margin-left:auto;"
-                                                                            Text="@FormatCommentDateTime(reply.CreatedDate)" />
-                                                            </RadzenStack>
-                                                            <RadzenText TextStyle="TextStyle.Body2"
-                                                                        Text="@reply.Text" />
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
+                                                            </RadzenCard>
+                                                        </ChildContent>
+                                                    </RadzenTimelineItem>
+                                                }
+                                                </Items>
+                                            </RadzenTimeline>
                                         }
 
                                         @if (_isLoadingComments)
