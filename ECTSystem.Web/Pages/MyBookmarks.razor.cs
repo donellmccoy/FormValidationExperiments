@@ -417,13 +417,15 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             var firstItem = _cases.FirstOrDefault();
 
-            if (firstItem != null && !_selectedCases.Any(c => c.Id == firstItem.Id))
+            // Only auto-select on the very first load; preserve (or clear) the user's choice afterwards.
+            if (!_initialLoadComplete)
             {
-                _selectedCases = [firstItem];
+                _selectedCases = firstItem != null ? [firstItem] : [];
             }
-            else if (firstItem == null)
+            else
             {
-                _selectedCases = [];
+                // Drop any previously selected rows that are no longer in the current page.
+                _selectedCases = [.. _selectedCases.Where(s => _cases.Any(c => c.Id == s.Id))];
             }
 
             _initialLoadComplete = true;
