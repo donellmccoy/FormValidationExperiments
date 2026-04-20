@@ -42,12 +42,23 @@ public partial class EditCase
         }
     }
 
+    /// <summary>
+    /// Maps user identifiers to their corresponding display names.
+    /// </summary>
     private readonly Dictionary<string, string> _userDisplayNames = new();
 
+    /// <summary>
+    /// Gets the display name for the specified user identifier.
+    /// </summary>
+    /// <param name="userId">The user identifier to retrieve the display name for.</param>
+    /// <returns>The user's display name if found; otherwise, the user identifier itself. Returns an empty string if <paramref
+    /// name="userId"/> is null or empty.</returns>
     private string GetUserDisplayName(string userId)
     {
         if (string.IsNullOrEmpty(userId))
+        {
             return string.Empty;
+        }
 
         return _userDisplayNames.GetValueOrDefault(userId, userId);
     }
@@ -122,6 +133,13 @@ public partial class EditCase
         }
     }
 
+    /// <summary>
+    /// Builds an OData filter expression for document search across FileName, Description, and DocumentType fields.
+    /// </summary>
+    /// <remarks>Single quotes in the search text are escaped for OData syntax. DocumentType enum values are
+    /// matched by their display names.</remarks>
+    /// <param name="text">The search text to use for filtering.</param>
+    /// <returns>An OData filter string combining multiple field searches, or null if the search text is empty.</returns>
     private static string BuildDocumentsSearchFilter(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -155,6 +173,13 @@ public partial class EditCase
         return string.Join(" or ", parts);
     }
 
+    /// <summary>
+    /// Combines column and search filter expressions into a single filter string using the logical AND operator.
+    /// </summary>
+    /// <param name="columnFilter">Filter expression for column-based filtering.</param>
+    /// <param name="searchFilter">Filter expression for search-based filtering.</param>
+    /// <returns>A combined filter string with non-empty filters joined by " and ", or <see langword="null"/> if both filters are
+    /// empty.</returns>
     private static string CombineDocumentsFilters(string columnFilter, string searchFilter)
     {
         var parts = new[] { columnFilter, searchFilter }
@@ -296,6 +321,11 @@ public partial class EditCase
         return $"{Http.BaseAddress}odata/Documents({doc.Id})/$value";
     }
 
+    /// <summary>
+    /// Downloads and opens a Line of Duty document in a new browser tab.
+    /// </summary>
+    /// <param name="doc">The document to view in the browser.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     private async Task OnViewDocumentInBrowserAsync(LineOfDutyDocument doc)
     {
         try
@@ -340,6 +370,11 @@ public partial class EditCase
         }
     }
 
+    /// <summary>
+    /// Handles search input changes for the documents grid with a 700ms debounce delay.
+    /// </summary>
+    /// <param name="args">The change event arguments containing the new search input value.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     private async Task OnDocumentsSearchInput(ChangeEventArgs args)
     {
         _documentsSearchText = args.Value?.ToString() ?? string.Empty;
