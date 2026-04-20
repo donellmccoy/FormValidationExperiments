@@ -80,10 +80,12 @@ public void Dispose()
 ### 15. `MyBookmarks` filters all `WorkflowState` values
 The dropdown shows every workflow state, including `Draft` — which by definition can't be bookmarked by other users. Consider scoping the filter list to states actually present in the user's bookmarks (one-time `GET /cases?$apply=…` on init).
 
-### 16. Accessibility
+### 16. Accessibility — ✅ Done
 - `ContextMenuItem` has no keyboard activation guarantee — verify `aria-haspopup` / `aria-expanded`.
 - The search tooltip uses `Duration = null` (sticky) but isn't `aria-describedby`-linked to the search input.
 - Bookmark icon-only buttons need `Title` / `aria-label`.
+
+**Verification:** In both `CaseList.razor` and `MyBookmarks.razor`, search inputs now expose `aria-label` plus `aria-describedby` pointing to a visually-hidden span containing the full `SearchTooltipText` (so AT users get the same field-list help without depending on the hover tooltip). The decorative info `RadzenIcon` is marked `aria-hidden="true"`. Bookmark icon-only `RadzenButton`s now declare a contextual `aria-label` ("Add/Remove bookmark for case {CaseId}"); the toggle button in `CaseList` also exposes `aria-pressed` to reflect bookmark state. (The Radzen context-menu sub-bullet is left as documentation: row context menus open via right-click only and Radzen's `RadzenContextMenu` already handles arrow/Enter/Esc keyboard navigation once opened.)
 
 ---
 
@@ -93,5 +95,5 @@ The dropdown shows every workflow state, including `Draft` — which by definiti
 3. **#4 (trim `BuildFilter`)** — performance.
 
 ## Status
-- ✅ Applied: #2, #3, #5, #7, #10, #11, #12, #13, #14
-- ⏳ Remaining: #1 (base class), #4 (trim BuildFilter), #6 (URL-sync), #8 (mapper hardening), #9 (selection logic), #15 (workflow state scoping), #16 (a11y)
+- ✅ Applied: #2, #3, #5, #7, #10, #11, #12, #13, #14, #16
+- ⏳ Remaining: #1 (base class), #4 (trim BuildFilter), #6 (URL-sync), #8 (mapper hardening), #9 (selection logic), #15 (workflow state scoping)

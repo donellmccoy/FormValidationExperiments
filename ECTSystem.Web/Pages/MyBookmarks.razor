@@ -29,10 +29,15 @@
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Style="width: 51%;">
         <RadzenTextBox @ref="_searchBox" Value="@_searchText"
                        @oninput="@OnSearchInput"
-                       Placeholder="Search bookmarked cases..." Style="width: 100%;" />
+                       Placeholder="Search bookmarked cases..." Style="width: 100%;"
+                       aria-label="Search bookmarked cases"
+                       aria-describedby="mybookmarks-search-help" />
+        @* a11y: sr-only help text linked via aria-describedby so screen readers announce searchable fields without relying on the hover tooltip. *@
+        <span id="mybookmarks-search-help" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">@SearchTooltipText</span>
         <RadzenIcon Icon="info" Style="font-size: 20px; color: var(--rz-text-secondary-color); cursor: help;"
                     MouseEnter="@ShowSearchTooltip"
-                    MouseLeave="@(_ => TooltipService.Close())" />
+                    MouseLeave="@(_ => TooltipService.Close())"
+                    aria-hidden="true" />
     </RadzenStack>
     <RadzenButton Text="Create Case" Icon="add" ButtonStyle="ButtonStyle.Primary"
                   Variant="Variant.Outlined" Click="@OnCreateCase" />
@@ -95,6 +100,7 @@
                                   Size="ButtonSize.Medium"
                                   class="bookmark-btn"
                                   title="Remove bookmark"
+                                  aria-label="@($"Remove bookmark for case {lodCase.CaseId}")"
                                   Click="@(() => OnRemoveBookmark(lodCase))">
                         <ChildContent>
                             <span class="material-symbols-outlined">bookmark_remove</span>
@@ -130,7 +136,7 @@
                                 AllowClear="true"
                                 Style="width:100%"
                                 PopupStyle="max-height:200px; overflow-y:auto"
-                                Change="@(args => _grid.Reload())" />
+                                Change="@(args => OnFilterChanged())" />
             </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="IncidentType" Title="Injury Type" TextAlign="TextAlign.Center">
@@ -145,7 +151,7 @@
                                 AllowClear="true"
                                 Style="width:100%"
                                 PopupStyle="max-height:200px; overflow-y:auto"
-                                Change="@(args => _grid.Reload())" />
+                                Change="@(args => OnFilterChanged())" />
             </FilterTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="IncidentDate" Title="Date of Incident" FormatString="{0:yyyy-MM-dd}" TextAlign="TextAlign.Center"/>
@@ -161,7 +167,7 @@
                                 AllowClear="true"
                                 Style="width:100%"
                                 PopupStyle="max-height:200px; overflow-y:auto"
-                                Change="@(args => _grid.Reload())" />
+                                Change="@(args => OnFilterChanged())" />
             </FilterTemplate>
         </RadzenDataGridColumn>
     </Columns>

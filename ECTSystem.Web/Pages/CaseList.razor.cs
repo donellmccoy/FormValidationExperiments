@@ -25,6 +25,38 @@ namespace ECTSystem.Web.Pages;
 /// </remarks>
 public partial class CaseList : ComponentBase, IDisposable
 {
+    #region Query Parameters
+
+    /// <summary>
+    /// Free-text search bound from the <c>?q=</c> query parameter so a filtered view
+    /// can be bookmarked, shared, and restored via browser back/forward.
+    /// </summary>
+    [Parameter, SupplyParameterFromQuery(Name = "q")]
+    public string Q { get; set; }
+
+    /// <summary>
+    /// Workflow-state filter bound from the <c>?state=</c> query parameter.
+    /// Value is the <see cref="WorkflowState"/> enum member name.
+    /// </summary>
+    [Parameter, SupplyParameterFromQuery(Name = "state")]
+    public string State { get; set; }
+
+    /// <summary>
+    /// Incident-type filter bound from the <c>?incident=</c> query parameter.
+    /// Value is the <see cref="IncidentType"/> enum member name.
+    /// </summary>
+    [Parameter, SupplyParameterFromQuery(Name = "incident")]
+    public string Incident { get; set; }
+
+    /// <summary>
+    /// Process-type filter bound from the <c>?process=</c> query parameter.
+    /// Value is the <see cref="ProcessType"/> enum member name.
+    /// </summary>
+    [Parameter, SupplyParameterFromQuery(Name = "process")]
+    public string Process { get; set; }
+
+    #endregion
+
     #region Injected Services
 
     /// <summary>
@@ -172,6 +204,13 @@ public partial class CaseList : ComponentBase, IDisposable
     private bool _pendingReload;
 
     /// <summary>
+    /// True after the first <see cref="OnParametersSet"/> call has hydrated the filter
+    /// fields from the URL. Subsequent parameter sets (browser back/forward, external
+    /// navigation) trigger a grid reload when hydrated values differ.
+    /// </summary>
+    private bool _queryHydrated;
+
+    /// <summary>
     /// OData <c>$select</c> projection for the case list (only fields needed by the grid).
     /// </summary>
     private const string ListSelect = "Id,CaseId,ServiceNumber,MemberName,MemberRank,Unit,IncidentType,IncidentDate,ProcessType,IsCheckedOut,CheckedOutBy,CheckedOutByName,RowVersion";
@@ -239,6 +278,95 @@ public partial class CaseList : ComponentBase, IDisposable
     {
         _currentUserId = await CurrentUserService.GetUserIdAsync();
         _pendingReload = true;
+    }
+
+    /// <summary>
+    /// Hydrates filter fields from the <c>[SupplyParameterFromQuery]</c> parameters so
+    /// that bookmarked URLs and browser back/forward restore the previous filtered view.
+    /// On the first invocation the fields are seeded before the initial grid reload. On
+    /// subsequent calls (URL-only navigation) a grid reload is queued when any field
+    /// value actually changed.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        var changed = HydrateFromQuery();
+
+        if (!_queryHydrated)
+        {
+            _queryHydrated = true;
+            return;
+        }
+
+        if (changed && _grid is not null)
+        {
+            // Drop any pending debounced search; the URL is the new source of truth.
+            _searchCts.Cancel();
+            _pendingReload = true;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Copies the current query-string parameter values into the filter fields,
+    /// parsing enum values defensively. Returns <c>true</c> if any field changed.
+    /// </summary>
+    private bool HydrateFromQuery()
+    {
+        var newSearch = Q ?? string.Empty;
+        var newState = Enum.TryParse<WorkflowState>(State, ignoreCase: true, out var ws) ? (WorkflowState?)ws : null;
+        var newIncident = Enum.TryParse<IncidentType>(Incident, ignoreCase: true, out var it) ? (IncidentType?)it : null;
+        var newProcess = Enum.TryParse<ProcessType>(Process, ignoreCase: true, out var pt) ? (ProcessType?)pt : null;
+
+        var changed =
+            !string.Equals(newSearch, _searchText, StringComparison.Ordinal) ||
+            newState != _workflowStateFilter ||
+            newIncident != _incidentTypeFilter ||
+            newProcess != _processTypeFilter;
+
+        _searchText = newSearch;
+        _workflowStateFilter = newState;
+        _incidentTypeFilter = newIncident;
+        _processTypeFilter = newProcess;
+
+        return changed;
+    }
+
+    /// <summary>
+    /// Writes the current filter-field values back to the URL query string so the view
+    /// is shareable/bookmarkable. Empty values are omitted from the URL. Uses
+    /// <c>replace: true</c> to avoid polluting browser history with every keystroke or
+    /// filter change.
+    /// </summary>
+    private void SyncUrl()
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            ["q"] = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText,
+            ["state"] = _workflowStateFilter?.ToString(),
+            ["incident"] = _incidentTypeFilter?.ToString(),
+            ["process"] = _processTypeFilter?.ToString(),
+        };
+
+        var uri = Navigation.GetUriWithQueryParameters(parameters);
+
+        if (!string.Equals(uri, Navigation.Uri, StringComparison.Ordinal))
+        {
+            Navigation.NavigateTo(uri, forceLoad: false, replace: true);
+        }
+    }
+
+    /// <summary>
+    /// Invoked by toolbar/filter dropdown <c>Change</c> handlers; syncs the URL and
+    /// reloads the grid so the new filter takes effect immediately.
+    /// </summary>
+    private async Task OnFilterChanged()
+    {
+        SyncUrl();
+
+        if (_grid is not null)
+        {
+            await _grid.Reload();
+        }
     }
 
     /// <summary>
@@ -507,6 +635,7 @@ public partial class CaseList : ComponentBase, IDisposable
                 return;
             }
 
+            SyncUrl();
             await _grid.FirstPage(true);
         }
         catch (OperationCanceledException)
