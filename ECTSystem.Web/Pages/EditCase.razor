@@ -1712,7 +1712,7 @@ else
 
                                     @* ── Header bar ── *@
                                     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                                                 JustifyContent="JustifyContent.End" class="rz-p-2">
+                                                 JustifyContent="JustifyContent.End" class="rz-p-4">
                                         <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
                                                       Variant="Variant.Text" Click="@RefreshDialogueCommentsAsync"
                                                       title="Refresh comments" />
@@ -1729,6 +1729,7 @@ else
                                             </RadzenStack>
                                         }
 
+                                        @{ var __commentIndex = 0; }
                                         @foreach (var dateGroup in GetDateGroupedComments())
                                         {
                                             <RadzenTimeline LinePosition="LinePosition.Start" AlignItems="AlignItems.Center"
@@ -1750,10 +1751,13 @@ else
                                                 @* ── Comments for this date ── *@
                                                 @foreach (var comment in dateGroup)
                                                 {
-                                                    <RadzenTimelineItem PointStyle="PointStyle.Primary" PointVariant="Variant.Filled"
+                                                    var __isEven = (__commentIndex++ % 2 == 0);
+                                                    var __barColor = __isEven ? "var(--rz-primary)" : "var(--rz-secondary)";
+                                                    var __pointStyle = __isEven ? PointStyle.Primary : PointStyle.Secondary;
+                                                    <RadzenTimelineItem PointStyle="@__pointStyle" PointVariant="Variant.Filled"
                                                                         PointSize="PointSize.Small" PointShadow="0">
                                                         <ChildContent>
-                                                            <RadzenCard class="rz-mb-2" Style="background:var(--rz-base-800); border:1px solid var(--rz-base-600);">
+                                                            <RadzenCard class="rz-mb-2" Style="@($"background:var(--rz-base-800); border:1px solid var(--rz-base-600); border-left:4px solid {__barColor};")">
                                                                 @* Header: name, role, time *@
                                                                 <RadzenStack Orientation="Orientation.Horizontal"
                                                                              AlignItems="AlignItems.Center" Gap="0.5rem"
@@ -1780,10 +1784,6 @@ else
                                                                                   Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light"
                                                                                   Size="ButtonSize.Small"
                                                                                   Click="@(() => StartReply(comment.Id))" />
-                                                                    <RadzenButton Text="Acknowledge" Icon="thumb_up"
-                                                                                  Variant="Variant.Flat" ButtonStyle="ButtonStyle.Light"
-                                                                                  Size="ButtonSize.Small"
-                                                                                  Disabled="@comment.IsAcknowledged" />
                                                                 </RadzenStack>
 
                                                                 @* ── Replies (indented) ── *@

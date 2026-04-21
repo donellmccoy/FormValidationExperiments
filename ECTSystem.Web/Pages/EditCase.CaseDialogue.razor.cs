@@ -87,7 +87,7 @@ public partial class EditCase
 
     private static string FormatCommentDateTime(DateTime date)
     {
-        return date.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
+        return date.ToLocalTime().ToString("h:mm:ss tt");
     }
 
     private IEnumerable<IGrouping<string, CaseDialogueComment>> GetDateGroupedComments()
@@ -95,8 +95,8 @@ public partial class EditCase
         return _dialogueComments
             .Where(c => c.ParentCommentId == null)
             .GroupBy(c => c.CreatedDate.Date == DateTime.Today
-                ? $"TODAY, {c.CreatedDate:MMMM d}".ToUpperInvariant()
-                : c.CreatedDate.ToString("MMMM d").ToUpperInvariant());
+                ? $"TODAY, {c.CreatedDate:MMMM d, yyyy}".ToUpperInvariant()
+                : c.CreatedDate.ToString("MMMM d, yyyy").ToUpperInvariant());
     }
 
     private IEnumerable<CaseDialogueComment> GetReplies(int parentId)
