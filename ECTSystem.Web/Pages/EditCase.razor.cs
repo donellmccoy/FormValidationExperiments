@@ -78,6 +78,7 @@ public partial class EditCase : ComponentBase, IDisposable
 
     private static readonly Dictionary<WorkflowTrigger, string> TriggerDisplayNames = new()
     {
+        [WorkflowTrigger.ForwardToMedicalTechnician] = "Medical Technician",
         [WorkflowTrigger.ForwardToMedicalOfficerReview] = "Medical Officer",
         [WorkflowTrigger.ForwardToUnitCommanderReview] = "Unit Commander",
         [WorkflowTrigger.ForwardToWingJudgeAdvocateReview] = "Wing Judge Advocate",
