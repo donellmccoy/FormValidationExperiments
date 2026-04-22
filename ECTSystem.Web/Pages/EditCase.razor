@@ -1720,6 +1720,21 @@ else
                                     @* ── Scrollable comment thread ── *@
                                     <div style="flex:1; overflow-y:auto; padding:1rem;">
 
+                                        @if (_dialogueLoaded && !_isLoadingComments && _dialogueComments.Count == 0)
+                                        {
+                                            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
+                                                         Gap="0.5rem" Style="height:100%;">
+                                                <RadzenIcon Icon="forum"
+                                                            Style="font-size:3rem; color:var(--rz-text-tertiary-color);" />
+                                                <RadzenText TextStyle="TextStyle.Body1"
+                                                            Style="color:var(--rz-text-secondary-color);"
+                                                            Text="No comments yet" />
+                                                <RadzenText TextStyle="TextStyle.Caption"
+                                                            Style="color:var(--rz-text-tertiary-color);"
+                                                            Text="Start the conversation by posting a comment below." />
+                                            </RadzenStack>
+                                        }
+
                                         @if (_hasMoreComments)
                                         {
                                             <RadzenStack JustifyContent="JustifyContent.Center" class="rz-mb-4">
