@@ -428,9 +428,10 @@ public class DocumentsController : ODataControllerBase
 
     /// <summary>
     /// Generates a filled AF Form 348 PDF for the specified case.
-    /// Custom hybrid route: GET /odata/Cases({caseId})/Form348
+    /// Custom REST route: GET /api/cases/{caseId}/form348
+    /// Uses a non-OData path to avoid OData routing convention conflicts.
     /// </summary>
-    [HttpGet("odata/Cases({caseId})/Form348")]
+    [HttpGet("/api/cases/{caseId}/form348")]
     public async Task<IActionResult> GetForm348([FromRoute] int caseId, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);

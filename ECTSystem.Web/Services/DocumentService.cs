@@ -104,7 +104,7 @@ public class DocumentService : ODataServiceBase, IDocumentService
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        return await HttpClient.GetByteArrayAsync($"odata/Cases({caseId})/Form348", cancellationToken);
+        return await HttpClient.GetByteArrayAsync($"api/cases/{caseId}/form348", cancellationToken);
     }
 
     public string GetDocumentDownloadUrl(int documentId)
