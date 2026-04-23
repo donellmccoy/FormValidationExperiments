@@ -29,6 +29,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         {
             MemberName = "Doe, John A",
             MemberRank = "TSgt",
+            ServiceNumber = "1234567890",
             MemberId = memberId,
             MEDCONId = medconId,
             INCAPId = incapId,
@@ -69,9 +70,7 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         var (caseDbId, rowVersion) = await SeedCaseAsync();
 
-        object patchPayload = rowVersion is not null
-            ? new { IncidentDescription = "Updated: slip and fall during field exercise", RowVersion = Convert.ToBase64String(rowVersion) }
-            : new { IncidentDescription = "Updated: slip and fall during field exercise" };
+        var patchPayload = new { IncidentDescription = "Updated: slip and fall during field exercise" };
 
         var request = new HttpRequestMessage(HttpMethod.Patch, $"/odata/Cases({caseDbId})")
         {
@@ -81,6 +80,10 @@ public class CasesIntegrationTests : IntegrationTestBase
                 "application/json")
         };
         request.Headers.Add("Prefer", "return=representation");
+        if (rowVersion is not null)
+        {
+            request.Headers.TryAddWithoutValidation("If-Match", $"\"{Convert.ToBase64String(rowVersion)}\"");
+        }
 
         var response = await Client.SendAsync(request);
 

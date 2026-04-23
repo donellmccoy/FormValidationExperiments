@@ -136,6 +136,7 @@ public class ODataLoadTests : IClassFixture<Integration.EctSystemWebApplicationF
             {
                 MemberName = $"Load, Test {sequence}",
                 MemberRank = "A1C",
+                ServiceNumber = $"000-00-{sequence:D4}",
                 ProcessType = "Informal",
                 Component = "AirForceReserve",
                 IncidentType = "Injury",
@@ -206,6 +207,7 @@ public class ODataLoadTests : IClassFixture<Integration.EctSystemWebApplicationF
             {
                 MemberName = $"Mixed, Write {seq}",
                 MemberRank = "SrA",
+                ServiceNumber = $"100-00-{seq:D4}",
                 ProcessType = "Informal",
                 Component = "RegularAirForce",
                 IncidentType = "Illness",

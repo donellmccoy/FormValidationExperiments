@@ -150,17 +150,29 @@ public class EctSystemWebApplicationFactory : WebApplicationFactory<ECTSystem.Ap
             // so we use Task.Run to execute on a thread-pool thread without a
             // SynchronizationContext, preventing potential deadlocks.
             var userManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
+            var roleManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole>>();
             Task.Run(async () =>
             {
-                if (await userManager.FindByEmailAsync("test@ect.mil") is null)
+                if (!await roleManager.RoleExistsAsync("Admin"))
                 {
-                    var testUser = new ApplicationUser
+                    await roleManager.CreateAsync(new Microsoft.AspNetCore.Identity.IdentityRole("Admin"));
+                }
+
+                var testUser = await userManager.FindByEmailAsync("test@ect.mil");
+                if (testUser is null)
+                {
+                    testUser = new ApplicationUser
                     {
                         UserName = "test@ect.mil",
                         Email = "test@ect.mil",
                         EmailConfirmed = true
                     };
                     await userManager.CreateAsync(testUser, "Pass123");
+                }
+
+                if (!await userManager.IsInRoleAsync(testUser, "Admin"))
+                {
+                    await userManager.AddToRoleAsync(testUser, "Admin");
                 }
             }).GetAwaiter().GetResult();
         });

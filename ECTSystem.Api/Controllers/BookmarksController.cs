@@ -57,6 +57,14 @@ public class BookmarksController : ODataControllerBase
 
         var userId = GetAuthenticatedUserId();
 
+        var existing = await context.Bookmarks.FirstOrDefaultAsync(
+            b => b.UserId == userId && b.LineOfDutyCaseId == dto.LineOfDutyCaseId, ct);
+
+        if (existing is not null)
+        {
+            return Ok(existing);
+        }
+
         var bookmark = BookmarkDtoMapper.ToEntity(dto);
 
         bookmark.UserId = userId;

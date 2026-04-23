@@ -345,6 +345,7 @@ public class CasesControllerTests : ControllerTestBase
     public async Task Delete_WhenCaseExists_ReturnsNoContent()
     {
         SeedCase(BuildCase(1));
+        _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
 
         var result = await _sut.Delete(1);
 
@@ -358,6 +359,8 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task Delete_WhenCaseNotFound_ReturnsNotFound()
     {
+        _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
+
         var result = await _sut.Delete(999);
 
         var obj = Assert.IsType<ObjectResult>(result);
