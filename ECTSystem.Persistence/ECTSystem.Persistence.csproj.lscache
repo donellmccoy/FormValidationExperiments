@@ -201,7 +201,7 @@ obj/Debug/net10.0/
 
 [metadataReferences]
 ../ECTSystem.Shared/obj/Debug/net10.0/ref/ECTSystem.Shared.dll
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.5/ref/net10.0/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.7/ref/net10.0/
  Microsoft.CSharp.dll
  Microsoft.VisualBasic.Core.dll
  Microsoft.VisualBasic.dll
@@ -372,38 +372,38 @@ obj/Debug/net10.0/
 <NUGET>/
  azure.core/1.47.1/lib/net8.0/Azure.Core.dll
  azure.identity/1.14.2/lib/net8.0/Azure.Identity.dll
- humanizer.core/3.0.1/lib/net10.0/Humanizer.dll
- microsoft.aspnetcore.cryptography.internal/10.0.3/lib/net10.0/Microsoft.AspNetCore.Cryptography.Internal.dll
- microsoft.aspnetcore.cryptography.keyderivation/10.0.3/lib/net10.0/Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
- microsoft.aspnetcore.identity.entityframeworkcore/10.0.3/lib/net10.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+ humanizer.core/3.0.10/lib/net10.0/Humanizer.dll
+ microsoft.aspnetcore.cryptography.internal/10.0.7/lib/net10.0/Microsoft.AspNetCore.Cryptography.Internal.dll
+ microsoft.aspnetcore.cryptography.keyderivation/10.0.7/lib/net10.0/Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
+ microsoft.aspnetcore.identity.entityframeworkcore/10.0.7/lib/net10.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
  microsoft.bcl.asyncinterfaces/8.0.0/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
  microsoft.bcl.cryptography/9.0.4/lib/net9.0/Microsoft.Bcl.Cryptography.dll
  microsoft.data.sqlclient/6.1.1/ref/net9.0/Microsoft.Data.SqlClient.dll
- microsoft.entityframeworkcore.abstractions/10.0.3/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
- microsoft.entityframeworkcore.relational/10.0.3/lib/net10.0/Microsoft.EntityFrameworkCore.Relational.dll
- microsoft.entityframeworkcore.sqlserver/10.0.3/lib/net10.0/Microsoft.EntityFrameworkCore.SqlServer.dll
- microsoft.entityframeworkcore/10.0.3/lib/net10.0/Microsoft.EntityFrameworkCore.dll
- microsoft.extensions.caching.abstractions/10.0.3/lib/net10.0/Microsoft.Extensions.Caching.Abstractions.dll
- microsoft.extensions.caching.memory/10.0.3/lib/net10.0/Microsoft.Extensions.Caching.Memory.dll
- microsoft.extensions.configuration.abstractions/10.0.4/lib/net10.0/Microsoft.Extensions.Configuration.Abstractions.dll
- microsoft.extensions.configuration.binder/10.0.3/lib/net10.0/Microsoft.Extensions.Configuration.Binder.dll
- microsoft.extensions.configuration.fileextensions/10.0.4/lib/net10.0/Microsoft.Extensions.Configuration.FileExtensions.dll
- microsoft.extensions.configuration.json/10.0.4/lib/net10.0/Microsoft.Extensions.Configuration.Json.dll
- microsoft.extensions.configuration/10.0.4/lib/net10.0/Microsoft.Extensions.Configuration.dll
- microsoft.extensions.dependencyinjection.abstractions/10.0.3/lib/net10.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
- microsoft.extensions.dependencyinjection/10.0.3/lib/net10.0/Microsoft.Extensions.DependencyInjection.dll
- microsoft.extensions.diagnostics.abstractions/10.0.3/lib/net10.0/Microsoft.Extensions.Diagnostics.Abstractions.dll
- microsoft.extensions.diagnostics/10.0.3/lib/net10.0/Microsoft.Extensions.Diagnostics.dll
- microsoft.extensions.fileproviders.abstractions/10.0.4/lib/net10.0/Microsoft.Extensions.FileProviders.Abstractions.dll
- microsoft.extensions.fileproviders.physical/10.0.4/lib/net10.0/Microsoft.Extensions.FileProviders.Physical.dll
- microsoft.extensions.filesystemglobbing/10.0.4/lib/net10.0/Microsoft.Extensions.FileSystemGlobbing.dll
- microsoft.extensions.identity.core/10.0.3/lib/net10.0/Microsoft.Extensions.Identity.Core.dll
- microsoft.extensions.identity.stores/10.0.3/lib/net10.0/Microsoft.Extensions.Identity.Stores.dll
- microsoft.extensions.logging.abstractions/10.0.3/lib/net10.0/Microsoft.Extensions.Logging.Abstractions.dll
- microsoft.extensions.logging/10.0.3/lib/net10.0/Microsoft.Extensions.Logging.dll
- microsoft.extensions.options.configurationextensions/10.0.3/lib/net10.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
- microsoft.extensions.options/10.0.3/lib/net10.0/Microsoft.Extensions.Options.dll
- microsoft.extensions.primitives/10.0.4/lib/net10.0/Microsoft.Extensions.Primitives.dll
+ microsoft.entityframeworkcore.abstractions/10.0.7/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
+ microsoft.entityframeworkcore.relational/10.0.7/lib/net10.0/Microsoft.EntityFrameworkCore.Relational.dll
+ microsoft.entityframeworkcore.sqlserver/10.0.7/lib/net10.0/Microsoft.EntityFrameworkCore.SqlServer.dll
+ microsoft.entityframeworkcore/10.0.7/lib/net10.0/Microsoft.EntityFrameworkCore.dll
+ microsoft.extensions.caching.abstractions/10.0.7/lib/net10.0/Microsoft.Extensions.Caching.Abstractions.dll
+ microsoft.extensions.caching.memory/10.0.7/lib/net10.0/Microsoft.Extensions.Caching.Memory.dll
+ microsoft.extensions.configuration.abstractions/10.0.7/lib/net10.0/Microsoft.Extensions.Configuration.Abstractions.dll
+ microsoft.extensions.configuration.binder/10.0.7/lib/net10.0/Microsoft.Extensions.Configuration.Binder.dll
+ microsoft.extensions.configuration.fileextensions/10.0.7/lib/net10.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+ microsoft.extensions.configuration.json/10.0.7/lib/net10.0/Microsoft.Extensions.Configuration.Json.dll
+ microsoft.extensions.configuration/10.0.7/lib/net10.0/Microsoft.Extensions.Configuration.dll
+ microsoft.extensions.dependencyinjection.abstractions/10.0.7/lib/net10.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+ microsoft.extensions.dependencyinjection/10.0.7/lib/net10.0/Microsoft.Extensions.DependencyInjection.dll
+ microsoft.extensions.diagnostics.abstractions/10.0.7/lib/net10.0/Microsoft.Extensions.Diagnostics.Abstractions.dll
+ microsoft.extensions.diagnostics/10.0.7/lib/net10.0/Microsoft.Extensions.Diagnostics.dll
+ microsoft.extensions.fileproviders.abstractions/10.0.7/lib/net10.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+ microsoft.extensions.fileproviders.physical/10.0.7/lib/net10.0/Microsoft.Extensions.FileProviders.Physical.dll
+ microsoft.extensions.filesystemglobbing/10.0.7/lib/net10.0/Microsoft.Extensions.FileSystemGlobbing.dll
+ microsoft.extensions.identity.core/10.0.7/lib/net10.0/Microsoft.Extensions.Identity.Core.dll
+ microsoft.extensions.identity.stores/10.0.7/lib/net10.0/Microsoft.Extensions.Identity.Stores.dll
+ microsoft.extensions.logging.abstractions/10.0.7/lib/net10.0/Microsoft.Extensions.Logging.Abstractions.dll
+ microsoft.extensions.logging/10.0.7/lib/net10.0/Microsoft.Extensions.Logging.dll
+ microsoft.extensions.options.configurationextensions/10.0.7/lib/net10.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+ microsoft.extensions.options/10.0.7/lib/net10.0/Microsoft.Extensions.Options.dll
+ microsoft.extensions.primitives/10.0.7/lib/net10.0/Microsoft.Extensions.Primitives.dll
  microsoft.identity.client.extensions.msal/4.73.1/lib/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll
  microsoft.identity.client/4.73.1/lib/net8.0/Microsoft.Identity.Client.dll
  microsoft.identitymodel.abstractions/7.7.1/lib/net8.0/Microsoft.IdentityModel.Abstractions.dll
@@ -421,29 +421,29 @@ obj/Debug/net10.0/
  system.security.cryptography.protecteddata/9.0.4/lib/net9.0/System.Security.Cryptography.ProtectedData.dll
 
 [analyzerReferences]
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.5/analyzers/dotnet/cs/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.7/analyzers/dotnet/cs/
  Microsoft.Interop.ComInterfaceGenerator.dll
  Microsoft.Interop.JavaScript.JSImportGenerator.dll
  Microsoft.Interop.LibraryImportGenerator.dll
  Microsoft.Interop.SourceGeneration.dll
  System.Text.Json.SourceGeneration.dll
  System.Text.RegularExpressions.Generator.dll
-<DOTNET>/sdk/10.0.300-preview.0.26177.108/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.203/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 <NUGET>/
- humanizer.core/3.0.1/analyzers/dotnet/roslyn3.8/cs/Humanizer.Analyzers.dll
+ humanizer.core/3.0.10/analyzers/dotnet/roslyn4.14/cs/Humanizer.Analyzers.dll
  microsoft.codeanalysis.analyzers/3.11.0/analyzers/dotnet/cs/
   Microsoft.CodeAnalysis.Analyzers.dll
   Microsoft.CodeAnalysis.CSharp.Analyzers.dll
- microsoft.entityframeworkcore.analyzers/10.0.3/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
- microsoft.extensions.logging.abstractions/10.0.3/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Logging.Generators.dll
- microsoft.extensions.options/10.0.3/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Options.SourceGeneration.dll
+ microsoft.entityframeworkcore.analyzers/10.0.7/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
+ microsoft.extensions.logging.abstractions/10.0.7/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Logging.Generators.dll
+ microsoft.extensions.options/10.0.7/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Options.SourceGeneration.dll
  riok.mapperly/4.3.1/analyzers/roslyn5.0/dotnet/cs/
   Riok.Mapperly.Abstractions.dll
   Riok.Mapperly.dll
  system.clientmodel/1.5.1/analyzers/dotnet/cs/System.ClientModel.SourceGeneration.dll
 
 [analyzerConfigFiles]
-<DOTNET>/sdk/10.0.300-preview.0.26177.108/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
+<DOTNET>/sdk/10.0.203/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/ECTSystem.Persistence.GeneratedMSBuildEditorConfig.editorconfig

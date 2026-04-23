@@ -1,5 +1,25 @@
 # xUnit v2 → v3 Migration Plan
 
+> **Status: ✅ Completed** — merged to `main` as commit `6ed725c` ("chore(tests): migrate to xunit.v3 and update test case orderer implementation"). Migration performed on branch `chore/xunit-v3` and fast-forwarded into `main` (branch since deleted). Not yet pushed to `origin/main`.
+
+## Outcome
+
+- `ECTSystem.Tests` now targets `xunit.v3` `3.2.2`; `xunit.runner.visualstudio` `3.1.5` and `Microsoft.NET.Test.Sdk` `18.4.0` retained.
+- Build: 0 errors, 0 warnings.
+- Tests: 386 / 399 passing. The 13 failures are all pre-existing environmental issues (Docker/Playwright not installed locally) or unrelated controller/integration assertions — none introduced by the migration.
+- Files touched (10): `ECTSystem.Tests.csproj`; `E2E/AlphabeticalOrderer.cs`, `E2E/DiagnosticTest.cs`, `E2E/LodCaseWorkflowTests.cs`, `E2E/PlaywrightFixture.cs`; `LoadTests/ODataLoadTests.cs`; `Performance/TestcontainersSqlServerTests.cs`, `Performance/RespawnTests.cs`, `Performance/PerformanceRegressionTests.cs`.
+
+## Notes captured during execution
+
+- `[TestCaseOrderer]`'s two-argument (`string typeName, string assemblyName`) constructor was removed in v3 — switched to `[TestCaseOrderer(typeof(AlphabeticalOrderer))]` in [ECTSystem.Tests/E2E/LodCaseWorkflowTests.cs](../ECTSystem.Tests/E2E/LodCaseWorkflowTests.cs).
+- `ITestCaseOrderer.OrderTestCases<T>` is now generic over `IReadOnlyCollection<T> where T : notnull, ITestCase`; access method name via `tc.TestMethod?.MethodName` (see [ECTSystem.Tests/E2E/AlphabeticalOrderer.cs](../ECTSystem.Tests/E2E/AlphabeticalOrderer.cs)).
+- `IAsyncLifetime.InitializeAsync` / `DisposeAsync` now return `ValueTask`.
+- No `Assert`-level remediation was required; v3 analyzers did not flag any existing assertions.
+
+---
+
+## Original plan (for reference)
+
 ## Current state (`ECTSystem.Tests`)
 
 - `xunit` `2.*` (deprecated), `xunit.runner.visualstudio` `3.1.5` (already v3-compatible).
