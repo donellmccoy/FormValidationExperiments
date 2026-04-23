@@ -115,7 +115,7 @@ public class DocumentsController : ODataControllerBase
     /// Partially updates an existing document's metadata using OData Delta semantics.
     /// OData route: PATCH /odata/Documents({key})
     /// </summary>
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyDocument> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
@@ -160,7 +160,7 @@ public class DocumentsController : ODataControllerBase
     /// Fully replaces an existing document's metadata.
     /// OData route: PUT /odata/Documents({key})
     /// </summary>
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] UpdateDocumentDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -246,7 +246,7 @@ public class DocumentsController : ODataControllerBase
     /// Route: POST /odata/Cases({caseId})/Documents
     /// </summary>
     [HttpPost("odata/Cases({caseId})/Documents")]
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     [RequestSizeLimit(50 * 1024 * 1024)] // 50 MB total for multiple files
     public async Task<IActionResult> Upload(
         [FromRoute] int caseId,
@@ -385,7 +385,7 @@ public class DocumentsController : ODataControllerBase
     /// Deletes a document by its identifier.
     /// Standard OData route: DELETE /odata/Documents({key})
     /// </summary>
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingDocument(key, 0);
@@ -409,7 +409,7 @@ public class DocumentsController : ODataControllerBase
             .Where(d => d.Id == key)
             .ExecuteDeleteAsync(ct);
 
-        // Best-effort blob cleanup — don't fail the request if blob delete fails
+        // Best-effort blob cleanup â€” don't fail the request if blob delete fails
         if (!string.IsNullOrEmpty(doc.BlobPath))
         {
             try

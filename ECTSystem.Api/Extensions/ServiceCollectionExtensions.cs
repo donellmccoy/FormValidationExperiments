@@ -77,8 +77,7 @@ public static class ServiceCollectionExtensions
         services.AddAuthorization(options =>
         {
             options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-            options.AddPolicy("CaseManager", policy => policy.RequireRole("Admin", "CaseManager"));
-            options.AddPolicy("CanManageDocuments", policy => policy.RequireRole("Admin", "CaseManager"));
+            options.AddPolicy("CanManageDocuments", policy => policy.RequireRole("Admin"));
         });
 
         return services;

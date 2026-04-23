@@ -56,7 +56,7 @@ public class AuthoritiesController : ODataControllerBase
     /// Creates a new authority entry.
     /// OData route: POST /odata/Authorities
     /// </summary>
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Post([FromBody] CreateAuthorityDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -78,7 +78,7 @@ public class AuthoritiesController : ODataControllerBase
     /// Partially updates an existing authority using OData Delta semantics.
     /// OData route: PATCH /odata/Authorities({key})
     /// </summary>
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyAuthority> delta, CancellationToken ct = default)
     {
         if (delta is null || !ModelState.IsValid)
@@ -117,7 +117,7 @@ public class AuthoritiesController : ODataControllerBase
     /// Deletes an authority entry.
     /// OData route: DELETE /odata/Authorities({key})
     /// </summary>
-    [Authorize(Roles = "Admin,CaseManager")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingAuthority(key);

@@ -152,7 +152,7 @@ public class CaseDialogueCommentsController : ODataControllerBase
     }
 
     /// <summary>
-    /// Deletes a dialogue comment. Only the author, Admin, or CaseManager may delete.
+    /// Deletes a dialogue comment. Only the author or Admin may delete.
     /// OData route: DELETE /odata/CaseDialogueComments({key})
     /// </summary>
     /// <param name="key">The comment identifier.</param>
@@ -171,7 +171,7 @@ public class CaseDialogueCommentsController : ODataControllerBase
         }
 
         var userId = GetAuthenticatedUserId();
-        if (comment.CreatedBy != userId && !User.IsInRole("Admin") && !User.IsInRole("CaseManager"))
+        if (comment.CreatedBy != userId && !User.IsInRole("Admin"))
         {
             return Problem(
                 title: "Forbidden",
