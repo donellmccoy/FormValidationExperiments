@@ -5,7 +5,6 @@ using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
 using Testcontainers.MsSql;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ECTSystem.Tests.Performance;
 
@@ -33,7 +32,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
         _output = output;
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // Start a SQL Server container
         _container = new MsSqlBuilder()
@@ -55,7 +54,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
         _output.WriteLine("Database schema created");
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_container is not null)
         {

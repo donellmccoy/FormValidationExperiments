@@ -1,6 +1,5 @@
 using Microsoft.Playwright;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ECTSystem.Tests.E2E;
 

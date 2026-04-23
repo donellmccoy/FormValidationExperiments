@@ -6,7 +6,6 @@ using ECTSystem.Shared.Models;
 using Respawn;
 using Testcontainers.MsSql;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ECTSystem.Tests.Performance;
 
@@ -35,7 +34,7 @@ public class RespawnTests : IAsyncLifetime
         _output = output;
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _container = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
@@ -60,7 +59,7 @@ public class RespawnTests : IAsyncLifetime
         });
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_container is not null)
         {

@@ -11,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NBomber.CSharp;
 using NBomber.Http.CSharp;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ECTSystem.Tests.LoadTests;
 

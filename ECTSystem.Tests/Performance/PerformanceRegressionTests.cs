@@ -10,7 +10,6 @@ using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
 using ECTSystem.Tests.Integration;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ECTSystem.Tests.Performance;
 

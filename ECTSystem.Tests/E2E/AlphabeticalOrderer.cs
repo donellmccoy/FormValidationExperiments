@@ -1,5 +1,5 @@
-using Xunit.Abstractions;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace ECTSystem.Tests.E2E;
 
@@ -8,9 +8,11 @@ namespace ECTSystem.Tests.E2E;
 /// </summary>
 public class AlphabeticalOrderer : ITestCaseOrderer
 {
-    public IEnumerable<TTestCase> OrderTestCases<TTestCase>(IEnumerable<TTestCase> testCases)
-        where TTestCase : ITestCase
+    public IReadOnlyCollection<TTestCase> OrderTestCases<TTestCase>(IReadOnlyCollection<TTestCase> testCases)
+        where TTestCase : notnull, ITestCase
     {
-        return testCases.OrderBy(tc => tc.TestMethod.Method.Name, StringComparer.OrdinalIgnoreCase);
+        return testCases
+            .OrderBy(tc => tc.TestMethod?.MethodName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 }

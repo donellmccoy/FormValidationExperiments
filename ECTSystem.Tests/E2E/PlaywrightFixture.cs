@@ -18,7 +18,7 @@ public class PlaywrightFixture : IAsyncLifetime
     public const string BaseUrl = "https://localhost:7240";
     public const string ApiUrl = "https://localhost:7173";
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
@@ -37,7 +37,7 @@ public class PlaywrightFixture : IAsyncLifetime
         await SharedPage.WaitForSelectorAsync(".login-card", new PageWaitForSelectorOptions { Timeout = 120_000 });
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (SharedPage is not null)
             await SharedPage.CloseAsync();

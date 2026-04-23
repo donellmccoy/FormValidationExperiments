@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Playwright;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ECTSystem.Tests.E2E;
 
@@ -22,7 +21,7 @@ namespace ECTSystem.Tests.E2E;
 /// </summary>
 [Collection("Playwright")]
 [Trait("Category", "E2E")]
-[TestCaseOrderer("ECTSystem.Tests.E2E.AlphabeticalOrderer", "ECTSystem.Tests")]
+[TestCaseOrderer(typeof(AlphabeticalOrderer))]
 public class LodCaseWorkflowTests : IAsyncLifetime
 {
     private readonly PlaywrightFixture _fixture;
@@ -48,17 +47,17 @@ public class LodCaseWorkflowTests : IAsyncLifetime
         _testPassword ??= "Test123!";
     }
 
-    public Task InitializeAsync()
+    public ValueTask InitializeAsync()
     {
         // Reuse the shared page — WASM only downloads once, auth persists
         _page = _fixture.SharedPage;
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         // Don't close the shared page — it persists across tests
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     // ─────────────────────────────────────────────────────────
