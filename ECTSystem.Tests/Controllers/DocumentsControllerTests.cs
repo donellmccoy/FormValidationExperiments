@@ -149,7 +149,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
     {
         var docId = SeedDocument();
 
-        var result = await _sut.Get(docId);
+        var result = await _sut.Get(docId, TestContext.Current.CancellationToken);
 
         Assert.IsType<SingleResult<LineOfDutyDocument>>(result);
 
@@ -218,7 +218,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
     [Fact]
     public async Task Patch_WhenNullDelta_ReturnsBadRequest()
     {
-        var result = await _sut.Patch(1, null!);
+        var result = await _sut.Patch(1, null!, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -233,7 +233,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
 
         // Read back the persisted RowVersion for concurrency check
         using var ctx = CreateSeedContext();
-        var persisted = await ctx.Documents.FindAsync(docId);
+        var persisted = await ctx.Documents.FindAsync(new object[] { docId }, TestContext.Current.CancellationToken);
 
         var dto = new UpdateDocumentDto
         {
@@ -242,7 +242,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
             RowVersion = persisted!.RowVersion
         };
 
-        var result = await _sut.Put(docId, dto);
+        var result = await _sut.Put(docId, dto, TestContext.Current.CancellationToken);
 
         var updated = Assert.IsType<UpdatedODataResult<LineOfDutyDocument>>(result);
         Assert.Equal("Fully replaced document", updated.Entity.Description);

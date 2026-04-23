@@ -70,7 +70,7 @@ public class PerformanceRegressionTests : IntegrationTestBase
 
         // Warmup
         await Client.PostAsync("/odata/Cases",
-            new StringContent(payload, Encoding.UTF8, "application/json"));
+            new StringContent(payload, Encoding.UTF8, "application/json"), TestContext.Current.CancellationToken);
 
         var freshPayload = JsonSerializer.Serialize(new
         {
@@ -87,7 +87,7 @@ public class PerformanceRegressionTests : IntegrationTestBase
 
         var sw = Stopwatch.StartNew();
         var response = await Client.PostAsync("/odata/Cases",
-            new StringContent(freshPayload, Encoding.UTF8, "application/json"));
+            new StringContent(freshPayload, Encoding.UTF8, "application/json"), TestContext.Current.CancellationToken);
         sw.Stop();
 
         _output.WriteLine($"POST /odata/Cases: {sw.ElapsedMilliseconds} ms (Status: {response.StatusCode})");
@@ -106,7 +106,7 @@ public class PerformanceRegressionTests : IntegrationTestBase
 
         var sw = Stopwatch.StartNew();
         var response = await Client.GetAsync(
-            "/odata/Cases?$filter=Component eq 'RegularAirForce'&$top=10&$orderby=IncidentDate desc&$select=Id,CaseId,MemberName,IncidentDate");
+            "/odata/Cases?$filter=Component eq 'RegularAirForce'&$top=10&$orderby=IncidentDate desc&$select=Id,CaseId,MemberName,IncidentDate", TestContext.Current.CancellationToken);
         sw.Stop();
 
         response.EnsureSuccessStatusCode();
@@ -135,14 +135,14 @@ public class PerformanceRegressionTests : IntegrationTestBase
             IncidentDescription = "Expand perf test"
         });
         await Client.PostAsync("/odata/Cases",
-            new StringContent(seedPayload, Encoding.UTF8, "application/json"));
+            new StringContent(seedPayload, Encoding.UTF8, "application/json"), TestContext.Current.CancellationToken);
 
         // Warmup
         await Client.GetAsync("/odata/Cases?$expand=Authorities,Documents,WorkflowStateHistories&$top=1", TestContext.Current.CancellationToken);
 
         var sw = Stopwatch.StartNew();
         var response = await Client.GetAsync(
-            "/odata/Cases?$expand=Authorities,Documents,WorkflowStateHistories&$top=5");
+            "/odata/Cases?$expand=Authorities,Documents,WorkflowStateHistories&$top=5", TestContext.Current.CancellationToken);
         sw.Stop();
 
         response.EnsureSuccessStatusCode();

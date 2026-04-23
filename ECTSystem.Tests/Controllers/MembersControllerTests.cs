@@ -236,7 +236,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Put(1, new UpdateMemberDto());
+        var result = await _sut.Put(1, new UpdateMemberDto(), TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);

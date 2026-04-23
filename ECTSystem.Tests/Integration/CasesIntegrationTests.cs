@@ -111,7 +111,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         multipart.Add(new StringContent("Supporting Document"), "documentType");
         multipart.Add(new StringContent("Test description"), "description");
 
-        var uploadResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Documents", multipart);
+        var uploadResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Documents", multipart, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, uploadResponse.StatusCode);
 
@@ -120,7 +120,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         var docId = docsArray[0].GetProperty("Id").GetInt32();
 
         // Download the same document
-        var downloadResponse = await Client.GetAsync($"/odata/Documents({docId})/$value");
+        var downloadResponse = await Client.GetAsync($"/odata/Documents({docId})/$value", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
@@ -137,11 +137,11 @@ public class CasesIntegrationTests : IntegrationTestBase
         var (caseDbId, _) = await SeedCaseAsync();
 
         // First checkout should succeed
-        var firstResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null);
+        var firstResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
         // Second checkout should be rejected
-        var secondResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null);
+        var secondResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
     }
 

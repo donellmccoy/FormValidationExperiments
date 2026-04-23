@@ -97,7 +97,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
 
         var retrieved = await context.Cases
             .Include(c => c.Member)
-            .FirstOrDefaultAsync(c => c.CaseId == "TC-20250315-001");
+            .FirstOrDefaultAsync(c => c.CaseId == "TC-20250315-001", TestContext.Current.CancellationToken);
 
         Assert.NotNull(retrieved);
         Assert.Equal("Test, Container A.", retrieved.MemberName);
@@ -145,7 +145,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
         await Task.WhenAll(tasks);
 
         await using var verifyContext = new EctDbContext(_dbOptions);
-        var count = await verifyContext.Cases.CountAsync(c => c.CaseId.StartsWith("TC-CONC-"));
+        var count = await verifyContext.Cases.CountAsync(c => c.CaseId.StartsWith("TC-CONC-"), TestContext.Current.CancellationToken);
 
         _output.WriteLine($"Concurrent inserts: {count}/10 cases created without deadlock");
         Assert.Equal(10, count);
@@ -188,8 +188,8 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
         await using var context1 = new EctDbContext(_dbOptions);
         await using var context2 = new EctDbContext(_dbOptions);
 
-        var case1 = await context1.Cases.FirstAsync(c => c.CaseId == "TC-CONCUR-001");
-        var case2 = await context2.Cases.FirstAsync(c => c.CaseId == "TC-CONCUR-001");
+        var case1 = await context1.Cases.FirstAsync(c => c.CaseId == "TC-CONCUR-001", TestContext.Current.CancellationToken);
+        var case2 = await context2.Cases.FirstAsync(c => c.CaseId == "TC-CONCUR-001", TestContext.Current.CancellationToken);
 
         // First update succeeds
         case1.IncidentDescription = "Updated by user 1";

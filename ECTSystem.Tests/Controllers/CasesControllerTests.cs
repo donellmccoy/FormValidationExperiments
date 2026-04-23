@@ -311,7 +311,7 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task Patch_WhenDeltaIsNull_ReturnsBadRequest()
     {
-        var result = await _sut.Patch(1, (UpdateCaseDto)null);
+        var result = await _sut.Patch(1, (UpdateCaseDto)null, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
