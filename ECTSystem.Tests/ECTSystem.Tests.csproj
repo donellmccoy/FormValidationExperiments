@@ -30,7 +30,7 @@
     <PackageReference Include="NBomber" Version="6.3.0" />
     <PackageReference Include="NBomber.Http" Version="6.2.0" />
     <PackageReference Include="Respawn" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
     <PackageReference Include="Testcontainers.MsSql" Version="4.11.0" />
   </ItemGroup>
 
