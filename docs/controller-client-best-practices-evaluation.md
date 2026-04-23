@@ -244,6 +244,142 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 - ⚠️ **No error handling in base helpers** — `ExecutePagedQueryAsync` and `ExecuteQueryAsync` do not handle `DataServiceQueryException` or network errors. Each caller must handle these individually, leading to inconsistency.
 - ⚠️ **`ODataCountResponse<T>`** — Custom deserialization classes for raw `HttpClient` calls duplicate what the OData client already provides. This is a workaround for cases where the OData client doesn't support certain operations well (e.g., bound actions).
 
+**Remediation Plan:**
+
+Apply the four fixes in the order listed; each step builds on the prior one. After step 1 the solution will not compile until derived service constructors are updated, so plan to complete steps 1–2 in a single pass.
+
+#### Fix 1 — Resolve dual abstraction (OData client vs. raw HttpClient)
+
+Establish and document a convention on the base class:
+
+- **`Context` (OData client)** — all reads/queries (`$filter`, `$top`, `$skip`, `$expand`, `$count`, navigation collections).
+- **`HttpClient`** — only what the typed client cannot model: bound actions, `$batch`, multipart uploads, `PATCH` against arbitrary JSON.
+
+Add typed helpers to the base so derived services stop hand-rolling raw HTTP for common write/action cases:
+
+```csharp
+protected async Task<TResponse?> PostActionAsync<TRequest, TResponse>(
+    string relativeUrl, TRequest body, CancellationToken ct = default)
+{
+    using var response = await HttpClient.PostAsJsonAsync(relativeUrl, body, JsonOptions, ct);
+    response.EnsureSuccessStatusCode();
+    return await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions, ct);
+}
+
+protected async Task PatchEntityAsync<T>(string relativeUrl, T patch, CancellationToken ct = default)
+{
+    using var msg = new HttpRequestMessage(HttpMethod.Patch, relativeUrl)
+    {
+        Content = JsonContent.Create(patch, options: JsonOptions)
+    };
+    using var response = await HttpClient.SendAsync(msg, ct);
+    response.EnsureSuccessStatusCode();
+}
+```
+
+Migrate per-service raw HTTP boilerplate onto these helpers. Add an XML doc comment on `ODataServiceBase` stating the convention so future contributors don't reintroduce the split.
+
+#### Fix 2 — Add error handling to base helpers
+
+Wrap the OData client calls and translate framework exceptions into a single typed exception. Inject `ILogger` so the boundary logs once. Let `OperationCanceledException` propagate untouched.
+
+```csharp
+public sealed class ODataClientException : Exception
+{
+    public int? StatusCode { get; }
+    public ODataClientException(string message, int? statusCode, Exception inner)
+        : base(message, inner) => StatusCode = statusCode;
+}
+
+protected async Task<(IReadOnlyList<T> Items, int Count)> ExecutePagedQueryAsync<T>(
+    DataServiceQuery<T> query, CancellationToken ct = default)
+{
+    try
+    {
+        var response = (QueryOperationResponse<T>)await query.IncludeCount().ExecuteAsync(ct);
+        return (response.ToList(), (int)response.Count);
+    }
+    catch (DataServiceQueryException ex)
+    {
+        Logger.LogWarning(ex, "OData query failed: {Uri}", query.RequestUri);
+        throw new ODataClientException("OData query failed.", (int?)ex.Response?.StatusCode, ex);
+    }
+    catch (DataServiceClientException ex)
+    {
+        Logger.LogWarning(ex, "OData client error.");
+        throw new ODataClientException("OData client error.", ex.StatusCode, ex);
+    }
+    catch (HttpRequestException ex)
+    {
+        Logger.LogWarning(ex, "HTTP error executing OData query: {Uri}", query.RequestUri);
+        throw new ODataClientException("Network error.", (int?)ex.StatusCode, ex);
+    }
+}
+```
+
+Apply the same pattern to `ExecuteQueryAsync`. Convert the helpers from `static` to instance methods so they can use the injected `Logger`.
+
+#### Fix 3 — Eliminate `ODataCountResponse<T>` / `ODataResponse<T>` duplication
+
+These envelope classes exist because some services use `HttpClient.GetFromJsonAsync<ODataCountResponse<T>>(...)` to read paged collections instead of using the typed OData client. The OData client already does this work via `IncludeCount()` + `QueryOperationResponse<T>.Count`:
+
+```csharp
+// Replace raw HTTP + ODataCountResponse<T> with:
+var (items, count) = await ExecutePagedQueryAsync(
+    Context.CreateQuery<Foo>("Foos")
+           .AddQueryOption("$filter", filter)
+           .AddQueryOption("$top", top.ToString())
+           .AddQueryOption("$skip", skip.ToString()),
+    ct);
+```
+
+Audit each derived service for `ODataCountResponse<T>` / `ODataResponse<T>` references and convert them to `DataServiceQuery<T>` calls. Once nothing references the envelope classes, delete them. Keep them only for endpoints the OData client genuinely cannot model (e.g., custom server-side projection responses).
+
+#### Fix 4 — Inject DI-registered `JsonSerializerOptions`; remove the static field
+
+The DI singleton in `AddJsonSerializerOptions()` ([ServiceCollectionExtensions.cs](../ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs#L36-L43)) already configures `JsonStringEnumConverter` + `ReferenceHandler.IgnoreCycles`. Inject it instead of duplicating config and silently omitting `IgnoreCycles`.
+
+```csharp
+public abstract class ODataServiceBase
+{
+    protected EctODataContext Context { get; }
+    protected HttpClient HttpClient { get; }
+    protected JsonSerializerOptions JsonOptions { get; }
+    protected ILogger Logger { get; }
+
+    protected ODataServiceBase(
+        EctODataContext context,
+        HttpClient httpClient,
+        JsonSerializerOptions jsonOptions,
+        ILogger logger)
+    {
+        Context = context;
+        HttpClient = httpClient;
+        JsonOptions = jsonOptions;
+        Logger = logger;
+    }
+    // remove: protected static readonly JsonSerializerOptions JsonOptions = new() { ... };
+}
+```
+
+Update every derived service constructor to forward the new parameters:
+
+```csharp
+public sealed class CaseService : ODataServiceBase, ICaseService
+{
+    public CaseService(EctODataContext ctx, HttpClient http,
+                      JsonSerializerOptions json, ILogger<CaseService> logger)
+        : base(ctx, http, json, logger) { }
+}
+```
+
+#### Suggested order of work
+
+1. Change base ctor to inject `JsonSerializerOptions` + `ILogger`; remove the static field. Update all derived services' constructors. Build to surface every call site.
+2. Convert query helpers to instance methods and add the try/catch wrappers + `ODataClientException`.
+3. Sweep derived services replacing raw `HttpClient.GetFromJsonAsync<ODataCountResponse<T>>(...)` with `ExecutePagedQueryAsync(...)`. Delete the envelope classes when unused.
+4. Add `PostActionAsync` / `PatchEntityAsync` helpers; migrate per-service raw HTTP write code onto them. Add the convention XML doc on the base class.
+
 ---
 
 ### 3.2 EctODataContext
