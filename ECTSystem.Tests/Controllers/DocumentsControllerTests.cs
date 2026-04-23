@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Results;
@@ -137,7 +137,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
     {
         SeedDocument();
 
-        var result = await _sut.Get();
+        var result = await _sut.Get(TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -154,7 +154,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         Assert.IsType<SingleResult<LineOfDutyDocument>>(result);
 
         // Materialize the deferred query to verify the document is returned
-        var document = await result.Queryable.FirstOrDefaultAsync();
+        var document = await result.Queryable.FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(document);
         Assert.Equal("test-report.pdf", document.FileName);
     }
@@ -162,10 +162,10 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
     [Fact]
     public async Task Get_ByKey_WhenNotFound_ReturnsEmptySingleResult()
     {
-        var result = await _sut.Get(999);
+        var result = await _sut.Get(999, TestContext.Current.CancellationToken);
 
         Assert.IsType<SingleResult<LineOfDutyDocument>>(result);
-        var document = await result.Queryable.FirstOrDefaultAsync();
+        var document = await result.Queryable.FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Null(document);
     }
 
@@ -180,7 +180,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         delta.TrySetPropertyValue(nameof(LineOfDutyDocument.Description), "Updated description");
         delta.TrySetPropertyValue(nameof(LineOfDutyDocument.DocumentType), DocumentType.MilitaryMedicalDocumentation);
 
-        var result = await _sut.Patch(docId, delta);
+        var result = await _sut.Patch(docId, delta, TestContext.Current.CancellationToken);
 
         var updated = Assert.IsType<UpdatedODataResult<LineOfDutyDocument>>(result);
         Assert.Equal("Updated description", updated.Entity.Description);
@@ -195,7 +195,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         var delta = new Delta<LineOfDutyDocument>();
         delta.TrySetPropertyValue(nameof(LineOfDutyDocument.Description), "New description");
 
-        var result = await _sut.Patch(docId, delta);
+        var result = await _sut.Patch(docId, delta, TestContext.Current.CancellationToken);
 
         var updated = Assert.IsType<UpdatedODataResult<LineOfDutyDocument>>(result);
         Assert.Equal("test-report.pdf", updated.Entity.FileName);
@@ -208,7 +208,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         var delta = new Delta<LineOfDutyDocument>();
         delta.TrySetPropertyValue(nameof(LineOfDutyDocument.Description), "New");
 
-        var result = await _sut.Patch(999, delta);
+        var result = await _sut.Patch(999, delta, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, obj.StatusCode);
@@ -258,7 +258,7 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
             RowVersion = [0x00]
         };
 
-        var result = await _sut.Put(999, dto);
+        var result = await _sut.Put(999, dto, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, obj.StatusCode);
@@ -272,18 +272,18 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
     {
         var docId = SeedDocument();
 
-        var result = await _sut.Delete(docId);
+        var result = await _sut.Delete(docId, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
 
         using var verifyCtx = CreateSeedContext();
-        Assert.Empty(await verifyCtx.Documents.ToListAsync());
+        Assert.Empty(await verifyCtx.Documents.ToListAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Delete_WhenNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Delete(999);
+        var result = await _sut.Delete(999, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, obj.StatusCode);
@@ -296,12 +296,12 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         var docId1 = SeedDocument();
         var docId2 = SeedDocument();
 
-        var result = await _sut.Delete(docId1);
+        var result = await _sut.Delete(docId1, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
 
         using var verifyCtx = CreateSeedContext();
-        var remaining = await verifyCtx.Documents.ToListAsync();
+        var remaining = await verifyCtx.Documents.ToListAsync(TestContext.Current.CancellationToken);
         Assert.Single(remaining);
         Assert.Equal(docId2, remaining[0].Id);
     }

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -84,7 +84,7 @@ public class RequestLoggingMiddlewareTests
 
         // Verify response body was preserved (middleware copies to original stream)
         originalResponseBody.Position = 0;
-        var actualResponse = await new StreamReader(originalResponseBody).ReadToEndAsync();
+        var actualResponse = await new StreamReader(originalResponseBody).ReadToEndAsync(TestContext.Current.CancellationToken);
         Assert.Equal(expectedResponseBody, actualResponse);
     }
 

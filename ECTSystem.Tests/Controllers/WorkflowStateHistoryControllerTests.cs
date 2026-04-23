@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -76,7 +76,7 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
     {
         var dto = BuildEntryDto();
 
-        var result = await _sut.Post(dto, CancellationToken.None);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         var r = Assert.IsType<CreatedODataResult<WorkflowStateHistory>>(result);
         Assert.Equal(dto.LineOfDutyCaseId, r.Entity.LineOfDutyCaseId);
@@ -92,7 +92,7 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("WorkflowState", "Required");
 
-        var result = await _sut.Post(new CreateWorkflowStateHistoryDto(), CancellationToken.None);
+        var result = await _sut.Post(new CreateWorkflowStateHistoryDto(), TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -108,10 +108,10 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
     {
         var dto = BuildEntryDto();
 
-        await _sut.Post(dto, CancellationToken.None);
+        await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         using var ctx = new EctDbContext(_dbOptions);
-        var saved = await ctx.WorkflowStateHistories.FirstOrDefaultAsync();
+        var saved = await ctx.WorkflowStateHistories.FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(saved);
         Assert.Equal(dto.LineOfDutyCaseId, saved.LineOfDutyCaseId);
     }
@@ -125,10 +125,10 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("key", "error");
 
-        await _sut.Post(new CreateWorkflowStateHistoryDto(), CancellationToken.None);
+        await _sut.Post(new CreateWorkflowStateHistoryDto(), TestContext.Current.CancellationToken);
 
         using var ctx = new EctDbContext(_dbOptions);
-        var count = await ctx.WorkflowStateHistories.CountAsync();
+        var count = await ctx.WorkflowStateHistories.CountAsync(TestContext.Current.CancellationToken);
         Assert.Equal(0, count);
     }
 

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
@@ -75,7 +75,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
             LineOfDutyCaseId = 1
         };
 
-        var result = await _sut.Post(dto);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         var created = Assert.IsType<CreatedODataResult<LineOfDutyAuthority>>(result);
         Assert.Equal("Commander", created.Entity.Role);
@@ -92,7 +92,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
             Role = "Commander", Name = "Smith, John", Rank = "Col"
         };
 
-        var result = await _sut.Post(dto);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -111,9 +111,9 @@ public class AuthoritiesControllerTests : ControllerTestBase
         });
 
         using var ctx = CreateSeedContext();
-        var seeded = await ctx.Authorities.FirstAsync();
+        var seeded = await ctx.Authorities.FirstAsync(TestContext.Current.CancellationToken);
 
-        var result = await _sut.Get(seeded.Id);
+        var result = await _sut.Get(seeded.Id, TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -121,7 +121,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
     [Fact]
     public async Task Get_ByKey_WhenNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Get(999);
+        var result = await _sut.Get(999, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var singleResult = Assert.IsType<SingleResult<LineOfDutyAuthority>>(ok.Value);
@@ -140,13 +140,13 @@ public class AuthoritiesControllerTests : ControllerTestBase
         });
 
         using var ctx = CreateSeedContext();
-        var seeded = await ctx.Authorities.FirstAsync();
+        var seeded = await ctx.Authorities.FirstAsync(TestContext.Current.CancellationToken);
 
         var delta = new Delta<LineOfDutyAuthority>();
         delta.TrySetPropertyValue(nameof(LineOfDutyAuthority.Name), "New Name");
         delta.TrySetPropertyValue(nameof(LineOfDutyAuthority.Rank), "BGen");
 
-        var result = await _sut.Patch(seeded.Id, delta);
+        var result = await _sut.Patch(seeded.Id, delta, TestContext.Current.CancellationToken);
 
         var updated = Assert.IsType<UpdatedODataResult<LineOfDutyAuthority>>(result);
         Assert.Equal("New Name", updated.Entity.Name);
@@ -159,7 +159,7 @@ public class AuthoritiesControllerTests : ControllerTestBase
         var delta = new Delta<LineOfDutyAuthority>();
         delta.TrySetPropertyValue(nameof(LineOfDutyAuthority.Name), "New Name");
 
-        var result = await _sut.Patch(999, delta);
+        var result = await _sut.Patch(999, delta, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
@@ -177,20 +177,20 @@ public class AuthoritiesControllerTests : ControllerTestBase
         });
 
         using var ctx = CreateSeedContext();
-        var seeded = await ctx.Authorities.FirstAsync();
+        var seeded = await ctx.Authorities.FirstAsync(TestContext.Current.CancellationToken);
 
-        var result = await _sut.Delete(seeded.Id);
+        var result = await _sut.Delete(seeded.Id, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
 
         using var verifyCtx = CreateSeedContext();
-        Assert.Empty(await verifyCtx.Authorities.ToListAsync());
+        Assert.Empty(await verifyCtx.Authorities.ToListAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Delete_WhenNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Delete(999);
+        var result = await _sut.Delete(999, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);

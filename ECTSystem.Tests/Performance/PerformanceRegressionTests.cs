@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -37,10 +37,10 @@ public class PerformanceRegressionTests : IntegrationTestBase
         await AuthenticateAsync();
 
         // Warmup
-        await Client.GetAsync("/odata/Cases?$top=1");
+        await Client.GetAsync("/odata/Cases?$top=1", TestContext.Current.CancellationToken);
 
         var sw = Stopwatch.StartNew();
-        var response = await Client.GetAsync("/odata/Cases?$top=10");
+        var response = await Client.GetAsync("/odata/Cases?$top=10", TestContext.Current.CancellationToken);
         sw.Stop();
 
         response.EnsureSuccessStatusCode();
@@ -102,7 +102,7 @@ public class PerformanceRegressionTests : IntegrationTestBase
         await AuthenticateAsync();
 
         // Warmup
-        await Client.GetAsync("/odata/Cases?$filter=Component eq 'RegularAirForce'&$top=5");
+        await Client.GetAsync("/odata/Cases?$filter=Component eq 'RegularAirForce'&$top=5", TestContext.Current.CancellationToken);
 
         var sw = Stopwatch.StartNew();
         var response = await Client.GetAsync(
@@ -138,7 +138,7 @@ public class PerformanceRegressionTests : IntegrationTestBase
             new StringContent(seedPayload, Encoding.UTF8, "application/json"));
 
         // Warmup
-        await Client.GetAsync("/odata/Cases?$expand=Authorities,Documents,WorkflowStateHistories&$top=1");
+        await Client.GetAsync("/odata/Cases?$expand=Authorities,Documents,WorkflowStateHistories&$top=1", TestContext.Current.CancellationToken);
 
         var sw = Stopwatch.StartNew();
         var response = await Client.GetAsync(
@@ -210,10 +210,10 @@ public class PerformanceRegressionTests : IntegrationTestBase
         var loginPayload = new { email = "test@ect.mil", password = "Pass123" };
 
         // Warmup
-        await Client.PostAsJsonAsync("/login", loginPayload);
+        await Client.PostAsJsonAsync("/login", loginPayload, TestContext.Current.CancellationToken);
 
         var sw = Stopwatch.StartNew();
-        var response = await Client.PostAsJsonAsync("/login", loginPayload);
+        var response = await Client.PostAsJsonAsync("/login", loginPayload, TestContext.Current.CancellationToken);
         sw.Stop();
 
         response.EnsureSuccessStatusCode();

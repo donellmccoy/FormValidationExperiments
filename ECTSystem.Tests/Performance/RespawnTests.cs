@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
@@ -36,21 +36,20 @@ public class RespawnTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _container = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
             .Build();
 
-        await _container.StartAsync();
+        await _container.StartAsync(TestContext.Current.CancellationToken);
 
         _dbOptions = new DbContextOptionsBuilder<EctDbContext>()
             .UseSqlServer(_container.GetConnectionString())
             .Options;
 
         await using var context = new EctDbContext(_dbOptions);
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
 
         using var connection = context.Database.GetDbConnection();
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
 
         _respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
         {
@@ -81,18 +80,18 @@ public class RespawnTests : IAsyncLifetime
             Component = ServiceComponent.RegularAirForce,
             ServiceNumber = "1111111111"
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var beforeCount = await context.Members.CountAsync();
+        var beforeCount = await context.Members.CountAsync(TestContext.Current.CancellationToken);
         Assert.True(beforeCount > 0, "Expected seeded data");
 
         // Reset the database using Respawn
         using var connection = context.Database.GetDbConnection();
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         await _respawner.ResetAsync(connection);
 
         // Verify cleanup
-        var afterCount = await context.Members.CountAsync();
+        var afterCount = await context.Members.CountAsync(TestContext.Current.CancellationToken);
         _output.WriteLine($"Members before reset: {beforeCount}, after: {afterCount}");
         Assert.Equal(0, afterCount);
     }
@@ -112,7 +111,7 @@ public class RespawnTests : IAsyncLifetime
             ServiceNumber = "2222222222"
         };
         context.Members.Add(member);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var lodCase = new LineOfDutyCase
         {
@@ -132,16 +131,16 @@ public class RespawnTests : IAsyncLifetime
             }
         };
         context.Cases.Add(lodCase);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Reset
         var connection = context.Database.GetDbConnection();
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         await _respawner.ResetAsync(connection);
 
         // Verify all related entities are cleaned
-        Assert.Equal(0, await context.Cases.CountAsync());
-        Assert.Equal(0, await context.Members.CountAsync());
+        Assert.Equal(0, await context.Cases.CountAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(0, await context.Members.CountAsync(TestContext.Current.CancellationToken));
 
         _output.WriteLine("Respawn successfully cleaned cases, members, and related entities");
     }

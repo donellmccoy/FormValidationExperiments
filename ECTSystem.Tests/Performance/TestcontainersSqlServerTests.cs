@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Shared.Enums;
@@ -35,11 +35,10 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         // Start a SQL Server container
-        _container = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
             .Build();
 
-        await _container.StartAsync();
+        await _container.StartAsync(TestContext.Current.CancellationToken);
 
         _output.WriteLine($"SQL Server container started: {_container.GetConnectionString()}");
 
@@ -49,7 +48,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
 
         // Create the schema
         await using var context = new EctDbContext(_dbOptions);
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
 
         _output.WriteLine("Database schema created");
     }
@@ -76,7 +75,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
             ServiceNumber = "1234567890"
         };
         context.Members.Add(member);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var lodCase = new LineOfDutyCase
         {
@@ -94,7 +93,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
             INCAP = new INCAPDetails()
         };
         context.Cases.Add(lodCase);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var retrieved = await context.Cases
             .Include(c => c.Member)
@@ -123,7 +122,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
                 ServiceNumber = $"{i:D10}"
             };
             context.Members.Add(member);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
             var lodCase = new LineOfDutyCase
             {
@@ -140,7 +139,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
                 INCAP = new INCAPDetails()
             };
             context.Cases.Add(lodCase);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         });
 
         await Task.WhenAll(tasks);
@@ -166,7 +165,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
             ServiceNumber = "5555555555"
         };
         setupContext.Members.Add(member);
-        await setupContext.SaveChangesAsync();
+        await setupContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var lodCase = new LineOfDutyCase
         {
@@ -183,7 +182,7 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
             INCAP = new INCAPDetails()
         };
         setupContext.Cases.Add(lodCase);
-        await setupContext.SaveChangesAsync();
+        await setupContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Simulate two concurrent editors
         await using var context1 = new EctDbContext(_dbOptions);
@@ -194,12 +193,12 @@ public class TestcontainersSqlServerTests : IAsyncLifetime
 
         // First update succeeds
         case1.IncidentDescription = "Updated by user 1";
-        await context1.SaveChangesAsync();
+        await context1.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Second update should fail with concurrency exception
         case2.IncidentDescription = "Updated by user 2";
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
-            () => context2.SaveChangesAsync());
+            () => context2.SaveChangesAsync(TestContext.Current.CancellationToken));
 
         _output.WriteLine("RowVersion concurrency conflict correctly detected on SQL Server");
     }

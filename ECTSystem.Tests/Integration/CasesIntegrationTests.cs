@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -49,13 +49,13 @@ public class CasesIntegrationTests : IntegrationTestBase
                 Encoding.UTF8,
                 "application/json")
         };
-        var response = await Client.SendAsync(request);
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        var responseBody = await response.Content.ReadAsStringAsync();
+        var responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.True(response.StatusCode == HttpStatusCode.Created,
             $"Expected Created but got {response.StatusCode}: {responseBody}");
 
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         var caseId = body.GetProperty("CaseId").GetString();
 
         Assert.NotNull(caseId);
@@ -85,11 +85,11 @@ public class CasesIntegrationTests : IntegrationTestBase
             request.Headers.TryAddWithoutValidation("If-Match", $"\"{Convert.ToBase64String(rowVersion)}\"");
         }
 
-        var response = await Client.SendAsync(request);
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         var updatedDescription = body.GetProperty("IncidentDescription").GetString();
 
         Assert.Equal("Updated: slip and fall during field exercise", updatedDescription);
@@ -115,7 +115,7 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         Assert.Equal(HttpStatusCode.OK, uploadResponse.StatusCode);
 
-        var docsJson = await uploadResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var docsJson = await uploadResponse.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         var docsArray = docsJson.ValueKind == JsonValueKind.Array ? docsJson : docsJson.GetProperty("value");
         var docId = docsArray[0].GetProperty("Id").GetInt32();
 
@@ -124,7 +124,7 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
-        var downloadedBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
+        var downloadedBytes = await downloadResponse.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(fileContent, downloadedBytes);
     }
@@ -164,7 +164,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         };
 
         context.Members.Add(member);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         return member.Id;
     }
@@ -194,7 +194,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         context.Members.Add(member);
         context.MEDCONDetails.Add(medcon);
         context.INCAPDetails.Add(incap);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         return (member.Id, medcon.Id, incap.Id);
     }
@@ -218,7 +218,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         };
 
         context.Members.Add(member);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var suffix = Interlocked.Increment(ref _seedCounter);
 
@@ -238,7 +238,7 @@ public class CasesIntegrationTests : IntegrationTestBase
         };
 
         context.Cases.Add(lodCase);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         return (lodCase.Id, lodCase.RowVersion);
     }

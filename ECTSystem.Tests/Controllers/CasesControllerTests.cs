@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -153,7 +153,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         SeedCase(BuildCase(1));
 
-        var result = await _sut.Get();
+        var result = await _sut.Get(TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -169,7 +169,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         SeedCase(BuildCase(1));
 
-        var result = await _sut.Get(1);
+        var result = await _sut.Get(1, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var singleResult = Assert.IsType<SingleResult<LineOfDutyCase>>(ok.Value);
@@ -184,7 +184,7 @@ public class CasesControllerTests : ControllerTestBase
     [Fact]
     public async Task GetByKey_WhenCaseNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Get(999);
+        var result = await _sut.Get(999, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
@@ -202,7 +202,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         var dto = BuildCaseDto();
 
-        var result = await _sut.Post(dto);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         var created = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result);
         Assert.Matches(@"^\d{8}-\d{3}$", created.Entity.CaseId);
@@ -217,7 +217,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("MemberName", "Required");
 
-        var result = await _sut.Post(new CreateCaseDto());
+        var result = await _sut.Post(new CreateCaseDto(), TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -235,12 +235,12 @@ public class CasesControllerTests : ControllerTestBase
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
 
         var dto1 = BuildCaseDto();
-        var result1 = await _sut.Post(dto1);
+        var result1 = await _sut.Post(dto1, TestContext.Current.CancellationToken);
         var created1 = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result1);
         Assert.Equal($"{today}-001", created1.Entity.CaseId);
 
         var dto2 = BuildCaseDto();
-        var result2 = await _sut.Post(dto2);
+        var result2 = await _sut.Post(dto2, TestContext.Current.CancellationToken);
         var created2 = Assert.IsType<CreatedODataResult<LineOfDutyCase>>(result2);
         Assert.Equal($"{today}-002", created2.Entity.CaseId);
     }
@@ -271,7 +271,7 @@ public class CasesControllerTests : ControllerTestBase
         // Simulate a valid ETag (base64 of {1,2,3})
         _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
 
-        var result = await _sut.Patch(1, dto);
+        var result = await _sut.Patch(1, dto, TestContext.Current.CancellationToken);
 
         Assert.IsType<UpdatedODataResult<LineOfDutyCase>>(result);
     }
@@ -298,7 +298,7 @@ public class CasesControllerTests : ControllerTestBase
 
         _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
 
-        var result = await _sut.Patch(999, dto);
+        var result = await _sut.Patch(999, dto, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
@@ -328,7 +328,7 @@ public class CasesControllerTests : ControllerTestBase
         _sut.ModelState.AddModelError("key", "error");
         var dto = new UpdateCaseDto();
 
-        var result = await _sut.Patch(1, dto);
+        var result = await _sut.Patch(1, dto, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -347,7 +347,7 @@ public class CasesControllerTests : ControllerTestBase
         SeedCase(BuildCase(1));
         _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
 
-        var result = await _sut.Delete(1);
+        var result = await _sut.Delete(1, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -361,7 +361,7 @@ public class CasesControllerTests : ControllerTestBase
     {
         _sut.ControllerContext.HttpContext.Request.Headers["If-Match"] = "\"AQID\"";
 
-        var result = await _sut.Delete(999);
+        var result = await _sut.Delete(999, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);

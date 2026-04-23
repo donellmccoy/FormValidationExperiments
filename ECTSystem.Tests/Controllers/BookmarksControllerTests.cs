@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -72,7 +72,7 @@ public class BookmarksControllerTests : ControllerTestBase
     [Fact]
     public async Task Get_ReturnsOkWithBookmarksQueryable()
     {
-        var result = await _sut.Get();
+        var result = await _sut.Get(TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -88,7 +88,7 @@ public class BookmarksControllerTests : ControllerTestBase
     {
         var dto = new CreateBookmarkDto { LineOfDutyCaseId = 3 };
 
-        var result = await _sut.Post(dto);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         var r = Assert.IsType<CreatedODataResult<Bookmark>>(result);
         var created = (Bookmark)r.Value;
@@ -115,7 +115,7 @@ public class BookmarksControllerTests : ControllerTestBase
         }
 
         var dto = new CreateBookmarkDto { LineOfDutyCaseId = 5 };
-        var result = await _sut.Post(dto);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         var r = Assert.IsType<OkObjectResult>(result);
         var existing = (Bookmark)r.Value;
@@ -144,7 +144,7 @@ public class BookmarksControllerTests : ControllerTestBase
             bookmarkId = bm.Id;
         }
 
-        var result = await _sut.Delete(bookmarkId);
+        var result = await _sut.Delete(bookmarkId, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
 
@@ -161,7 +161,7 @@ public class BookmarksControllerTests : ControllerTestBase
     [Fact]
     public async Task Delete_WhenBookmarkNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Delete(999);
+        var result = await _sut.Delete(999, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);

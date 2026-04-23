@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
@@ -94,7 +94,7 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Get_ReturnsOkWithMembersQueryable()
     {
-        var result = await _sut.Get();
+        var result = await _sut.Get(TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -110,9 +110,9 @@ public class MembersControllerTests : ControllerTestBase
     {
         await using var ctx = CreateSeedContext();
         ctx.Members.Add(BuildMember(1));
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await _sut.Get(1);
+        var result = await _sut.Get(1, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var singleResult = Assert.IsType<SingleResult<Member>>(ok.Value);
@@ -127,7 +127,7 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task GetByKey_WhenMemberNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Get(999);
+        var result = await _sut.Get(999, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var singleResult = Assert.IsType<SingleResult<Member>>(ok.Value);
@@ -150,12 +150,12 @@ public class MembersControllerTests : ControllerTestBase
             Rank = "AB", ServiceNumber = "123456789", Component = ServiceComponent.RegularAirForce
         };
 
-        var result = await _sut.Post(dto);
+        var result = await _sut.Post(dto, TestContext.Current.CancellationToken);
 
         Assert.IsType<CreatedODataResult<Member>>(result);
 
         await using var verifyCtx = CreateSeedContext();
-        Assert.True(await verifyCtx.Members.AnyAsync(m => m.LastName == "Recruit"));
+        Assert.True(await verifyCtx.Members.AnyAsync(m => m.LastName == "Recruit", TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         _sut.ModelState.AddModelError("FirstName", "Required");
 
-        var result = await _sut.Post(new CreateMemberDto());
+        var result = await _sut.Post(new CreateMemberDto(), TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(obj.Value);
@@ -186,7 +186,7 @@ public class MembersControllerTests : ControllerTestBase
     {
         await using var seedCtx = CreateSeedContext();
         seedCtx.Members.Add(BuildMember(1, "John", "Doe"));
-        await seedCtx.SaveChangesAsync();
+        await seedCtx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var dto = new UpdateMemberDto
         {
@@ -196,12 +196,12 @@ public class MembersControllerTests : ControllerTestBase
             RowVersion = []
         };
 
-        var result = await _sut.Put(1, dto);
+        var result = await _sut.Put(1, dto, TestContext.Current.CancellationToken);
 
         Assert.IsType<UpdatedODataResult<Member>>(result);
 
         await using var verifyCtx = CreateSeedContext();
-        var saved = await verifyCtx.Members.FindAsync(1);
+        var saved = await verifyCtx.Members.FindAsync(new object[] { 1 }, TestContext.Current.CancellationToken);
         Assert.Equal("Jane",  saved.FirstName);
         Assert.Equal("Smith", saved.LastName);
         Assert.Equal("TSgt",  saved.Rank);
@@ -221,7 +221,7 @@ public class MembersControllerTests : ControllerTestBase
             RowVersion = new byte[] { 0 }
         };
 
-        var result = await _sut.Put(999, dto);
+        var result = await _sut.Put(999, dto, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
@@ -255,17 +255,17 @@ public class MembersControllerTests : ControllerTestBase
     {
         await using var seedCtx = CreateSeedContext();
         seedCtx.Members.Add(BuildMember(1, "John", "Doe"));
-        await seedCtx.SaveChangesAsync();
+        await seedCtx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var delta = new Delta<Member>();
         delta.TrySetPropertyValue(nameof(Member.FirstName), "Patched");
 
-        var result = await _sut.Patch(1, delta);
+        var result = await _sut.Patch(1, delta, TestContext.Current.CancellationToken);
 
         Assert.IsType<UpdatedODataResult<Member>>(result);
 
         await using var verifyCtx = CreateSeedContext();
-        var saved = await verifyCtx.Members.FindAsync(1);
+        var saved = await verifyCtx.Members.FindAsync(new object[] { 1 }, TestContext.Current.CancellationToken);
         Assert.Equal("Patched", saved.FirstName);
         Assert.Equal("Doe",     saved.LastName);  // unchanged
     }
@@ -280,7 +280,7 @@ public class MembersControllerTests : ControllerTestBase
         var delta = new Delta<Member>();
         delta.TrySetPropertyValue(nameof(Member.FirstName), "Ghost");
 
-        var result = await _sut.Patch(999, delta);
+        var result = await _sut.Patch(999, delta, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
@@ -298,14 +298,14 @@ public class MembersControllerTests : ControllerTestBase
     {
         await using var seedCtx = CreateSeedContext();
         seedCtx.Members.Add(BuildMember(1));
-        await seedCtx.SaveChangesAsync();
+        await seedCtx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await _sut.Delete(1);
+        var result = await _sut.Delete(1, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
 
         await using var verifyCtx = CreateSeedContext();
-        Assert.Null(await verifyCtx.Members.FindAsync(1));
+        Assert.Null(await verifyCtx.Members.FindAsync(new object[] { 1 }, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -315,7 +315,7 @@ public class MembersControllerTests : ControllerTestBase
     [Fact]
     public async Task Delete_WhenMemberNotFound_ReturnsNotFound()
     {
-        var result = await _sut.Delete(999);
+        var result = await _sut.Delete(999, TestContext.Current.CancellationToken);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
