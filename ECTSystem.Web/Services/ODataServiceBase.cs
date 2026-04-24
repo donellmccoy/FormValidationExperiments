@@ -26,22 +26,20 @@ public abstract class ODataServiceBase
         HttpClient = httpClient;
     }
 
-    protected static async Task<(List<T> Items, int Count)> ExecutePagedQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
+    protected async Task<(List<T> Items, int Count)> ExecutePagedQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
     {
-        var response = await query.IncludeCount().ExecuteAsync(ct)
-            as QueryOperationResponse<T>;
+        var uri = query.IncludeCount().RequestUri;
+        var response = await HttpClient.GetFromJsonAsync<ODataCountResponse<T>>(uri, JsonOptions, ct);
 
-        var items = response?.ToList() ?? [];
-        var count = (int)(response?.Count ?? 0);
-
-        return (items, count);
+        return (response?.Value ?? [], response?.Count ?? 0);
     }
 
-    protected static async Task<List<T>> ExecuteQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
+    protected async Task<List<T>> ExecuteQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
     {
-        var response = await query.ExecuteAsync(ct);
+        var uri = query.RequestUri;
+        var response = await HttpClient.GetFromJsonAsync<ODataResponse<T>>(uri, JsonOptions, ct);
 
-        return [.. response];
+        return response?.Value ?? [];
     }
 
     protected static string BuildNavigationPropertyUrl(string basePath, string? filter, int? top, int? skip, string? orderby, bool? count, string? select = null, string? expand = null)
