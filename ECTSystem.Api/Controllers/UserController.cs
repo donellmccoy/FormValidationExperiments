@@ -20,11 +20,20 @@ namespace ECTSystem.Api.Controllers;
 public class UserController(UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser()
     {
         var userId = User.GetRequiredUserId();
-        var email = User.FindFirstValue(ClaimTypes.Email);
-        var name = User.FindFirstValue(ClaimTypes.Name) ?? email ?? userId;
+        var user = await userManager.FindByIdAsync(userId);
+
+        var fullName = user is not null
+            ? $"{user.FirstName} {user.LastName}".Trim()
+            : string.Empty;
+
+        var name = !string.IsNullOrWhiteSpace(fullName)
+            ? fullName
+            : User.FindFirstValue(ClaimTypes.Name)
+                ?? User.FindFirstValue(ClaimTypes.Email)
+                ?? userId;
 
         return Ok(new CurrentUserDto { UserId = userId, Name = name });
     }
@@ -39,8 +48,24 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
 
         var users = await userManager.Users
             .Where(u => distinctIds.Contains(u.Id))
-            .Select(u => new UserLookupDto { Id = u.Id, Name = u.UserName ?? u.Email ?? u.Id })
-            .ToDictionaryAsync(u => u.Id, u => u.Name, ct);
+            .Select(u => new
+            {
+                u.Id,
+                u.FirstName,
+                u.LastName,
+                u.UserName,
+                u.Email
+            })
+            .ToDictionaryAsync(
+                u => u.Id,
+                u =>
+                {
+                    var fullName = $"{u.FirstName} {u.LastName}".Trim();
+                    return !string.IsNullOrWhiteSpace(fullName)
+                        ? fullName
+                        : u.UserName ?? u.Email ?? u.Id;
+                },
+                ct);
 
         foreach (var id in distinctIds)
             users.TryAdd(id, id);

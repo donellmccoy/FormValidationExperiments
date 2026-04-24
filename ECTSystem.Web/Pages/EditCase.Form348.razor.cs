@@ -28,6 +28,11 @@ public partial class EditCase
 
     private async Task OnOuterTabIndexChanged(int index)
     {
+        if (_selectedOuterTabIndex == index)
+        {
+            return;
+        }
+
         _selectedOuterTabIndex = index;
 
         if (index == OuterDocumentsTabIndex)

@@ -72,7 +72,7 @@ public class UserControllerTests : ControllerTestBase
     }
 
     [Fact]
-    public void GetCurrentUser_ThrowsUnauthorized_WhenNoNameIdentifierClaim()
+    public async Task GetCurrentUser_ThrowsUnauthorized_WhenNoNameIdentifierClaim()
     {
         var sut = new UserController(_mockUserManager.Object);
         sut.ControllerContext = new ControllerContext
@@ -83,7 +83,7 @@ public class UserControllerTests : ControllerTestBase
             }
         };
 
-        Assert.Throws<UnauthorizedAccessException>(() => sut.GetCurrentUser());
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.GetCurrentUser());
     }
 
     // ──────────────────── LookupUsers ────────────────────
