@@ -9,7 +9,7 @@ Identified from API/EF log trace of a document upload + grid refresh flow.
 
 ---
 
-## Fix 1 — CORS Preflight Caching ⬜
+## Fix 1 — CORS Preflight Caching ✅ <span style="color:green">Completed</span>
 
 **File:** `ECTSystem.Api/Extensions/ServiceCollectionExtensions.cs` (`AddCorsPolicy`)
 
@@ -19,7 +19,7 @@ Identified from API/EF log trace of a document upload + grid refresh flow.
 
 ---
 
-## Fix 2 — Post-Upload Optimistic Update ⬜
+## Fix 2 — Post-Upload Optimistic Update ✅ <span style="color:green">Completed</span>
 
 **File:** `ECTSystem.Web/Pages/EditCase.Documents.razor.cs` (`OnUploadComplete`)
 
@@ -32,7 +32,7 @@ Identified from API/EF log trace of a document upload + grid refresh flow.
 
 ---
 
-## Fix 3 — Fold Case Existence Check Into Transaction ⬜
+## Fix 3 — Fold Case Existence Check Into Transaction ✅ <span style="color:green">Completed</span>
 
 **File:** `ECTSystem.Api/Controllers/DocumentsController.cs` (`Upload`)
 
@@ -45,7 +45,7 @@ Identified from API/EF log trace of a document upload + grid refresh flow.
 
 ---
 
-## Fix 4 — Composite Index for Document List Queries ⬜
+## Fix 4 — Composite Index for Document List Queries ✅ <span style="color:green">Completed</span>
 
 **File:** New EF Core migration in `ECTSystem.Persistence/Migrations/`
 
@@ -57,9 +57,23 @@ Identified from API/EF log trace of a document upload + grid refresh flow.
 
 ## Execution Order
 
-| # | Fix | Effort |
-|---|-----|--------|
-| 1 | CORS max-age | 1 line |
-| 2 | Optimistic update | ~30 lines |
-| 3 | Composite index migration | migration |
-| 4 | Case check inside transaction | ~10 lines |
+| # | Fix | Effort | Status |
+|---|-----|--------|--------|
+| 1 | CORS max-age | 1 line | ✅ <span style="color:green">Completed</span> |
+| 2 | Optimistic update | ~30 lines | ✅ <span style="color:green">Completed</span> |
+| 3 | Composite index migration | migration | ✅ <span style="color:green">Completed</span> |
+| 4 | Case check inside transaction | ~10 lines | ✅ <span style="color:green">Completed</span> |
+
+---
+
+## Build Verification
+
+`dotnet build ECTSystem.slnx` — exit code 0, all 5 projects compiled.
+
+## Migration Applied?
+
+Migration `20260424201600_AddDocumentsCaseUploadDateIndex` has been **generated** but not yet applied. Run:
+
+```powershell
+dotnet ef database update --project ECTSystem.Persistence --startup-project ECTSystem.Api --context EctDbContext
+```

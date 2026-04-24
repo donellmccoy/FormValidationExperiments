@@ -246,7 +246,7 @@ public partial class EditCase
     /// Parses the upload endpoint response, which may be OData-formatted
     /// (<c>{"value":[...]}</c>), a plain JSON array, or a single object.
     /// </summary>
-    private static List<LineOfDutyDocument> ParseUploadResponse(string rawResponse)
+    private List<LineOfDutyDocument> ParseUploadResponse(string rawResponse)
     {
         using var doc = JsonDocument.Parse(rawResponse);
 
