@@ -11,7 +11,11 @@ public class LineOfDutyDocumentConfiguration : IEntityTypeConfiguration<LineOfDu
     {
         builder.HasKey(e => e.Id);
 
-        builder.HasIndex(e => e.LineOfDutyCaseId);
+        // Composite index optimised for the documents grid query, which filters by
+        // LineOfDutyCaseId and orders by UploadDate desc, Id desc. Supports both the
+        // paged SELECT and the COUNT_BIG(*) issued when $count=true.
+        builder.HasIndex(e => new { e.LineOfDutyCaseId, e.UploadDate, e.Id })
+            .IsDescending(false, true, true);
 
         builder.Property(e => e.BlobPath).HasMaxLength(1024);
         builder.Property(e => e.ContentType).HasMaxLength(256);

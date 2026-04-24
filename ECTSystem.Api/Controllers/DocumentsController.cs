@@ -304,16 +304,6 @@ public class DocumentsController : ODataControllerBase
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
 
-        // Validate the parent case exists before processing files
-        if (!await context.Cases.AnyAsync(c => c.Id == caseId, ct))
-        {
-            LoggingService.InvalidUpload(caseId);
-            return Problem(
-                title: "Case not found",
-                detail: $"No case exists with ID {caseId}.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
-
         var strategy = context.Database.CreateExecutionStrategy();
 
         var documents = new List<LineOfDutyDocument>(file.Count);
@@ -324,6 +314,14 @@ public class DocumentsController : ODataControllerBase
             {
                 documents.Clear();
                 context.ChangeTracker.Clear();
+
+                // Validate the parent case exists. Done inside the execution strategy so
+                // it shares the connection with the subsequent transaction (one fewer
+                // round-trip than checking before the strategy block).
+                if (!await context.Cases.AnyAsync(c => c.Id == caseId, ct))
+                {
+                    throw new CaseNotFoundException(caseId);
+                }
 
                 await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
@@ -373,6 +371,14 @@ public class DocumentsController : ODataControllerBase
             }
 
             return Ok(documents);
+        }
+        catch (CaseNotFoundException)
+        {
+            LoggingService.InvalidUpload(caseId);
+            return Problem(
+                title: "Case not found",
+                detail: $"No case exists with ID {caseId}.",
+                statusCode: StatusCodes.Status404NotFound);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -448,4 +454,13 @@ public class DocumentsController : ODataControllerBase
         var pdfBytes = _pdfService.GenerateFilledForm(lodCase);
         return File(pdfBytes, "application/pdf", $"AF348_{lodCase.CaseId}.pdf");
 }
+}
+
+/// <summary>
+/// Sentinel exception used to signal a missing parent case from inside an EF
+/// execution-strategy callback so it can be translated to a 404 response.
+/// </summary>
+internal sealed class CaseNotFoundException(int caseId) : Exception($"Case {caseId} not found.")
+{
+    public int CaseId { get; } = caseId;
 }

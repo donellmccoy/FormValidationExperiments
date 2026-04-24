@@ -146,7 +146,8 @@ public static class ServiceCollectionExtensions
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials()
-                      .WithExposedHeaders("X-Case-IsBookmarked");
+                      .WithExposedHeaders("X-Case-IsBookmarked")
+                      .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
             });
         });
 

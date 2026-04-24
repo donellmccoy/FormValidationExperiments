@@ -202,7 +202,8 @@ public partial class EditCase
 
     /// <summary>
     /// Handles the <c>RadzenUpload.Complete</c> event. Deserializes the server
-    /// response for notification, then reloads the grid from the server.
+    /// response and optimistically prepends the new documents to the local
+    /// collection, avoiding a full grid reload round-trip.
     /// </summary>
     private void OnUploadComplete(UploadCompleteEventArgs args)
     {
@@ -213,43 +214,55 @@ public partial class EditCase
 
         try
         {
-            List<LineOfDutyDocument> documents;
-
-            // The API returns OData-formatted JSON: {"value":[...]} or a plain array [...].
-            using var doc = JsonDocument.Parse(args.RawResponse);
-            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                doc.RootElement.TryGetProperty("value", out var valueElement))
-            {
-                documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(valueElement.GetRawText(), JsonOptions);
-            }
-            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
-            {
-                documents = JsonSerializer.Deserialize<List<LineOfDutyDocument>>(args.RawResponse, JsonOptions);
-            }
-            else
-            {
-                // Single object response
-                var single = JsonSerializer.Deserialize<LineOfDutyDocument>(args.RawResponse, JsonOptions);
-                documents = single is not null ? [single] : [];
-            }
+            var documents = ParseUploadResponse(args.RawResponse);
 
             if (documents is { Count: > 0 })
             {
-                _documentsGrid?.Reload();
+                // Optimistic update: prepend uploaded documents to the local collection
+                // and bump the count, eliminating a follow-up GET round-trip.
+                var existing = _documentsData?.Cast<LineOfDutyDocument>().ToList() ?? [];
+                _documentsData = documents.Concat(existing).AsODataEnumerable();
+                _documentsCount += documents.Count;
 
                 var names = string.Join(", ", documents.Select(d => d.FileName));
                 NotificationService.Notify(NotificationSeverity.Success, "Uploaded",
                     documents.Count == 1
                         ? $"\"{documents[0].FileName}\" was added."
                         : $"{documents.Count} files were added: {names}");
+
+                InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to process upload response");
+            Logger.LogError(ex, "Failed to process upload response — falling back to grid reload");
+            _documentsGrid?.Reload();
             NotificationService.Notify(NotificationSeverity.Error, "Upload Error",
                 "Files were uploaded but the response could not be processed.");
         }
+    }
+
+    /// <summary>
+    /// Parses the upload endpoint response, which may be OData-formatted
+    /// (<c>{"value":[...]}</c>), a plain JSON array, or a single object.
+    /// </summary>
+    private static List<LineOfDutyDocument> ParseUploadResponse(string rawResponse)
+    {
+        using var doc = JsonDocument.Parse(rawResponse);
+
+        if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+            doc.RootElement.TryGetProperty("value", out var valueElement))
+        {
+            return JsonSerializer.Deserialize<List<LineOfDutyDocument>>(valueElement.GetRawText(), JsonOptions) ?? [];
+        }
+
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            return JsonSerializer.Deserialize<List<LineOfDutyDocument>>(rawResponse, JsonOptions) ?? [];
+        }
+
+        var single = JsonSerializer.Deserialize<LineOfDutyDocument>(rawResponse, JsonOptions);
+        return single is not null ? [single] : [];
     }
 
     /// <summary>
