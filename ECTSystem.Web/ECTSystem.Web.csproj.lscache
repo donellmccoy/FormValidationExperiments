@@ -64,6 +64,7 @@ Handlers/
 Helpers/WorkflowTabHelper.cs
 Layout/MainLayout.razor.cs
 Models/
+ ApiProblemDetails.cs
  AuthResponse.cs
  LoginRequest.cs
  RegisterRequest.cs
@@ -97,6 +98,7 @@ Services/
  CaseService.cs
  CurrentUserService.cs
  DocumentService.cs
+ EctApiException.cs
  EctODataContext.cs
  Interfaces/
   IAuthorityService.cs
