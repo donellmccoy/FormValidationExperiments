@@ -1,5 +1,7 @@
 namespace ECTSystem.Web.Services;
 
+using Microsoft.Extensions.Logging;
+
 /// <summary>
 /// Shared scoped service that tracks the current user's bookmark count and
 /// notifies subscribers (e.g., MainLayout badge) whenever the count changes.
@@ -13,6 +15,11 @@ public class BookmarkCountService
     /// The bookmark service used to query the server for the current user's bookmark count.
     /// </summary>
     private readonly IBookmarkService _dataService;
+
+    /// <summary>
+    /// Logger for diagnostic events emitted by this service.
+    /// </summary>
+    private readonly ILogger<BookmarkCountService> _logger;
 
     /// <summary>
     /// Gets the current number of cases bookmarked by the authenticated user.
@@ -31,9 +38,11 @@ public class BookmarkCountService
     /// Initializes a new instance of the <see cref="BookmarkCountService"/> class.
     /// </summary>
     /// <param name="dataService">The bookmark service for querying bookmark counts from the API.</param>
-    public BookmarkCountService(IBookmarkService dataService)
+    /// <param name="logger">The logger for diagnostic events.</param>
+    public BookmarkCountService(IBookmarkService dataService, ILogger<BookmarkCountService> logger)
     {
         _dataService = dataService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -74,9 +83,13 @@ public class BookmarkCountService
             Count = result.Count;
             OnCountChanged?.Invoke();
         }
-        catch
+        catch (OperationCanceledException)
         {
-            // Non-critical — keep stale count on failure
+            // Caller-initiated cancellation; not an error worth logging.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to refresh bookmark count; keeping stale value {StaleCount}.", Count);
         }
     }
 }

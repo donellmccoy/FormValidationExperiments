@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -9,8 +10,8 @@ namespace ECTSystem.Web.Services;
 
 public class DocumentService : ODataServiceBase, IDocumentService
 {
-    public DocumentService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    public DocumentService(EctODataContext context, HttpClient httpClient, ILogger<DocumentService> logger)
+        : base(context, httpClient, logger) { }
 
     public async Task<List<LineOfDutyDocument>> GetDocumentsAsync(int caseId, CancellationToken cancellationToken = default)
     {
@@ -85,7 +86,7 @@ public class DocumentService : ODataServiceBase, IDocumentService
 
         var response = await HttpClient.PostAsync($"odata/Cases({caseId})/Documents", form, cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, $"POST odata/Cases({caseId})/Documents", cancellationToken);
 
         return (await response.Content.ReadFromJsonAsync<LineOfDutyDocument>(JsonOptions, cancellationToken))!;
     }
@@ -96,7 +97,7 @@ public class DocumentService : ODataServiceBase, IDocumentService
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentId);
 
         var response = await HttpClient.DeleteAsync($"odata/Documents({documentId})", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, $"DELETE odata/Documents({documentId})", cancellationToken);
     }
 
     // Binary stream download — HttpClient required (OData client doesn't support raw byte responses)

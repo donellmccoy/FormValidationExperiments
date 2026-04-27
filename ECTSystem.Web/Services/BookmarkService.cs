@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -10,8 +11,8 @@ namespace ECTSystem.Web.Services;
 
 public class BookmarkService : ODataServiceBase, IBookmarkService
 {
-    public BookmarkService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    public BookmarkService(EctODataContext context, HttpClient httpClient, ILogger<BookmarkService> logger)
+        : base(context, httpClient, logger) { }
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,
@@ -66,7 +67,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
 
         var response = await HttpClient.PostAsJsonAsync("odata/Bookmarks/AddBookmark", body, JsonOptions, cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "POST odata/Bookmarks/AddBookmark", cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<AddBookmarkResponse>(JsonOptions, cancellationToken);
 
@@ -141,7 +142,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         };
 
         var response = await HttpClient.PostAsJsonAsync(url, body, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "POST odata/Cases/ByCurrentState (bookmarked)", cancellationToken);
 
         if (count == true)
         {
@@ -173,6 +174,6 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
 
         var response = await HttpClient.PostAsJsonAsync("odata/Bookmarks/DeleteBookmark", body, JsonOptions, cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "POST odata/Bookmarks/DeleteBookmark", cancellationToken);
     }
 }

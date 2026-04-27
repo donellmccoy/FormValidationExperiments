@@ -4,6 +4,7 @@ using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
+using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -11,7 +12,7 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class CaseService(EctODataContext context, HttpClient httpClient) : ODataServiceBase(context, httpClient), ICaseService
+public class CaseService(EctODataContext context, HttpClient httpClient, ILogger<CaseService> logger) : ODataServiceBase(context, httpClient, logger), ICaseService
 {
     private const string FullExpand = "Authorities,Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications,WorkflowStateHistories";
 
@@ -163,12 +164,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
             };
 
             var createResponse = await HttpClient.PostAsJsonAsync("odata/Cases", createDto, JsonOptions, cancellationToken);
-
-            if (!createResponse.IsSuccessStatusCode)
-            {
-                var errorBody = await createResponse.Content.ReadAsStringAsync(cancellationToken);
-                throw new HttpRequestException($"POST odata/Cases failed ({createResponse.StatusCode}): {errorBody}");
-            }
+            await EnsureSuccessOrThrowAsync(createResponse, "POST odata/Cases", cancellationToken);
 
             return (await createResponse.Content.ReadFromJsonAsync<LineOfDutyCase>(JsonOptions, cancellationToken))!;
         }
@@ -208,12 +204,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
         }
 
         var response = await HttpClient.SendAsync(request, cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"PATCH odata/Cases({lodCase.Id}) failed ({response.StatusCode}): {errorBody}");
-        }
+        await EnsureSuccessOrThrowAsync(response, $"PATCH odata/Cases({lodCase.Id})", cancellationToken);
 
         var updatedCase = (await response.Content.ReadFromJsonAsync<LineOfDutyCase>(JsonOptions, cancellationToken))!;
 
@@ -243,10 +234,24 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
                 new { RowVersion = rowVersion },
                 cancellationToken);
 
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            var problem = await TryReadProblemDetailsAsync(response, cancellationToken);
+            Logger.LogWarning(
+                "Checkout failed for case {CaseId}: status={StatusCode} title={ProblemTitle} detail={ProblemDetail}",
+                caseId,
+                (int)response.StatusCode,
+                problem?.Title,
+                problem?.Detail);
+
+            return false;
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            Logger.LogWarning(ex, "Checkout request failed for case {CaseId}", caseId);
             return false;
         }
     }
@@ -262,10 +267,24 @@ public class CaseService(EctODataContext context, HttpClient httpClient) : OData
                 new { RowVersion = rowVersion },
                 cancellationToken);
 
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            var problem = await TryReadProblemDetailsAsync(response, cancellationToken);
+            Logger.LogWarning(
+                "Checkin failed for case {CaseId}: status={StatusCode} title={ProblemTitle} detail={ProblemDetail}",
+                caseId,
+                (int)response.StatusCode,
+                problem?.Title,
+                problem?.Detail);
+
+            return false;
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            Logger.LogWarning(ex, "Checkin request failed for case {CaseId}", caseId);
             return false;
         }
     }

@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
+using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 
 #nullable enable
@@ -9,8 +10,8 @@ namespace ECTSystem.Web.Services;
 
 public class AuthorityService : ODataServiceBase, IAuthorityService
 {
-    public AuthorityService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    public AuthorityService(EctODataContext context, HttpClient httpClient, ILogger<AuthorityService> logger)
+        : base(context, httpClient, logger) { }
 
     public async Task<List<LineOfDutyAuthority>> SaveAuthoritiesAsync(int caseId, ICollection<LineOfDutyAuthority> authorities, CancellationToken cancellationToken = default)
     {
@@ -39,7 +40,7 @@ public class AuthorityService : ODataServiceBase, IAuthorityService
         foreach (var toRemove in existingAuthorities.Where(a => !incomingRoles.Contains(a.Role)))
         {
             var response = await HttpClient.DeleteAsync($"odata/Authorities({toRemove.Id})", cancellationToken);
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessOrThrowAsync(response, $"DELETE odata/Authorities({toRemove.Id})", cancellationToken);
         }
 
         // Step 3: Upsert — update existing or add new.
@@ -66,7 +67,7 @@ public class AuthorityService : ODataServiceBase, IAuthorityService
                 };
 
                 var response = await HttpClient.SendAsync(patchRequest, cancellationToken);
-                response.EnsureSuccessStatusCode();
+                await EnsureSuccessOrThrowAsync(response, $"PATCH odata/Authorities({match.Id})", cancellationToken);
 
                 var updated = await response.Content.ReadFromJsonAsync<LineOfDutyAuthority>(JsonOptions, cancellationToken);
                 savedAuthorities.Add(updated!);
@@ -86,7 +87,7 @@ public class AuthorityService : ODataServiceBase, IAuthorityService
                 };
 
                 var response = await HttpClient.PostAsJsonAsync("odata/Authorities", dto, JsonOptions, cancellationToken);
-                response.EnsureSuccessStatusCode();
+                await EnsureSuccessOrThrowAsync(response, "POST odata/Authorities", cancellationToken);
 
                 var created = await response.Content.ReadFromJsonAsync<LineOfDutyAuthority>(JsonOptions, cancellationToken);
                 savedAuthorities.Add(created!);

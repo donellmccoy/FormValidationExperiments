@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using Blazored.LocalStorage;
 using ECTSystem.Web.Models;
 using ECTSystem.Web.Providers;
+using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
 
@@ -83,18 +84,25 @@ public class AuthService : IAuthService
     private readonly CurrentUserService _currentUserService;
 
     /// <summary>
+    /// Logger for diagnostic events emitted by this service.
+    /// </summary>
+    private readonly ILogger<AuthService> _logger;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
     /// </summary>
     /// <param name="httpClient">The HTTP client configured with the API base address.</param>
     /// <param name="localStorage">The local storage service for persisting JWT tokens.</param>
     /// <param name="authStateProvider">The JWT authentication state provider for notifying auth state changes.</param>
     /// <param name="currentUserService">The service that caches the current user's identity.</param>
-    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider, CurrentUserService currentUserService)
+    /// <param name="logger">The logger for diagnostic events.</param>
+    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider, CurrentUserService currentUserService, ILogger<AuthService> logger)
     {
         _httpClient = httpClient;
         _localStorage = localStorage;
         _authStateProvider = authStateProvider;
         _currentUserService = currentUserService;
+        _logger = logger;
     }
 
     /// <inheritdoc />
