@@ -117,7 +117,10 @@ public class BookmarksController : ODataControllerBase
     {
         if (parameters is null || !parameters.TryGetValue("caseId", out var caseIdObj))
         {
-            return BadRequest("The 'caseId' parameter is required.");
+            return Problem(
+                title: "Missing required parameter",
+                detail: "The 'caseId' parameter is required.",
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         var caseId = (int)caseIdObj;
@@ -162,7 +165,10 @@ public class BookmarksController : ODataControllerBase
             || !parameters.TryGetValue("caseId", out var caseIdObj)
             || !parameters.TryGetValue("bookmarkId", out var bookmarkIdObj))
         {
-            return BadRequest("Both 'caseId' and 'bookmarkId' parameters are required.");
+            return Problem(
+                title: "Missing required parameters",
+                detail: "Both 'caseId' and 'bookmarkId' parameters are required.",
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         var caseId = (int)caseIdObj;

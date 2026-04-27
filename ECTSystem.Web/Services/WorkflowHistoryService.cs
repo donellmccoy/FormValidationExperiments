@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
+using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 using Radzen;
 
@@ -11,8 +12,8 @@ namespace ECTSystem.Web.Services;
 
 public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
 {
-    public WorkflowHistoryService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    public WorkflowHistoryService(EctODataContext context, HttpClient httpClient, ILogger<WorkflowHistoryService> logger)
+        : base(context, httpClient, logger) { }
 
     public async Task<ODataServiceResult<WorkflowStateHistory>> GetWorkflowStateHistoriesAsync(
         int caseId, string? filter = null, int? top = null, int? skip = null,
@@ -69,7 +70,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
         };
 
         var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistory", dto, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "POST odata/WorkflowStateHistory", cancellationToken);
 
         return (await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken))!;
     }
@@ -91,7 +92,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
             };
 
             var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistory", dto, JsonOptions, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessOrThrowAsync(response, "POST odata/WorkflowStateHistory (batch)", cancellationToken);
 
             var saved = await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken);
             savedEntries.Add(saved!);
@@ -112,7 +113,7 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
         };
 
         var response = await HttpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, $"PATCH odata/WorkflowStateHistory({entryId})", cancellationToken);
 
         // OData Updated() returns 204 No Content by default — no body to deserialize.
         if (response.StatusCode is HttpStatusCode.NoContent)

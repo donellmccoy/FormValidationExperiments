@@ -1,8 +1,9 @@
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
 
-public class UserService(HttpClient httpClient) : IUserService
+public class UserService(HttpClient httpClient, ILogger<UserService> logger) : IUserService
 {
     private readonly Dictionary<string, string> _cache = new();
 
@@ -17,15 +18,27 @@ public class UserService(HttpClient httpClient) : IUserService
         if (uncached.Count > 0)
         {
             var query = string.Join("&", uncached.Select(id => $"ids={Uri.EscapeDataString(id)}"));
-            var result = await httpClient.GetFromJsonAsync<Dictionary<string, string>>(
-                $"api/user/lookup?{query}", cancellationToken);
-
-            if (result is not null)
+            try
             {
-                foreach (var kvp in result)
+                var result = await httpClient.GetFromJsonAsync<Dictionary<string, string>>(
+                    $"api/user/lookup?{query}", cancellationToken);
+
+                if (result is not null)
                 {
-                    _cache[kvp.Key] = kvp.Value;
+                    foreach (var kvp in result)
+                    {
+                        _cache[kvp.Key] = kvp.Value;
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to look up display names for {Count} user IDs", uncached.Count);
+                throw;
             }
         }
 

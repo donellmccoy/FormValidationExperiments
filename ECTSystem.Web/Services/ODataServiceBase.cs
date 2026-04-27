@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ECTSystem.Web.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 
 #nullable enable
@@ -13,6 +15,8 @@ public abstract class ODataServiceBase
 
     protected readonly HttpClient HttpClient;
 
+    protected readonly ILogger Logger;
+
     protected static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -20,10 +24,11 @@ public abstract class ODataServiceBase
         Converters = { new JsonStringEnumConverter() }
     };
 
-    protected ODataServiceBase(EctODataContext context, HttpClient httpClient)
+    protected ODataServiceBase(EctODataContext context, HttpClient httpClient, ILogger logger)
     {
         Context = context;
         HttpClient = httpClient;
+        Logger = logger;
     }
 
     protected async Task<(List<T> Items, int Count)> ExecutePagedQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)
@@ -82,6 +87,65 @@ public abstract class ODataServiceBase
         }
 
         return parts.Count > 0 ? $"{basePath}?{string.Join("&", parts)}" : basePath;
+    }
+
+    /// <summary>
+    /// Attempts to parse the response body as an RFC 7807 <see cref="ApiProblemDetails"/>
+    /// payload. Returns <c>null</c> if the body is empty, not JSON, or does not match
+    /// the ProblemDetails shape. Never throws.
+    /// </summary>
+    protected async Task<ApiProblemDetails?> TryReadProblemDetailsAsync(HttpResponseMessage response, CancellationToken ct = default)
+    {
+        if (response.Content is null)
+        {
+            return null;
+        }
+
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+        var looksLikeJson = mediaType is "application/problem+json" or "application/json"
+            || (mediaType?.EndsWith("+json", StringComparison.OrdinalIgnoreCase) ?? false);
+
+        if (!looksLikeJson)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<ApiProblemDetails>(JsonOptions, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Logger.LogDebug(ex, "Failed to parse ProblemDetails body for {Operation}", response.RequestMessage?.RequestUri);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Throws an <see cref="EctApiException"/> carrying parsed ProblemDetails (when available)
+    /// if <paramref name="response"/> indicates failure. The exception is logged with the
+    /// supplied <paramref name="operation"/> label before being thrown.
+    /// </summary>
+    protected async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, string operation, CancellationToken ct = default)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var problem = await TryReadProblemDetailsAsync(response, ct);
+        var message = problem?.Detail
+            ?? problem?.Title
+            ?? $"{operation} failed with HTTP {(int)response.StatusCode} {response.ReasonPhrase}";
+
+        Logger.LogWarning(
+            "API call {Operation} failed: status={StatusCode} title={ProblemTitle} detail={ProblemDetail}",
+            operation,
+            (int)response.StatusCode,
+            problem?.Title,
+            problem?.Detail);
+
+        throw new EctApiException(operation, response.StatusCode, problem, message);
     }
 
     protected class ODataCountResponse<T>

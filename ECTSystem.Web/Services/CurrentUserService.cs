@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
 
@@ -11,11 +12,14 @@ namespace ECTSystem.Web.Services;
 public class CurrentUserService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<CurrentUserService> _logger;
+    private readonly SemaphoreSlim _initLock = new(1, 1);
     private string _userId;
 
-    public CurrentUserService(IHttpClientFactory httpClientFactory)
+    public CurrentUserService(IHttpClientFactory httpClientFactory, ILogger<CurrentUserService> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     /// <summary>
@@ -29,18 +33,31 @@ public class CurrentUserService
             return _userId;
         }
 
+        await _initLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            var client = _httpClientFactory.CreateClient("Api");
-            var response = await client.GetFromJsonAsync<UserInfo>("api/user/me");
-            _userId = response?.UserId;
-        }
-        catch
-        {
-            // Not authenticated or API unavailable — return null
-        }
+            if (_userId is not null)
+            {
+                return _userId;
+            }
 
-        return _userId;
+            try
+            {
+                var client = _httpClientFactory.CreateClient("Api");
+                var response = await client.GetFromJsonAsync<UserInfo>("api/user/me");
+                _userId = response?.UserId;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch current user id from /api/user/me; treating as unauthenticated.");
+            }
+
+            return _userId;
+        }
+        finally
+        {
+            _initLock.Release();
+        }
     }
 
     /// <summary>

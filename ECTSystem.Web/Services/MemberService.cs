@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Models;
+using Microsoft.Extensions.Logging;
 
 #nullable enable
 
@@ -58,8 +59,8 @@ public class MemberService : ODataServiceBase, IMemberService
         ["Gen"] = "O-10",
     };
 
-    public MemberService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    public MemberService(EctODataContext context, HttpClient httpClient, ILogger<MemberService> logger)
+        : base(context, httpClient, logger) { }
 
     public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)
     {

@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
+using Microsoft.Extensions.Logging;
 
 #nullable enable
 
@@ -8,8 +9,8 @@ namespace ECTSystem.Web.Services;
 
 public class CaseDialogueService : ODataServiceBase, ICaseDialogueService
 {
-    public CaseDialogueService(EctODataContext context, HttpClient httpClient)
-        : base(context, httpClient) { }
+    public CaseDialogueService(EctODataContext context, HttpClient httpClient, ILogger<CaseDialogueService> logger)
+        : base(context, httpClient, logger) { }
 
     public async Task<PagedResult<CaseDialogueComment>> GetCommentsAsync(int caseId, int top = 20, int skip = 0, CancellationToken ct = default)
     {
@@ -33,7 +34,7 @@ public class CaseDialogueService : ODataServiceBase, ICaseDialogueService
     public async Task<CaseDialogueComment> PostCommentAsync(CaseDialogueComment comment, CancellationToken ct = default)
     {
         var response = await HttpClient.PostAsJsonAsync("odata/CaseDialogueComments", comment, JsonOptions, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "POST odata/CaseDialogueComments", ct);
         return (await response.Content.ReadFromJsonAsync<CaseDialogueComment>(JsonOptions, ct))!;
     }
 
@@ -51,6 +52,6 @@ public class CaseDialogueService : ODataServiceBase, ICaseDialogueService
             Content = JsonContent.Create(patch, options: JsonOptions)
         }, ct);
 
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, $"PATCH odata/CaseDialogueComments({commentId})", ct);
     }
 }
