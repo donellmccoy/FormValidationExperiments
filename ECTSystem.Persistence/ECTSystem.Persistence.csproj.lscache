@@ -186,6 +186,8 @@ Migrations/
  20260415044033_AddCaseDialogueComments.Designer.cs
  20260416013603_SoftDeleteCase.cs
  20260416013603_SoftDeleteCase.Designer.cs
+ 20260424201600_AddDocumentsCaseUploadDateIndex.cs
+ 20260424201600_AddDocumentsCaseUploadDateIndex.Designer.cs
  EctDbContextModelSnapshot.cs
  Identity/
   20260222031829_InitialIdentity.cs
