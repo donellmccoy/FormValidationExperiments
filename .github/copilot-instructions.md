@@ -198,6 +198,17 @@ This application models the U.S. Air Force's Line of Duty determination process 
 - Use the `CaseInfoModel` for read-only case summary/header displays; use the specific form models for editable form sections.
 - **Always use the Simple Browser** when launching the app — use `open_simple_browser` tool with URL `https://localhost:7240` for the Web app.
 
+## Plan & Documentation Conventions
+
+- **Status markers in plan/remediation docs (under `docs/`)** — when marking progress on phases, sections, options, or checklist items, use the following blockquote callout format directly under the heading:
+  - Complete: `> **Status:** ✅ Complete`
+  - In progress: `> **Status:** 🟡 In progress` *(optionally followed by ` — <short note>`)*
+  - Not viable / abandoned: `> **Status:** ❌ Not viable — <reason>`
+  - Implemented (sub-items / options): `> **Status:** ✅ Implemented`
+- For checklist items, use GitHub-style task boxes: `- [x]` for done, `- [ ]` for outstanding.
+- Append a short reason after the status when an option is marked ❌ Not viable so the deviation is self-documenting.
+- Top-of-file overall status uses the same emoji + label, e.g. `Status: **Executed** — <one-line summary>` or `> **Status:** ✅ Complete`.
+
 ## UI Component Library
 
 This project uses [Radzen Blazor Components](https://blazor.radzen.com/?theme=material3-dark) with the **Material 3 Dark** theme. All UI should be built using Radzen components and the CSS utility classes documented below.
