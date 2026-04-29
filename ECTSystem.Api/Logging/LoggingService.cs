@@ -89,6 +89,9 @@ public partial class LoggingService(ILogger<LoggingService> logger) : ILoggingSe
     [LoggerMessage(EventId = 210, Level = LogLevel.Information, Message = "Member {MemberId} deleted")]
     public partial void MemberDeleted(int memberId);
 
+    [LoggerMessage(EventId = 211, Level = LogLevel.Information, Message = "Searching members with text length {TextLength}")]
+    public partial void SearchingMembers(int textLength);
+
     // Documents (EventId 300–311)
 
     [LoggerMessage(EventId = 311, Level = LogLevel.Information, Message = "Querying documents")]

@@ -32,6 +32,7 @@ public interface ILoggingService
     void MemberPatched(int memberId);
     void DeletingMember(int memberId);
     void MemberDeleted(int memberId);
+    void SearchingMembers(int textLength);
 
     // Documents
     void QueryingDocuments();

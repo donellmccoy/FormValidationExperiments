@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Persistence.Data;
 using ECTSystem.Api.Logging;
+using ECTSystem.Shared.Enums;
 using ECTSystem.Shared.Mapping;
 using ECTSystem.Shared.Models;
 using ECTSystem.Shared.ViewModels;
+using System.Text.RegularExpressions;
 
 namespace ECTSystem.Api.Controllers;
 
@@ -162,4 +164,94 @@ public class MembersController : ODataControllerBase
         var context = await CreateContextAsync(ct);
         return Ok(context.Cases.AsNoTracking().Where(c => c.MemberId == key));
     }
+
+    // ── Collection-bound OData actions ─────────────────────────────────
+
+    /// <summary>
+    /// Searches members by free-text input matched against name, rank, unit, service number,
+    /// pay-grade aliases (e.g. "E-5" → "Sergeant"), and <see cref="ServiceComponent"/>
+    /// names/display names. Returns up to 25 ordered by LastName, FirstName.
+    /// OData route: POST /odata/Members/Search
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Search(ODataActionParameters parameters, CancellationToken ct = default)
+    {
+        if (parameters is null || !parameters.TryGetValue("searchText", out var raw) || raw is not string searchText)
+        {
+            ModelState.AddModelError("searchText", "searchText is required.");
+            LoggingService.MemberInvalidModelState(nameof(Search));
+            return ValidationProblem(ModelState);
+        }
+
+        var trimmed = searchText.Trim();
+
+        LoggingService.SearchingMembers(trimmed.Length);
+
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return Ok(Array.Empty<Member>());
+        }
+
+        var lowered = trimmed.ToLowerInvariant();
+
+        // Pay-grade alias matches: substring match on rank-name → list of pay grades (e.g. "Sergeant" → ["E-5","E-6"...]).
+        var matchingPayGrades = RankToPayGrade
+            .Where(kvp => kvp.Key.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(kvp => kvp.Value)
+            .Distinct()
+            .ToArray();
+
+        // ServiceComponent matches: substring match on enum name OR its space-separated display name.
+        var matchingComponents = Enum.GetValues<ServiceComponent>()
+            .Where(c =>
+                c.ToString().Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
+                Regex.Replace(c.ToString(), @"(\B[A-Z])", " $1").Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        var context = await CreateContextAsync(ct);
+
+        var query = context.Members
+            .AsNoTracking()
+            .Where(m =>
+                m.LastName.ToLower().Contains(lowered) ||
+                m.FirstName.ToLower().Contains(lowered) ||
+                m.Rank.ToLower().Contains(lowered) ||
+                m.Unit.ToLower().Contains(lowered) ||
+                m.ServiceNumber.ToLower().Contains(lowered) ||
+                matchingPayGrades.Contains(m.Rank) ||
+                matchingComponents.Contains(m.Component))
+            .OrderBy(m => m.LastName)
+            .ThenBy(m => m.FirstName)
+            .Take(25);
+
+        var results = await query.ToListAsync(ct);
+
+        return Ok(results);
+    }
+
+    /// <summary>
+    /// Maps human-readable rank names to their pay-grade codes for member search.
+    /// Substring matched server-side; e.g. typing "Sergeant" matches ranks E-5 through E-9.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Airman Basic", ["E-1"] },
+        { "Airman", ["E-1", "E-2", "E-3"] },
+        { "Senior Airman", ["E-4"] },
+        { "Sergeant", ["E-5", "E-6", "E-7", "E-8", "E-9"] },
+        { "Staff Sergeant", ["E-5"] },
+        { "Technical Sergeant", ["E-6"] },
+        { "Master Sergeant", ["E-7"] },
+        { "Senior Master Sergeant", ["E-8"] },
+        { "Chief Master Sergeant", ["E-9"] },
+        { "Lieutenant", ["O-1", "O-2", "O-3"] },
+        { "Captain", ["O-3"] },
+        { "Major", ["O-4"] },
+        { "Colonel", ["O-5", "O-6"] },
+        { "Lieutenant Colonel", ["O-5"] },
+        { "General", ["O-7", "O-8", "O-9", "O-10"] },
+        { "Brigadier General", ["O-7"] },
+        { "Major General", ["O-8"] },
+        { "Lieutenant General", ["O-9"] },
+    };
 }

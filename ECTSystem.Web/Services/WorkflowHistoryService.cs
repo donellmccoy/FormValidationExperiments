@@ -99,42 +99,41 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
     }
 
     /// <summary>
-    /// Sequentially POSTs each entry to <c>odata/WorkflowStateHistory</c>.
+    /// Posts every entry in a single OData <c>$batch</c> round-trip via
+    /// <see cref="ODataServiceBase.BatchPostJsonAsync{TRequest,TResponse}"/>.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <strong>Known N+1:</strong> this method makes one HTTP round-trip per entry. The API
-    /// already wires <c>DefaultODataBatchHandler</c> via <c>app.UseODataBatching()</c>, so a
-    /// future refactor can collapse this to a single <c>$batch</c> request once a typed
-    /// batch helper exists in <see cref="ODataServiceBase"/>. Today's caller writes only a
-    /// handful of rows per case transition, so the round-trip cost is bounded; revisit if
-    /// bulk imports start using this path.
-    /// </para>
+    /// Replaces the previous N+1 sequential POST loop. The server's
+    /// <c>DefaultODataBatchHandler</c> (wired in
+    /// <c>ECTSystem.Api/Extensions/ServiceCollectionExtensions.cs</c>) executes each
+    /// sub-request and returns them in order; results are returned to the caller in
+    /// the same order as <paramref name="entries"/>. An empty input list short-circuits
+    /// without any HTTP traffic.
     /// </remarks>
     public async Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(List<WorkflowStateHistory> entries, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        var savedEntries = new List<WorkflowStateHistory>(entries.Count);
-
-        foreach (var entry in entries)
+        if (entries.Count == 0)
         {
-            // EnteredDate / ExitDate are server-stamped via TimeProvider
-            // (§2.7 N1) — we deliberately do not send any timestamps here.
-            var dto = new CreateWorkflowStateHistoryDto
-            {
-                LineOfDutyCaseId = entry.LineOfDutyCaseId,
-                WorkflowState = entry.WorkflowState
-            };
-
-            var response = await HttpClient.PostAsJsonAsync("odata/WorkflowStateHistory", dto, JsonOptions, cancellationToken);
-            await EnsureSuccessOrThrowAsync(response, "POST odata/WorkflowStateHistory (batch)", cancellationToken);
-
-            var saved = await response.Content.ReadFromJsonAsync<WorkflowStateHistory>(JsonOptions, cancellationToken);
-            savedEntries.Add(saved!);
+            return [];
         }
 
-        return savedEntries;
+        // EnteredDate / ExitDate are server-stamped via TimeProvider (§2.7 N1) — we
+        // deliberately do not send any timestamps here.
+        var dtos = entries
+            .Select(e => new CreateWorkflowStateHistoryDto
+            {
+                LineOfDutyCaseId = e.LineOfDutyCaseId,
+                WorkflowState = e.WorkflowState
+            })
+            .ToList();
+
+        return await BatchPostJsonAsync<CreateWorkflowStateHistoryDto, WorkflowStateHistory>(
+            entitySetPath: "WorkflowStateHistory",
+            bodies: dtos,
+            operation: "POST odata/WorkflowStateHistory",
+            ct: cancellationToken);
     }
 
     public async Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, CancellationToken cancellationToken = default)

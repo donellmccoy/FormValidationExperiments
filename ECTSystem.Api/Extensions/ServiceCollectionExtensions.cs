@@ -216,6 +216,12 @@ public static class ServiceCollectionExtensions
         var casesEntitySet = odataBuilder.EntitySet<LineOfDutyCase>("Cases");
 
         odataBuilder.EntitySet<Member>("Members");
+
+        // Bound collection action: POST /odata/Members/Search
+        var memberSearchAction = odataBuilder.EntityType<Member>().Collection.Action("Search")
+            .ReturnsCollectionFromEntitySet<Member>("Members");
+        memberSearchAction.Parameter<string>("searchText");
+
         odataBuilder.EntitySet<Notification>("Notifications");
         odataBuilder.EntitySet<LineOfDutyAuthority>("Authorities");
 
@@ -259,6 +265,13 @@ public static class ServiceCollectionExtensions
             .ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
         byCurrentState.CollectionParameter<WorkflowState>("includeStates").Optional();
         byCurrentState.CollectionParameter<WorkflowState>("excludeStates").Optional();
+
+        // Bound collection action: POST /odata/Cases/BookmarkedByCurrentState
+        // Single-round-trip combination of Bookmarked() + ByCurrentState filters for the current user.
+        var bookmarkedByCurrentState = casesEntitySet.EntityType.Collection.Action("BookmarkedByCurrentState")
+            .ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");
+        bookmarkedByCurrentState.CollectionParameter<WorkflowState>("includeStates").Optional();
+        bookmarkedByCurrentState.CollectionParameter<WorkflowState>("excludeStates").Optional();
 
         // Bound collection function: GET /odata/Cases/Default.Bookmarked()
         casesEntitySet.EntityType.Collection.Function("Bookmarked").ReturnsCollectionFromEntitySet<LineOfDutyCase>("Cases");

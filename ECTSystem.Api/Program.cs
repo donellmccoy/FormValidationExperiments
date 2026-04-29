@@ -86,7 +86,12 @@ public class Program
             await next();
         });
 
+        // UseODataBatching MUST be registered before UseRouting. With minimal hosting,
+        // calling MapControllers() without an explicit UseRouting() auto-inserts routing at
+        // the START of the pipeline — placing it ahead of UseODataBatching and causing
+        // sub-requests inside /odata/$batch to 404. Pinning the order explicitly fixes this.
         app.UseODataBatching();
+        app.UseRouting();
         app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<OperationCancelledMiddleware>();
         app.UseMiddleware<UnauthorizedAccessMiddleware>();

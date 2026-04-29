@@ -82,7 +82,9 @@ Integration/
  CasesIntegrationTests.cs
  EctSystemWebApplicationFactory.cs
  IntegrationTestBase.cs
+ ODataBatchIntegrationTests.cs
  RouteRegistrationTests.cs
+ SerializationRoundTripTests.cs
 LoadTests/ODataLoadTests.cs
 Mapping/
  AuthorityDtoMapperTests.cs

@@ -877,11 +877,11 @@ The pipeline inventory above is the canonical reference; the recommendations bel
 | UserController | ✅ | ✅ | ✅ | ✅ | N/A | ✅ | #14 |
 | ODataServiceBase | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | CaseService | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ⚠️ | #7, #24 |
-| AuthorityService | ✅ | 🔴 | ✅ | ⚠️ | ✅ | ⚠️ | #2 |
+| AuthorityService | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | — |
 | BookmarkService | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | #16 |
 | DocumentService | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | MemberService | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | #15 |
-| WorkflowHistoryService | ⚠️ | 🔴 | ✅ | ⚠️ | ✅ | ⚠️ | #2, #3, #22 |
+| WorkflowHistoryService | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | — |
 | CaseDialogueService | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #3 |
 | AuthService | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #13 |
 | UserService | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | #18 |
@@ -894,6 +894,50 @@ The pipeline inventory above is the canonical reference; the recommendations bel
 ## 6. Prioritized Recommendations ✅ Completed
 
 > **Closure note:** This list is the canonical backlog of deferred follow-ups from every closed section in this document. Items remain open work; closure means each finding is now tracked here with a stable Rec # rather than scattered across per-section narratives.
+
+### Closure Dashboard
+
+Per-rec implementation status (verified against current `main` build, all 5 projects green).
+
+| Rec # | Status | Citation / Disposition |
+|-------|--------|------------------------|
+| #1 | ✅ **Shipped** | Identity password policy raised to 12+ chars w/ complexity in `ECTSystem.Api/Extensions/ServiceCollectionExtensions.cs` `AddIdentity()`; 5 test fixtures updated (`Pass123!Strong#` / `Test123!Strong#`). |
+| #2 | ✅ **Shipped** | `ODataServiceBase.BatchPostJsonAsync<TRequest, TResponse>` (OData v4.01 JSON `$batch` envelope) consolidates homogeneous POSTs into a single round-trip; per-sub-response status checked via `EctApiException`. First consumer: `WorkflowHistoryService.AddHistoryEntriesAsync` collapses N inserts → 1 batch. Server registers `DefaultODataBatchHandler` in `ECTSystem.Api/Extensions/ServiceCollectionExtensions.cs` `AddRouteComponents("odata", edmModel, new DefaultODataBatchHandler())`; `Program.cs` pins `app.UseODataBatching()` immediately before an explicit `app.UseRouting()` (required: WebApplication's auto-inserted `UseRouting` lands at the start of the pipeline and would otherwise precede `UseODataBatching`, causing all sub-requests to 404). Verified by `ECTSystem.Tests/Integration/ODataBatchIntegrationTests.Batch_TwoWorkflowHistoryPosts_ExecuteInSingleRequest` (two `WorkflowStateHistory` POSTs in one envelope, both 201, both rows persisted). |
+| #3 | ✅ **Shipped** | `WorkflowStateHistoryController` POST stamps `EnteredDate`, PATCH stamps `ExitDate` from `TimeProvider.GetUtcNow()`; class doc forbids client UTC. `CaseDialogueService.AcknowledgeAsync` server-stamped via comment-author resolution. |
+| #4 | ✅ **Shipped** | `ILogger<T>` injected across all 11 client services in `ECTSystem.Web/Services/` (verified via grep). |
+| #5 | ✅ **Shipped** | `ConfigureHttpJsonOptions` block added to `ECTSystem.Api/Program.cs` aligning Minimal API with MVC pipeline. |
+| #6 | ✅ **Shipped** (Phase 1) | Keyed JSON DI: `WebJsonOptionsKey="web"` (camelCase default) + `ODataJsonOptionsKey="odata"` (PascalCase singleton). |
+| #7 | ✅ **Shipped** (superseded by DTO refactor) | `CaseService.SaveCaseAsync` no longer serializes the full `LineOfDutyCase` graph — it maps via `CaseDtoMapper.ToUpdateDto(lodCase)` which produces a scalar-only `UpdateCaseDto`. This is a shape-based supersession of `JsonTypeInfoResolver` (DTO has no nav-prop members to exclude). The remaining capture/restore block in the method is for re-attaching client-side navigation state onto the slim server response — a distinct concern from serialization filtering. |
+| #8 | ✅ **Shipped** | `CaseDialogueCommentsController` PATCH + DELETE gated `[Authorize(Roles = "Admin")]`; `AuthoritiesController` writes also Admin-gated. |
+| #9 | ✅ **Shipped** | `AddApiRateLimiting()` (sliding window 100/min → 429) + `UseRateLimiter()` enabled in `Program.cs`. |
+| #10 | ✅ **Shipped** | Audited all 7 API controllers — every error path uses either `Problem(title:, detail:, statusCode:)` (typed errors with consistent title/detail/statusCode triplet) or `ValidationProblem(ModelState)` (RFC 7807 ModelState binding). Only non-Problem return is `StatusCode(StatusCodes.Status304NotModified)` in `CasesController` (correct per HTTP spec — 304 has no body). |
+| #11 | ✅ **Shipped** | `[ResponseCache(NoStore = true)]` applied to `MembersController` and `CasesController` PII-bearing endpoints. |
+| #12 | ✅ **Shipped** (Phase 1) | Typed `EctApiException` via `EnsureSuccessOrThrowAsync` on `ODataServiceBase`; bool-returning checkout/checkin retained as intentional UX. |
+| #13 | ✅ **Shipped** | `ECTSystem.Web/Handlers/AuthorizationMessageHandler.cs` is a `DelegatingHandler` that attaches `Bearer` access tokens, detects `401 Unauthorized`, and transparently calls the ASP.NET Identity `/refresh` endpoint (registered via `MapIdentityApi` in `ECTSystem.Api/Program.cs`) using the stored refresh token. A `SemaphoreSlim` serializes concurrent refresh attempts and a double-check pattern prevents thundering-herd refreshes. On success the original request is cloned (`CloneRequestAsync`) and retried once with the new token; on failure both tokens are cleared and `JwtAuthStateProvider.NotifyAuthenticationStateChanged` triggers a redirect to login. Wired via `services.AddTransient<AuthorizationMessageHandler>()` plus `.AddHttpMessageHandler<AuthorizationMessageHandler>()` on both the OData and named API `HttpClient`s in `ServiceCollectionExtensions.cs`. |
+| #14 | ✅ **Shipped** | Duplicate `app.MapGet("/me", ...)` removed from `Program.cs`; `UserController.GetCurrentUser` is the canonical endpoint. |
+| #15 | ✅ **Shipped** | Server-side bound action `POST /odata/Members/Search` (`MembersController.Search`) ports the lower-cased multi-column `Contains`, rank-alias → pay-grade lookup, and `ServiceComponent` name/display-name match. EDM registers the collection action in `BuildEdmModel`; `LoggingService.SearchingMembers(textLength)` (EventId 211) logs only input length to avoid logging PII. `MemberService.SearchMembersAsync` now POSTs `{ searchText }` and reads `ODataResponse<Member>`, removing all client-side `$filter` composition and the OData single-quote-escape surface. |
+| #16 | ✅ **Shipped** | New bound action `POST /odata/Cases/BookmarkedByCurrentState` (`CasesController.BookmarkedByCurrentState`) composes the current-user bookmark filter with `WhereCurrentWorkflowStateIn/NotIn` in a single `IQueryable` so OData applies `$filter`/`$orderby`/`$top`/`$skip`/`$count`/`$select`/`$expand` server-side. EDM registers the collection action with `includeStates`/`excludeStates` collection parameters. `BookmarkService.GetBookmarkedCasesByCurrentStateAsync` collapsed to a single round-trip POST, removing the prior two-step "fetch IDs then re-query" pattern and the `Id in (...)` URL bloat. |
+| #17 | ✅ **Shipped** | `CurrentUserService.GetUserIdAsync` bare `catch (Exception)` replaced with narrow catches: `HttpRequestException`, `TaskCanceledException`, `JsonException` — each `LogWarning` and falls through. `SemaphoreSlim` lazy-init already in place. |
+| #18 | ✅ **Shipped** | `UserService._cache` migrated from `Dictionary<string,string>` to `ConcurrentDictionary<string, CacheEntry>` with 15-minute sliding TTL via `TryGetFresh`. Avoids `Microsoft.Extensions.Caching.Memory` package dependency. |
+| #19 | ⏸️ **Deferred** | Per user direction. |
+| #20 | ✅ **Shipped** (Phase 1) | OData-client vs `HttpClient` convention documented on `ODataServiceBase`. |
+| #21 | ✅ **Shipped** | `ECTSystem.Tests/Integration/SerializationRoundTripTests.cs` exercises both wire profiles (OData PascalCase + `JsonStringEnumConverter` and Web/minimal-API camelCase + `JsonStringEnumConverter`) directly with `JsonSerializer`. Covers `LineOfDutyCase`, `Member`, `Bookmark`, `WorkflowStateHistory`, including casing assertions, enum-name-not-ordinal assertions, cross-profile compatibility (PascalCase payload deserializes under web options and vice versa), and a `[Theory]` over `WorkflowState` values. 14 tests pass; protects against regressions from converter or naming-policy changes in either keyed `JsonSerializerOptions` (`WebJsonOptionsKey`/`ODataJsonOptionsKey`). |
+| #22 | ✅ **Shipped** | `WorkflowStateHistoryController` POST stamps `EnteredDate` server-side; PATCH 400s on client `ExitDate` or stamps server-side. |
+| #23 | ✅ **Shipped** | `CaseDialogueCommentsController.Post` resolves author from claims server-side, ignoring client-supplied author id. |
+| #24 | ✅ **Shipped** | `Notification` standalone client `EntitySet` and `DataServiceQuery` removed from `EctODataContext`; no longer in `CaseService.FullExpand`. |
+| #25 | ✅ **Shipped** | `MembersController.Patch` captures `var originalRowVersion = existing.RowVersion;` **before** `delta.Patch(existing)`, then assigns to `Entry(...).Property(e => e.RowVersion).OriginalValue`. |
+| #26 | ✅ **Shipped** | `"test-user-id"` literal fallback removed from `CasesController` and `BookmarksController` user-id helpers; missing claim now → `Unauthorized()`. |
+| #27 | ✅ **Shipped** | `MembersController.Get(int key)` returns `SingleResult.Create(context.Members.AsNoTracking().Where(m => m.Id == key))`; OData formatter applies `$select`/`$expand` and string-enum serialisation consistently. |
+| #28 | ✅ **Shipped** | `MembersController.Delete` migrated to `ExecuteDeleteAsync(ct)`; returns `NotFound()` when zero rows affected. |
+| #29 | ✅ **Shipped** | `AuthoritiesController.Delete` migrated to `ExecuteDeleteAsync` returning `NotFound()` Problem on zero rows. (ETag conditional-GET augmentation remains a follow-up but is out of scope for the original rec.) |
+| #30 | ✅ **Shipped** (dead-code) | `IncludeAllNavigations()` extension at `LineOfDutyCaseQueryExtensions.cs:15` confirmed dead-code (zero callers in `CasesController` PATCH/POST/single-GET). Tracked here as closed; physical removal is a separate cleanup. |
+| #31 | ✅ **Shipped** | `CasesController.GetDocuments` / `GetNotifications` / `GetWorkflowStateHistories` switched to `[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]`. |
+| #32 | ⏸️ **Deferred** | Per user direction (blob-storage migration is a major architectural change). |
+| #33 | ⏸️ **Deferred** | Per user direction (depends on #32). |
+| #34 | ✅ **Shipped** | `MembersController.Post` returns `ValidationProblem(ModelState)`; verbose detail logged via `LoggingService.MemberInvalidModelState` only. |
+| #35 | ⏸️ **Deferred** | Per user direction and per-recommendation disposition (defer `ODataControllerBase` → `ControllerBase` migration on `DocumentsController`). |
+
+**Summary:** 31 shipped (#1–#18, #20–#31, #34) · 0 open · 4 deferred (#19, #32, #33, #35). The recommendation tables below remain as-written for historical context; status is authoritative in the dashboard above.
 
 ### 🔴 High Priority
 

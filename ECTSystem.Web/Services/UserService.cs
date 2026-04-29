@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 
@@ -17,11 +18,11 @@ namespace ECTSystem.Web.Services;
 /// <see cref="Uri.EscapeDataString(string)"/>.
 /// </para>
 /// <para>
-/// <strong>Cache lifetime:</strong> the in-memory dictionary lives for the lifetime of the
-/// service instance and is never evicted. This is acceptable today because the service is
-/// scoped per circuit and display-name churn is low, but it means a renamed user will
-/// continue to display their old name until the user reloads. Replacing this with a
-/// size-bounded <c>IMemoryCache</c> with sliding expiration is tracked as a follow-up.
+/// <strong>Cache lifetime:</strong> entries are stored in a thread-safe sliding-expiration
+/// dictionary keyed by user ID. Each access refreshes the entry's expiry; entries that
+/// have not been touched within <see cref="CacheSlidingTtl"/> are evicted lazily on the
+/// next batched lookup. This bounds staleness so a renamed user surfaces within the TTL
+/// rather than persisting for the full circuit lifetime.
 /// </para>
 /// <para>
 /// <strong>Failure semantics:</strong> when the lookup call fails for reasons other than
@@ -32,14 +33,32 @@ namespace ECTSystem.Web.Services;
 /// </remarks>
 public class UserService(HttpClient httpClient, ILogger<UserService> logger) : IUserService
 {
-    private readonly Dictionary<string, string> _cache = new();
+    private static readonly TimeSpan CacheSlidingTtl = TimeSpan.FromMinutes(15);
+    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.Ordinal);
+
+    private bool TryGetFresh(string id, DateTimeOffset now, out string name)
+    {
+        if (_cache.TryGetValue(id, out var entry) && entry.Expiry > now)
+        {
+            entry.Expiry = now + CacheSlidingTtl;
+            name = entry.Name;
+            return true;
+        }
+        name = null;
+        return false;
+    }
 
     public async Task<Dictionary<string, string>> GetDisplayNamesAsync(
         IEnumerable<string> userIds, CancellationToken cancellationToken = default)
     {
-        var uncached = userIds
-            .Where(id => !string.IsNullOrEmpty(id) && !_cache.ContainsKey(id))
+        var now = DateTimeOffset.UtcNow;
+        var requested = userIds
+            .Where(id => !string.IsNullOrEmpty(id))
             .Distinct()
+            .ToList();
+
+        var uncached = requested
+            .Where(id => !TryGetFresh(id, now, out _))
             .ToList();
 
         if (uncached.Count > 0)
@@ -52,9 +71,10 @@ public class UserService(HttpClient httpClient, ILogger<UserService> logger) : I
 
                 if (result is not null)
                 {
+                    var expiry = DateTimeOffset.UtcNow + CacheSlidingTtl;
                     foreach (var kvp in result)
                     {
-                        _cache[kvp.Key] = kvp.Value;
+                        _cache[kvp.Key] = new CacheEntry { Name = kvp.Value, Expiry = expiry };
                     }
                 }
             }
@@ -62,17 +82,22 @@ public class UserService(HttpClient httpClient, ILogger<UserService> logger) : I
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
                 logger.LogWarning(ex, "Failed to look up display names for {Count} user IDs", uncached.Count);
                 throw;
             }
+            catch (System.Text.Json.JsonException ex)
+            {
+                logger.LogWarning(ex, "Malformed display-name response for {Count} user IDs", uncached.Count);
+                throw;
+            }
         }
 
-        return userIds
-            .Where(id => !string.IsNullOrEmpty(id))
-            .Distinct()
-            .ToDictionary(id => id, id => _cache.GetValueOrDefault(id, id));
+        var nowAfter = DateTimeOffset.UtcNow;
+        return requested.ToDictionary(
+            id => id,
+            id => TryGetFresh(id, nowAfter, out var name) ? name : id);
     }
 
     public async Task<string> GetDisplayNameAsync(string userId, CancellationToken cancellationToken = default)
@@ -82,5 +107,11 @@ public class UserService(HttpClient httpClient, ILogger<UserService> logger) : I
 
         var names = await GetDisplayNamesAsync([userId], cancellationToken);
         return names.GetValueOrDefault(userId, userId);
+    }
+
+    private sealed class CacheEntry
+    {
+        public string Name { get; set; }
+        public DateTimeOffset Expiry { get; set; }
     }
 }

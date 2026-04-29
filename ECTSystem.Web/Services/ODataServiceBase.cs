@@ -199,4 +199,111 @@ public abstract class ODataServiceBase
         [JsonPropertyName("value")]
         public List<T> Value { get; set; } = [];
     }
+
+    /// <summary>
+    /// Typed, homogeneous OData <c>$batch</c> helper using the JSON batch format
+    /// (per OData v4 spec §11.7). Posts all <paramref name="bodies"/> as individual
+    /// requests against the same <paramref name="entitySetPath"/> with the same
+    /// <paramref name="method"/>, then deserializes each response body to <typeparamref name="TResponse"/>.
+    /// </summary>
+    /// <remarks>
+    /// Replaces N+1 round-trips with a single HTTP request. The server is wired with
+    /// <c>DefaultODataBatchHandler</c> in <c>ECTSystem.Api/Extensions/ServiceCollectionExtensions.cs</c>.
+    /// On any non-success sub-response (or transport error) the entire call surfaces a single
+    /// <see cref="EctApiException"/> via <see cref="EnsureSuccessOrThrowAsync"/> with the
+    /// first failed sub-response. Results are returned in request order.
+    /// </remarks>
+    protected async Task<List<TResponse>> BatchPostJsonAsync<TRequest, TResponse>(
+        string entitySetPath,
+        IReadOnlyList<TRequest> bodies,
+        string operation,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entitySetPath);
+        ArgumentNullException.ThrowIfNull(bodies);
+
+        if (bodies.Count == 0)
+        {
+            return [];
+        }
+
+        var requests = new List<BatchRequestItem>(bodies.Count);
+        for (var i = 0; i < bodies.Count; i++)
+        {
+            requests.Add(new BatchRequestItem
+            {
+                Id = (i + 1).ToString(),
+                Method = "POST",
+                Url = $"/odata/{entitySetPath}",
+                Headers = new Dictionary<string, string>
+                {
+                    ["content-type"] = "application/json",
+                    ["accept"] = "application/json"
+                },
+                Body = JsonSerializer.SerializeToElement(bodies[i], JsonOptions)
+            });
+        }
+
+        var batchPayload = new BatchEnvelope { Requests = requests };
+        var response = await HttpClient.PostAsJsonAsync("odata/$batch", batchPayload, JsonOptions, ct);
+        await EnsureSuccessOrThrowAsync(response, $"{operation} ($batch)", ct);
+
+        var envelope = await response.Content.ReadFromJsonAsync<BatchResponseEnvelope>(JsonOptions, ct)
+            ?? throw new EctApiException(operation, response.StatusCode, null, "OData $batch response was empty");
+
+        var results = new List<TResponse>(envelope.Responses.Count);
+        foreach (var sub in envelope.Responses.OrderBy(r => int.TryParse(r.Id, out var n) ? n : 0))
+        {
+            if (sub.Status is < 200 or >= 300)
+            {
+                var detail = sub.Body.ValueKind == JsonValueKind.Undefined
+                    ? $"sub-request {sub.Id} returned {sub.Status}"
+                    : sub.Body.ToString();
+                Logger.LogWarning("OData $batch sub-request {SubId} for {Operation} failed: status={Status} body={Body}",
+                    sub.Id, operation, sub.Status, detail);
+                throw new EctApiException(operation, (System.Net.HttpStatusCode)sub.Status, null,
+                    $"{operation}: $batch sub-request {sub.Id} failed with status {sub.Status}");
+            }
+
+            if (sub.Body.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                results.Add(default!);
+                continue;
+            }
+
+            var item = sub.Body.Deserialize<TResponse>(JsonOptions);
+            results.Add(item!);
+        }
+
+        return results;
+    }
+
+    private sealed class BatchEnvelope
+    {
+        [JsonPropertyName("requests")]
+        public List<BatchRequestItem> Requests { get; set; } = [];
+    }
+
+    private sealed class BatchRequestItem
+    {
+        [JsonPropertyName("id")] public string Id { get; set; } = "";
+        [JsonPropertyName("method")] public string Method { get; set; } = "";
+        [JsonPropertyName("url")] public string Url { get; set; } = "";
+        [JsonPropertyName("headers")] public Dictionary<string, string> Headers { get; set; } = [];
+        [JsonPropertyName("body")] public JsonElement Body { get; set; }
+    }
+
+    private sealed class BatchResponseEnvelope
+    {
+        [JsonPropertyName("responses")]
+        public List<BatchResponseItem> Responses { get; set; } = [];
+    }
+
+    private sealed class BatchResponseItem
+    {
+        [JsonPropertyName("id")] public string Id { get; set; } = "";
+        [JsonPropertyName("status")] public int Status { get; set; }
+        [JsonPropertyName("headers")] public Dictionary<string, string> Headers { get; set; } = [];
+        [JsonPropertyName("body")] public JsonElement Body { get; set; }
+    }
 }

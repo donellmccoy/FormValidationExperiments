@@ -62,9 +62,17 @@ public class CurrentUserService
                 var response = await client.GetFromJsonAsync<UserInfo>("api/user/me");
                 _userId = response?.UserId;
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
-                _logger.LogWarning(ex, "Failed to fetch current user id from /api/user/me; treating as unauthenticated.");
+                _logger.LogWarning(ex, "HTTP failure fetching current user id from /api/user/me; treating as unauthenticated.");
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogWarning(ex, "Timeout fetching current user id from /api/user/me; treating as unauthenticated.");
+            }
+            catch (System.Text.Json.JsonException ex)
+            {
+                _logger.LogWarning(ex, "Malformed response from /api/user/me; treating as unauthenticated.");
             }
 
             return _userId;

@@ -20,12 +20,11 @@ namespace ECTSystem.Web.Services;
 /// the body schema is enforced by the OData metadata.
 /// </para>
 /// <para>
-/// <b>Two-step <see cref="GetBookmarkedCasesByCurrentStateAsync"/></b> — Issues a first round-trip
-/// to retrieve the bookmarked case IDs, then a second POST to <c>Cases/ByCurrentState</c> with the
-/// IDs ANDed into the caller's filter. This is intentionally two trips today: <c>ByCurrentState</c>
-/// does not yet accept a <c>bookmarkedOnly</c> parameter, and the bookmarked-IDs set is bounded by
-/// the per-user UI cap. Deferred follow-up: extend the bound action with an optional
-/// <c>bookmarkedOnly: bool</c> parameter and collapse to one trip.
+/// <b>Single-round-trip <see cref="GetBookmarkedCasesByCurrentStateAsync"/></b> — POSTs to the
+/// bound action <c>Cases/BookmarkedByCurrentState</c>, which composes the bookmark filter for the
+/// authenticated user with the include/exclude workflow-state filter on the server side in a
+/// single LINQ query. Standard OData query options (<c>$filter</c>, <c>$orderby</c>, <c>$top</c>,
+/// <c>$skip</c>, <c>$count</c>, <c>$select</c>, <c>$expand</c>) compose on top via the URL.
 /// </para>
 /// <para>
 /// <b><see cref="IsBookmarkedAsync"/> standalone vs. piggybacked</b> — <see cref="CaseService.GetCaseAsync"/>
@@ -160,23 +159,8 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         string? orderby = null, string? select = null, bool? count = null,
         string? expand = null, CancellationToken cancellationToken = default)
     {
-        // Step 1: Get bookmarked case IDs via the server-side Bookmarked() function.
-        var bookmarkedQuery = Context.CreateFunctionQuery<LineOfDutyCase>("Cases", "Default.Bookmarked", false)
-            .AddQueryOption("$select", "Id");
-
-        var bookmarkedCases = await ExecuteQueryAsync(bookmarkedQuery, cancellationToken);
-        var bookmarkedIds = bookmarkedCases.Select(c => c.Id).ToList();
-
-        if (bookmarkedIds.Count == 0)
-        {
-            return new ODataServiceResult<LineOfDutyCase> { Value = [], Count = 0 };
-        }
-
-        // Step 2: Query Cases via ByCurrentState action (POST), filtered to bookmarked IDs.
-        var idFilter = $"Id in ({string.Join(",", bookmarkedIds)})";
-        var combinedFilter = string.IsNullOrEmpty(filter) ? idFilter : $"({idFilter}) and ({filter})";
-
-        var url = BuildNavigationPropertyUrl("odata/Cases/ByCurrentState", combinedFilter, top, skip, orderby, count, select, expand);
+        // Single round-trip: server composes (bookmark filter for current user) AND (current-state filter).
+        var url = BuildNavigationPropertyUrl("odata/Cases/BookmarkedByCurrentState", filter, top, skip, orderby, count, select, expand);
 
         var body = new
         {
@@ -185,7 +169,7 @@ public class BookmarkService : ODataServiceBase, IBookmarkService
         };
 
         var response = await HttpClient.PostAsJsonAsync(url, body, JsonOptions, cancellationToken);
-        await EnsureSuccessOrThrowAsync(response, "POST odata/Cases/ByCurrentState (bookmarked)", cancellationToken);
+        await EnsureSuccessOrThrowAsync(response, "POST odata/Cases/BookmarkedByCurrentState", cancellationToken);
 
         if (count == true)
         {

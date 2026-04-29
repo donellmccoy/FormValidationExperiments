@@ -512,6 +512,46 @@ public class CasesController : ODataControllerBase
         return Ok(query);
     }
 
+    /// <summary>
+    /// Returns cases bookmarked by the current user, filtered by their current workflow state in a single
+    /// server-side query. Combines <see cref="Bookmarked"/> + <see cref="ByCurrentState"/> to eliminate the
+    /// two-round-trip pattern in <c>BookmarkService.GetBookmarkedCasesByCurrentStateAsync</c>.
+    /// OData route: POST /odata/Cases/BookmarkedByCurrentState
+    /// </summary>
+    [HttpPost]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
+    public async Task<IActionResult> BookmarkedByCurrentState(ODataActionParameters parameters, CancellationToken ct = default)
+    {
+        LoggingService.QueryingCases();
+
+        var context = await CreateContextAsync(ct);
+        var userId = GetAuthenticatedUserId();
+
+        IQueryable<LineOfDutyCase> query = context.Cases
+            .AsNoTracking()
+            .Where(c => context.Bookmarks.Any(b => b.UserId == userId && b.LineOfDutyCaseId == c.Id));
+
+        var includeStates = parameters?.ContainsKey("includeStates") == true
+            ? ((IEnumerable<WorkflowState>)parameters["includeStates"]).ToArray()
+            : [];
+
+        var excludeStates = parameters?.ContainsKey("excludeStates") == true
+            ? ((IEnumerable<WorkflowState>)parameters["excludeStates"]).ToArray()
+            : [];
+
+        if (includeStates.Length > 0)
+        {
+            query = query.WhereCurrentWorkflowStateIn(includeStates);
+        }
+
+        if (excludeStates.Length > 0)
+        {
+            query = query.WhereCurrentWorkflowStateNotIn(excludeStates);
+        }
+
+        return Ok(query);
+    }
+
     // ── Collection navigation properties ────────────────────────────────
     // Convention routing: GET /odata/Cases({key})/{NavigationProperty}
     // Returns IQueryable so OData middleware can apply $filter, $orderby, $top, $skip, $count.
