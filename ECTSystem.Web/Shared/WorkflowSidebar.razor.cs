@@ -263,14 +263,25 @@ public partial class WorkflowSidebar : ComponentBase
     }
 
     /// <summary>
-    /// Forces a <see cref="DateTime"/> to <see cref="DateTimeKind.Utc"/>.
+    /// Normalises a <see cref="DateTime"/> to <see cref="DateTimeKind.Utc"/>.
     /// All dates in the database are stored as UTC in <c>datetime2</c> columns which carry
-    /// no timezone information. When the OData client materialises them it may assign
-    /// <see cref="DateTimeKind.Local"/> or <see cref="DateTimeKind.Unspecified"/>,
-    /// which causes <see cref="DateTime.ToLocalTime"/> to produce wrong results.
+    /// no timezone information. Values arrive at the client through three paths:
+    /// <list type="bullet">
+    /// <item><description><c>Kind=Utc</c> — already correct (e.g. client-stamped <see cref="DateTime.UtcNow"/>).</description></item>
+    /// <item><description><c>Kind=Local</c> — produced by <see cref="System.Text.Json"/> when deserialising an
+    /// ISO-8601 string with a timezone offset (e.g. <c>"...+00:00"</c>); the value has already been
+    /// shifted to local clock-time, so it must be converted with <see cref="DateTime.ToUniversalTime"/>
+    /// (a bare <see cref="DateTime.SpecifyKind(DateTime, DateTimeKind)"/> here would double-shift when
+    /// the caller later calls <see cref="DateTime.ToLocalTime"/>).</description></item>
+    /// <item><description><c>Kind=Unspecified</c> — assumed to be UTC clock-time and stamped as such.</description></item>
+    /// </list>
     /// </summary>
-    private static DateTime AsUtc(DateTime dt) =>
-        dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+    private static DateTime AsUtc(DateTime dt) => dt.Kind switch
+    {
+        DateTimeKind.Utc => dt,
+        DateTimeKind.Local => dt.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
+    };
 
     /// <summary>Nullable overload of <see cref="AsUtc(DateTime)"/>.</summary>
     private static DateTime? AsUtcNullable(DateTime? dt) =>
