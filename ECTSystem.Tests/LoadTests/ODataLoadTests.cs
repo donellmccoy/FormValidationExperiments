@@ -39,7 +39,7 @@ public class ODataLoadTests : IClassFixture<Integration.EctSystemWebApplicationF
     /// </summary>
     private async Task<string> GetBearerTokenAsync(HttpClient client)
     {
-        var loginPayload = new { email = "test@ect.mil", password = "Pass123" };
+        var loginPayload = new { email = "test@ect.mil", password = "Pass123!Strong#" };
         var response = await client.PostAsJsonAsync("/login", loginPayload);
         response.EnsureSuccessStatusCode();
 

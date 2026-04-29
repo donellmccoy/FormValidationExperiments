@@ -23,6 +23,14 @@ public static class ServiceCollectionExtensions
         services.AddProblemDetails();
         services.AddSingleton(TimeProvider.System);
 
+        // Rec #5: Align minimal-API JSON pipeline (MapIdentityApi, MapGet, etc.) with the
+        // MVC pipeline configured in AddODataControllers — string enums + cycle-safe.
+        services.ConfigureHttpJsonOptions(o =>
+        {
+            o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            o.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        });
+
         services.AddDatabase(configuration)
                 .AddIdentity()
                 .AddApiLogging()
@@ -30,8 +38,8 @@ public static class ServiceCollectionExtensions
                 .AddODataControllers()
                 .AddPdfServices()
                 .AddCorsPolicy()
-                .AddOpenApi();
-                //.AddApiRateLimiting();
+                .AddOpenApi()
+                .AddApiRateLimiting();
 
         return services;
     }
@@ -66,10 +74,15 @@ public static class ServiceCollectionExtensions
         services.AddIdentityApiEndpoints<ApplicationUser>(options =>
         {
             options.SignIn.RequireConfirmedAccount = false;
-            options.Password.RequireDigit = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequiredLength = 6;
+
+            // Rec #1: Tighten password policy per DoD STIG-style requirements
+            // (12+ chars, full complexity, 4 unique characters minimum).
+            options.Password.RequireDigit = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequiredLength = 12;
+            options.Password.RequiredUniqueChars = 4;
         })
         .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<EctIdentityDbContext>();

@@ -44,7 +44,7 @@ public class LodCaseWorkflowTests : IAsyncLifetime
 
         // Unique email per test run to avoid registration conflicts
         _testEmail ??= $"e2e-{DateTime.UtcNow:yyyyMMddHHmmss}@ect.mil";
-        _testPassword ??= "Test123!";
+        _testPassword ??= "Test123!Strong#";
     }
 
     public ValueTask InitializeAsync()

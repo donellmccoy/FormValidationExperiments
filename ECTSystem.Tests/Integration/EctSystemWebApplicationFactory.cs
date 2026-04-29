@@ -167,7 +167,7 @@ public class EctSystemWebApplicationFactory : WebApplicationFactory<ECTSystem.Ap
                         Email = "test@ect.mil",
                         EmailConfirmed = true
                     };
-                    await userManager.CreateAsync(testUser, "Pass123");
+                    await userManager.CreateAsync(testUser, "Pass123!Strong#");
                 }
 
                 if (!await userManager.IsInRoleAsync(testUser, "Admin"))

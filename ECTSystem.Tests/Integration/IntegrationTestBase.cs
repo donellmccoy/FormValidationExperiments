@@ -31,7 +31,7 @@ public abstract class IntegrationTestBase : IClassFixture<EctSystemWebApplicatio
     /// </summary>
     protected async Task AuthenticateAsync()
     {
-        var loginPayload = new { email = "test@ect.mil", password = "Pass123" };
+        var loginPayload = new { email = "test@ect.mil", password = "Pass123!Strong#" };
         var response = await Client.PostAsJsonAsync("/login", loginPayload);
         response.EnsureSuccessStatusCode();
 

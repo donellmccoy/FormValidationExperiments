@@ -207,7 +207,7 @@ public class PerformanceRegressionTests : IntegrationTestBase
     public async Task Authentication_ShouldRespondWithin500ms()
     {
         // Measure login time
-        var loginPayload = new { email = "test@ect.mil", password = "Pass123" };
+        var loginPayload = new { email = "test@ect.mil", password = "Pass123!Strong#" };
 
         // Warmup
         await Client.PostAsJsonAsync("/login", loginPayload, TestContext.Current.CancellationToken);

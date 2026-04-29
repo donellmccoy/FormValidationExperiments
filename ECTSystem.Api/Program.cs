@@ -95,7 +95,7 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-        //app.UseRateLimiter();
+        app.UseRateLimiter();
 
         // Identity API endpoints: /register, /login, /refresh, /confirmEmail, etc.
         app.MapIdentityApi<ApplicationUser>();

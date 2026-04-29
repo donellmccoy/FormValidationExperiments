@@ -134,16 +134,15 @@ public class AuthoritiesController : ODataControllerBase
     {
         LoggingService.DeletingAuthority(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var existing = await context.Authorities.FindAsync([key], ct);
 
-        if (existing is null)
+        // Rec #29: single-statement set-based delete avoids the load-then-remove round trip.
+        var deleted = await context.Authorities.Where(a => a.Id == key).ExecuteDeleteAsync(ct);
+
+        if (deleted == 0)
         {
             LoggingService.AuthorityNotFound(key);
             return Problem(title: "Not found", detail: $"No authority exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
-
-        context.Authorities.Remove(existing);
-        await context.SaveChangesAsync(ct);
 
         LoggingService.AuthorityDeleted(key);
         return NoContent();
