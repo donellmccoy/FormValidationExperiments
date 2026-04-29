@@ -85,6 +85,7 @@ Integration/
  ODataBatchIntegrationTests.cs
  RouteRegistrationTests.cs
  SerializationRoundTripTests.cs
+ WorkflowStateHistoryPatchIntegrationTests.cs
 LoadTests/ODataLoadTests.cs
 Mapping/
  AuthorityDtoMapperTests.cs

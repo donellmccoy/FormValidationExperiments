@@ -143,8 +143,12 @@ public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
         // ExitDate is server-stamped via TimeProvider (§2.7 N1).
         // We must include the property name in the PATCH body so the server's
         // Delta<T> sees it as a changed property and triggers the close-out;
-        // the value itself is discarded server-side.
-        var patchBody = new { ExitDate = (DateTime?)DateTime.MinValue };
+        // the value itself is discarded server-side. The value MUST be a UTC
+        // DateTime (Kind=Utc) so System.Text.Json emits a trailing 'Z' — the
+        // ASP.NET Core OData input formatter rejects DateTime strings without
+        // a timezone designator (Edm.DateTimeOffset requires offset/Z) and
+        // returns 400 with "The input was not valid.".
+        var patchBody = new { ExitDate = (DateTime?)DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc) };
 
         var request = new HttpRequestMessage(HttpMethod.Patch, $"odata/WorkflowStateHistory({entryId})")
         {
