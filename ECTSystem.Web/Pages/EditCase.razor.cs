@@ -963,6 +963,10 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 _selectedTabIndex = result.TabIndex;
 
+                // Force an initial render so the tab and sidebar bindings commit
+                // before the navigation triggers a parameter rebind cycle.
+                StateHasChanged();
+
                 // The tracking grid's LoadData fired during initial render (create
                 // mode) but returned early because Id was 0. Reload it now so it
                 // picks up the workflow history entries created during case setup.
@@ -981,6 +985,10 @@ public partial class EditCase : ComponentBase, IDisposable
                 // OnParametersSetAsync does not re-fetch the case we just set up.
                 _loadedCaseId = CaseId;
                 Navigation.NavigateTo($"/case/{CaseId}?from=case&mode=edit", replace: true);
+
+                // Re-render after the navigation-driven parameter rebind so the
+                // sidebar and tabs reflect the in-memory state we just set up.
+                await InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception ex)
