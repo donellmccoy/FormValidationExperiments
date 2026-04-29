@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -132,6 +133,73 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
         Assert.Equal(0, count);
     }
 
+    /// <summary>
+    /// §2.7 (N1) regression: <c>Post</c> must stamp <see cref="WorkflowStateHistory.EnteredDate"/>
+    /// from the injected <see cref="TimeProvider"/>, ignoring whatever the client serialized.
+    /// The DTO no longer exposes <c>EnteredDate</c>, so the persisted value must be a fresh,
+    /// near-now UTC timestamp rather than <c>default</c>.
+    /// </summary>
+    [Fact]
+    public async Task Post_StampsEnteredDateFromTimeProvider()
+    {
+        var before = DateTime.UtcNow;
+
+        var result = await _sut.Post(BuildEntryDto(), TestContext.Current.CancellationToken);
+
+        var after = DateTime.UtcNow;
+
+        Assert.IsType<CreatedODataResult<WorkflowStateHistory>>(result);
+
+        using var ctx = new EctDbContext(_dbOptions);
+        var saved = await ctx.WorkflowStateHistories.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.NotEqual(default, saved.EnteredDate);
+        Assert.InRange(saved.EnteredDate, before.AddSeconds(-1), after.AddSeconds(1));
+        Assert.Null(saved.ExitDate);
+    }
+
+    // ─────────────────────────────── Patch ───────────────────────────────────
+
+    /// <summary>
+    /// §2.7 (N1) regression: <c>Patch</c> must overwrite any client-supplied
+    /// <see cref="WorkflowStateHistory.ExitDate"/> with the current <see cref="TimeProvider"/>
+    /// value. A backdated value sent in the delta must be discarded.
+    /// </summary>
+    [Fact]
+    public async Task Patch_OverwritesClientSuppliedExitDateFromTimeProvider()
+    {
+        // Seed an open history entry.
+        WorkflowStateHistory seeded;
+        using (var ctx = new EctDbContext(_dbOptions))
+        {
+            seeded = new WorkflowStateHistory
+            {
+                LineOfDutyCaseId = 1,
+                WorkflowState = WorkflowState.MemberInformationEntry,
+                EnteredDate = DateTime.UtcNow.AddHours(-1),
+                ExitDate = null,
+            };
+            ctx.WorkflowStateHistories.Add(seeded);
+            await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Build a delta with a deliberately backdated ExitDate that the server must ignore.
+        var backdated = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var delta = new Delta<WorkflowStateHistory>();
+        delta.TrySetPropertyValue(nameof(WorkflowStateHistory.ExitDate), backdated);
+
+        var before = DateTime.UtcNow;
+        var result = await _sut.Patch(seeded.Id, delta, TestContext.Current.CancellationToken);
+        var after = DateTime.UtcNow;
+
+        Assert.IsType<UpdatedODataResult<WorkflowStateHistory>>(result);
+
+        using var verifyCtx = new EctDbContext(_dbOptions);
+        var updated = await verifyCtx.WorkflowStateHistories.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(updated.ExitDate);
+        Assert.NotEqual(backdated, updated.ExitDate);
+        Assert.InRange(updated.ExitDate!.Value, before.AddSeconds(-1), after.AddSeconds(1));
+    }
+
     // ─────────────────────────────── Helpers ─────────────────────────────────
 
     /// <summary>
@@ -142,6 +210,5 @@ public class WorkflowStateHistoryControllerTests : ControllerTestBase
     {
         LineOfDutyCaseId = 1,
         WorkflowState    = WorkflowState.MemberInformationEntry,
-        EnteredDate      = DateTime.UtcNow,
     };
 }

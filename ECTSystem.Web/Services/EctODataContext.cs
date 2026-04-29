@@ -5,11 +5,46 @@ using ECTSystem.Shared.Models;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// Typed OData v4 client context for the ECT API. Exposes a <see cref="DataServiceQuery{T}"/>
+/// per entity set and resolves CLR type ↔ wire-format type names so server payloads materialize
+/// into the shared model types in <c>ECTSystem.Shared.Models</c>.
+/// </summary>
+/// <remarks>
+/// <para><b>Adding a new entity set requires updates in three coordinated places — keep them in sync:</b></para>
+/// <list type="number">
+///   <item>
+///     <description>
+///       Add an <see cref="EntitySetAttribute"/>-backed <see cref="DataServiceQuery{T}"/> property here.
+///     </description>
+///   </item>
+///   <item>
+///     <description>
+///       Add a <c>case nameof(T) =&gt; typeof(T)</c> arm to <see cref="ResolveEntityType"/> so
+///       responses materialize correctly. The default <c>typeof(object)</c> fallback is silent —
+///       missing entries surface as <see cref="NullReferenceException"/> during property
+///       materialization rather than as a clear "unknown type" error.
+///     </description>
+///   </item>
+///   <item>
+///     <description>
+///       Add a matching <c>EdmEntityType</c> + <c>container.AddEntitySet(...)</c> entry in
+///       <c>ServiceCollectionExtensions.BuildClientEdmModel()</c>; otherwise the OData reader
+///       cannot deserialize the entity (especially enum properties — see
+///       <c>BuildClientEdmModel</c>'s enum-type registrations).
+///     </description>
+///   </item>
+/// </list>
+/// <para>
+/// <see cref="ResolveName"/> intentionally returns <c>type.FullName</c> so the server-side
+/// EDM (which uses CLR full names) and the client-side EDM stay aligned without a manual map.
+/// </para>
+/// </remarks>
 public class EctODataContext : DataServiceContext
 {
     public EctODataContext(Uri serviceRoot) : base(serviceRoot, ODataProtocolVersion.V4)
     {
-        MergeOption = MergeOption.OverwriteChanges; 
+        MergeOption = MergeOption.OverwriteChanges;
 
         ResolveName = type => type.FullName!;
         ResolveType = ResolveEntityType;
@@ -47,27 +82,6 @@ public class EctODataContext : DataServiceContext
 
     public DataServiceQuery<CaseDialogueComment> CaseDialogueComments
         => CreateQuery<CaseDialogueComment>("CaseDialogueComments");
-
-    private static string ResolveEntitySetName(Type type)
-    {
-        return type.Name switch
-        {
-            nameof(LineOfDutyCase) => "Cases",
-            nameof(Member) => "Members",
-            nameof(LineOfDutyAuthority) => "Authorities",
-            nameof(LineOfDutyDocument) => "Documents",
-            nameof(WorkflowStateHistory) => "WorkflowStateHistory",
-            nameof(Bookmark) => "Bookmarks",
-            nameof(Notification) => "Notifications",
-            nameof(LineOfDutyAppeal) => "Appeals",
-            nameof(WitnessStatement) => "WitnessStatements",
-            nameof(AuditComment) => "AuditComments",
-            nameof(CaseDialogueComment) => "CaseDialogueComments",
-            nameof(MEDCONDetail) => "MEDCONDetails",
-            nameof(INCAPDetails) => "INCAPDetails",
-            _ => type.Name
-        };
-    }
 
     private static Type ResolveEntityType(string typeName)
     {

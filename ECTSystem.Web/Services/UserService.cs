@@ -3,6 +3,33 @@ using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// Resolves opaque Identity user IDs (GUIDs) into human-readable display names by calling
+/// <c>api/user/lookup</c> on the API and caching the responses in-process for the lifetime
+/// of the Blazor WebAssembly session.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="GetDisplayNamesAsync"/> batches all uncached IDs into a single request using
+/// repeated <c>ids=</c> query parameters; this is intentional so that grids displaying a
+/// page of cases can resolve every <c>CheckedOutBy</c> / <c>CreatedBy</c> author with one
+/// HTTP round-trip rather than N. IDs are URL-encoded with
+/// <see cref="Uri.EscapeDataString(string)"/>.
+/// </para>
+/// <para>
+/// <strong>Cache lifetime:</strong> the in-memory dictionary lives for the lifetime of the
+/// service instance and is never evicted. This is acceptable today because the service is
+/// scoped per circuit and display-name churn is low, but it means a renamed user will
+/// continue to display their old name until the user reloads. Replacing this with a
+/// size-bounded <c>IMemoryCache</c> with sliding expiration is tracked as a follow-up.
+/// </para>
+/// <para>
+/// <strong>Failure semantics:</strong> when the lookup call fails for reasons other than
+/// cancellation, the exception is logged and rethrown so callers can decide whether to
+/// degrade gracefully. The fallback in the returned dictionary is the raw user ID itself,
+/// which keeps grids legible even if the lookup partially succeeds.
+/// </para>
+/// </remarks>
 public class UserService(HttpClient httpClient, ILogger<UserService> logger) : IUserService
 {
     private readonly Dictionary<string, string> _cache = new();

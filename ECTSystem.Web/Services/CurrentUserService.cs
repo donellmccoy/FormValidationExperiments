@@ -9,6 +9,21 @@ namespace ECTSystem.Web.Services;
 /// Required because ASP.NET Core Identity Data Protection bearer tokens are opaque —
 /// the Blazor WASM client cannot parse claims from them.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Concurrency is handled with a double-checked <see cref="SemaphoreSlim"/> so that two
+/// components racing to call <see cref="GetUserIdAsync"/> on first use share a single
+/// <c>api/user/me</c> request rather than issuing duplicates. The double-check is required:
+/// the cheap unsynchronized read short-circuits the steady-state path, and the second
+/// read inside the lock prevents a second waiter from re-fetching after the first writer
+/// already populated the field.
+/// </para>
+/// <para>
+/// <see cref="Clear"/> is called from <c>AuthService.LogoutAsync</c> to discard the cached
+/// ID at logout; without this, a subsequent login on the same circuit would surface the
+/// previous user's ID until a hard reload.
+/// </para>
+/// </remarks>
 public class CurrentUserService
 {
     private readonly IHttpClientFactory _httpClientFactory;

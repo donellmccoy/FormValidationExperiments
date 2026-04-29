@@ -78,48 +78,11 @@ public class MembersController : ODataControllerBase
     }
 
     /// <summary>
-    /// Fully replaces an existing Member.
-    /// OData route: PUT /odata/Members({key})
-    /// </summary>
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] UpdateMemberDto dto, CancellationToken ct = default)
-    {
-        if (!ModelState.IsValid)
-        {
-            LoggingService.MemberInvalidModelState("Put");
-            return ValidationProblem(ModelState);
-        }
-
-        LoggingService.UpdatingMember(key);
-        await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var existing = await context.Members.FindAsync([key], ct);
-        if (existing is null)
-        {
-            LoggingService.MemberNotFound(key);
-            return Problem(title: "Not found", detail: $"No member exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
-        }
-
-        // Use client-provided RowVersion for optimistic concurrency check
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = dto.RowVersion;
-
-        MemberDtoMapper.ApplyUpdate(dto, existing);
-
-        try
-        {
-            await context.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return Problem(title: "Concurrency conflict", detail: "The entity was modified by another user. Refresh and retry.", statusCode: StatusCodes.Status409Conflict);
-        }
-
-        LoggingService.MemberUpdated(key);
-        return Updated(existing);
-    }
-
-    /// <summary>
     /// Partially updates an existing Member.
-    /// OData route: PATCH /odata/Members({key})
+    /// OData route: PATCH /odata/Members({key}).
+    /// PATCH is the canonical partial-update verb for Members; PUT is intentionally
+    /// not exposed (per Microsoft REST guidelines, expose one update verb to avoid
+    /// caller ambiguity — see §2.6 remediation plan).
     /// </summary>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<Member> delta, CancellationToken ct = default)
@@ -161,22 +124,25 @@ public class MembersController : ODataControllerBase
     /// <summary>
     /// Deletes a Member.
     /// OData route: DELETE /odata/Members({key})
+    /// Uses <see cref="EntityFrameworkQueryableExtensions.ExecuteDeleteAsync{T}"/> so the
+    /// delete completes in a single round trip and reports a clean 404 when the row was
+    /// already removed by another caller (no silent success on stale deletes).
     /// </summary>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         LoggingService.DeletingMember(key);
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
-        var existing = await context.Members.FindAsync([key], ct);
 
-        if (existing is null)
+        var deleted = await context.Members
+            .Where(m => m.Id == key)
+            .ExecuteDeleteAsync(ct);
+
+        if (deleted == 0)
         {
             LoggingService.MemberNotFound(key);
             return Problem(title: "Not found", detail: $"No member exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
         }
-
-        context.Members.Remove(existing);
-        await context.SaveChangesAsync(ct);
 
         LoggingService.MemberDeleted(key);
         return NoContent();

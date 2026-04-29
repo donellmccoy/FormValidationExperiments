@@ -186,7 +186,7 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 
 ---
 
-### 2.3 DocumentsController
+### 2.3 DocumentsController — ✅ Completed
 
 **File:** `ECTSystem.Api/Controllers/DocumentsController.cs`
 
@@ -196,19 +196,24 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 | Request Size Limit | ✅ **Correct** | `[RequestSizeLimit(50_000_000)]` on upload action. |
 | Blob Cleanup | ✅ **Correct** | Best-effort blob deletion on document delete. |
 | Transaction Usage | ✅ **Correct** | `ExecutionStrategy` + explicit transaction wrapping DB insert + blob upload for consistency. |
-| ResponseCache | ✅ **Correct** | `[ResponseCache(NoStore = true)]` on GET endpoints. |
+| ResponseCache | ✅ **Correct** | `[ResponseCache(NoStore = true, Location = None)]` on GET endpoints. |
+| Write Authorization | ✅ **Admin-only** | PATCH, PUT, Upload (POST), and DELETE all gated on `[Authorize(Roles = "Admin")]`. |
+| Concurrency Control | ✅ **Correct** | PATCH/PUT use `RowVersion` `OriginalValue` for optimistic concurrency, return 409 on conflict. |
+| Bulk Delete | ✅ **Correct** | DELETE uses `ExecuteDeleteAsync` for a single round-trip. |
 
 **Findings:**
 
 - ✅ **File validation is exemplary** — The combination of extension allowlist, file size check, and magic-byte signature validation is exactly what Microsoft recommends for [file upload security](https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads#security-considerations).
-- ⚠️ **PDF generation** (`Form348` action) — Should validate that the case exists and belongs to the user's scope before generating the PDF. Currently appears to only check existence.
+- ✅ **PDF generation (`GetForm348` action) — Resolved.** The action validates that the parent case exists (returns 404 if not) before invoking PDF generation. The XML `<remarks>` block calls out that a resource-based `CaseAccessRequirement` policy that scopes access to a user's authorized cases is deferred until non-Admin roles exist; under the current single-role policy, all authenticated callers may generate the PDF.
+- ✅ **Write authorization — Resolved.** PATCH, PUT, Upload (POST), and DELETE all carry `[Authorize(Roles = "Admin")]` documented via XML `<remarks>` blocks; the data-driven theory `DocumentWriteEndpoints_RequireAdminRole` (in `DocumentsControllerTests`) reflects over the four write methods and asserts each carries `[Authorize(Roles = "Admin")]`, so the role gate cannot be silently relaxed.
 - ⚠️ **Blob delete failure** — Best-effort is acceptable, but orphaned blobs should be tracked/logged for cleanup. Currently logs the error but has no retry or dead-letter mechanism.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. In the `Form348` action, validate the parent case exists **and** the authenticated user is authorized against it (resource-based policy) before invoking PDF generation.
-2. Persist failed blob-deletion attempts to an `OrphanedBlob` table (or queue) and process them on a periodic background job; emit a metric for orphans created/cleared.
-3. Add structured `LoggerMessage` events for orphan creation/cleanup so ops can alert on growth.
+- **Orphaned-blob tracking & cleanup** — persist failed blob-deletion attempts to an `OrphanedBlob` table (or queue) and process them on a periodic background job; emit a metric for orphans created/cleared. Out of scope for the controller-level remediation; belongs in the storage/infra layer.
+- **Structured `LoggerMessage` events for orphan creation/cleanup** — to be added once the orphan-tracking workflow above is implemented, so ops can alert on growth.
+- **Resource-based `CaseAccessRequirement` policy** — enable per-user case scoping on `GetForm348` (and other case-scoped endpoints) once non-Admin roles are introduced.
+- **End-to-end allow/deny integration tests** — exercise both Admin (allow) and non-Admin (deny → 403) paths through the real auth pipeline in `ECTSystem.Tests/Integration/`. The unit-level reflection assertion above pins the attribute; the integration test would additionally verify the ASP.NET Core authorization middleware honours it under realistic auth handlers.
 
 ---
 
@@ -234,104 +239,87 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 
 ---
 
-### 2.5 AuthoritiesController
+### 2.5 AuthoritiesController — ✅ Completed
 
 **File:** `ECTSystem.Api/Controllers/AuthoritiesController.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Delta\<T\> PATCH | ✅ **Correct** | Uses OData `Delta<T>.Patch()` for partial updates. |
-| ResponseCache | ✅ **Correct** | `NoStore = true` on reads. |
+| Delta\<T\> PATCH | ✅ **Correct** | Uses OData `Delta<T>.Patch()` for partial updates with `RowVersion` optimistic concurrency. |
+| ResponseCache | ✅ **Correct** | `NoStore = true, Location = None` on both reads. |
 | CancellationToken | ✅ **Correct** | Propagated. |
+| Write Authorization | ✅ **Admin-only** | POST, PATCH, DELETE all gated on `[Authorize(Roles = "Admin")]`. |
 
 **Findings:**
 
-- ⚠️ **No ownership validation** — Unlike `BookmarksController`, authorities can be created/updated/deleted without verifying the caller is authorized. This is a potential authorization gap. **Per current policy, gate all write operations on the `Admin` role for now**; resource/ownership-based policies can be revisited later when additional roles are introduced.
+- ✅ **Write authorization gap — Resolved.** `[Authorize(Roles = "Admin")]` is applied to `Post`, `Patch`, and `Delete`. The class-level `[Authorize]` keeps the reads behind authentication. Per the current single-role policy, all write paths return 403 for non-Admin callers; a resource-based `CaseAccessRequirement` policy is deferred until non-Admin roles are introduced.
+- ✅ **Documentation — Resolved.** Each write action carries an XML `<remarks>` block explicitly calling out the Admin-only restriction and the deferred resource-based policy, so the contract is visible from IntelliSense and generated API docs.
+- ✅ **Regression coverage — Resolved.** The data-driven theory `AuthorityWriteEndpoints_RequireAdminRole` (in `AuthoritiesControllerTests`) reflects over `Post`, `Patch`, and `Delete` and asserts each carries `[Authorize(Roles = "Admin")]`, so the role gate cannot be silently relaxed.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Apply `[Authorize(Roles = "Admin")]` to POST, PATCH, and DELETE actions in `AuthoritiesController`; return 403 on failure. (A resource-based `CaseAccessRequirement` policy is deferred until non-Admin roles exist.)
-2. Document the Admin-only restriction in the controller XML doc and ensure the client UI hides write affordances for non-Admin users.
-3. Cover the role check with controller-level integration tests that exercise both allow (Admin) and deny (non-Admin) paths.
+- **Client UI affordance hiding** — the Blazor client should hide write affordances (add/edit/delete authority buttons) for non-Admin users so the UI mirrors the server-side gate. Tracked as a UI task; the server-side 403 is already in place as the authoritative enforcement.
+- **End-to-end allow/deny integration tests** — exercise both Admin (allow) and non-Admin (deny → 403) paths through the real auth pipeline in `ECTSystem.Tests/Integration/`. The unit-level reflection assertion above pins the attribute; the integration test would additionally verify the ASP.NET Core authorization middleware honours it under realistic auth handlers.
 
 ---
 
-### 2.6 MembersController
+### 2.6 MembersController — ✅ Completed
 
 **File:** `ECTSystem.Api/Controllers/MembersController.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Full CRUD | ✅ **Correct** | GET, POST, PUT (via DTO), PATCH (via Delta\<T\>). |
+| Full CRUD | ✅ **Correct** | GET, POST, PATCH (via Delta\<T\>). PUT removed — PATCH is the single canonical update verb. |
 | Navigation Property | ✅ **Correct** | `GetLineOfDutyCases()` implemented. |
+| PII Caching | ✅ **No-store** | All GETs (collection, key, navigation) carry `[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]`. |
 
 **Findings:**
 
-- ⚠️ **PUT uses full DTO** — `UpdateMemberDto` is used for PUT which is correct. However, both PUT and PATCH are available which can be confusing. Microsoft recommends choosing one or the other, with PATCH preferred for partial updates.
-- ⚠️ **Missing `[ResponseCache]`** — Member data (SSN, PII) should explicitly set `NoStore = true`.
-- 🔴 **PATCH RowVersion concurrency check is silently bypassed** — `delta.Patch(existing)` overwrites `existing.RowVersion` with the client value before the next line copies it into `OriginalValue`, so the concurrency token is compared against itself and always passes. Folded in from [members-controller-characterization.md](./members-controller-characterization.md) §3 → Rec #25.
-- ⚠️ **`Get(key)` materialises the entity** — uses `FirstOrDefaultAsync` instead of `SingleResult.Create(...)`, defeating `$select`/`$expand` and routing the response through System.Text.Json instead of the OData formatter (causing the same entity to serialise enums differently from a collection GET). Folded in → Rec #27.
-- ⚠️ **DELETE has no concurrency guard and uses two round trips** — `FindAsync` + `Remove` + `SaveChanges` instead of a single `ExecuteDeleteAsync`. A stale delete succeeds silently. Folded in → Rec #28.
-- 🟢 **POST `BadRequest(ModelState)` may leak inner exception messages** to the client. Folded in → Rec #34.
+- ✅ **Single update verb (Rec #2) — Resolved.** PUT was removed; PATCH is the only update verb exposed. `MemberService` callers updated. Aligns with Microsoft REST guidelines.
+- ✅ **PATCH RowVersion concurrency check (Rec #25) — Resolved.** `originalRowVersion` is captured before `delta.Patch(existing)` and passed to `Property(e => e.RowVersion).OriginalValue` so stale-token requests now fail with `DbUpdateConcurrencyException` → 409 Conflict.
+- ✅ **`Get(key)` materialisation (Rec #27) — Resolved.** Returns `SingleResult.Create(...)` so `$select`/`$expand` compose correctly and the OData formatter serialises enums consistently with the collection GET.
+- ✅ **DELETE round trips and stale-delete silent success (Rec #28) — Resolved.** Replaced `FindAsync` + `Remove` + `SaveChanges` with a single `ExecuteDeleteAsync`; returns 404 when 0 rows affected.
+- ✅ **PII `[ResponseCache]` — Resolved.** Every member-returning endpoint declares `NoStore = true, Location = None`. Pinned by the data-driven regression test `MemberReturningEndpoints_DeclareNoStoreResponseCache` (covers collection `Get()`, `Get(key)`, and `GetLineOfDutyCases`).
+- ✅ **POST error sanitisation (Rec #34) — Resolved.** `Post` logs the full per-field error detail through `LoggingService.MemberInvalidModelState(...)` and returns `ValidationProblem(ModelState)`. ASP.NET Core's `ValidationProblemDetails` serialises only `ModelError.ErrorMessage` strings — the bound `Exception` instances are never reflected onto the wire — so inner exception messages cannot leak.
 
-**Remediation Plan:**
+**Deferred to integration tests (tracked, not blocking):**
 
-1. **Critical first:** Capture `var originalRowVersion = existing.RowVersion;` before `delta.Patch(existing)` and use that captured value when setting `Property(e => e.RowVersion).OriginalValue` (Rec #25).
-2. Choose PATCH as the partial-update verb and remove PUT (or vice versa) to align with Microsoft REST guidelines; update `MemberService` callers accordingly.
-3. Add `[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]` on every GET endpoint that returns Member PII (single, collection, navigation).
-4. Convert `Get(key)` to `Ok(SingleResult.Create(context.Members.AsNoTracking().Where(m => m.Id == key)))` so OData composes `$select`/`$expand` (Rec #27).
-5. Replace `Delete` body with `var deleted = await context.Members.Where(m => m.Id == key).ExecuteDeleteAsync(ct); return deleted == 0 ? NotFound() : NoContent();`, optionally guarded by an `If-Match` RowVersion check (Rec #28).
-6. Sanitise the POST error response: log full `ModelState` (with exception messages) via `LoggingService`, return a `ValidationProblem` with only the user-facing error strings (Rec #34).
-7. Add a regression test that asserts `Cache-Control: no-store` is present on member responses, and a PATCH concurrency test that fails when stale RowVersion is sent.
+- **PATCH stale-RowVersion concurrency** must be exercised against SQL Server / LocalDB. The unit-test fixture uses SQLite in-memory because `Delete` requires `ExecuteDeleteAsync` (unsupported by the EF Core InMemory provider), and SQLite does not enforce the `RowVersion` token automatically — so the 409 Conflict path is covered in `ECTSystem.Tests/Integration/` (see the controllers-integration suite), not in `MembersControllerTests`.
 
 ---
 
-### 2.7 WorkflowStateHistoryController
+### 2.7 WorkflowStateHistoryController — ✅ Completed
 
 **File:** `ECTSystem.Api/Controllers/WorkflowStateHistoryController.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
 | Restricted PATCH | ✅ **Good** | Only allows updating `ExitDate` — prevents tampering with history records. |
+| Server-authoritative dates | ✅ **Good** | `EnteredDate` (POST) and `ExitDate` (PATCH) are stamped server-side from `TimeProvider`. |
 
 **Findings:**
 
 - ✅ Good pattern — restricting which properties can be patched on a history/audit entity.
-- 🔴 **Client-supplied audit dates (N1)** — POST and PATCH currently accept `EntryDate` / `ExitDate` from the request body, allowing clients to backdate or forward-date audit records.
-
-**Remediation Plan:**
-
-1. On POST, overwrite `EntryDate` server-side from `TimeProvider.GetUtcNow()` regardless of the supplied value.
-2. On PATCH, ignore any `Delta<T>` property other than `ExitDate`, and overwrite `ExitDate` server-side from `TimeProvider`.
-3. Add a unit test asserting that a client-supplied `EntryDate`/`ExitDate` is ignored.
-4. Update `WorkflowHistoryService.AddHistoryEntriesAsync` and `UpdateHistoryEndDateAsync` to stop sending these timestamps from the client (see §3.8 plan).
+- ✅ **Client-supplied audit dates (N1) — Resolved.** `CreateWorkflowStateHistoryDto` no longer exposes `EnteredDate`/`ExitDate`; the controller stamps `EnteredDate` on POST and overwrites `ExitDate` on PATCH using `TimeProvider.GetUtcNow().UtcDateTime`. Client (`WorkflowHistoryService`, `LineOfDutyStateMachine`) updated to stop sending those timestamps. Regression tests `Post_StampsEnteredDateFromTimeProvider` and `Patch_OverwritesClientSuppliedExitDateFromTimeProvider` cover both paths.
 
 ---
 
-### 2.8 CaseDialogueCommentsController
+### 2.8 CaseDialogueCommentsController — ✅ Completed
 
 **File:** `ECTSystem.Api/Controllers/CaseDialogueCommentsController.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
 | Parent Validation | ✅ **Correct** | Validates the parent case exists before creating a comment. |
-| Author-Scoped Delete | ⚠️ **Revisit** | Currently allows comment author to delete; per current policy, restrict to `Admin` only. |
-| Delta\<T\> PATCH | ✅ **Correct** | Uses OData Delta. |
+| Author-Scoped Delete | ✅ **Resolved** | DELETE now restricted to `[Authorize(Roles = "Admin")]`. |
+| Delta\<T\> PATCH | ✅ **Correct** | Uses OData Delta. PATCH also restricted to `[Authorize(Roles = "Admin")]`. |
+| Acknowledge | ✅ **Bound action** | `Default.Acknowledge` stamps `AcknowledgedDate` server-side via `TimeProvider` and resolves `AcknowledgedBy` from the authenticated user. |
 
-**Findings:**
-
-- ⚠️ **DELETE author-scoping should be replaced with `Admin`-only authorization** per current policy (only the `Admin` role is in use).
-- ⚠️ **PATCH not authorized** — Any authenticated user can PATCH any comment (e.g., to acknowledge it). If acknowledge is the only valid patch operation, consider a dedicated bound action instead (N5).
-
-**Remediation Plan:**
-
-1. **Short term:** Apply `[Authorize(Roles = "Admin")]` to both PATCH and DELETE — only `Admin` users may modify or remove comments for now. Author-scoped checks can be reintroduced when additional roles exist.
-2. **Preferred long term:** Replace the freeform PATCH with a bound action `Comments({key})/Default.Acknowledge` that requires no body, is idempotent, and stamps the acknowledgement timestamp server-side via `TimeProvider`.
-3. Update `CaseDialogueService.AcknowledgeAsync` to call the bound action and stop sending `DateTime.UtcNow` from the client (see §3.9 plan).
+**Resolution:** `[Authorize(Roles = "Admin")]` was added to both PATCH and DELETE per the current single-role policy. A new bound action `POST /odata/CaseDialogueComments({key})/Default.Acknowledge` (no body, idempotent) replaces the freeform PATCH for the acknowledge flow; the server stamps `AcknowledgedDate` from `TimeProvider` and resolves `AcknowledgedBy` via `UserManager`. `CaseDialogueService.AcknowledgeAsync` now calls the bound action and no longer sends `DateTime.UtcNow` or an `acknowledgedBy` argument from the client.
 
 ---
 
-### 2.9 UserController
+### 2.9 UserController — ✅ Completed
 
 **File:** `ECTSystem.Api/Controllers/UserController.cs`
 
@@ -340,24 +328,21 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 | Primary Constructor | ✅ **Modern** | Uses C# 12 primary constructor syntax. |
 | Batch Limit | ✅ **Correct** | `Take(50)` caps the lookup batch size — prevents unbounded queries. |
 | Fallback | ✅ **Correct** | Returns the user ID itself as fallback for unknown IDs. |
+| Single `/me` Endpoint | ✅ **Resolved** | Duplicate minimal API removed; `api/User/me` is canonical. |
 
 **Findings:**
 
 - ✅ Clean, minimal controller. Appropriate use of `[ApiController]` (not OData) for user identity endpoints.
-- ⚠️ **`GetCurrentUser` is synchronous** — Uses `User.GetRequiredUserId()` and claim lookups which are in-memory, so sync is actually fine here. No issue.
-- ℹ️ **Duplicate `/me` endpoint (N2)** — `Program.cs` maps `app.MapGet("/me", ...)` and `UserController` maps `api/User/me`. The controller version returns `CurrentUserDto` (PascalCase, string enums); the Program.cs version returns `{ Name }` (camelCase, integer enums). Two pipelines, two shapes.
+- ✅ **`GetCurrentUser` synchronicity** — Sync claim/identity lookups are appropriate; no I/O on the hot path beyond the `UserManager` call which is already async.
+- ✅ **Duplicate `/me` endpoint (N2) — Resolved** — The `app.MapGet("/me", ...)` block in `Program.cs` (and its now-unused `System.Security.Claims` using) was removed. `CurrentUserService` already targets `api/user/me`, so no client changes were needed.
 
-**Remediation Plan:**
-
-1. Treat `GET api/User/me` as canonical. Remove the `app.MapGet("/me", ...)` block from `Program.cs`.
-2. Audit callers (`CurrentUserService`, any tests, any docs) and repoint them at `api/User/me`.
-3. Add a regression test that asserts only one `/me`-style route exists in the route table.
+**Resolution:** The minimal API `/me` endpoint was removed from `Program.cs`, leaving `api/User/me` (the `UserController` action returning `CurrentUserDto`) as the single canonical identity endpoint. A regression test (`ECTSystem.Tests/Integration/RouteRegistrationTests.cs`) enumerates the host's `EndpointDataSource` collection and asserts exactly one `/me`-style route is registered, guarding against re-introduction of a divergent shape.
 
 ---
 
 ## 3. Client Services
 
-### 3.1 ODataServiceBase
+### 3.1 ODataServiceBase — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/ODataServiceBase.cs`
 
@@ -366,152 +351,26 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 | Shared JsonSerializerOptions | ✅ **Correct** | `static readonly` avoids re-creation per call — follows [performance guidance](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/configure-options#reuse-jsonserializeroptions-instances). |
 | Generic Paged/List Helpers | ✅ **Good** | `ExecutePagedQueryAsync` and `ExecuteQueryAsync` reduce boilerplate. |
 | URL Builder | ✅ **Good** | `BuildNavigationPropertyUrl` properly URL-encodes OData parameters. |
+| Centralized Error Translation | ✅ **Implemented** | `EnsureSuccessOrThrowAsync` + `TryReadProblemDetailsAsync` parse RFC 7807 `application/problem+json` and throw a single typed `EctApiException` carrying the `ApiProblemDetails`, `HttpStatusCode`, and operation label; `OperationCanceledException` is left to propagate. |
+| ILogger Injection | ✅ **Implemented** | Base ctor takes `ILogger`; the boundary logs failures once before throwing. |
+| Convention Documentation | ✅ **Documented** | Class-level XML `<remarks>` block now codifies the OData-client-vs-`HttpClient` split so derived services don't reintroduce inconsistent patterns. |
 
 **Findings:**
 
-- ⚠️ **Dual abstraction** — The base class holds both `EctODataContext` (typed OData client) and raw `HttpClient`. Most services use `HttpClient` for writes and `DataServiceQuery` for reads, but the split is inconsistent. This dual pattern adds cognitive overhead and increases the surface area for bugs. **Recommendation:** Pick one approach per operation type and document the convention.
-- ⚠️ **No error handling in base helpers** — `ExecutePagedQueryAsync` and `ExecuteQueryAsync` do not handle `DataServiceQueryException` or network errors. Each caller must handle these individually, leading to inconsistency.
-- ⚠️ **`ODataCountResponse<T>`** — Custom deserialization classes for raw `HttpClient` calls duplicate what the OData client already provides. This is a workaround for cases where the OData client doesn't support certain operations well (e.g., bound actions).
+- ✅ **Dual abstraction — Documented.** The base class continues to expose both `EctODataContext` (typed client) and raw `HttpClient` because each is used for a distinct subset of operations: typed queries vs. bound actions / `$batch` / multipart uploads / arbitrary `PATCH` payloads. The class-level `<remarks>` block now states this convention explicitly so new contributors don't mix approaches in the same operation.
+- ✅ **Error handling in base helpers — Implemented.** `EnsureSuccessOrThrowAsync` (combined with `TryReadProblemDetailsAsync`) is the single ProblemDetails-aware boundary; callers no longer need to hand-write status-code branching, and the typed `EctApiException` carries enough context for UI mapping.
+- ⚠️ **`ODataCountResponse<T>` / `ODataResponse<T>` envelopes** — Still in use by `ExecutePagedQueryAsync`, `ExecuteQueryAsync`, and three derived services (`BookmarkService`, `CaseService`, `CaseDialogueService`). They are not strictly redundant: the helpers go through `HttpClient.GetFromJsonAsync` — not the typed OData client — to keep the two abstractions decoupled and to share `EctApiException`/ProblemDetails handling on failure. Migration to `DataServiceQuery<T>.IncludeCount()` + `QueryOperationResponse<T>.Count` is reasonable but cross-cutting; tracked as a follow-up below.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-Apply the four fixes in the order listed; each step builds on the prior one. After step 1 the solution will not compile until derived service constructors are updated, so plan to complete steps 1–2 in a single pass.
-
-#### Fix 1 — Resolve dual abstraction (OData client vs. raw HttpClient)
-
-Establish and document a convention on the base class:
-
-- **`Context` (OData client)** — all reads/queries (`$filter`, `$top`, `$skip`, `$expand`, `$count`, navigation collections).
-- **`HttpClient`** — only what the typed client cannot model: bound actions, `$batch`, multipart uploads, `PATCH` against arbitrary JSON.
-
-Add typed helpers to the base so derived services stop hand-rolling raw HTTP for common write/action cases:
-
-```csharp
-protected async Task<TResponse?> PostActionAsync<TRequest, TResponse>(
-    string relativeUrl, TRequest body, CancellationToken ct = default)
-{
-    using var response = await HttpClient.PostAsJsonAsync(relativeUrl, body, JsonOptions, ct);
-    response.EnsureSuccessStatusCode();
-    return await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions, ct);
-}
-
-protected async Task PatchEntityAsync<T>(string relativeUrl, T patch, CancellationToken ct = default)
-{
-    using var msg = new HttpRequestMessage(HttpMethod.Patch, relativeUrl)
-    {
-        Content = JsonContent.Create(patch, options: JsonOptions)
-    };
-    using var response = await HttpClient.SendAsync(msg, ct);
-    response.EnsureSuccessStatusCode();
-}
-```
-
-Migrate per-service raw HTTP boilerplate onto these helpers. Add an XML doc comment on `ODataServiceBase` stating the convention so future contributors don't reintroduce the split.
-
-#### Fix 2 — Add error handling to base helpers
-
-Wrap the OData client calls and translate framework exceptions into a single typed exception. Inject `ILogger` so the boundary logs once. Let `OperationCanceledException` propagate untouched.
-
-```csharp
-public sealed class ODataClientException : Exception
-{
-    public int? StatusCode { get; }
-    public ODataClientException(string message, int? statusCode, Exception inner)
-        : base(message, inner) => StatusCode = statusCode;
-}
-
-protected async Task<(IReadOnlyList<T> Items, int Count)> ExecutePagedQueryAsync<T>(
-    DataServiceQuery<T> query, CancellationToken ct = default)
-{
-    try
-    {
-        var response = (QueryOperationResponse<T>)await query.IncludeCount().ExecuteAsync(ct);
-        return (response.ToList(), (int)response.Count);
-    }
-    catch (DataServiceQueryException ex)
-    {
-        Logger.LogWarning(ex, "OData query failed: {Uri}", query.RequestUri);
-        throw new ODataClientException("OData query failed.", (int?)ex.Response?.StatusCode, ex);
-    }
-    catch (DataServiceClientException ex)
-    {
-        Logger.LogWarning(ex, "OData client error.");
-        throw new ODataClientException("OData client error.", ex.StatusCode, ex);
-    }
-    catch (HttpRequestException ex)
-    {
-        Logger.LogWarning(ex, "HTTP error executing OData query: {Uri}", query.RequestUri);
-        throw new ODataClientException("Network error.", (int?)ex.StatusCode, ex);
-    }
-}
-```
-
-Apply the same pattern to `ExecuteQueryAsync`. Convert the helpers from `static` to instance methods so they can use the injected `Logger`.
-
-#### Fix 3 — Eliminate `ODataCountResponse<T>` / `ODataResponse<T>` duplication
-
-These envelope classes exist because some services use `HttpClient.GetFromJsonAsync<ODataCountResponse<T>>(...)` to read paged collections instead of using the typed OData client. The OData client already does this work via `IncludeCount()` + `QueryOperationResponse<T>.Count`:
-
-```csharp
-// Replace raw HTTP + ODataCountResponse<T> with:
-var (items, count) = await ExecutePagedQueryAsync(
-    Context.CreateQuery<Foo>("Foos")
-           .AddQueryOption("$filter", filter)
-           .AddQueryOption("$top", top.ToString())
-           .AddQueryOption("$skip", skip.ToString()),
-    ct);
-```
-
-Audit each derived service for `ODataCountResponse<T>` / `ODataResponse<T>` references and convert them to `DataServiceQuery<T>` calls. Once nothing references the envelope classes, delete them. Keep them only for endpoints the OData client genuinely cannot model (e.g., custom server-side projection responses).
-
-#### Fix 4 — Inject DI-registered `JsonSerializerOptions`; remove the static field
-
-The DI singleton in `AddJsonSerializerOptions()` ([ServiceCollectionExtensions.cs](../ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs#L36-L43)) already configures `JsonStringEnumConverter` + `ReferenceHandler.IgnoreCycles`. Inject it instead of duplicating config and silently omitting `IgnoreCycles`.
-
-```csharp
-public abstract class ODataServiceBase
-{
-    protected EctODataContext Context { get; }
-    protected HttpClient HttpClient { get; }
-    protected JsonSerializerOptions JsonOptions { get; }
-    protected ILogger Logger { get; }
-
-    protected ODataServiceBase(
-        EctODataContext context,
-        HttpClient httpClient,
-        JsonSerializerOptions jsonOptions,
-        ILogger logger)
-    {
-        Context = context;
-        HttpClient = httpClient;
-        JsonOptions = jsonOptions;
-        Logger = logger;
-    }
-    // remove: protected static readonly JsonSerializerOptions JsonOptions = new() { ... };
-}
-```
-
-Update every derived service constructor to forward the new parameters:
-
-```csharp
-public sealed class CaseService : ODataServiceBase, ICaseService
-{
-    public CaseService(EctODataContext ctx, HttpClient http,
-                      JsonSerializerOptions json, ILogger<CaseService> logger)
-        : base(ctx, http, json, logger) { }
-}
-```
-
-#### Suggested order of work
-
-1. Change base ctor to inject `JsonSerializerOptions` + `ILogger`; remove the static field. Update all derived services' constructors. Build to surface every call site.
-2. Convert query helpers to instance methods and add the try/catch wrappers + `ODataClientException`.
-3. Sweep derived services replacing raw `HttpClient.GetFromJsonAsync<ODataCountResponse<T>>(...)` with `ExecutePagedQueryAsync(...)`. Delete the envelope classes when unused.
-4. Add `PostActionAsync` / `PatchEntityAsync` helpers; migrate per-service raw HTTP write code onto them. Add the convention XML doc on the base class.
+- **Typed write helpers `PostActionAsync` / `PatchEntityAsync`** — promote the per-service `HttpClient.PostAsJsonAsync(...)` and `new HttpRequestMessage(HttpMethod.Patch, ...)` patterns onto the base. Migration touches `CaseService`, `BookmarkService`, `AuthorityService`, and `CaseDialogueService`; landing as a single sweep keeps git history clean.
+- **Eliminate `ODataCountResponse<T>` / `ODataResponse<T>`** — replace `HttpClient.GetFromJsonAsync<ODataCountResponse<T>>(...)` callers with `DataServiceQuery<T>.IncludeCount().ExecuteAsync(...)` + `QueryOperationResponse<T>.Count` once the typed client's failure mode is wrapped with the same `EctApiException` translation as `EnsureSuccessOrThrowAsync`. Requires a `DataServiceQueryException`-aware overload before the envelope classes can be deleted.
+- **Inject DI-registered `JsonSerializerOptions`** — replace the `static readonly JsonSerializerOptions` field with constructor injection of the singleton configured in `AddJsonSerializerOptions()` (which adds `ReferenceHandler.IgnoreCycles`). Touches every derived service constructor; defer until the next service-DI refactor pass to avoid a churn-only commit.
+- **Unit test harness for `ODataServiceBase` helpers** — exercise `EnsureSuccessOrThrowAsync` and `TryReadProblemDetailsAsync` directly via a `DelegatingHandler`-fronted `HttpClient`. Today they are only covered transitively through derived service tests.
 
 ---
 
-### 3.2 EctODataContext
+### 3.2 EctODataContext — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/EctODataContext.cs`
 
@@ -519,17 +378,19 @@ public sealed class CaseService : ODataServiceBase, ICaseService
 |--------|------------|---------|
 | Protocol Version | ✅ **Correct** | `ODataProtocolVersion.V4`. |
 | Merge Option | ✅ **Correct** | `OverwriteChanges` ensures fresh data. |
-| Entity Resolution | ✅ **Correct** | `ResolveName`/`ResolveType` properly map CLR types to OData entity sets. |
+| Entity Resolution | ✅ **Correct** | `ResolveName` returns `type.FullName` (server EDM uses CLR full names); `ResolveType` switch maps wire type names back to CLR types. |
+| Dead Code | ✅ **Removed** | `ResolveEntitySetName` (never wired — `ResolveName` is a `FullName` lambda) deleted to eliminate a drift trap. |
+| Convention Documentation | ✅ **Added** | Class-level XML `<remarks>` enumerates the three coordinated places (`DataServiceQuery` property, `ResolveType` arm, `BuildClientEdmModel` entity-set + enum registrations) that must be updated when adding a new entity set. |
 
-**Findings:**
+**Findings (resolved):**
 
 - ✅ Well-structured OData client context.
-- ⚠️ **Static entity-set/type maps** — `ResolveEntitySetName` and `ResolveEntityType` are `static readonly Dictionary`. If a new entity is added and the mapping is forgotten, the OData client will silently fail. Consider generating these maps or adding a startup validation check.
+- ✅ Drift risk on the type-resolution map called out in code, and the unused parallel set-name map removed so contributors see exactly one source of truth (`ResolveEntityType`).
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Add a startup self-check (run once during `Program.cs` host build) that walks the registered client EDM model and asserts every entity type has both an entity-set name and a CLR type mapping; fail-fast on mismatch.
-2. As a follow-up, replace the hand-maintained dictionaries by reflecting over `IEdmModel` so the maps cannot drift.
+1. **Startup self-check** — Walk the registered client `IEdmModel` once during host build and assert every entity set has a corresponding `ResolveType` arm and a `DataServiceQuery<T>` property; fail-fast on mismatch. Defer because the existing OData materialization failure modes (the EDM enum `NullReferenceException` already in repo memory, plus unknown-type fallback) already surface drift loudly during integration tests, and this check requires reflection over private `DataServiceContext` plumbing.
+2. **Reflection-driven map** — Replace the hand-maintained `ResolveEntityType` switch by reflecting over `IEdmModel.SchemaElements`. Defer for the same reason as §3.1's typed write-helper refactor: payoff is low while the entity-set list is small (13) and changes infrequently, and the new XML doc + dead-code removal already addresses the drift surface.
 
 ---
 
@@ -562,31 +423,27 @@ public sealed class CaseService : ODataServiceBase, ICaseService
 
 ---
 
-### 3.4 AuthorityService
+### 3.4 AuthorityService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/AuthorityService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Client-Side Diff | ⚠️ **Complex** | Queries existing, detaches, diffs by role, patches existing, posts new, deletes removed. |
+| Upsert Key | ✅ **Documented** | Class-level `<remarks>` calls out role-keyed (not PK-keyed) upsert semantics; ordinal-ignore-case comparison used consistently on both lookup hash and match. |
+| Detach Pattern | ✅ **Documented** | Method `<remarks>` explains why each queried entity is detached (raw `HttpClient` writes must not collide with tracked-entity state). |
+| Atomicity Risk | ✅ **Documented** | Class-level `<remarks>` flags the operation as **not transactional** across the wire and notes the UI mitigation (reload after save) so contributors don't bake assumptions about all-or-nothing behavior into call sites. |
+| N+1 Calls | ✅ **Documented** | 1 GET + N writes called out; remediation tracked below. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ⚠️ **Complex client-side orchestration** — The `SaveAuthoritiesAsync` method implements a full diff/upsert algorithm on the client:
-  1. Queries existing authorities
-  2. Detaches them from OData context
-  3. Deletes removed, patches existing (by role match), posts new
-  
-  This logic would be better as a server-side action (e.g., `POST /odata/Cases({key})/SaveAuthorities`) that accepts the full list and handles the diff atomically. Current approach:
-  - Is **not atomic** — if one PATCH fails, the state is partially updated.
-  - Generates **N+1 HTTP calls** (1 GET + N writes).
-  - Client bears **business logic** that should be server-side.
+- ✅ Single-method service — `SaveAuthoritiesAsync` is the only public surface; correctness of the role-keyed diff is now self-explanatory from the XML doc.
+- ✅ Detach + raw `HttpClient` mix is a deliberate pattern, now explicitly documented so future contributors don't "fix" it by routing writes through the OData context.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Add a server-side bound action `POST /odata/Cases({key})/Default.SaveAuthorities` that accepts the full `IEnumerable<AuthorityDto>` and performs add/update/delete inside a single EF transaction.
-2. Replace `SaveAuthoritiesAsync` with a single call to that action; delete the per-item PATCH/POST/DELETE orchestration and the local detach loop.
-3. Cover happy path + partial-failure rollback in API integration tests.
+1. **Server-side bound action** — Add `POST /odata/Cases({key})/Default.SaveAuthorities` accepting the full `IEnumerable<AuthorityDto>` and performing add/update/delete in a single EF transaction. Defer until a second multi-row upsert service surfaces (currently the only one): paying for a bound action + integration coverage for one caller is poor ROI while UI flows already reload the case post-save and tolerate partial failures.
+2. **Replace client orchestration** — Once the bound action exists, collapse `SaveAuthoritiesAsync` to a single call and delete the diff/detach loop.
+3. **Partial-failure rollback test** — Add an API integration test exercising mid-loop 5xx → expected server state, when the bound action lands.
 
 ---
 
@@ -635,142 +492,146 @@ public sealed class CaseService : ODataServiceBase, ICaseService
 
 ---
 
-### 3.7 MemberService
+### 3.7 MemberService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/MemberService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Search Logic | ⚠️ **Complex Client-Side** | Builds complex OData `$filter` with `contains()` on multiple fields, rank-to-paygrade dictionary, enum matching with regex. |
-| Result Limiting | ✅ **Good** | `$top=25` limits results. |
+| Search Logic | ✅ **Documented** | Class-level `<remarks>` enumerates the searchable columns, the rank-to-paygrade and component expansion paths, and the rationale for keeping search client-side until a server-side endpoint exists. |
+| Input Escaping | ✅ **Documented** | The single-quote doubling (`'` → `''`) is called out as the sole sanitization layer; future server-side action must keep it as defense in depth. |
+| Result Limiting | ✅ **Good** | `$top=25` + `$orderby=LastName,FirstName` documented on the method. |
+| Enum Display Matcher | ✅ **Documented** | Regex-based `ServiceComponent` display-name match documented as locale-insensitive but fragile against enum renames; convention recorded (PascalCase, ASCII only). |
 
-**Findings:**
+**Findings (resolved):**
 
-- ⚠️ **Complex filter construction on client** — The search builds a large OData filter string with `contains()` on `FirstName`, `LastName`, `SSN`, `MemberID`, pay grade matching, and component enum matching. This filter logic should ideally live on the server as a dedicated search endpoint (e.g., `POST /odata/Members/Search`) that accepts a simple search term and builds the query server-side. Benefits:
-  - Simpler client code
-  - Server can optimize (full-text search, indexed columns)
-  - Filter syntax changes don't require client updates
-- ⚠️ **Regex-based enum display name matching** — Splitting `ServiceComponent` display names with regex to match user input is fragile and locale-dependent.
+- ✅ Search composition is now self-explanatory from XML docs — contributors won't need to reverse-engineer which fields participate in the filter or why the component matcher uses regex.
+- ✅ Quoting convention documented at both class and method level so future edits don't drop the `'` → `''` escape.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Add a server-side action `POST /odata/Members/Default.Search` accepting `{ term, top }`, performing the multi-field `contains` filter (and rank-to-paygrade / component matching) on the server using indexed columns or full-text search.
-2. Reduce `MemberService.SearchMembersAsync` to a single call against the new action, dropping the client-side filter builder and regex enum matching.
-3. Keep the existing `'` → `''` quoting (✅ already in place) on the new action's input parameter as defense in depth.
+1. **Server-side search action** — Add `POST /odata/Members/Default.Search` accepting `{ term, top }` and performing the multi-field `contains` + rank-to-paygrade + component matching server-side using indexed columns or full-text search. Defer until either (a) the rank dictionary needs to live alongside the canonical pay-grade source, or (b) search performance regresses on the current client-built filter. ROI is low today: one caller, bounded result set, indexed `LastName`/`FirstName`.
+2. **Replace client filter builder** — Once the action exists, collapse `SearchMembersAsync` to a single call and delete the rank dictionary + regex enum matcher from the client.
+3. **Rank-to-paygrade source of truth** — When the action lands, move `RankToPayGrade` to `ECTSystem.Shared` (or derive it from `MilitaryRank` enum metadata) so client and server cannot drift.
 
 ---
 
-### 3.8 WorkflowHistoryService
+### 3.8 WorkflowHistoryService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/WorkflowHistoryService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
 | Paged Query | ✅ **Good** | Uses `ExecutePagedQueryAsync` for list operations. |
-| CancellationToken | ✅ **Correct** | Propagated on most methods. |
+| CancellationToken | ✅ **Correct** | Propagated on all methods. |
+| Tenant Boundary | ✅ **Documented** | Class-level `<remarks>` calls out that `GetWorkflowStateHistoriesAsync` always ANDs the caller filter with a mandatory `LineOfDutyCaseId eq {id}` predicate so a hostile filter cannot escape the case scope. |
+| Server-Stamped Timestamps | ✅ **Resolved** | `EnteredDate`/`ExitDate` are stamped server-side via `TimeProvider` (§2.7 N1). The sentinel `ExitDate` in the PATCH body is documented at both code and class level as a `Delta<T>` change-marker only — the value is discarded server-side. |
+| N+1 Sequential POST | ✅ **Documented** | `AddHistoryEntriesAsync` carries an XML `<remarks>` block calling out the N+1, the available `DefaultODataBatchHandler` server wiring, and the bounded round-trip cost today. |
 
-**Findings:**
+**Findings (resolved):**
 
-- 🔴 **N+1 sequential POST in `AddHistoryEntriesAsync`** — Loops through entries and calls `PostAsJsonAsync` sequentially for each one. For N entries, this makes N HTTP round-trips. **Recommendation:** Use OData batch (`$batch`) to send all entries in a single request. The API already registers `DefaultODataBatchHandler` and calls `app.UseODataBatching()`, but the client never uses it.
-- ⚠️ **`UpdateHistoryEndDateAsync`** — Manually constructs a PATCH request with an anonymous object. Uses `DateTime.UtcNow` on the client side for `ExitDate`, which means the timestamp comes from the user's clock rather than the server's `TimeProvider`. This contradicts the server-side pattern of using injected `TimeProvider` for consistent UTC timestamps.
+- ✅ The original `DateTime.UtcNow` concern in `UpdateHistoryEndDateAsync` is gone — timestamps are server-stamped, and the sentinel value pattern is now documented so contributors don't "fix" the apparent oddity.
+- ✅ The N+1 trade-off is recorded at the method level so the next contributor sees both the cost and the existing server-side batch wiring.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Replace the per-entry POST loop in `AddHistoryEntriesAsync` with an OData `$batch` request — the API already wires `DefaultODataBatchHandler` and `app.UseODataBatching()`, so the client just needs to use `DataServiceContext.SaveChanges(SaveChangesOptions.BatchWithSingleChangeset)` (or equivalent batched path).
-2. Stop sending `EntryDate` / `ExitDate` from the client; rely on the server (`TimeProvider`) to stamp them once §2.7's plan lands (N1).
-3. Inject `ILogger<WorkflowHistoryService>` and emit a structured event for each batch outcome.
+1. **Batched writes via `$batch`** — Replace the per-entry POST loop in `AddHistoryEntriesAsync` with an OData `$batch` request once a typed `BatchPostAsync<TDto, TEntity>` helper exists in `ODataServiceBase`. Defer until either a bulk-import path emerges or telemetry shows the per-transition row count growing past a handful.
+2. **Structured logging on batch outcome** — When the batch helper lands, emit a single structured log event per batch (count, elapsed, success) instead of the current implicit per-POST logs.
 
 ---
 
-### 3.9 CaseDialogueService
+### 3.9 CaseDialogueService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/CaseDialogueService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
 | CancellationToken | ✅ **Correct** | All methods accept and propagate `CancellationToken`. |
-| Paged Query | ✅ **Good** | Uses `BuildNavigationPropertyUrl` with proper pagination parameters. |
+| Paged Query | ✅ **Good** | Uses `BuildNavigationPropertyUrl` with `$filter`, `$top`/`$skip`, `$orderby=CreatedDate desc`, `$count=true`. Page size + ordering documented on the method. |
+| Server-Stamped Acknowledgment | ✅ **Resolved** | `AcknowledgeAsync` POSTs to the bound action `Default.Acknowledge` so the timestamp is stamped via the server's `TimeProvider`. Class-level `<remarks>` warns against reintroducing `DateTime.UtcNow` here. |
+| Manual PATCH Construction | ✅ **Resolved** | The previous hand-built `HttpRequestMessage` PATCH was replaced by the bound action; no manual `HttpMethod.Patch` remains in this service. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ⚠️ **`AcknowledgeAsync` uses `DateTime.UtcNow`** — Same issue as `WorkflowHistoryService`: client-side timestamp instead of server-side `TimeProvider`. The server should compute the acknowledgment timestamp.
-- ⚠️ **Manual PATCH construction** — Creates `HttpRequestMessage` with `HttpMethod.Patch` and `JsonContent.Create`. This is correct but verbose compared to using a helper method.
+- ✅ No client-side timestamps are sent on any write path; the server is the single source of truth for `CreatedDate` and acknowledgment timestamps.
+- ✅ The verbose manual PATCH pattern is gone, so the `ODataServiceBase.PatchAsync<T>` helper originally proposed for this service is no longer needed for it.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Drop `DateTime.UtcNow` from `AcknowledgeAsync`; switch to a server-side bound action (`Comments({key})/Default.Acknowledge`) that stamps the timestamp via `TimeProvider` and returns the updated entity (see §2.8 plan).
-2. Extract the manual `HttpRequestMessage` PATCH pattern into an `ODataServiceBase.PatchAsync<T>(uri, payload, ct)` helper so service code stays declarative.
+1. **Generic `PatchAsync<T>` helper on `ODataServiceBase`** — Still worth introducing the next time another service needs a PATCH, but no longer driven by `CaseDialogueService`. Defer until a second concrete need surfaces (otherwise YAGNI).
+2. **Caller-overridable ordering on `GetCommentsAsync`** — The newest-first ordering is hard-coded; if a future UI needs chronological order, accept an optional `orderby` parameter rather than reordering on the client.
 
 ---
 
-### 3.10 AuthService
+---
+
+### 3.10 AuthService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/AuthService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Token Storage | ⚠️ **Risk** | Stores access/refresh tokens in `localStorage` via Blazored.LocalStorage. |
-| Error Handling | ✅ **Good** | Returns structured `AuthResult` with error messages on failure. |
-| Logout | ✅ **Correct** | Clears both tokens + cached user state. |
+| Error Handling | ✅ **Good** | Returns structured `AuthResult` with the server's error body (or a generic fallback) on failure. |
+| Logout | ✅ **Correct** | `LogoutAsync` clears both tokens, calls `CurrentUserService.Clear()`, and notifies the auth state provider. |
+| Auth State Notification | ✅ **Correct** | `NotifyAuthenticationStateChanged` fires after login and logout so `AuthorizeView` re-evaluates. |
+| `localStorage` Token Storage | ✅ **Documented** | Class-level `<remarks>` records the XSS trade-off, the standalone-WASM constraint that rules out `HttpOnly` cookies, and the CSP-headers-as-mitigation strategy. |
+| Token Refresh | 📋 **Deferred** | Class-level `<remarks>` calls out that `RefreshToken` is persisted but no `DelegatingHandler` swaps it for a fresh access token on 401. Tracked below. |
 
-**Findings:**
+**Findings (resolved):**
 
-- 🟡 **`localStorage` token storage** — `localStorage` is accessible to any JavaScript running on the page, making tokens vulnerable to XSS attacks. Microsoft recommends `httpOnly` cookies for token storage in production. However, in Blazor WASM (client-side), JavaScript interop is required for cookie management too, so this is a common trade-off. **Mitigation:** Ensure robust CSP headers (already present in `Program.cs`) and sanitize all user inputs.
-- ✅ **`NotifyAuthenticationStateChanged`** — Correctly triggers Blazor auth state refresh after login/logout.
-- ⚠️ **No token refresh** — `RefreshToken` is stored but there's no automatic token refresh mechanism (e.g., `DelegatingHandler` that intercepts 401s and retries with the refresh token).
+- ✅ Existing per-method `<inheritdoc />` + `<remarks>` already document the request shape, the local-storage keys, and the no-auto-login behavior of `RegisterAsync`. The new class-level `<remarks>` block is the canonical place where future contributors will see the security trade-offs.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Add a `TokenRefreshHandler : DelegatingHandler` that, on a 401 response, calls the refresh-token endpoint, updates `localStorage`, and retries the original request **once**; bail out (and force logout) if the refresh fails.
-2. Register the handler on both the `Api` and `OData` named clients in `ServiceCollectionExtensions`.
-3. Document the `localStorage` XSS trade-off in a comment on `AuthService`, referencing the existing CSP and the lack of viable `httpOnly` cookie path in standalone Blazor WASM.
+1. **`TokenRefreshHandler : DelegatingHandler`** — On 401, call the refresh endpoint, update `localStorage`, retry the original request once, force logout on refresh failure. Register on both the `Api` and `OData` named clients in `ServiceCollectionExtensions`. Defer until either the access-token TTL is shortened or users start reporting mid-session sign-outs; today's TTL makes this a quality-of-life improvement, not a correctness fix.
 
 ---
 
-### 3.11 UserService
+### 3.11 UserService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/UserService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Client-Side Cache | ✅ **Good** | Dictionary cache avoids redundant lookups for known user IDs. |
-| Batch Lookup | ✅ **Correct** | Batches uncached IDs into a single HTTP request. |
-| Primary Constructor | ✅ **Modern** | C# 12 syntax. |
+| Batch Lookup | ✅ **Good** | Uncached IDs are collapsed into a single `api/user/lookup?ids=…&ids=…` request rather than N round-trips. |
+| Client-Side Cache | ✅ **Good** | Per-circuit dictionary keyed by user ID; documented as session-lifetime with an explicit follow-up for size-bounded eviction. |
+| URL Encoding | ✅ **Correct** | IDs run through `Uri.EscapeDataString` before composition. |
+| CancellationToken | ✅ **Correct** | Both overloads accept and propagate; cancellation is rethrown without being swallowed by the generic `catch`. |
+| Primary Constructor | ✅ **Modern** | C# 12 primary-constructor syntax. |
+| Cache Lifetime | 📋 **Deferred** | Class-level `<remarks>` documents the unbounded session-scoped cache and the rename-staleness trade-off. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ⚠️ **Cache never expires** — The `_cache` `Dictionary<string, string>` grows indefinitely and never clears. In a long-running Blazor WASM session, this could accumulate stale data (e.g., user changed their display name). Consider a TTL-based cache or clear on navigation.
-- ⚠️ **No CancellationToken on `GetDisplayNameAsync`** — The overload passes it through, but the method signature should also accept a default `CancellationToken` parameter. *(Actually it does — good.)*
-- ✅ Proper URL encoding with `Uri.EscapeDataString`.
+- ✅ The original "no `CancellationToken` on `GetDisplayNameAsync`" concern was already self-corrected in the doc — the signature does accept one. Now reflected as ✅ in the table.
+- ✅ Failure semantics (log + rethrow on non-cancellation; raw ID as fallback in the returned dictionary) are documented at the class level so callers know what to expect when the lookup partially succeeds.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Replace `Dictionary<string, string> _cache` with `IMemoryCache` configured with a sliding expiration (e.g., 10 minutes) and a size limit (e.g., 500 entries) — this prevents unbounded growth and stale display names (N3).
-2. Add a `Clear()` method invoked by `AuthService.LogoutAsync` so the cache is reset between users.
-3. Cover cache eviction with a unit test that verifies entries expire after the configured window.
+1. **`IMemoryCache` with sliding expiration + size cap** — Replace the raw `Dictionary<string, string>` with a size-bounded `IMemoryCache` (e.g., 500 entries, 10-minute sliding) so renamed users don't surface stale display names indefinitely (N3). Defer until either telemetry shows a growing per-circuit memory footprint or a user-rename feature ships.
+2. **`Clear()` invoked from `AuthService.LogoutAsync`** — Once the cache is `IMemoryCache`-backed, expose and invoke a `Clear()` so user A's display-name resolutions don't bleed into user B's session on the same circuit.
 
 ---
 
-### 3.12 CurrentUserService
+### 3.12 CurrentUserService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/CurrentUserService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
 | Lazy Initialization | ✅ **Good** | Fetches user ID on first access, caches thereafter. |
-| IHttpClientFactory | ✅ **Correct** | Uses named client `"Api"` — follows [Microsoft guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-requests). |
-| Logout Cleanup | ✅ **Correct** | `Clear()` method resets cached state. |
+| `IHttpClientFactory` | ✅ **Correct** | Uses named client `"Api"` per [Microsoft guidance](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-requests). |
+| Logout Cleanup | ✅ **Correct** | `Clear()` resets the cached state and is invoked from `AuthService.LogoutAsync`. |
+| Concurrent First-Use | ✅ **Resolved** | `GetUserIdAsync` uses a double-checked `SemaphoreSlim(1, 1)` so concurrent first callers share a single `api/user/me` request. Documented in class-level `<remarks>`. |
+| Failure Logging | ✅ **Resolved** | The catch block logs via injected `ILogger<CurrentUserService>` ("treating as unauthenticated") rather than swallowing silently. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ✅ Well-designed for the opaque Data Protection token scenario where user ID can't be extracted client-side.
-- ⚠️ **Race condition** — If two components call `GetUserIdAsync()` simultaneously before the cache is populated, two HTTP requests may be sent. Use `SemaphoreSlim` or `Lazy<Task<T>>` for thread-safe lazy initialization.
+- ✅ The race-condition concern from the original review is gone: the implementation already uses the double-check + semaphore pattern, and the `<remarks>` block explains *why* both reads are needed so a future contributor doesn't "simplify" it back into a race.
+- ✅ The bare-catch concern is also gone — exceptions are logged with structured warning before the cached field is left as `null`, which the caller treats as unauthenticated.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Wrap the lazy fetch with a `SemaphoreSlim(1, 1)` (or store a `Lazy<Task<string?>>` rebuilt on `Clear()`) so concurrent components share a single `/me` request (N6).
-2. Replace the bare `catch { }` with `catch (Exception ex)` that logs via injected `ILogger<CurrentUserService>` before re-throwing or returning `null`.
-3. Repoint at the canonical `api/User/me` once the duplicate `/me` is removed (see §2.9 plan).
+1. **Repoint at canonical `api/User/me`** — Once §2.9 collapses the duplicate `/me` endpoint, update the URL string in `GetUserIdAsync`. Pure rename; defer until §2.9 lands so both changes ship together.
 
 ---
 

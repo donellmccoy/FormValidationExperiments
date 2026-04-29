@@ -146,10 +146,9 @@ public class LineOfDutyStateMachineTests
     {
         _dataServiceMock.Setup(hs => hs.UpdateHistoryEndDateAsync(
                 It.IsAny<int>(),
-                It.IsAny<DateTime>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((int id, DateTime endDate, CancellationToken _) =>
-                new WorkflowStateHistory { Id = id, ExitDate = endDate });
+            .ReturnsAsync((int id, CancellationToken _) =>
+                new WorkflowStateHistory { Id = id, ExitDate = DateTime.UtcNow });
 
         _dataServiceMock.Setup(hs => hs.AddHistoryEntryAsync(
                 It.IsAny<WorkflowStateHistory>(),

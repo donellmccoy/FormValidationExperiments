@@ -305,4 +305,24 @@ public class DocumentsControllerTests : ControllerTestBase, IDisposable
         Assert.Single(remaining);
         Assert.Equal(docId2, remaining[0].Id);
     }
+
+    // ────────────────────────── Authorization regression ──────────────────────────────
+
+    [Theory]
+    [InlineData(nameof(DocumentsController.Patch), new[] { typeof(int), typeof(Delta<LineOfDutyDocument>), typeof(CancellationToken) })]
+    [InlineData(nameof(DocumentsController.Put), new[] { typeof(int), typeof(UpdateDocumentDto), typeof(CancellationToken) })]
+    [InlineData(nameof(DocumentsController.Upload), new[] { typeof(int), typeof(List<IFormFile>), typeof(string), typeof(string), typeof(CancellationToken) })]
+    [InlineData(nameof(DocumentsController.Delete), new[] { typeof(int), typeof(CancellationToken) })]
+    public void DocumentWriteEndpoints_RequireAdminRole(string methodName, Type[] parameterTypes)
+    {
+        var method = typeof(DocumentsController).GetMethod(methodName, parameterTypes);
+        Assert.NotNull(method);
+
+        var attr = method!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), inherit: false)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .SingleOrDefault();
+
+        Assert.NotNull(attr);
+        Assert.Equal("Admin", attr!.Roles);
+    }
 }

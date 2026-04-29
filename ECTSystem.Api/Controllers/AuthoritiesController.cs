@@ -56,6 +56,10 @@ public class AuthoritiesController : ODataControllerBase
     /// Creates a new authority entry.
     /// OData route: POST /odata/Authorities
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Post([FromBody] CreateAuthorityDto dto, CancellationToken ct = default)
     {
@@ -78,6 +82,10 @@ public class AuthoritiesController : ODataControllerBase
     /// Partially updates an existing authority using OData Delta semantics.
     /// OData route: PATCH /odata/Authorities({key})
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyAuthority> delta, CancellationToken ct = default)
     {
@@ -117,6 +125,10 @@ public class AuthoritiesController : ODataControllerBase
     /// Deletes an authority entry.
     /// OData route: DELETE /odata/Authorities({key})
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {

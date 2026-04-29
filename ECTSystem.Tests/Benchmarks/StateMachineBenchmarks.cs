@@ -36,11 +36,11 @@ public class StateMachineBenchmarks
             });
 
         _mockHistoryService
-            .Setup(s => s.UpdateHistoryEndDateAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((int entryId, DateTime endDate, CancellationToken _) => new WorkflowStateHistory
+            .Setup(s => s.UpdateHistoryEndDateAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int entryId, CancellationToken _) => new WorkflowStateHistory
             {
                 Id = entryId,
-                ExitDate = endDate
+                ExitDate = DateTime.UtcNow
             });
     }
 

@@ -5,7 +5,6 @@ using ECTSystem.Persistence.Data;
 using ECTSystem.Persistence.Models;
 using ECTSystem.Api.Extensions;
 using ECTSystem.Api.Middleware;
-using System.Security.Claims;
 
 namespace ECTSystem.Api;
 
@@ -100,10 +99,6 @@ public class Program
 
         // Identity API endpoints: /register, /login, /refresh, /confirmEmail, etc.
         app.MapIdentityApi<ApplicationUser>();
-
-        // Lightweight user-info endpoint for the Blazor WASM client
-        app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { user.Identity!.Name }))
-           .RequireAuthorization();
 
         app.MapControllers();
 

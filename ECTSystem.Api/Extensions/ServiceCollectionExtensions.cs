@@ -230,6 +230,11 @@ public static class ServiceCollectionExtensions
         odataBuilder.EntitySet<AuditComment>("AuditComments");
         odataBuilder.EntitySet<CaseDialogueComment>("CaseDialogueComments");
 
+        // Bound action: POST /odata/CaseDialogueComments({key})/Default.Acknowledge
+        odataBuilder.EntityType<CaseDialogueComment>()
+            .Action("Acknowledge")
+            .ReturnsFromEntitySet<CaseDialogueComment>("CaseDialogueComments");
+
         // Bound actions: POST /odata/Cases({key})/Checkout, /Checkin
         var checkoutAction = casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
         checkoutAction.Parameter<byte[]>("RowVersion").Optional();

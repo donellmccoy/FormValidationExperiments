@@ -9,5 +9,5 @@ public interface ICaseDialogueService
 {
     Task<PagedResult<CaseDialogueComment>> GetCommentsAsync(int caseId, int top = 20, int skip = 0, CancellationToken ct = default);
     Task<CaseDialogueComment> PostCommentAsync(CaseDialogueComment comment, CancellationToken ct = default);
-    Task AcknowledgeAsync(int commentId, string acknowledgedBy, CancellationToken ct = default);
+    Task AcknowledgeAsync(int commentId, CancellationToken ct = default);
 }

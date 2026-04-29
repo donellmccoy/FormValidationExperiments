@@ -7,6 +7,36 @@ using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// Client-side OData service for searching <see cref="Member"/> records.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Search is implemented client-side: this service builds an OData <c>$filter</c> expression
+/// composed of <c>contains()</c> predicates over <c>FirstName</c>, <c>LastName</c>, <c>Rank</c>,
+/// <c>Unit</c>, and <c>ServiceNumber</c>, plus equality predicates synthesized from the
+/// <see cref="RankToPayGrade"/> dictionary and from <see cref="ServiceComponent"/> enum
+/// matching. The server has no dedicated search endpoint today.
+/// </para>
+/// <para>
+/// User-supplied input is escaped for OData string literals by doubling single quotes
+/// (<c>'</c> → <c>''</c>) before composition. This is the only sanitization layer; if a
+/// server-side search action is added in the future, that input should still apply the same
+/// escape (or use parameter binding) as defense in depth.
+/// </para>
+/// <para>
+/// Result size is bounded by <c>$top=25</c> and ordered by <c>LastName,FirstName</c> so the
+/// caller never receives an unbounded list. The search is intentionally limited to the
+/// columns above; adding new searchable fields requires updating both the predicate list and
+/// any server-side index strategy.
+/// </para>
+/// <para>
+/// The <see cref="ServiceComponent"/> matcher uses a regex to derive a display name
+/// (<c>"AirForceReserve"</c> → <c>"Air Force Reserve"</c>) so a user typing "Reserve" still
+/// hits the right enum value. This is locale-insensitive but fragile against enum renames —
+/// keep enum names PascalCase and do not introduce non-ASCII characters in member names.
+/// </para>
+/// </remarks>
 public class MemberService : ODataServiceBase, IMemberService
 {
     private static readonly Dictionary<string, string> RankToPayGrade = new(StringComparer.OrdinalIgnoreCase)
@@ -62,6 +92,24 @@ public class MemberService : ODataServiceBase, IMemberService
     public MemberService(EctODataContext context, HttpClient httpClient, ILogger<MemberService> logger)
         : base(context, httpClient, logger) { }
 
+    /// <summary>
+    /// Searches members across name, rank, unit, service number, pay grade (via rank lookup),
+    /// and service component, returning at most 25 matches ordered by last name then first name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The composed filter string is sent verbatim to OData; <paramref name="searchText"/> is
+    /// escaped by doubling single quotes before interpolation. Pay-grade matches are derived
+    /// from <see cref="RankToPayGrade"/> by substring (ordinal-ignore-case), and component
+    /// matches expand to typed enum literals
+    /// (<c>Component eq ECTSystem.Shared.Enums.ServiceComponent'AirForceReserve'</c>).
+    /// </para>
+    /// <para>
+    /// All <c>contains()</c> calls are wrapped in <c>tolower()</c> on both sides for
+    /// case-insensitive matching against arbitrary collation. Pay-grade and component
+    /// predicates use exact equality (no <c>tolower</c>) because the values are normalized.
+    /// </para>
+    /// </remarks>
     public async Task<List<Member>> SearchMembersAsync(string searchText, CancellationToken cancellationToken = default)
     {
         // OData string literals escape single quotes by doubling them ('').

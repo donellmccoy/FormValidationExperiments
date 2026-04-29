@@ -124,9 +124,12 @@ internal class LineOfDutyStateMachine
 
                 if (previousEntry is not null)
                 {
-                    var now = DateTime.UtcNow;
-                    previousEntry.ExitDate = now;
-                    await _historyService.UpdateHistoryEndDateAsync(previousEntry.Id, now);
+                    // ExitDate is server-stamped via TimeProvider (§2.7 N1).
+                    // We mirror the server's intent locally with UtcNow for
+                    // immediate UI consistency; the authoritative value lives
+                    // in the database.
+                    previousEntry.ExitDate = DateTime.UtcNow;
+                    await _historyService.UpdateHistoryEndDateAsync(previousEntry.Id);
                 }
             }
 

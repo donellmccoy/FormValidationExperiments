@@ -8,11 +8,40 @@ using Microsoft.OData.Client;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// Client-side OData service for <see cref="LineOfDutyAuthority"/> records attached to a case.
+/// Authorities are role-keyed (one row per <c>Role</c> per case), so save semantics are
+/// upsert-by-role rather than primary-key replace.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Until a server-side bound action exists, <see cref="SaveAuthoritiesAsync"/> performs the
+/// reconcile in three sequential HTTP calls per delta (1 GET + N writes). Callers should
+/// treat the operation as <b>not transactional</b> across the wire — a network or 5xx mid-loop
+/// can leave the case in a partially-saved state. UI flows therefore reload the case after
+/// save so the user sees authoritative server state, not the optimistic local list.
+/// </para>
+/// <para>
+/// Role comparisons are <see cref="StringComparer.OrdinalIgnoreCase"/> on both the existing-set
+/// hash lookup and the upsert match — keep both sides aligned if the comparison changes.
+/// </para>
+/// </remarks>
 public class AuthorityService : ODataServiceBase, IAuthorityService
 {
     public AuthorityService(EctODataContext context, HttpClient httpClient, ILogger<AuthorityService> logger)
         : base(context, httpClient, logger) { }
 
+    /// <summary>
+    /// Reconciles the authorities for <paramref name="caseId"/> against <paramref name="authorities"/>:
+    /// deletes rows whose <c>Role</c> is no longer present, PATCHes rows whose role matches an
+    /// existing entry, and POSTs rows for new roles. Returns the saved (server-echoed) authorities.
+    /// </summary>
+    /// <remarks>
+    /// Not atomic — see the class-level remarks. Each per-row failure throws via
+    /// <c>EnsureSuccessOrThrowAsync</c> and aborts the loop; rows processed before the failure
+    /// remain persisted on the server. Detaches each queried entity from the OData context so the
+    /// subsequent raw <see cref="HttpClient"/> writes are not interfered with by tracked-entity state.
+    /// </remarks>
     public async Task<List<LineOfDutyAuthority>> SaveAuthoritiesAsync(int caseId, ICollection<LineOfDutyAuthority> authorities, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);

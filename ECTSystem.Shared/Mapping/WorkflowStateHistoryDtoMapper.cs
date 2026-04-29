@@ -10,12 +10,12 @@ public static class WorkflowStateHistoryDtoMapper
 {
     public static WorkflowStateHistory ToEntity(CreateWorkflowStateHistoryDto dto)
     {
+        // EnteredDate / ExitDate are stamped server-side by the controller via
+        // TimeProvider — see §2.7 (N1) of the controller best-practices remediation.
         return new WorkflowStateHistory
         {
             LineOfDutyCaseId = dto.LineOfDutyCaseId,
             WorkflowState = dto.WorkflowState,
-            EnteredDate = dto.EnteredDate,
-            ExitDate = dto.ExitDate,
         };
     }
 }

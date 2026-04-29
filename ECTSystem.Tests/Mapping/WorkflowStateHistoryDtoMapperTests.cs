@@ -12,27 +12,25 @@ namespace ECTSystem.Tests.Mapping;
 public class WorkflowStateHistoryDtoMapperTests
 {
     /// <summary>
-    /// Verifies that all properties are correctly mapped from the DTO to the entity.
+    /// Verifies that the supported DTO properties are mapped to the entity. EnteredDate
+    /// and ExitDate are intentionally not on the DTO — they are stamped server-side
+    /// via TimeProvider (§2.7 N1) and must remain at their entity defaults after mapping.
     /// </summary>
     [Fact]
     public void ToEntity_AllPropertiesSet_MapsAllProperties()
     {
-        var startDate = new DateTime(2024, 3, 1, 8, 0, 0, DateTimeKind.Utc);
-        var endDate = new DateTime(2024, 3, 5, 17, 0, 0, DateTimeKind.Utc);
         var dto = new CreateWorkflowStateHistoryDto
         {
             LineOfDutyCaseId = 10,
             WorkflowState = WorkflowState.UnitCommanderReview,
-            EnteredDate = startDate,
-            ExitDate = endDate
         };
 
         var entity = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
         Assert.Equal(10, entity.LineOfDutyCaseId);
         Assert.Equal(WorkflowState.UnitCommanderReview, entity.WorkflowState);
-        Assert.Equal(startDate, entity.EnteredDate);
-        Assert.Equal(endDate, entity.ExitDate);
+        Assert.Equal(default, entity.EnteredDate);
+        Assert.Null(entity.ExitDate);
     }
 
     /// <summary>
@@ -52,23 +50,22 @@ public class WorkflowStateHistoryDtoMapperTests
     }
 
     /// <summary>
-    /// Verifies that null EndDate is preserved when mapping an in-progress workflow entry.
+    /// Verifies that the mapper never copies a date onto the entity. Audit timestamps
+    /// are server-authoritative; the mapper output must always have default EnteredDate
+    /// and null ExitDate so the controller can stamp them via TimeProvider.
     /// </summary>
     [Fact]
-    public void ToEntity_NullEndDate_MapsNull()
+    public void ToEntity_DoesNotMapAuditTimestamps()
     {
-        var startDate = new DateTime(2024, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         var dto = new CreateWorkflowStateHistoryDto
         {
             LineOfDutyCaseId = 5,
             WorkflowState = WorkflowState.MedicalTechnicianReview,
-            EnteredDate = startDate,
-            ExitDate = null
         };
 
         var entity = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
-        Assert.Equal(startDate, entity.EnteredDate);
+        Assert.Equal(default, entity.EnteredDate);
         Assert.Null(entity.ExitDate);
     }
 

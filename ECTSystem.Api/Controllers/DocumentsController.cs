@@ -115,6 +115,10 @@ public class DocumentsController : ODataControllerBase
     /// Partially updates an existing document's metadata using OData Delta semantics.
     /// OData route: PATCH /odata/Documents({key})
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<LineOfDutyDocument> delta, CancellationToken ct = default)
     {
@@ -160,6 +164,10 @@ public class DocumentsController : ODataControllerBase
     /// Fully replaces an existing document's metadata.
     /// OData route: PUT /odata/Documents({key})
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Put([FromODataUri] int key, [FromBody] UpdateDocumentDto dto, CancellationToken ct = default)
     {
@@ -245,6 +253,10 @@ public class DocumentsController : ODataControllerBase
     /// Acts as an OData navigation POST endpoint.
     /// Route: POST /odata/Cases({caseId})/Documents
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [HttpPost("odata/Cases({caseId})/Documents")]
     [Authorize(Roles = "Admin")]
     [RequestSizeLimit(50 * 1024 * 1024)] // 50 MB total for multiple files
@@ -391,6 +403,10 @@ public class DocumentsController : ODataControllerBase
     /// Deletes a document by its identifier.
     /// Standard OData route: DELETE /odata/Documents({key})
     /// </summary>
+    /// <remarks>
+    /// Restricted to the <c>Admin</c> role per the current single-role authorization policy.
+    /// A resource-based <c>CaseAccessRequirement</c> policy is deferred until non-Admin roles exist.
+    /// </remarks>
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
@@ -437,6 +453,12 @@ public class DocumentsController : ODataControllerBase
     /// Custom REST route: GET /api/cases/{caseId}/form348
     /// Uses a non-OData path to avoid OData routing convention conflicts.
     /// </summary>
+    /// <remarks>
+    /// Validates that the parent case exists (returns 404 if not). Per the current single-role
+    /// authorization policy, all authenticated users may generate the PDF; a resource-based
+    /// <c>CaseAccessRequirement</c> policy that scopes access to a user's authorized cases is
+    /// deferred until non-Admin roles exist.
+    /// </remarks>
     [HttpGet("/api/cases/{caseId}/form348")]
     public async Task<IActionResult> GetForm348([FromRoute] int caseId, CancellationToken ct = default)
     {

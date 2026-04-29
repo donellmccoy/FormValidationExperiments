@@ -12,7 +12,7 @@ public class CreateWorkflowStateHistoryDto
     [Required]
     public WorkflowState WorkflowState { get; set; }
 
-    [Required]
-    public DateTime EnteredDate { get; set; }
-    public DateTime? ExitDate { get; set; }
+    // EnteredDate and ExitDate are intentionally omitted — these audit timestamps
+    // are server-authoritative and stamped by WorkflowStateHistoryController via
+    // TimeProvider. See §2.7 (N1) of the controller best-practices remediation.
 }

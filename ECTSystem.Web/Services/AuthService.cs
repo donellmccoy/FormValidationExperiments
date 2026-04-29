@@ -61,6 +61,22 @@ public class AuthResult
 /// <see cref="JwtAuthStateProvider"/> of authentication state changes so the Blazor
 /// <c>AuthorizeView</c> and <c>CascadingAuthenticationState</c> components update reactively.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <strong>Token storage trade-off:</strong> tokens live in browser <c>localStorage</c>, which is
+/// readable by any script running on the page. A standalone Blazor WebAssembly app cannot use
+/// <c>HttpOnly</c> cookies for bearer tokens without a same-origin server proxy, so the
+/// mitigation strategy is the existing CSP headers configured in <c>Program.cs</c> plus strict
+/// input sanitization on every page that renders user-supplied content. Do not loosen the CSP
+/// to work around third-party scripts without re-evaluating this risk.
+/// </para>
+/// <para>
+/// <strong>No automatic token refresh (yet):</strong> <see cref="AuthResponse.RefreshToken"/>
+/// is persisted but no <c>DelegatingHandler</c> currently intercepts 401 responses to swap it
+/// for a fresh access token. A 401 today forces the user back to the login page; a token
+/// refresh handler is the tracked follow-up for this service.
+/// </para>
+/// </remarks>
 public class AuthService : IAuthService
 {
     /// <summary>

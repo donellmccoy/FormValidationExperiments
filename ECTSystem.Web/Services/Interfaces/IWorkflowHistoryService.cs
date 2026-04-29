@@ -51,12 +51,12 @@ public interface IWorkflowHistoryService
     Task<List<WorkflowStateHistory>> AddHistoryEntriesAsync(List<WorkflowStateHistory> entries, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates the <see cref="WorkflowStateHistory.ExitDate"/> of an existing workflow state history entry
-    /// via OData PATCH. Used to close out the previous workflow step when transitioning to a new state.
+    /// Closes out a workflow state history entry by stamping its <see cref="WorkflowStateHistory.ExitDate"/>
+    /// via OData PATCH. The exit timestamp is set server-side from <see cref="TimeProvider"/>
+    /// (\u00a72.7 N1) \u2014 callers do not supply a value.
     /// </summary>
     /// <param name="entryId">The database primary key of the history entry to update.</param>
-    /// <param name="endDate">The <see cref="DateTime"/> to set as the entry's exit date.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    /// <returns>The updated <see cref="WorkflowStateHistory"/> entry returned by the server.</returns>
-    Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, DateTime endDate, CancellationToken cancellationToken = default);
+    /// <returns>The updated <see cref="WorkflowStateHistory"/> entry returned by the server, or <c>null</c> if the server returned <c>204 No Content</c>.</returns>
+    Task<WorkflowStateHistory> UpdateHistoryEndDateAsync(int entryId, CancellationToken cancellationToken = default);
 }

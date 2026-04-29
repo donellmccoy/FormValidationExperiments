@@ -106,12 +106,13 @@ public class CaseDialogueCommentsController : ODataControllerBase
     }
 
     /// <summary>
-    /// Partially updates an existing dialogue comment.
+    /// Partially updates an existing dialogue comment. Restricted to Admin per current policy.
     /// OData route: PATCH /odata/CaseDialogueComments({key})
     /// </summary>
     /// <param name="key">The comment identifier.</param>
     /// <param name="delta">The partial update payload.</param>
     /// <param name="ct">Cancellation token.</param>
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Patch([FromODataUri] int key, Delta<CaseDialogueComment> delta, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
@@ -152,11 +153,12 @@ public class CaseDialogueCommentsController : ODataControllerBase
     }
 
     /// <summary>
-    /// Deletes a dialogue comment. Only the author or Admin may delete.
+    /// Deletes a dialogue comment. Restricted to Admin per current policy.
     /// OData route: DELETE /odata/CaseDialogueComments({key})
     /// </summary>
     /// <param name="key">The comment identifier.</param>
     /// <param name="ct">Cancellation token.</param>
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -170,17 +172,42 @@ public class CaseDialogueCommentsController : ODataControllerBase
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        var userId = GetAuthenticatedUserId();
-        if (comment.CreatedBy != userId && !User.IsInRole("Admin"))
-        {
-            return Problem(
-                title: "Forbidden",
-                detail: "You can only delete your own comments.",
-                statusCode: StatusCodes.Status403Forbidden);
-        }
-
         context.CaseDialogueComments.Remove(comment);
         await context.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Acknowledges a dialogue comment. Server stamps <c>AcknowledgedDate</c> via
+    /// <see cref="TimeProvider"/> and resolves <c>AcknowledgedBy</c> from the authenticated user.
+    /// Idempotent: re-acknowledging is a no-op that returns the current entity.
+    /// OData route: POST /odata/CaseDialogueComments({key})/Default.Acknowledge
+    /// </summary>
+    /// <param name="key">The comment identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    [HttpPost]
+    public async Task<IActionResult> Acknowledge([FromODataUri] int key, CancellationToken ct = default)
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync(ct);
+        var comment = await context.CaseDialogueComments.FindAsync([key], ct);
+
+        if (comment is null)
+        {
+            return Problem(
+                title: "Not found",
+                detail: $"No dialogue comment exists with ID {key}.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        if (!comment.IsAcknowledged)
+        {
+            var userId = GetAuthenticatedUserId();
+            comment.IsAcknowledged = true;
+            comment.AcknowledgedDate = TimeProvider.GetUtcNow().UtcDateTime;
+            comment.AcknowledgedBy = await ResolveAuthorNameAsync(userId);
+            await context.SaveChangesAsync(ct);
+        }
+
+        return Updated(comment);
     }
 }

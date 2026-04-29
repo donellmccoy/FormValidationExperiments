@@ -9,6 +9,37 @@ using Microsoft.OData.Client;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// Shared base for OData-backed client services. Owns the typed OData client
+/// (<see cref="EctODataContext"/>), the underlying <see cref="HttpClient"/>, and shared
+/// <see cref="JsonSerializerOptions"/>, plus helpers for paged queries and ProblemDetails-aware
+/// error translation.
+/// </summary>
+/// <remarks>
+/// <para><b>Convention — OData client vs. HttpClient:</b></para>
+/// <list type="bullet">
+///   <item>
+///     <description>
+///       <b><see cref="Context"/> (typed OData client)</b> — preferred for reads/queries
+///       expressible via <c>$filter</c>, <c>$top</c>, <c>$skip</c>, <c>$expand</c>,
+///       <c>$count</c>, navigation collections, and tracked entity materialization.
+///     </description>
+///   </item>
+///   <item>
+///     <description>
+///       <b><see cref="HttpClient"/></b> — used for what the typed client cannot model
+///       cleanly: bound actions, <c>$batch</c>, multipart uploads, and arbitrary <c>PATCH</c>
+///       payloads. Failed responses must flow through <see cref="EnsureSuccessOrThrowAsync"/>
+///       so the caller observes a single typed <see cref="EctApiException"/> with parsed
+///       <see cref="ApiProblemDetails"/>.
+///     </description>
+///   </item>
+/// </list>
+/// <para>
+/// New derived services should follow this split rather than mixing approaches in the same
+/// operation. Cancellation tokens must be propagated on every async path.
+/// </para>
+/// </remarks>
 public abstract class ODataServiceBase
 {
     protected readonly EctODataContext Context;

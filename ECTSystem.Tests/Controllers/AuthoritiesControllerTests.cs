@@ -195,4 +195,23 @@ public class AuthoritiesControllerTests : ControllerTestBase
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(404, obj.StatusCode);
     }
+
+    // ────────────────────────── Authorization regression ──────────────────────────────
+
+    [Theory]
+    [InlineData(nameof(AuthoritiesController.Post), new[] { typeof(CreateAuthorityDto), typeof(CancellationToken) })]
+    [InlineData(nameof(AuthoritiesController.Patch), new[] { typeof(int), typeof(Delta<LineOfDutyAuthority>), typeof(CancellationToken) })]
+    [InlineData(nameof(AuthoritiesController.Delete), new[] { typeof(int), typeof(CancellationToken) })]
+    public void AuthorityWriteEndpoints_RequireAdminRole(string methodName, Type[] parameterTypes)
+    {
+        var method = typeof(AuthoritiesController).GetMethod(methodName, parameterTypes);
+        Assert.NotNull(method);
+
+        var attr = method!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), inherit: false)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .SingleOrDefault();
+
+        Assert.NotNull(attr);
+        Assert.Equal("Admin", attr!.Roles);
+    }
 }

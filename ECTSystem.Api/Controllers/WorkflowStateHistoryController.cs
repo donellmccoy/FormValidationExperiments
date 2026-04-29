@@ -70,6 +70,12 @@ public class WorkflowStateHistoryController : ODataControllerBase
 
         var entry = WorkflowStateHistoryDtoMapper.ToEntity(dto);
 
+        // §2.7 (N1): Audit timestamps are server-authoritative. Overwrite any
+        // client-supplied EnteredDate so callers cannot backdate or forward-date
+        // history records.
+        entry.EnteredDate = TimeProvider.GetUtcNow().UtcDateTime;
+        entry.ExitDate = null;
+
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
         context.WorkflowStateHistories.Add(entry);
         await context.SaveChangesAsync(ct);
@@ -111,8 +117,11 @@ public class WorkflowStateHistoryController : ODataControllerBase
         }
 
         var originalRowVersion = existing.RowVersion;
-        delta.TryGetPropertyValue(nameof(WorkflowStateHistory.ExitDate), out var exitDateValue);
-        existing.ExitDate = (DateTime?)exitDateValue;
+
+        // §2.7 (N1): ExitDate is server-authoritative. The client must signal the
+        // close-out by including ExitDate in the PATCH payload, but the supplied
+        // value is ignored — we always stamp the current TimeProvider value.
+        existing.ExitDate = TimeProvider.GetUtcNow().UtcDateTime;
 
         // Use client-provided RowVersion for optimistic concurrency check
         context.Entry(existing).Property(e => e.RowVersion).OriginalValue = originalRowVersion;
