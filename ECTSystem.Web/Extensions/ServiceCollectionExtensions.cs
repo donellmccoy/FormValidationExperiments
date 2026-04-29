@@ -362,7 +362,6 @@ public static class ServiceCollectionExtensions
         var container = new EdmEntityContainer(ns, "Default");
         container.AddEntitySet("Cases", caseType);
         container.AddEntitySet("Members", memberType);
-        container.AddEntitySet("Notifications", notificationType);
         container.AddEntitySet("Authorities", authorityType);
         container.AddEntitySet("Documents", documentType);
         container.AddEntitySet("Appeals", appealType);

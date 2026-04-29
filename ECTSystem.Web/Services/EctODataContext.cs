@@ -68,9 +68,6 @@ public class EctODataContext : DataServiceContext
     public DataServiceQuery<Bookmark> Bookmarks
         => CreateQuery<Bookmark>("Bookmarks");
 
-    public DataServiceQuery<Notification> Notifications
-        => CreateQuery<Notification>("Notifications");
-
     public DataServiceQuery<LineOfDutyAppeal> Appeals
         => CreateQuery<LineOfDutyAppeal>("Appeals");
 
