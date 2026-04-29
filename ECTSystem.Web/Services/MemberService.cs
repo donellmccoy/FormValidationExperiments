@@ -89,8 +89,12 @@ public class MemberService : ODataServiceBase, IMemberService
         ["Gen"] = "O-10",
     };
 
-    public MemberService(EctODataContext context, HttpClient httpClient, ILogger<MemberService> logger)
-        : base(context, httpClient, logger) { }
+    public MemberService(
+        EctODataContext context,
+        HttpClient httpClient,
+        ILogger<MemberService> logger,
+        [Microsoft.Extensions.DependencyInjection.FromKeyedServices(ECTSystem.Web.Extensions.ServiceCollectionExtensions.ODataJsonOptionsKey)] System.Text.Json.JsonSerializerOptions jsonOptions)
+        : base(context, httpClient, logger, jsonOptions) { }
 
     /// <summary>
     /// Searches members across name, rank, unit, service number, pay grade (via rank lookup),

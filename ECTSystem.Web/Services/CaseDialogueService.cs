@@ -27,8 +27,12 @@ namespace ECTSystem.Web.Services;
 /// </remarks>
 public class CaseDialogueService : ODataServiceBase, ICaseDialogueService
 {
-    public CaseDialogueService(EctODataContext context, HttpClient httpClient, ILogger<CaseDialogueService> logger)
-        : base(context, httpClient, logger) { }
+    public CaseDialogueService(
+        EctODataContext context,
+        HttpClient httpClient,
+        ILogger<CaseDialogueService> logger,
+        [Microsoft.Extensions.DependencyInjection.FromKeyedServices(ECTSystem.Web.Extensions.ServiceCollectionExtensions.ODataJsonOptionsKey)] System.Text.Json.JsonSerializerOptions jsonOptions)
+        : base(context, httpClient, logger, jsonOptions) { }
 
     public async Task<PagedResult<CaseDialogueComment>> GetCommentsAsync(int caseId, int top = 20, int skip = 0, CancellationToken ct = default)
     {

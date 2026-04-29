@@ -31,8 +31,12 @@ namespace ECTSystem.Web.Services;
 /// </remarks>
 public class WorkflowHistoryService : ODataServiceBase, IWorkflowHistoryService
 {
-    public WorkflowHistoryService(EctODataContext context, HttpClient httpClient, ILogger<WorkflowHistoryService> logger)
-        : base(context, httpClient, logger) { }
+    public WorkflowHistoryService(
+        EctODataContext context,
+        HttpClient httpClient,
+        ILogger<WorkflowHistoryService> logger,
+        [Microsoft.Extensions.DependencyInjection.FromKeyedServices(ECTSystem.Web.Extensions.ServiceCollectionExtensions.ODataJsonOptionsKey)] System.Text.Json.JsonSerializerOptions jsonOptions)
+        : base(context, httpClient, logger, jsonOptions) { }
 
     public async Task<ODataServiceResult<WorkflowStateHistory>> GetWorkflowStateHistoriesAsync(
         int caseId, string? filter = null, int? top = null, int? skip = null,

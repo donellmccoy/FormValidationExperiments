@@ -33,12 +33,37 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Web-default (camelCase) <see cref="JsonSerializerOptions"/> singleton key
+    /// used by minimal-API / MVC client paths and any UI code that round-trips
+    /// JSON with the non-OData server endpoints.
+    /// </summary>
+    public const string WebJsonOptionsKey = "web";
+
+    /// <summary>
+    /// OData-wire (PascalCase) <see cref="JsonSerializerOptions"/> singleton key
+    /// consumed by <see cref="Services.ODataServiceBase"/> and derived services.
+    /// Kept distinct from the web options because the OData server emits
+    /// PascalCase property names regardless of the MVC <c>AddJsonOptions</c>
+    /// configuration.
+    /// </summary>
+    public const string ODataJsonOptionsKey = "odata";
+
     private static IServiceCollection AddJsonSerializerOptions(this IServiceCollection services)
     {
-        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        jsonOptions.Converters.Add(new JsonStringEnumConverter());
-        jsonOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        services.AddSingleton(jsonOptions);
+        var webOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        webOptions.Converters.Add(new JsonStringEnumConverter());
+        webOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        services.AddSingleton(webOptions);
+
+        var odataOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = null,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            Converters = { new JsonStringEnumConverter() }
+        };
+        services.AddKeyedSingleton(ODataJsonOptionsKey, odataOptions);
 
         return services;
     }

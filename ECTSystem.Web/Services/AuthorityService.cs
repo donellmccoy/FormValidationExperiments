@@ -28,8 +28,12 @@ namespace ECTSystem.Web.Services;
 /// </remarks>
 public class AuthorityService : ODataServiceBase, IAuthorityService
 {
-    public AuthorityService(EctODataContext context, HttpClient httpClient, ILogger<AuthorityService> logger)
-        : base(context, httpClient, logger) { }
+    public AuthorityService(
+        EctODataContext context,
+        HttpClient httpClient,
+        ILogger<AuthorityService> logger,
+        [Microsoft.Extensions.DependencyInjection.FromKeyedServices(ECTSystem.Web.Extensions.ServiceCollectionExtensions.ODataJsonOptionsKey)] System.Text.Json.JsonSerializerOptions jsonOptions)
+        : base(context, httpClient, logger, jsonOptions) { }
 
     /// <summary>
     /// Reconciles the authorities for <paramref name="caseId"/> against <paramref name="authorities"/>:

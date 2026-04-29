@@ -12,7 +12,12 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
-public class CaseService(EctODataContext context, HttpClient httpClient, ILogger<CaseService> logger) : ODataServiceBase(context, httpClient, logger), ICaseService
+public class CaseService(
+    EctODataContext context,
+    HttpClient httpClient,
+    ILogger<CaseService> logger,
+    [Microsoft.Extensions.DependencyInjection.FromKeyedServices(ECTSystem.Web.Extensions.ServiceCollectionExtensions.ODataJsonOptionsKey)] System.Text.Json.JsonSerializerOptions jsonOptions)
+    : ODataServiceBase(context, httpClient, logger, jsonOptions), ICaseService
 {
     private const string FullExpand = "Authorities,Appeals($expand=AppellateAuthority),Member,MEDCON,INCAP,Notifications,WorkflowStateHistories";
 
@@ -99,7 +104,7 @@ public class CaseService(EctODataContext context, HttpClient httpClient, ILogger
         };
 
         var response = await HttpClient.PostAsJsonAsync(url, body, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "POST odata/Cases/ByCurrentState", cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<ODataCountResponse<LineOfDutyCase>>(JsonOptions, cancellationToken);
 

@@ -9,10 +9,53 @@ using Radzen;
 
 namespace ECTSystem.Web.Services;
 
+/// <summary>
+/// OData client for the per-user bookmarks collection and the bookmark-scoped case projections.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Reads use the server-bound function <c>Default.Bookmarked</c> on the <c>Cases</c> set so the
+/// "current user" filter is applied server-side from the bearer token rather than being trusted
+/// from the client. Writes go through bound actions (<c>AddBookmark</c>, <c>DeleteBookmark</c>) so
+/// the body schema is enforced by the OData metadata.
+/// </para>
+/// <para>
+/// <b>Two-step <see cref="GetBookmarkedCasesByCurrentStateAsync"/></b> — Issues a first round-trip
+/// to retrieve the bookmarked case IDs, then a second POST to <c>Cases/ByCurrentState</c> with the
+/// IDs ANDed into the caller's filter. This is intentionally two trips today: <c>ByCurrentState</c>
+/// does not yet accept a <c>bookmarkedOnly</c> parameter, and the bookmarked-IDs set is bounded by
+/// the per-user UI cap. Deferred follow-up: extend the bound action with an optional
+/// <c>bookmarkedOnly: bool</c> parameter and collapse to one trip.
+/// </para>
+/// <para>
+/// <b><see cref="IsBookmarkedAsync"/> standalone vs. piggybacked</b> — <see cref="CaseService.GetCaseAsync"/>
+/// already reads the <c>X-Case-IsBookmarked</c> response header so callers that loaded the case do
+/// not need to call this method. <see cref="IsBookmarkedAsync"/> exists for callers that need the
+/// answer without loading the case; it could be tightened to <c>$top=0&amp;$count=true</c> instead of
+/// fetching a row, but the current <c>$top=1&amp;$select=Id</c> is already a single-column 1-row read.
+/// </para>
+/// <para>
+/// <b>Mutation count side-effects</b> — Add/Delete intentionally do <i>not</i> touch
+/// <see cref="BookmarkCountService"/>. Callers (pages) invoke <c>Increment()</c>/<c>Decrement()</c>
+/// only after the server call succeeds so the badge is consistent with the server state. See
+/// the §3.13 deferred follow-up for moving that orchestration into this service once the count
+/// service is rewired.
+/// </para>
+/// </remarks>
 public class BookmarkService : ODataServiceBase, IBookmarkService
 {
-    public BookmarkService(EctODataContext context, HttpClient httpClient, ILogger<BookmarkService> logger)
-        : base(context, httpClient, logger) { }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BookmarkService"/> class.
+    /// </summary>
+    /// <param name="context">The OData client context for query composition.</param>
+    /// <param name="httpClient">The named <c>OData</c> <see cref="HttpClient"/> for bound action POSTs.</param>
+    /// <param name="logger">The logger for diagnostic events.</param>
+    public BookmarkService(
+        EctODataContext context,
+        HttpClient httpClient,
+        ILogger<BookmarkService> logger,
+        [Microsoft.Extensions.DependencyInjection.FromKeyedServices(ECTSystem.Web.Extensions.ServiceCollectionExtensions.ODataJsonOptionsKey)] System.Text.Json.JsonSerializerOptions jsonOptions)
+        : base(context, httpClient, logger, jsonOptions) { }
 
     public async Task<ODataServiceResult<LineOfDutyCase>> GetBookmarkedCasesAsync(
         string? filter = null, int? top = null, int? skip = null,

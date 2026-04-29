@@ -9,6 +9,25 @@ using Microsoft.Extensions.Logging;
 /// within the same Blazor circuit/tab. Components subscribe to <see cref="OnCountChanged"/>
 /// to reactively update badge or indicator UI when bookmarks are added or removed.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>Optimistic <see cref="Increment"/> / <see cref="Decrement"/></b> — These mutators are
+/// public and adjust the badge without contacting the server. By caller convention (see
+/// <c>EditCase.razor.cs</c>, <c>CaseList.razor.cs</c>, <c>MyBookmarks.razor.cs</c>) they are
+/// invoked <i>only after</i> the corresponding <see cref="IBookmarkService"/> add/delete call
+/// returns successfully, so the badge stays consistent with server state. If a future caller
+/// breaks that convention the count will drift until the next <see cref="RefreshAsync"/>;
+/// deferred follow-up is to make the mutators <c>internal</c> and have <see cref="IBookmarkService"/>
+/// invoke them itself so the contract is enforced rather than documented.
+/// </para>
+/// <para>
+/// <b>Failure semantics</b> — <see cref="RefreshAsync"/> intentionally swallows non-cancellation
+/// exceptions and leaves the previous value in place: a stale badge is preferable to surfacing
+/// a transient API error on a non-critical UI element. <see cref="OperationCanceledException"/>
+/// is treated as caller-initiated and not logged. Other exceptions are logged at warning level
+/// with the stale count for diagnosability.
+/// </para>
+/// </remarks>
 public class BookmarkCountService
 {
     /// <summary>

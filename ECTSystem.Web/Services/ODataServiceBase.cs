@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ECTSystem.Web.Extensions;
 using ECTSystem.Web.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OData.Client;
 
@@ -48,18 +50,22 @@ public abstract class ODataServiceBase
 
     protected readonly ILogger Logger;
 
-    protected static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = null,
-        Converters = { new JsonStringEnumConverter() }
-    };
+    /// <summary>
+    /// OData-wire (PascalCase) JSON options resolved from the keyed DI singleton
+    /// registered under <see cref="ServiceCollectionExtensions.ODataJsonOptionsKey"/>.
+    /// </summary>
+    protected JsonSerializerOptions JsonOptions { get; }
 
-    protected ODataServiceBase(EctODataContext context, HttpClient httpClient, ILogger logger)
+    protected ODataServiceBase(
+        EctODataContext context,
+        HttpClient httpClient,
+        ILogger logger,
+        [FromKeyedServices(ServiceCollectionExtensions.ODataJsonOptionsKey)] JsonSerializerOptions jsonOptions)
     {
         Context = context;
         HttpClient = httpClient;
         Logger = logger;
+        JsonOptions = jsonOptions;
     }
 
     protected async Task<(List<T> Items, int Count)> ExecutePagedQueryAsync<T>(DataServiceQuery<T> query, CancellationToken ct = default)

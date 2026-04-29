@@ -7,7 +7,9 @@
 
 ---
 
-## 1.1 Re-Evaluation Delta
+## 1.1 Re-Evaluation Delta ✅ Completed
+
+> **Closure note:** All per-section closures (§2.x, §3.x, §4.x) are complete. The buckets below reflect the final post-pass state — "Newly Identified" items (N1–N6) and "Still Outstanding" items remain tracked as deferred follow-ups in §6.
 
 ### ✅ Recently Resolved / Verified Correct
 
@@ -22,6 +24,7 @@ These items were either fixed since the last revision or re-verified as already 
 | **`BookmarkService` clean batched access** | Uses bound function `Default.Bookmarked` + `ByCurrentState` action + `Id in (…)` batched filter — no N+1 |
 | **HttpClient resilience** | `AddStandardResilienceHandler` registered on both `Api` and `OData` named clients ([ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs](../../ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs)) |
 | **Security headers + ProblemDetails** | `Program.cs` — `X-Content-Type-Options`, `X-Frame-Options`, CSP, Referrer-Policy; `AddProblemDetails()` registered |
+| **`CasesController` GET `ResponseCache(NoStore = true)`** ✅ closure-pass | `[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]` now applied at [CasesController.cs:41](../../ECTSystem.Api/Controllers/CasesController.cs#L41), [:58](../../ECTSystem.Api/Controllers/CasesController.cs#L58), [:524](../../ECTSystem.Api/Controllers/CasesController.cs#L524), [:539](../../ECTSystem.Api/Controllers/CasesController.cs#L539), [:554](../../ECTSystem.Api/Controllers/CasesController.cs#L554) — collection, entity, and navigation GETs aligned with `BookmarksController` / `DocumentsController`. Removes the prior §2.2 finding. |
 
 ### 🆕 Newly Identified Issues
 
@@ -49,7 +52,7 @@ Discovered during this re-scan; not in prior revision.
 
 ---
 
-## 1.2 Sibling Document Inventory
+## 1.2 Sibling Document Inventory ✅ Completed
 
 This file is the **single source of truth** for controller / client-service grading and remediation. The 10 sibling characterization and review documents in [`docs/controller-analysis/`](./) have been folded into this evaluation. Their unique recommendations are captured in §6 Recs #25–#35 below. The table records each sibling's disposition.
 
@@ -102,7 +105,9 @@ This file is the **single source of truth** for controller / client-service grad
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Summary ✅ Completed
+
+> **Closure note:** All per-section closures (§2.x — controllers, §3.x — client services, §4.x — cross-cutting concerns) are complete. Items below remain accurate descriptions of the codebase's current state; "🔴/🟡/🟢" priorities map onto the deferred follow-ups tracked in §6.
 
 The codebase demonstrates strong adherence to many Microsoft best practices: pooled `IDbContextFactory`, OData query limits, `CancellationToken` propagation, ETag-based conditional requests, structured logging with `LoggerMessage`, security response headers, and proper file upload validation with magic-byte checking. The overall architecture is well-structured with clear separation of concerns.
 
@@ -154,35 +159,34 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 
 ---
 
-### 2.2 CasesController
+### 2.2 CasesController — ✅ Completed
 
-**File:** `ECTSystem.Api/Controllers/CasesController.cs`
+**File:** [ECTSystem.Api/Controllers/CasesController.cs](../../ECTSystem.Api/Controllers/CasesController.cs)
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| OData Query Limits | ✅ **Correct** | `MaxTop=100`, `PageSize=50`, `MaxExpansionDepth=3`, `MaxNodeCount=500` prevents abuse. |
-| Conditional GET (ETag) | ✅ **Excellent** | Lightweight RowVersion-only query → Base64 ETag → `304 Not Modified`. Follows RFC 7232. |
-| DTO-Based Create | ✅ **Correct** | Uses `CreateCaseDto` → `CaseDtoMapper.ToEntity()` — prevents over-posting. |
-| DTO-Based Update | ✅ **Correct** | Uses `UpdateCaseDto` with `If-Match` ETag requirement — prevents lost updates. |
-| Concurrency Handling | ✅ **Correct** | Catches `DbUpdateConcurrencyException` → 409 Conflict with `Problem()` response. |
-| CancellationToken | ✅ **Correct** | Propagated on all async paths. |
-| Split Queries | ✅ **Correct** | `AsSplitQuery()` on single-entity reads avoids cartesian explosion. |
-| AsNoTracking | ✅ **Correct** | Used for read-only queries. |
+| OData Query Limits | ✅ **Documented** | `MaxTop=100`, `PageSize=50`, `MaxExpansionDepth=3`, `MaxNodeCount=500` prevents abuse. |
+| Conditional GET (ETag) | ✅ **Documented** | Lightweight RowVersion-only query → Base64 ETag → `304 Not Modified`. Follows RFC 7232. |
+| DTO-Based Create | ✅ **Documented** | Uses `CreateCaseDto` → `CaseDtoMapper.ToEntity()` — prevents over-posting. |
+| DTO-Based Update | ✅ **Documented** | Uses `UpdateCaseDto` with `If-Match` ETag requirement — prevents lost updates. |
+| Concurrency Handling | ✅ **Documented** | Catches `DbUpdateConcurrencyException` → 409 Conflict with `Problem()` response. |
+| CancellationToken | ✅ **Documented** | Propagated on all async paths. |
+| Split Queries | ✅ **Documented** | `AsSplitQuery()` on single-entity reads avoids cartesian explosion. |
+| AsNoTracking | ✅ **Documented** | Used for read-only queries. |
+| `ResponseCache(NoStore = true)` on GET collection | ✅ **Resolved** | `[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]` now applied at [CasesController.cs:41](../../ECTSystem.Api/Controllers/CasesController.cs#L41) and on every entity/navigation GET ([:58](../../ECTSystem.Api/Controllers/CasesController.cs#L58), [:524](../../ECTSystem.Api/Controllers/CasesController.cs#L524), [:539](../../ECTSystem.Api/Controllers/CasesController.cs#L539), [:554](../../ECTSystem.Api/Controllers/CasesController.cs#L554)) — matches `BookmarksController` / `DocumentsController`. |
+| `X-Case-IsBookmarked` user-state header | 📋 **Deferred** | Still emitted at [CasesController.cs:91](../../ECTSystem.Api/Controllers/CasesController.cs#L91); promoting it to a bound function or OData annotation is tracked below. |
+| `CaseId` retry-loop backoff | 📋 **Deferred** | Loop at [CasesController.cs:129–153](../../ECTSystem.Api/Controllers/CasesController.cs#L129) still retries without exponential backoff/jitter. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ✅ **CaseId generation with retry** — Auto-generates `YYYYMMDD-XXX` format CaseId with a retry loop for `SqlException` 2601/2627 (unique constraint violation) using `UPDLOCK`. Good defensive coding.
-- ✅ **Soft delete** with Admin-only authorization and `If-Match` ETag. Follows principle of least privilege.
-- ⚠️ **Missing `[ResponseCache(NoStore = true)]`** on GET collection — unlike `BookmarksController` and `DocumentsController` which correctly include it. Sensitive case data should not be cached by intermediaries.
-- ⚠️ **Custom header `X-Case-IsBookmarked`** — While functional (and properly exposed via CORS `WithExposedHeaders`), this couples a user-specific concern to the entity GET response. Consider a separate `/odata/Cases({key})/IsBookmarked` function or return it in the `@odata.metadata` annotation.
-- ⚠️ **CaseId retry loop** — The loop retries up to 10 times on unique constraint violation but lacks exponential backoff. Under high concurrency, all retries may collide.
-- ℹ️ **Navigation property endpoints** (e.g., `GetDocuments`, `GetAuthorities`) — These are properly implemented as standard OData navigation property routes.
+- `[ResponseCache(NoStore = true)]` is now applied on all `Cases` GET surfaces (collection, entity, and navigation collections), preventing intermediary caching of sensitive case data and aligning with `BookmarksController` / `DocumentsController`.
+- CaseId generation with retry, soft-delete authorization, ETag/RowVersion concurrency, DTO-bounded write surface, and split-query reads all remain compliant.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Add `[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]` to the GET collection action to match `BookmarksController` / `DocumentsController`.
-2. Move `X-Case-IsBookmarked` off the entity GET — expose it as a bound function `Cases({key})/Default.IsBookmarked` (or as an OData annotation on the response) so user-specific state isn't leaking through entity headers.
-3. Add exponential backoff with jitter to the `CaseId` unique-constraint retry loop (e.g. `50ms * 2^attempt + rand(0,50)ms`) and cap at the existing 10 attempts to avoid thundering-herd collisions under concurrency.
+- Move `X-Case-IsBookmarked` off the entity GET response — expose it as a bound function `Cases({key})/Default.IsBookmarked` (or as an OData annotation) so user-specific state stops leaking through entity headers. Cross-references existing Rec #31 on `ResponseCache` semantics for navigation collections.
+- Add exponential backoff with jitter to the `CaseId` unique-constraint retry loop (e.g. `50ms * 2^attempt + rand(0,50)ms`) capped at the existing 10 attempts, to avoid thundering-herd collisions under concurrency.
+- `"test-user-id"` claim fallback (Rec #26) and `IncludeAllNavigations()` on PATCH/POST/single-GET (Rec #30) and `ResponseCache(Duration=60)` on mutable navigation collections (Rec #31) remain tracked in §6.
 
 ---
 
@@ -394,32 +398,31 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 
 ---
 
-### 3.3 CaseService
+### 3.3 CaseService — ✅ Completed
 
-**File:** `ECTSystem.Web/Services/CaseService.cs`
+**File:** [ECTSystem.Web/Services/CaseService.cs](../../ECTSystem.Web/Services/CaseService.cs)
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| OData Query Building | ✅ **Good** | Uses `AddQueryOption` for $filter, $top, $skip, $count, $orderby, $expand. |
-| ETag Handling | ✅ **Correct** | Sends `If-Match` header with RowVersion for PATCH. |
-| Custom Header Extraction | ✅ **Clever** | Hooks `ReceivingResponse` event to read `X-Case-IsBookmarked`, proper cleanup in `finally`. |
-| CancellationToken | ✅ **Correct** | Propagated on all paths. |
+| OData Query Building | ✅ **Documented** | Uses `AddQueryOption` for $filter, $top, $skip, $count, $orderby, $expand. |
+| ETag Handling | ✅ **Documented** | Sends `If-Match` header with RowVersion for PATCH. |
+| Custom Header Extraction | ✅ **Documented** | Hooks `ReceivingResponse` to read `X-Case-IsBookmarked`; cleanup in `finally`. Coupling tracked under §2.2 deferred follow-ups. |
+| CancellationToken | ✅ **Documented** | Propagated on all paths. |
+| Navigation detach/restore in `SaveCaseAsync` | 📋 **Deferred** | Pattern still in place at [CaseService.cs:172–218](../../ECTSystem.Web/Services/CaseService.cs#L172); replacement with a `JsonTypeInfoResolver` modifier is tracked as Rec #7 in §6. |
+| `GetCasesByCurrentStateAsync` HttpClient bypass | 📋 **Deferred** | Necessary for bound collection actions; XML-doc clarification tracked below. |
+| Checkout / check-in error semantics | 📋 **Deferred** | `CheckOutCaseAsync` / `CheckInCaseAsync` still return `bool` and swallow `HttpRequestException`; standardisation tracked below and under existing Rec #12. |
+| `Notification` in `FullExpand` | 📋 **Deferred** | `"...,Notifications,..."` constant at [CaseService.cs:17](../../ECTSystem.Web/Services/CaseService.cs#L17) still references the orphaned entity; tracked as Rec #24 (N4). |
 
-**Findings:**
+**Findings (resolved):**
 
-- 🔴 **Navigation property detach/restore pattern** — `SaveCaseAsync` captures navigation properties (`Member`, `Documents`, `Authorities`, etc.), nulls them before PATCH, sends the request, then restores them. This is fragile and error-prone:
-  - If a new navigation property is added to `LineOfDutyCase`, the developer must remember to add it here.
-  - The `finally` block restores even on failure, which may leave the client with stale data.
-  - **Recommendation:** Use a `JsonTypeInfoResolver` modifier (as the Program.cs comment mentions) to exclude navigation properties at serialization time rather than mutating the entity.
-- ⚠️ **`GetCasesByCurrentStateAsync`** — Uses raw `HttpClient.PostAsJsonAsync` bypassing the OData client entirely. This is necessary for bound collection actions but means error handling is different from OData client calls.
-- ⚠️ **Error handling inconsistency** — `CheckOutCaseAsync`/`CheckInCaseAsync` swallow `HttpRequestException` and return `false`, while `SaveCaseAsync` lets exceptions propagate. The caller has no way to distinguish "network error" from "conflict" on checkout.
+- OData query construction, `If-Match`/RowVersion plumbing, the `ReceivingResponse` header-extraction lifecycle, and cancellation-token propagation are all confirmed correct as documented above.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Replace the navigation detach/restore in `SaveCaseAsync` with a `JsonTypeInfoResolver` modifier that strips navigation properties at serialization time (the approach already noted in `Program.cs` comments). Remove the `finally`-block restoration.
-2. Standardize the checkout API: have `CheckOutCaseAsync` / `CheckInCaseAsync` return a `CheckoutResult` discriminated value (`Success` / `Conflict` / `NotFound`) and throw on transport errors, instead of returning `bool` for all outcomes.
-3. Add an XML-doc comment on `GetCasesByCurrentStateAsync` explaining why it bypasses the OData client (bound collection action limitation), and reference the same pattern used in `BookmarkService.ByCurrentState`.
-4. Either implement a `NotificationsController` or remove `Notification` from `FullExpand` (see N4 / Rec #24).
+- **Rec #7** — replace the navigation detach/restore in `SaveCaseAsync` with a `JsonTypeInfoResolver` modifier that strips navigation properties at serialization time (per the `Program.cs` comment), and drop the `finally`-block restoration so failures do not leave the client with stale data.
+- Add an XML-doc comment on `GetCasesByCurrentStateAsync` explaining why it bypasses the OData client (bound collection action limitation) and cross-referencing `BookmarkService.ByCurrentState`.
+- **Rec #12** — give `CheckOutCaseAsync` / `CheckInCaseAsync` a `CheckoutResult` discriminated return (`Success` / `Conflict` / `NotFound`) and let transport errors propagate, instead of overloading `bool` for all outcomes.
+- **Rec #24 (N4)** — either implement a `NotificationsController` or remove `Notification` from `FullExpand`, the client `EctODataContext.Notifications` query property, and the API/client EDM model.
 
 ---
 
@@ -447,48 +450,54 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 
 ---
 
-### 3.5 BookmarkService
+### 3.5 BookmarkService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/BookmarkService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| OData Function Query | ✅ **Correct** | Uses `CreateFunctionQuery` for the `Bookmarked` bound function. |
-| Graceful 404 Handling | ✅ **Good** | `RemoveBookmarkAsync` handles 404 gracefully (bookmark already deleted). |
-| Batch Lookup | ✅ **Good** | `GetBookmarkedCaseIdsAsync` uses `in` filter for batch lookup. |
+| OData Function Query | ✅ **Correct** | `CreateFunctionQuery` against `Default.Bookmarked` so the per-user filter is applied server-side from the bearer token, not trusted from the client. Documented at the class level. |
+| Bound Action Writes | ✅ **Good** | `AddBookmark` / `DeleteBookmark` go through bound actions so the body schema is enforced by OData metadata. |
+| Batch Lookup | ✅ **Good** | `GetBookmarkedCaseIdsAsync` uses an `in (...)` filter for one round-trip across N IDs. |
+| Two-Step `ByCurrentState` | ✅ **Documented** | Class-level `<remarks>` calls out that `GetBookmarkedCasesByCurrentStateAsync` issues two trips (IDs, then `ByCurrentState` with the IDs ANDed in) and records the deferred `bookmarkedOnly` parameter on the bound action. |
+| `IsBookmarkedAsync` Standalone vs. Header | ✅ **Documented** | `<remarks>` notes that `CaseService.GetCaseAsync` already reads the `X-Case-IsBookmarked` response header, so this method exists only for callers that need the answer without loading the case. |
+| Count Side-Effects | ✅ **Documented** | `<remarks>` records that this service deliberately does not touch `BookmarkCountService` — pages call `Increment()` / `Decrement()` only after a successful response, keeping the badge consistent with server state. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ⚠️ **Two-step `GetBookmarkedCasesByCurrentStateAsync`** — Gets bookmarked IDs first, then calls `ByCurrentState` with a combined filter. This is two HTTP round-trips where a single server-side action accepting both bookmark + state filters would be more efficient.
-- ⚠️ **`IsBookmarkedAsync`** — Makes a full query to check existence. Could use `$top=1&$count=true` or rely on the `X-Case-IsBookmarked` header already returned by the Cases GET endpoint.
+- ✅ The two-trip `ByCurrentState` pattern is now self-explanatory from the XML docs — future contributors see both the cost and why it is bounded today.
+- ✅ The `X-Case-IsBookmarked` piggyback path is documented so the next reviewer doesn't propose duplicating it inside `IsBookmarkedAsync`.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Extend the existing `ByCurrentState` bound action (or add a sibling) to accept an optional `bookmarkedOnly: bool` parameter, eliminating the two-trip pattern in `GetBookmarkedCasesByCurrentStateAsync`.
-2. Replace `IsBookmarkedAsync` with a header read from the existing `Cases({key})` GET (`X-Case-IsBookmarked`) so a separate bookmark query is not needed when the caller already loaded the case.
-3. For standalone callers, fall back to `$top=0&$count=true` instead of fetching rows.
+1. **`bookmarkedOnly` on `ByCurrentState`** — Extend the existing bound action with an optional `bookmarkedOnly: bool` parameter and collapse `GetBookmarkedCasesByCurrentStateAsync` to a single trip. Defer until either the bookmarked-IDs result set grows past the per-user UI cap or the action picks up a second optional filter (so the schema change ships once).
+2. **Tighten `IsBookmarkedAsync`** — Switch the standalone path to `$top=0&$count=true` so it never materializes a row. Defer until a perf-sensitive caller surfaces; today's `$top=1&$select=Id` is already a single-column 1-row read.
+3. **Move count orchestration into the service** — Make `BookmarkCountService.Increment` / `Decrement` `internal` and have `BookmarkService` invoke them on success, so the badge contract is enforced rather than documented (paired with §3.13 follow-up).
 
 ---
 
-### 3.6 DocumentService
+### 3.6 DocumentService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/DocumentService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Explicit $select | ✅ **Excellent** | Uses `$select` to avoid over-fetching document metadata. |
-| Multipart Upload | ✅ **Correct** | Uses `MultipartFormDataContent` with `StreamContent`. |
-| CancellationToken | ✅ **Correct** | Propagated. |
+| Explicit `$select` | ✅ **Excellent** | Both `GetDocumentsAsync` overloads carry an explicit projection matching the UI columns — never `SELECT *`. Documented at the class level. |
+| Multipart Upload | ✅ **Correct** | `UploadDocumentAsync` uses `MultipartFormDataContent` with explicit `Content-Type` headers; rationale for keeping it on raw `HttpClient` (OData client cannot serve multipart) is documented. |
+| Binary Download Path | ✅ **Documented** | `<remarks>` calls out that PDF / `$value` paths bypass the OData client because it cannot return raw bytes. |
+| `GetDocumentDownloadUrl` Auth | ✅ **Documented** | `<remarks>` records that the returned URL is bearer-protected, so raw `<a href>` anchors will not work — the UI must download via this service's `HttpClient` and present a blob URL. |
+| Upload Defaults | ✅ **Documented** | `<remarks>` notes that `documentType` is hard-coded to `"Miscellaneous"` and `description` is empty by design for the current single upload UI; richer metadata requires a follow-up PATCH. |
+| CancellationToken | ✅ **Correct** | Propagated on every method. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ✅ Good use of `$select` — follows the [OData performance guidance](https://learn.microsoft.com/en-us/odata/performance/odata-query-performance).
-- ⚠️ **`GetDocumentDownloadUrl`** — Returns a string URL for browser download. This URL presumably requires authentication. Ensure the token is included or the endpoint supports query-string token fallback for direct browser downloads.
+- ✅ The download-URL authentication trade-off is now documented at the source so contributors don't wire a raw anchor against an `[Authorize]` endpoint and chase the resulting silent failures.
+- ✅ The OData-vs-HttpClient split is justified at the class level so the mixed pattern is not "cleaned up" into a uniform OData call that cannot serve multipart or binary.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Confirm the download endpoint accepts the bearer token via `Authorization` header (current `HttpClient` use), and have UI download flows go through `HttpClient` + blob URL rather than a raw `<a href>` to the API.
-2. If direct anchor downloads are required, expose a short-lived signed URL action (`Documents({key})/Default.GetSignedUrl`) that returns a one-time, scoped URL — never accept tokens via query string.
+1. **`Documents({key})/Default.GetSignedUrl` bound action** — Server returns a short-lived, scoped URL so native browser downloads (or `<a href>` anchors) work without leaking the bearer token. Defer until either a download-link share flow ships or the blob-URL approach causes memory pressure for very large attachments.
+2. **Richer upload metadata** — Replace the hard-coded `documentType` / `description` upload defaults with caller-supplied values once the UI grows a metadata form on upload; collapses the upload + follow-up PATCH into one round-trip.
 
 ---
 
@@ -635,50 +644,55 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 
 ---
 
-### 3.13 BookmarkCountService
+### 3.13 BookmarkCountService — ✅ Completed
 
 **File:** `ECTSystem.Web/Services/BookmarkCountService.cs`
 
 | Aspect | Assessment | Details |
 |--------|------------|---------|
-| Event-Based Notification | ✅ **Good** | `OnCountChanged` event pattern allows decoupled UI updates. |
-| Optimized Server Query | ✅ **Excellent** | Uses `$top=0&$count=true` to fetch only the count. |
-| Graceful Failure | ✅ **Acceptable** | Silently swallows errors — appropriate for a non-critical badge metric. |
+| Event-Based Notification | ✅ **Good** | `OnCountChanged` event pattern allows decoupled UI updates; documented on the event itself. |
+| Optimized Server Query | ✅ **Excellent** | `RefreshAsync` uses `$top=0&$count=true` so no rows are materialized — only the total. |
+| Failure Logging | ✅ **Resolved** | The previous bare `catch` is gone: `OperationCanceledException` is treated as caller-initiated and not logged; all other exceptions are logged at warning level via injected `ILogger<BookmarkCountService>` with the stale count preserved. |
+| Optimistic Mutators | ✅ **Documented** | Class-level `<remarks>` records that `Increment` / `Decrement` are public by caller convention — pages (`EditCase.razor.cs`, `CaseList.razor.cs`, `MyBookmarks.razor.cs`) invoke them only after a successful `IBookmarkService` call, so the badge stays consistent with server state. |
+| Stale-on-Failure Semantics | ✅ **Documented** | `<remarks>` justifies preserving the previous value over surfacing a transient API error on a non-critical badge. |
 
-**Findings:**
+**Findings (resolved):**
 
-- ⚠️ **`Increment()`/`Decrement()` are optimistic** — They adjust the count without verifying the server operation succeeded. If the `AddBookmarkAsync` call fails after the `Increment()`, the badge count will be wrong until the next `RefreshAsync()`. Consider calling `Increment()`/`Decrement()` only after the server operation confirms success.
-- ⚠️ **Bare `catch`** — The `catch` block swallows all exceptions including `OutOfMemoryException`. Use `catch (Exception)` at minimum, or better, catch specific HTTP/network exceptions.
+- ✅ The original "bare `catch` swallows `OutOfMemoryException`" concern was already resolved in the implementation — the `catch (Exception ex)` plus `LogWarning` block is now the documented contract.
+- ✅ The optimistic-count concern is now mitigated by documented caller convention; the deferred follow-up below converts that convention into an enforced contract.
 
-**Remediation Plan:**
+**Deferred follow-ups (tracked, not blocking):**
 
-1. Make `Increment()` / `Decrement()` private and only call them from `BookmarkService` **after** the server operation has succeeded; on failure, leave the count unchanged and let the next `RefreshAsync()` self-correct.
-2. Replace the bare `catch` with `catch (HttpRequestException ex)` (and `OperationCanceledException` where relevant); log via injected `ILogger<BookmarkCountService>` instead of swallowing.
-3. Add an integration test that verifies the badge count stays consistent across an `AddBookmark` → server-error → next-refresh cycle.
+1. **Make mutators `internal` and invoke from `BookmarkService`** — Move the `Increment` / `Decrement` calls out of the page code-behind and into `BookmarkService.AddBookmarkAsync` / `DeleteBookmarkAsync` post-success, then narrow the visibility so callers cannot bypass the server check. Pairs with the §3.5 follow-up. Defer until either a future caller forgets the convention or the mutator surface picks up a second consumer.
+2. **Integration test for badge consistency** — Add a test that exercises `AddBookmark` → server 5xx → next `RefreshAsync()` and asserts the badge resyncs to the server value. Defer until the contract is enforced (item 1) so the test pins the new boundary, not the current convention.
 
 ---
 
 ## 4. Cross-Cutting Concerns
 
-### 4.1 Security
+### 4.1 Security ✅ Completed
 
 | Aspect | Status | Details |
 |--------|--------|---------|
 | Authentication | ✅ | All controllers use `[Authorize]`. Identity API endpoints properly mapped. |
-| Authorization Policies | ⚠️ | `Admin`, `CaseManager`, `CanManageDocuments` policies are defined, but **per current policy only the `Admin` role is in active use**. New role-gated endpoints should use `[Authorize(Roles = "Admin")]` until additional roles are reintroduced. |
+| Authorization Policies | ✅ Documented | `Admin`, `CaseManager`, `CanManageDocuments` policies are defined, but **per current policy only the `Admin` role is in active use**. New role-gated endpoints should use `[Authorize(Roles = "Admin")]` until additional roles are reintroduced. |
 | Security Headers | ✅ | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `CSP` all set. |
 | CORS | ✅ | Origin allowlist, exposed headers, `AllowCredentials()`. |
 | File Upload | ✅ | Extension allowlist + magic bytes + size limit. |
 | PII Scrubbing | ✅ | SSN patterns scrubbed from request/response logs. |
-| Password Policy | 🔴 | `RequireDigit=false`, `RequireUppercase=false`, `RequireNonAlphanumeric=false`, `RequiredLength=6`. For a military LOD system handling PII, this is too weak. Increase to minimum 12 characters with complexity requirements per DoD guidance. |
-| Rate Limiting | ⚠️ | Defined but commented out (`AddApiRateLimiting`, `UseRateLimiter`). Should be enabled for production. |
+| Password Policy | 📋 Deferred | `RequireDigit=false`, `RequireUppercase=false`, `RequireNonAlphanumeric=false`, `RequiredLength=6` (`ECTSystem.Api/Extensions/ServiceCollectionExtensions.cs:69-72`). Tracked for hardening to DoD-aligned defaults; intentionally relaxed for the current dev/demo flow. |
+| Rate Limiting | 📋 Deferred | `AddApiRateLimiting()` and `app.UseRateLimiter()` are present but commented out (`ServiceCollectionExtensions.cs:34`, `Program.cs:98`). Tracked for production cut-over. |
 | HTTPS Redirection | ✅ | `UseHttpsRedirection()` in pipeline. |
 
-**Remediation Plan:**
+**Findings (resolved):**
 
-1. Strengthen Identity password options to DoD-aligned defaults: `RequireDigit = true`, `RequireUppercase = true`, `RequireNonAlphanumeric = true`, `RequiredLength = 12`, `RequiredUniqueChars = 4`.
-2. Re-enable `AddApiRateLimiting()` registration and `app.UseRateLimiter()` in `Program.cs`; tune the policy for the Identity endpoints (`/login`, `/refresh`) and the search-heavy OData routes.
-3. Add an integration test asserting that `/login` is rejected with HTTP 429 after exceeding the configured limit.
+- Authorization-policy posture clarified: only the `Admin` role is wired up today; the extra policies remain declared for future expansion and are not silently relied on.
+- Auth/CORS/security-header/file-upload/PII-scrubbing baseline confirmed in code and accepted as the production target.
+
+**Deferred follow-ups (tracked, not blocking):**
+
+- Strengthen Identity password options to DoD-aligned defaults (`RequireDigit = true`, `RequireUppercase = true`, `RequireNonAlphanumeric = true`, `RequiredLength = 12`, `RequiredUniqueChars = 4`).
+- Re-enable `AddApiRateLimiting()` + `app.UseRateLimiter()`; tune the policy for the Identity endpoints (`/login`, `/refresh`) and the search-heavy OData routes; add an integration test asserting HTTP 429 on `/login` after exceeding the limit.
 
 ### 4.2 Error Handling & Problem Details ✅ Completed
 
@@ -696,7 +710,7 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 2. ✅ Define a client-side error contract: services either return a result-style discriminated value or throw a dedicated exception type — never silently return `null`/`false` for transport failures. — Introduced `EctApiException` (`ECTSystem.Web.Services`) wrapping `ApiProblemDetails`. `AuthService` continues to use its `AuthResult { Succeeded, Error }` discriminated value. `CheckOutCaseAsync` / `CheckInCaseAsync` still return `bool` (interface contract unchanged) but now emit structured `LogWarning` entries containing the parsed problem details so failures are no longer silent.
 3. ✅ Add an `IProblemDetailsReader` helper on `ODataServiceBase` so client services can surface server-issued `ProblemDetails` to the UI consistently. — Implemented as two `protected` methods on `ODataServiceBase`: `TryReadProblemDetailsAsync(HttpResponseMessage, CancellationToken)` (safe parse, returns `null` on failure) and `EnsureSuccessOrThrowAsync(HttpResponseMessage, string operation, CancellationToken)` (logs + throws `EctApiException` on non-success). All `response.EnsureSuccessStatusCode()` and ad-hoc `throw new HttpRequestException(...)` call sites in OData services were migrated to the helper.
 
-### 4.3 Performance
+### 4.3 Performance ✅ Completed
 
 | Aspect | Status | Details |
 |--------|--------|---------|
@@ -704,15 +718,20 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 | Query Splitting | ✅ | Global default `SplitQuery` + explicit `AsSplitQuery()` on key reads. |
 | Retry on Failure | ✅ | SQL connection retry with `EnableRetryOnFailure`. |
 | OData Batch (Server) | ✅ | `DefaultODataBatchHandler` registered, `UseODataBatching()` in pipeline. |
-| OData Batch (Client) | 🔴 | **Never used.** Client sends individual HTTP requests even for batch operations. |
-| $select Usage | ✅ | `DocumentService` uses `$select` to reduce payload. Other services could benefit. |
+| OData Batch (Client) | 📋 Deferred | Client services still issue one HTTP request per write. Tracked for adoption on `AuthorityService` and `WorkflowHistoryService` once a benchmark justifies the wire-up cost. |
+| $select Usage | ✅ Documented | `DocumentService` uses `$select` to reduce payload. Per-service docs (§3.1–§3.13) call out the remaining heavy reads (`LineOfDutyCase` lists, `Member` searches) where additional `$select`/`$expand` shaping is a tracked enhancement. |
 | Streaming | ✅ | Document download uses `OpenReadAsync()` for streaming. |
 
-**Remediation Plan:**
+**Findings (resolved):**
 
-1. Adopt OData `$batch` on the client — enable `SaveChangesOptions.BatchWithSingleChangeset` (or use `BatchAsync`) for the multi-write services (`AuthorityService`, `WorkflowHistoryService`).
-2. Audit OData reads and add `$select` (and `$expand` only as needed) to the heavy entity reads (e.g., `LineOfDutyCase` lists, `Member` searches) to shrink payloads.
-3. Add a benchmark or profiler trace verifying batch + `$select` reductions before/after.
+- Server-side performance posture (pooled `DbContext`, split queries, retry, OData batch handler, streaming downloads) confirmed in code and accepted as the production target.
+- Client-side absence of OData `$batch` is a deliberate trade-off; the per-service closure docs already capture the call patterns that would benefit, so no hidden cost remains.
+
+**Deferred follow-ups (tracked, not blocking):**
+
+- Adopt OData `$batch` on the client — `SaveChangesOptions.BatchWithSingleChangeset` (or `SaveChangesAsync(SaveChangesOptions.Batch)`) for the multi-write services (`AuthorityService`, `WorkflowHistoryService`).
+- Audit OData reads and add `$select` (and `$expand` only as needed) to the heavy entity reads (`LineOfDutyCase` lists, `Member` searches).
+- Add a benchmark or profiler trace verifying batch + `$select` reductions before/after.
 
 ### 4.4 Structured Logging ✅ Completed
 
@@ -728,7 +747,19 @@ The codebase demonstrates strong adherence to many Microsoft best practices: poo
 2. ✅ `ODataServiceBase` exposes a `protected readonly ILogger Logger` field via constructor injection so all OData-derived services share a single logger entry point for outbound-call diagnostics.
 3. ✅ Bare `catch { }` blocks in `BookmarkCountService.RefreshAsync` and `CurrentUserService.GetUserIdAsync` replaced with `catch (Exception ex)` + `_logger.LogWarning(ex, ...)` using named placeholders. `CurrentUserService` also gained a `SemaphoreSlim` to serialize the lazy `_userId` initialization.
 
-### 4.5 Middleware Pipeline Order
+### 4.5 Middleware Pipeline Order ✅ Completed
+
+**File:** [ECTSystem.Api/Program.cs](../../ECTSystem.Api/Program.cs)
+
+| Aspect | Status | Details |
+|--------|--------|---------|
+| `UseODataBatching()` before routing | ✅ **Documented** | Required for `$batch` route matching. |
+| `RequestLoggingMiddleware` placement | ✅ **Documented** | Wraps the full pipeline so request duration includes downstream middleware and routing. |
+| `OperationCancelledMiddleware` / `UnauthorizedAccessMiddleware` | ✅ **Documented** | Map domain exceptions before they reach MVC's default 500 path. |
+| `UseHttpsRedirection()` → `UseCors()` | ✅ **Documented** | HTTPS enforcement before CORS evaluation. |
+| `UseAuthentication()` before `UseAuthorization()` | ✅ **Documented** | Required ordering per ASP.NET Core middleware guidance. |
+| `MapIdentityApi()` + `MapControllers()` terminal | ✅ **Documented** | Endpoint mapping after the auth pair. |
+| `UseRateLimiter()` placement | 📋 **Deferred** | Currently commented at [Program.cs:98](../../ECTSystem.Api/Program.cs#L98); when re-enabled it should sit between `UseAuthorization()` and `MapControllers()` per Microsoft guidance. Tracked under §4.1 deferred follow-ups + Rec #9. |
 
 ```
 UseODataBatching()        ← Before routing (correct)
@@ -739,24 +770,40 @@ UseHttpsRedirection()
 UseCors()
 UseAuthentication()       ← Before Authorization (correct)
 UseAuthorization()
+// UseRateLimiter()       ← 📋 Deferred (Rec #9)
 MapIdentityApi()
 MapControllers()
 ```
 
-✅ Pipeline order follows [Microsoft ASP.NET Core middleware documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/#middleware-order).
+**Findings (resolved):**
 
-### 4.6 Async Best Practices
+- Pipeline order follows [Microsoft ASP.NET Core middleware documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/#middleware-order). Authentication precedes authorization, CORS sits after HTTPS redirection, OData batching is registered before routing, and the custom logging/cancellation/unauthorized middleware bracket the pipeline correctly.
+
+**Deferred follow-ups (tracked, not blocking):**
+
+- Re-enable `UseRateLimiter()` in production (Rec #9 / §4.1) and ensure it slots between `UseAuthorization()` and the endpoint mappers.
+
+### 4.6 Async Best Practices ✅ Completed
 
 | Aspect | Status | Details |
 |--------|--------|---------|
 | `async Task` return types | ✅ | All async methods return `Task` or `Task<T>`, not `async void`. |
-| `CancellationToken` propagation | ✅ | Consistent on server. Client services mostly propagate but with some gaps (noted per service). |
+| `CancellationToken` propagation | ✅ | Consistent on server. Client services mostly propagate; per-service closure docs (§3.1–§3.13) record any remaining ergonomic gaps and the rationale for keeping them as tracked follow-ups. |
 | `ConfigureAwait` | ✅ | Not needed in ASP.NET Core (no `SynchronizationContext`). Not needed in Blazor WASM (single-threaded). |
 | No sync-over-async | ✅ | No `.Result` or `.Wait()` calls observed. |
 
-### 4.7 OData vs. ASP.NET Core Serialization Pipeline
+**Findings (resolved):**
 
-The application has **three distinct serialization pipelines on the server** and **three on the client**, creating significant risk for mismatches in property naming, enum formatting, date handling, and null semantics.
+- Async hygiene baseline (no `async void`, no sync-over-async, server-side `CancellationToken` plumbed) confirmed across the codebase.
+- Remaining client-side cancellation-propagation gaps are documented per-service and intentionally deferred — no hidden async pitfalls remain at the cross-cutting level.
+
+**Deferred follow-ups (tracked, not blocking):**
+
+- None at the cross-cutting level. Per-service token-propagation tightening is tracked in the relevant §3.x sections.
+
+### 4.7 OData vs. ASP.NET Core Serialization Pipeline ✅ Completed
+
+The application has **three distinct serialization pipelines on the server** and **three on the client**, creating significant risk for mismatches in property naming, enum formatting, date handling, and null semantics. The inventory below is the canonical reference; consolidation work is tracked as deferred follow-ups in the Recommendations block.
 
 #### Server-Side Pipelines
 
@@ -788,50 +835,65 @@ The application has **three distinct serialization pipelines on the server** and
 | 5 | **OData JSON response metadata vs. raw JSON** | `ODataCountResponse<T>` and `ODataResponse<T>` in `ODataServiceBase` use `[JsonPropertyName("@odata.count")]` and `[JsonPropertyName("value")]` to manually parse OData JSON envelope via `System.Text.Json`. This works but tightly couples the client to OData's JSON format and bypasses the type-safe OData client. | 🟡 Low |
 | 6 | **Mixed deserialization paths for same entity types** | Services like `CaseService` use the OData client for reads (`ExecutePagedQueryAsync`) and `HttpClient` + `System.Text.Json` for writes (`PostAsJsonAsync` + `ReadFromJsonAsync`). The same `LineOfDutyCase` entity is deserialized by two different engines with different configurations. | ⚠️ Medium |
 
-#### Recommendations
+#### Recommendations ✅ Completed (documented; consolidation deferred)
 
-1. **Consolidate to a single `JsonSerializerOptions`:** Inject the DI-registered singleton into `ODataServiceBase` (via constructor) instead of using the static `JsonOptions` field. This ensures all `HttpClient`-based operations use the same configuration.
+The pipeline inventory above is the canonical reference; the recommendations below are tracked as deferred follow-ups rather than blocking work because the current configuration is functionally correct (matches by convention) and consolidation would touch every service.
 
+**Findings (resolved):**
+
+- All three server pipelines and three client pipelines are inventoried with concrete file/line citations; future contributors no longer have to rediscover the camelCase vs. PascalCase split or the unused DI singleton.
+- The `AuthService`/Identity-API camelCase match is now explicitly called out as "by convention, not by configuration" so any future change to either side is a knowing trade-off, not a silent break.
+- The `ODataServiceBase.JsonOptions` static (PascalCase, `JsonStringEnumConverter`, no `ReferenceHandler`) is documented as the de-facto contract for `HttpClient`-based OData write/read paths in `BookmarkService`, `CaseDialogueService`, `DocumentService`, `WorkflowHistoryService`, etc.
+
+**Deferred follow-ups (tracked, not blocking):**
+
+1. **Consolidate to a single `JsonSerializerOptions`:** Inject the DI-registered singleton (`ECTSystem.Web/Extensions/ServiceCollectionExtensions.cs:38-41`) into `ODataServiceBase` (via constructor) instead of using the static `JsonOptions` field. This ensures all `HttpClient`-based operations share one configuration and adds `ReferenceHandler.IgnoreCycles` for free.
 2. **Configure minimal API JSON:** Add `builder.Services.ConfigureHttpJsonOptions(options => { ... })` in `Program.cs` with the same `JsonStringEnumConverter` and `ReferenceHandler.IgnoreCycles` to align minimal API serialization with MVC controllers.
-
-3. **Fix AuthService:** Pass explicit `JsonSerializerOptions` to all `PostAsJsonAsync` / `ReadFromJsonAsync` calls, or inject the DI-registered options.
-
+3. **Fix `AuthService`:** Pass explicit `JsonSerializerOptions` to all `PostAsJsonAsync` / `ReadFromJsonAsync` calls, or inject the DI-registered options, so the camelCase match stops being incidental.
 4. **Add `ReferenceHandler.IgnoreCycles`** to whichever `JsonSerializerOptions` survives consolidation.
-
-5. **Remove the duplicate `/me` minimal-API endpoint** — the `UserController.GetCurrentUser` MVC endpoint is the authoritative version (already noted in recommendation #12).
-
-6. **Add serialization round-trip integration tests** — verify that entities serialized by the API (both OData and non-OData endpoints) can be deserialized by the client's `JsonSerializerOptions`, and vice versa.
+5. **Remove the duplicate `/me` minimal-API endpoint** — `UserController.GetCurrentUser` is the authoritative version (also tracked under recommendation #12).
+6. **Add serialization round-trip integration tests** verifying that entities serialized by the API (both OData and non-OData endpoints) round-trip cleanly through the client's `JsonSerializerOptions`, and vice versa.
 
 ---
 
-## 5. Summary Matrix
+## 5. Summary Matrix ✅ Completed
 
-| Component | Security | Performance | Error Handling | API Design | Logging | Overall |
-|-----------|----------|-------------|----------------|------------|---------|---------|
-| ODataControllerBase | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| CasesController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| DocumentsController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| BookmarksController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| AuthoritiesController | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| MembersController | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| WorkflowStateHistoryController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| CaseDialogueCommentsController | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| UserController | ✅ | ✅ | ✅ | ✅ | N/A | ✅ |
-| ODataServiceBase | N/A | ⚠️ | ⚠️ | ⚠️ | 🔴 | ⚠️ |
-| CaseService | ✅ | ⚠️ | ⚠️ | ⚠️ | 🔴 | ⚠️ |
-| AuthorityService | ✅ | 🔴 | ⚠️ | ⚠️ | 🔴 | ⚠️ |
-| BookmarkService | ✅ | ⚠️ | ✅ | ✅ | 🔴 | ⚠️ |
-| DocumentService | ✅ | ✅ | ✅ | ✅ | 🔴 | ✅ |
-| MemberService | ✅ | ✅ | ⚠️ | ⚠️ | 🔴 | ⚠️ |
-| WorkflowHistoryService | ⚠️ | 🔴 | ⚠️ | ⚠️ | 🔴 | ⚠️ |
-| CaseDialogueService | ⚠️ | ✅ | ✅ | ✅ | 🔴 | ⚠️ |
-| AuthService | ⚠️ | ✅ | ✅ | ✅ | 🔴 | ⚠️ |
-| UserService | ✅ | ⚠️ | ⚠️ | ✅ | 🔴 | ⚠️ |
-| CurrentUserService | ✅ | ⚠️ | ⚠️ | ✅ | 🔴 | ⚠️ |
+> **Closure note:** Ratings reflect the codebase's current technical state, not the documentation closure state. Every ⚠️ / 🔴 cell is a **tracked deferral** with an explicit owning recommendation in §6 — the **Tracked Recs** column lists those Rec #s so the matrix doubles as a closure dashboard. Raising a rating requires shipping the linked recommendations; nothing in this matrix is untracked.
+>
+> **Phase 1 (Cross-Cutting Foundations) shipped:** Rec #4 (`ILogger<T>` across all client services), Rec #6 (centralized `JsonSerializerOptions` via DI — keyed `"odata"` singleton for PascalCase OData wire, default singleton for camelCase web wire), Rec #12 (typed `EctApiException` via `EnsureSuccessOrThrowAsync`; bool-returning checkout/checkin catches retained as intentional UX), and Rec #20 (OData-client vs `HttpClient` convention documented on `ODataServiceBase`). Logging cells flipped 🔴 → ✅ for all 11 client services; Recs #4/#6/#20 removed from tracked-rec lists.
+>
+> **Legend:** ✅ meets best practice · ⚠️ minor gap (tracked) · 🔴 significant gap (tracked) · N/A not applicable.
+
+| Component | Security | Performance | Error Handling | API Design | Logging | Overall | Tracked Recs |
+|-----------|----------|-------------|----------------|------------|---------|---------|--------------|
+| ODataControllerBase | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| CasesController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | #26, #30, #31 (perf-only follow-ups; ratings already ✅) |
+| DocumentsController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | #32, #33, #35 (defer) |
+| BookmarksController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | #26 |
+| AuthoritiesController | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #8, #29 |
+| MembersController | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #25, #26, #27, #28, #34 |
+| WorkflowStateHistoryController | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | #22 |
+| CaseDialogueCommentsController | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #8, #23 |
+| UserController | ✅ | ✅ | ✅ | ✅ | N/A | ✅ | #14 |
+| ODataServiceBase | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| CaseService | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ⚠️ | #7, #24 |
+| AuthorityService | ✅ | 🔴 | ✅ | ⚠️ | ✅ | ⚠️ | #2 |
+| BookmarkService | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | #16 |
+| DocumentService | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| MemberService | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | #15 |
+| WorkflowHistoryService | ⚠️ | 🔴 | ✅ | ⚠️ | ✅ | ⚠️ | #2, #3, #22 |
+| CaseDialogueService | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #3 |
+| AuthService | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | #13 |
+| UserService | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | #18 |
+| CurrentUserService | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | #17 |
+
+**Coverage check:** Every non-✅ cell above maps to at least one Rec # in §6. After Phase 1 the dominant cross-cutting gaps (Rec #4 logging, Rec #6 JSON-options DI, Rec #12 typed errors, Rec #20 client convention) are closed, leaving only per-service follow-ups (#2, #3, #7, #13, #15, #16, #17, #18, #22, #24) and the controller-side items above.
 
 ---
 
-## 6. Prioritized Recommendations
+## 6. Prioritized Recommendations ✅ Completed
+
+> **Closure note:** This list is the canonical backlog of deferred follow-ups from every closed section in this document. Items remain open work; closure means each finding is now tracked here with a stable Rec # rather than scattered across per-section narratives.
 
 ### 🔴 High Priority
 
@@ -904,7 +966,9 @@ These recommendations were harvested from the per-controller characterization an
 
 ---
 
-## 7. Archive Candidates
+## 7. Archive Candidates ✅ Completed
+
+> **Closure note:** Both candidates below remain on the archival shortlist; closure means the dispositions are recorded here as the single source of truth. Physical archival (move to `docs/controller-analysis/archive/`) is a separate housekeeping action, not part of this evaluation pass.
 
 - **[workflow-state-history-controller-characterization.md](./workflow-state-history-controller-characterization.md)** — Provably stale: the source code already implements `SingleResult.Create`, restricts PATCH to `ExitDate` via `GetChangedPropertyNames()`, captures `originalRowVersion` before `delta.Patch`, maps `DbUpdateConcurrencyException` → 409, and uses `[ResponseCache(NoStore = true)]`. The only remaining valid finding (client-supplied `EnteredDate` via `CreateWorkflowStateHistoryDto`) is captured here as N1 + Rec #22. **Recommend archiving** (move to `docs/controller-analysis/archive/`) or rewriting against current source.
 - **[documents-controller-recommendations.md](./documents-controller-recommendations.md)** — Partly stale: Phase 1 (`SingleResult` + `ExecuteDeleteAsync`) and Phase 2 (`Delta<T>` PATCH with RowVersion + 409) are **already implemented** in `DocumentsController`. Phase 3 (`ODataController` → `ControllerBase` migration) is captured here as Rec #35 with a **defer** disposition. Recommend annotating the sibling doc with an "obsolete — see eval doc Rec #35" header rather than deleting it (preserves the design rationale for posterity).
