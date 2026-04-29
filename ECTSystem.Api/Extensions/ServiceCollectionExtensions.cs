@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using ECTSystem.Api.Logging;
 using ECTSystem.Api.Services;
@@ -170,7 +171,16 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddBlobStorage(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("BlobStorage");
-        services.AddSingleton(_ => new BlobServiceClient(connectionString));
+        services.AddSingleton(_ =>
+        {
+            if (Uri.TryCreate(connectionString, UriKind.Absolute, out var serviceUri) &&
+                (serviceUri.Scheme == Uri.UriSchemeHttp || serviceUri.Scheme == Uri.UriSchemeHttps))
+            {
+                return new BlobServiceClient(serviceUri, new DefaultAzureCredential());
+            }
+
+            return new BlobServiceClient(connectionString);
+        });
         services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
         services.AddHostedService<BlobContainerInitializer>();
 
