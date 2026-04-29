@@ -13,6 +13,10 @@ SET NOCOUNT ON;
 
 BEGIN TRANSACTION;
 
+-- Break Cases -> INCAPDetails / MEDCONDetails FK references so the detail rows can be deleted.
+UPDATE dbo.Cases SET INCAPId = NULL WHERE INCAPId IS NOT NULL;
+UPDATE dbo.Cases SET MEDCONId = NULL WHERE MEDCONId IS NOT NULL;
+
 -- Children first (FK-safe order)
 DELETE FROM dbo.CaseDialogueComments;
 DELETE FROM dbo.AuditComments;
@@ -22,7 +26,6 @@ DELETE FROM dbo.Appeals;
 DELETE FROM dbo.Authorities;
 DELETE FROM dbo.INCAPDetails;
 DELETE FROM dbo.MEDCONDetails;
-DELETE FROM dbo.Form348;
 DELETE FROM dbo.Notifications;
 DELETE FROM dbo.WorkflowStateHistory;
 DELETE FROM dbo.Bookmarks;
@@ -40,7 +43,6 @@ DECLARE c CURSOR LOCAL FAST_FORWARD FOR
         ('Authorities'),
         ('INCAPDetails'),
         ('MEDCONDetails'),
-        ('Form348'),
         ('Notifications'),
         ('WorkflowStateHistory'),
         ('Bookmarks'),
