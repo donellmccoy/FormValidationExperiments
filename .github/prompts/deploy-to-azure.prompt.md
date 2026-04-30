@@ -60,15 +60,18 @@ Deploy **both** the API (ASP.NET Core OData → Azure App Service) and the Web f
 	Compress-Archive -Path ./publish-api/* -DestinationPath ./ectsystem-api.zip -Force
 	```
 
-5. **Deploy** the API zip to App Service:
+5. **Deploy** the API zip to App Service. **Always pass `--async true`** — the synchronous mode hangs indefinitely at "Warming up Kudu before deployment." on this Linux App Service (verified 2026-04-29, deployment id `456dc2b2-ce53-4af1-a3be-78a3f1ee16ca`). The async call returns a deployment id; poll until `RuntimeSuccessful`:
 
 	```powershell
 	az webapp deploy `
 	  --name app-ectsystem-api-dev `
 	  --resource-group rg-ectsystem-dev `
 	  --src-path ./ectsystem-api.zip `
-	  --type zip
+	  --type zip `
+	  --async true
 	```
+
+	Typical timing: Building ~1s → Build successful ~17s → Starting site ~33–96s → `RuntimeSuccessful` ~112s. If the terminal does hang, kill it and re-run with `--async true`.
 
 6. **Smoke-test** the API:
 

@@ -390,3 +390,4 @@ api-logs.zip
 .env
 *.lscache
 publish-api/
+publish-web/
