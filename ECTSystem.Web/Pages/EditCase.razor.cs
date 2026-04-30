@@ -384,15 +384,7 @@ public partial class EditCase : ComponentBase, IDisposable
             _loadedCaseId = CaseId;
 
             // Load auth token for RadzenUpload Authorization header
-            try
-            {
-                var token = await LocalStorage.GetItemAsStringAsync("accessToken");
-                _documents.AuthToken = !string.IsNullOrEmpty(token) ? $"Bearer {token}" : string.Empty;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to load auth token for document uploads");
-            }
+            await RefreshUploadAuthTokenAsync();
         }
         catch (OperationCanceledException)
         {

@@ -1597,6 +1597,7 @@ else
                                                       Accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
                                                       MaxFileSize="10000000"
                                                       Disabled="@(_lineOfDutyCase?.Id is null or 0)"
+                                                      Change="@OnUploadChange"
                                                       Progress="@OnUploadProgress"
                                                       Complete="@OnUploadComplete"
                                                       Error="@OnUploadError">

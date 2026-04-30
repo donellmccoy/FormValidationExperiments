@@ -191,6 +191,36 @@ public partial class EditCase
     }
 
     /// <summary>
+    /// Re-reads the access token from local storage and updates the cached
+    /// <c>Authorization</c> header value used by <see cref="Radzen.Blazor.RadzenUpload"/>.
+    /// Required because the <see cref="Handlers.AuthorizationMessageHandler"/> can refresh
+    /// the JWT silently on any HttpClient 401, leaving the cached upload header stale.
+    /// </summary>
+    private async Task RefreshUploadAuthTokenAsync()
+    {
+        try
+        {
+            var token = await LocalStorage.GetItemAsStringAsync("accessToken");
+            _documents.AuthToken = !string.IsNullOrEmpty(token) ? $"Bearer {token}" : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to refresh auth token for document uploads");
+        }
+    }
+
+    /// <summary>
+    /// Handles the <c>RadzenUpload.Change</c> event (fired when files are selected).
+    /// Refreshes the cached Authorization header so the immediately-following XHR
+    /// upload (Auto="true") sends the most recent access token.
+    /// </summary>
+    private async Task OnUploadChange(UploadChangeEventArgs args)
+    {
+        await RefreshUploadAuthTokenAsync();
+        StateHasChanged();
+    }
+
+    /// <summary>
     /// Handles the <c>RadzenUpload.Progress</c> event to show upload progress.
     /// </summary>
     private void OnUploadProgress(UploadProgressArgs args)

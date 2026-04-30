@@ -37,6 +37,7 @@ public partial class EditCase
 
         if (index == OuterDocumentsTabIndex)
         {
+            await RefreshUploadAuthTokenAsync();
             _documentsGrid?.Reload();
             await TryFocusAsync(_documentsSearchBox);
         }
