@@ -382,7 +382,10 @@ public class CasesController : ODataControllerBase
 
         LoggingService.CaseCheckedIn(key);
 
-        return NoContent();
+        // Return the refreshed entity so the client can update its in-memory copy with the
+        // new RowVersion and cleared checkout fields. Mirrors the Checkout action and
+        // prevents stale-token 409s on subsequent operations from the same client.
+        return Ok(existing);
     }
 
     /// <summary>

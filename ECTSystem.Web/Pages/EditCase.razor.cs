@@ -706,6 +706,7 @@ public partial class EditCase : ComponentBase, IDisposable
                 return;
             }
 
+            await SetBusyAsync($"Removing bookmark for case {lodCase.CaseId}...");
             try
             {
                 var bookmarkId = _previousCasesBookmarkedIds[lodCase.Id];
@@ -718,11 +719,15 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 Logger.LogWarning(ex, "Failed to remove bookmark for case {CaseId}", lodCase.Id);
             }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
         }
         else
         {
             _previousCasesAnimatingIds.Add(lodCase.Id);
-            StateHasChanged();
+            await SetBusyAsync($"Adding bookmark for case {lodCase.CaseId}...");
 
             try
             {
@@ -734,6 +739,10 @@ public partial class EditCase : ComponentBase, IDisposable
             catch (Exception ex)
             {
                 Logger.LogWarning(ex, "Failed to add bookmark for case {CaseId}", lodCase.Id);
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
             }
 
             await Task.Delay(800);
@@ -765,7 +774,16 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var updated = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
+            await SetBusyAsync($"Checking out case {lodCase.CaseId}...");
+            LineOfDutyCase updated;
+            try
+            {
+                updated = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
 
             if (updated is not null)
             {
@@ -837,8 +855,18 @@ public partial class EditCase : ComponentBase, IDisposable
                         break;
 
                     case "checkin":
-                        var success = await CaseService.CheckInCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
-                        if (success)
+                        await SetBusyAsync($"Checking in case {lodCase.CaseId}...");
+                        LineOfDutyCase checkedIn;
+                        try
+                        {
+                            checkedIn = await CaseService.CheckInCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
+                        }
+                        finally
+                        {
+                            await SetBusyAsync(isBusy: false);
+                        }
+
+                        if (checkedIn is not null)
                         {
                             Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
                             NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
@@ -1446,7 +1474,7 @@ public partial class EditCase : ComponentBase, IDisposable
         if (_bookmark.IsBookmarked)
         {
             _bookmark.IsAnimating = true;
-            StateHasChanged();
+            await SetBusyAsync($"Adding bookmark for case {_viewModel?.CaseNumber}...");
 
             try
             {
@@ -1458,6 +1486,10 @@ public partial class EditCase : ComponentBase, IDisposable
             {
                 Logger.LogWarning(ex, "Failed to add bookmark for case {CaseId}", _lineOfDutyCase.Id);
                 _bookmark.IsBookmarked = false; // Revert on failure
+            }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
             }
 
             await Task.Delay(800);
@@ -1479,6 +1511,7 @@ public partial class EditCase : ComponentBase, IDisposable
             }
 
             _bookmark.IsBookmarked = false;
+            await SetBusyAsync($"Removing bookmark for case {_viewModel?.CaseNumber}...");
 
             try
             {
@@ -1492,10 +1525,12 @@ public partial class EditCase : ComponentBase, IDisposable
                 Logger.LogWarning(ex, "Failed to remove bookmark for case {CaseId}", _lineOfDutyCase.Id);
                 _bookmark.IsBookmarked = true; // Revert on failure
             }
+            finally
+            {
+                await SetBusyAsync(isBusy: false);
+            }
         }
     }
-
-
 
     private async Task OnCheckInClick()
     {
@@ -1518,22 +1553,36 @@ public partial class EditCase : ComponentBase, IDisposable
             return;
         }
 
-        var success = await CaseService.CheckInCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
+        await SetBusyAsync($"Checking in case {_lineOfDutyCase.CaseId}...");
 
-        if (success)
+        try
         {
-            _lineOfDutyCase.IsCheckedOut = false;
-            _lineOfDutyCase.CheckedOutBy = string.Empty;
-            _lineOfDutyCase.CheckedOutByName = string.Empty;
-            _lineOfDutyCase.CheckedOutDate = null;
+            var checkedIn = await CaseService.CheckInCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
 
-            NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {_lineOfDutyCase.CaseId} has been checked in.", closeOnClick: true);
+            if (checkedIn is not null)
+            {
+                // Merge the refreshed scalar fields (fresh RowVersion + cleared checkout state) onto the
+                // in-memory case so any subsequent operations on this page use the current concurrency
+                // token. The server response is sparse — do not replace the whole object or loaded
+                // navigation collections (Member, MEDCON, WorkflowStateHistories, ...) would be wiped.
+                _lineOfDutyCase.RowVersion = checkedIn.RowVersion;
+                _lineOfDutyCase.IsCheckedOut = checkedIn.IsCheckedOut;
+                _lineOfDutyCase.CheckedOutBy = checkedIn.CheckedOutBy ?? string.Empty;
+                _lineOfDutyCase.CheckedOutByName = checkedIn.CheckedOutByName ?? string.Empty;
+                _lineOfDutyCase.CheckedOutDate = checkedIn.CheckedOutDate;
 
-            Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=readonly");
+                NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {_lineOfDutyCase.CaseId} has been checked in.", closeOnClick: true);
+
+                Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=readonly");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Check-In Failed", "Could not check in the case. Please try again.", closeOnClick: true);
+            }
         }
-        else
+        finally
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Check-In Failed", "Could not check in the case. Please try again.", closeOnClick: true);
+            await SetBusyAsync(isBusy: false);
         }
     }
 
@@ -1551,16 +1600,25 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var updated = await CaseService.CheckOutCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
+            await SetBusyAsync($"Checking out case {_lineOfDutyCase.CaseId}...");
 
-            if (updated is not null)
+            try
             {
-                NotificationService.Notify(NotificationSeverity.Success, "Checked Out", $"Case {_lineOfDutyCase.CaseId} has been checked out for editing.", closeOnClick: true);
-                Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=edit");
+                var updated = await CaseService.CheckOutCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
+
+                if (updated is not null)
+                {
+                    NotificationService.Notify(NotificationSeverity.Success, "Checked Out", $"Case {_lineOfDutyCase.CaseId} has been checked out for editing.", closeOnClick: true);
+                    Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=edit");
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {_lineOfDutyCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
+                }
             }
-            else
+            finally
             {
-                NotificationService.Notify(NotificationSeverity.Error, "Checkout Failed", $"Could not check out Case {_lineOfDutyCase.CaseId}. It may have been checked out by another user.", closeOnClick: true);
+                await SetBusyAsync(isBusy: false);
             }
         }
     }

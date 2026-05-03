@@ -800,8 +800,8 @@ public partial class MyBookmarks : ComponentBase, IDisposable
                         break;
 
                     case "checkin":
-                        var success = await CaseService.CheckInCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
-                        if (success)
+                        var checkedIn = await CaseService.CheckInCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
+                        if (checkedIn is not null)
                         {
                             Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
                             NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);

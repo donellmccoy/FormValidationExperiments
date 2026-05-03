@@ -394,21 +394,18 @@ public class CaseService(
     /// <summary>
     /// Checks in a case by invoking the bound OData action via <see cref="DataServiceContext"/>
     /// instead of <see cref="HttpClient"/>. The action is registered in the EDM as
-    /// <c>Cases({key})/Checkin</c> with an optional <c>RowVersion</c> body parameter.
+    /// <c>Cases({key})/Checkin</c> with an optional <c>RowVersion</c> body parameter and
+    /// returns the updated <see cref="LineOfDutyCase"/>.
     /// </summary>
-    /// <remarks>
-    /// The Checkin controller returns <c>NoContent</c>, so the non-generic
-    /// <see cref="DataServiceContext.ExecuteAsync(Uri, string, OperationParameter[])"/> overload is used.
-    /// </remarks>
-    public async Task<bool> CheckInCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
+    public async Task<LineOfDutyCase?> CheckInCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
-        var (success, statusCode) = await TryCheckinAsync(caseId, rowVersion, cancellationToken);
+        var (@case, statusCode) = await TryCheckinAsync(caseId, rowVersion, cancellationToken);
 
-        if (success)
+        if (@case is not null)
         {
-            return true;
+            return @case;
         }
 
         // Mirror the checkout retry: on a 409 stale-RowVersion conflict, fetch the
@@ -417,50 +414,50 @@ public class CaseService(
         // case is no longer checked out we cannot recover.
         if (statusCode != 409)
         {
-            return false;
+            return null;
         }
 
         var (freshRowVersion, isCheckedOut) = await TryGetFreshCheckoutStateAsync(caseId, cancellationToken);
 
         if (freshRowVersion is null || !isCheckedOut || freshRowVersion.SequenceEqual(rowVersion))
         {
-            return false;
+            return null;
         }
 
         Logger.LogInformation(
             "Retrying checkin for case {CaseId} with refreshed RowVersion after stale-token 409.",
             caseId);
 
-        var (retrySuccess, _) = await TryCheckinAsync(caseId, freshRowVersion, cancellationToken);
-        return retrySuccess;
+        var (retry, _) = await TryCheckinAsync(caseId, freshRowVersion, cancellationToken);
+        return retry;
     }
 
-    private async Task<(bool Success, int? StatusCode)> TryCheckinAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken)
+    private async Task<(LineOfDutyCase? Case, int? StatusCode)> TryCheckinAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken)
     {
         var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkin");
         var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
 
         try
         {
-            _ = await Context.ExecuteAsync(actionUri, "POST", parameters)
+            var response = await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", singleResult: true, parameters)
                 .WaitAsync(cancellationToken);
 
-            return (true, null);
+            return (response.SingleOrDefault(), null);
         }
         catch (DataServiceClientException ex)
         {
             Logger.LogWarning(ex, "Checkin (OData client) failed for case {CaseId}: status={Status}", caseId, ex.StatusCode);
-            return (false, ex.StatusCode);
+            return (null, ex.StatusCode);
         }
         catch (DataServiceRequestException ex)
         {
             Logger.LogWarning(ex, "Checkin (OData client) request failed for case {CaseId}", caseId);
-            return (false, null);
+            return (null, null);
         }
         catch (DataServiceQueryException ex)
         {
             Logger.LogWarning(ex, "Checkin (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
-            return (false, ex.Response?.StatusCode);
+            return (null, ex.Response?.StatusCode);
         }
     }
 }
