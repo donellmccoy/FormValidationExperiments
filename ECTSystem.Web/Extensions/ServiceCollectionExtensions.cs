@@ -94,9 +94,11 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddTransient<ODataLoggingHandler>();
+        services.AddTransient<ODataResponseBufferingHandler>();
         services.AddHttpClient("OData", client => client.BaseAddress = odataBaseAddress)
             .AddHttpMessageHandler<AuthorizationMessageHandler>()
             .AddHttpMessageHandler<ODataLoggingHandler>()
+            .AddHttpMessageHandler<ODataResponseBufferingHandler>()
             .AddStandardResilienceHandler(options =>
             {
                 options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);      

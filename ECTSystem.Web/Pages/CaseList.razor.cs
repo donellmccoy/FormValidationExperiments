@@ -772,7 +772,7 @@ public partial class CaseList : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseAsync(lodCase.Id, lodCase.RowVersion);
+            var success = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
 
             if (success)
             {
@@ -898,7 +898,7 @@ public partial class CaseList : ComponentBase, IDisposable
                         break;
 
                     case "checkin":
-                        var success = await CaseService.CheckInCaseAsync(lodCase.Id, lodCase.RowVersion);
+                        var success = await CaseService.CheckInCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
                         if (success)
                         {
                             Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);

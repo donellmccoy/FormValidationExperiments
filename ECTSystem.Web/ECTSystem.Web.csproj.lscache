@@ -61,6 +61,7 @@ Factories/LineOfDutyStateMachineFactory.cs
 Handlers/
  AuthorizationMessageHandler.cs
  ODataLoggingHandler.cs
+ ODataResponseBufferingHandler.cs
 Helpers/WorkflowTabHelper.cs
 Layout/MainLayout.razor.cs
 Models/

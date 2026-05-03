@@ -97,4 +97,18 @@ public interface ICaseService
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns><c>true</c> if the check-in succeeded; <c>false</c> if the server rejected the request.</returns>
     Task<bool> CheckInCaseAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks out a LOD case by invoking the bound OData action via the typed
+    /// <see cref="Microsoft.OData.Client.DataServiceContext"/> client (instead of <see cref="HttpClient"/>).
+    /// Functionally equivalent to <see cref="CheckOutCaseAsync"/>.
+    /// </summary>
+    Task<bool> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks in a LOD case by invoking the bound OData action via the typed
+    /// <see cref="Microsoft.OData.Client.DataServiceContext"/> client (instead of <see cref="HttpClient"/>).
+    /// Functionally equivalent to <see cref="CheckInCaseAsync"/>.
+    /// </summary>
+    Task<bool> CheckInCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
 }

@@ -293,4 +293,82 @@ public class CaseService(
             return false;
         }
     }
+
+    /// <summary>
+    /// Checks out a case by invoking the bound OData action via <see cref="DataServiceContext"/>
+    /// instead of <see cref="HttpClient"/>. The action is registered in the EDM as
+    /// <c>Cases({key})/Checkout</c> with an optional <c>RowVersion</c> body parameter.
+    /// </summary>
+    public async Task<bool> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkout");
+        var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
+
+        try
+        {
+            // Checkout returns Ok(existing) on the server, so request the entity back.
+            _ = await Context.ExecuteAsync<LineOfDutyCase>(
+                actionUri, "POST", singleResult: true, parameters)
+                .WaitAsync(cancellationToken);
+
+            return true;
+        }
+        catch (DataServiceClientException ex)
+        {
+            Logger.LogWarning(ex, "Checkout (OData client) failed for case {CaseId}: status={Status}", caseId, ex.StatusCode);
+            return false;
+        }
+        catch (DataServiceRequestException ex)
+        {
+            Logger.LogWarning(ex, "Checkout (OData client) request failed for case {CaseId}", caseId);
+            return false;
+        }
+        catch (DataServiceQueryException ex)
+        {
+            Logger.LogWarning(ex, "Checkout (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Checks in a case by invoking the bound OData action via <see cref="DataServiceContext"/>
+    /// instead of <see cref="HttpClient"/>. The action is registered in the EDM as
+    /// <c>Cases({key})/Checkin</c> with an optional <c>RowVersion</c> body parameter.
+    /// </summary>
+    /// <remarks>
+    /// The Checkin controller returns <c>NoContent</c>, so the non-generic
+    /// <see cref="DataServiceContext.ExecuteAsync(Uri, string, OperationParameter[])"/> overload is used.
+    /// </remarks>
+    public async Task<bool> CheckInCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
+
+        var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkin");
+        var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
+
+        try
+        {
+            _ = await Context.ExecuteAsync(actionUri, "POST", parameters)
+                .WaitAsync(cancellationToken);
+
+            return true;
+        }
+        catch (DataServiceClientException ex)
+        {
+            Logger.LogWarning(ex, "Checkin (OData client) failed for case {CaseId}: status={Status}", caseId, ex.StatusCode);
+            return false;
+        }
+        catch (DataServiceRequestException ex)
+        {
+            Logger.LogWarning(ex, "Checkin (OData client) request failed for case {CaseId}", caseId);
+            return false;
+        }
+        catch (DataServiceQueryException ex)
+        {
+            Logger.LogWarning(ex, "Checkin (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
+            return false;
+        }
+    }
 }
