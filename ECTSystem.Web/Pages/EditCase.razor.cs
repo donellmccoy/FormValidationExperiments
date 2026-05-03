@@ -765,9 +765,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
+            var updated = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
 
-            if (success)
+            if (updated is not null)
             {
                 Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=case&mode=edit");
@@ -943,8 +943,21 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 CaseId = _lineOfDutyCase.CaseId;
 
-                // Auto-checkout the newly created case so the creator can edit immediately
-                await CaseService.CheckOutCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion, _cts.Token);
+                // Auto-checkout the newly created case so the creator can edit immediately.
+                // Merge the returned scalar fields (fresh RowVersion + checkout state) onto the
+                // in-memory case so subsequent saves use the current concurrency token without
+                // a re-fetch. The server response is sparse — do not replace the whole object
+                // or loaded navigation collections (Member, MEDCON, WorkflowStateHistories, ...)
+                // would be wiped.
+                var checkedOut = await CaseService.CheckOutCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion, _cts.Token);
+                if (checkedOut is not null)
+                {
+                    _lineOfDutyCase.RowVersion = checkedOut.RowVersion;
+                    _lineOfDutyCase.IsCheckedOut = checkedOut.IsCheckedOut;
+                    _lineOfDutyCase.CheckedOutBy = checkedOut.CheckedOutBy;
+                    _lineOfDutyCase.CheckedOutByName = checkedOut.CheckedOutByName;
+                    _lineOfDutyCase.CheckedOutDate = checkedOut.CheckedOutDate;
+                }
                 Mode = "edit";
 
                 _viewModel = LineOfDutyCaseMapper.ToLineOfDutyViewModel(_lineOfDutyCase);
@@ -1538,9 +1551,9 @@ public partial class EditCase : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
+            var updated = await CaseService.CheckOutCaseViaODataAsync(_lineOfDutyCase.Id, _lineOfDutyCase.RowVersion);
 
-            if (success)
+            if (updated is not null)
             {
                 NotificationService.Notify(NotificationSeverity.Success, "Checked Out", $"Case {_lineOfDutyCase.CaseId} has been checked out for editing.", closeOnClick: true);
                 Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=edit");

@@ -299,36 +299,95 @@ public class CaseService(
     /// instead of <see cref="HttpClient"/>. The action is registered in the EDM as
     /// <c>Cases({key})/Checkout</c> with an optional <c>RowVersion</c> body parameter.
     /// </summary>
-    public async Task<bool> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
+    public async Task<LineOfDutyCase?> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
+        var result = await TryCheckoutAsync(caseId, rowVersion, cancellationToken);
+
+        if (result.Case is not null)
+        {
+            return result.Case;
+        }
+
+        // Only retry if the failure was a concurrency conflict (HTTP 409). The server
+        // returns 409 for both "Checkout conflict" (already checked out by another user)
+        // and "Concurrency conflict" (stale RowVersion). Refresh the RowVersion and
+        // retry once — but only if the case is not actually checked out by someone else.
+        if (result.StatusCode != 409)
+        {
+            return null;
+        }
+
+        var (freshRowVersion, isCheckedOutByOther) = await TryGetFreshCheckoutStateAsync(caseId, cancellationToken);
+
+        if (freshRowVersion is null || isCheckedOutByOther || freshRowVersion.SequenceEqual(rowVersion))
+        {
+            return null;
+        }
+
+        Logger.LogInformation(
+            "Retrying checkout for case {CaseId} with refreshed RowVersion after stale-token 409.",
+            caseId);
+
+        var retry = await TryCheckoutAsync(caseId, freshRowVersion, cancellationToken);
+        return retry.Case;
+    }
+
+    private async Task<(LineOfDutyCase? Case, int? StatusCode)> TryCheckoutAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken)
+    {
         var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkout");
         var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
 
         try
         {
             // Checkout returns Ok(existing) on the server, so request the entity back.
-            _ = await Context.ExecuteAsync<LineOfDutyCase>(
+            var response = await Context.ExecuteAsync<LineOfDutyCase>(
                 actionUri, "POST", singleResult: true, parameters)
                 .WaitAsync(cancellationToken);
 
-            return true;
+            return (response.SingleOrDefault(), null);
         }
         catch (DataServiceClientException ex)
         {
             Logger.LogWarning(ex, "Checkout (OData client) failed for case {CaseId}: status={Status}", caseId, ex.StatusCode);
-            return false;
+            return (null, ex.StatusCode);
         }
         catch (DataServiceRequestException ex)
         {
             Logger.LogWarning(ex, "Checkout (OData client) request failed for case {CaseId}", caseId);
-            return false;
+            return (null, null);
         }
         catch (DataServiceQueryException ex)
         {
             Logger.LogWarning(ex, "Checkout (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
-            return false;
+            return (null, ex.Response?.StatusCode);
+        }
+    }
+
+    private async Task<(byte[]? RowVersion, bool IsCheckedOutByOther)> TryGetFreshCheckoutStateAsync(int caseId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var uri = new Uri(
+                Context.BaseUri,
+                $"Cases({caseId})?$select=RowVersion,IsCheckedOut,CheckedOutBy");
+
+            var response = await Context.ExecuteAsync<LineOfDutyCase>(uri, "GET", singleResult: true)
+                .WaitAsync(cancellationToken);
+
+            var fresh = response.SingleOrDefault();
+            if (fresh is null)
+            {
+                return (null, false);
+            }
+
+            return (fresh.RowVersion, fresh.IsCheckedOut);
+        }
+        catch (Exception ex) when (ex is DataServiceClientException or DataServiceRequestException or DataServiceQueryException)
+        {
+            Logger.LogWarning(ex, "Failed to refresh checkout state for case {CaseId} after 409.", caseId);
+            return (null, false);
         }
     }
 
@@ -345,6 +404,39 @@ public class CaseService(
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(caseId);
 
+        var (success, statusCode) = await TryCheckinAsync(caseId, rowVersion, cancellationToken);
+
+        if (success)
+        {
+            return true;
+        }
+
+        // Mirror the checkout retry: on a 409 stale-RowVersion conflict, fetch the
+        // current RowVersion and retry once. The Checkin controller only permits the
+        // user who checked the case out (or an Admin); if the fresh fetch shows the
+        // case is no longer checked out we cannot recover.
+        if (statusCode != 409)
+        {
+            return false;
+        }
+
+        var (freshRowVersion, isCheckedOut) = await TryGetFreshCheckoutStateAsync(caseId, cancellationToken);
+
+        if (freshRowVersion is null || !isCheckedOut || freshRowVersion.SequenceEqual(rowVersion))
+        {
+            return false;
+        }
+
+        Logger.LogInformation(
+            "Retrying checkin for case {CaseId} with refreshed RowVersion after stale-token 409.",
+            caseId);
+
+        var (retrySuccess, _) = await TryCheckinAsync(caseId, freshRowVersion, cancellationToken);
+        return retrySuccess;
+    }
+
+    private async Task<(bool Success, int? StatusCode)> TryCheckinAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken)
+    {
         var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkin");
         var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
 
@@ -353,22 +445,22 @@ public class CaseService(
             _ = await Context.ExecuteAsync(actionUri, "POST", parameters)
                 .WaitAsync(cancellationToken);
 
-            return true;
+            return (true, null);
         }
         catch (DataServiceClientException ex)
         {
             Logger.LogWarning(ex, "Checkin (OData client) failed for case {CaseId}: status={Status}", caseId, ex.StatusCode);
-            return false;
+            return (false, ex.StatusCode);
         }
         catch (DataServiceRequestException ex)
         {
             Logger.LogWarning(ex, "Checkin (OData client) request failed for case {CaseId}", caseId);
-            return false;
+            return (false, null);
         }
         catch (DataServiceQueryException ex)
         {
             Logger.LogWarning(ex, "Checkin (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
-            return false;
+            return (false, ex.Response?.StatusCode);
         }
     }
 }

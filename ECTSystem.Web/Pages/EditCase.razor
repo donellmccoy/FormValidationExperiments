@@ -140,7 +140,7 @@ else
                 @if (IsReadOnly && _lineOfDutyCase is not null)
                 {
                     <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true" Icon="lock" AllowClose="false"
-                                 Style="width:1135px;margin-top:0px;margin-bottom:0px" class="rz-border-radius-2">
+                                 Style="width:100%;margin-top:0px;margin-bottom:0px" class="rz-border-radius-2">
                         @if (_lineOfDutyCase.IsCheckedOut)
                         {
                             <text>This case is checked out by <strong>@_lineOfDutyCase.CheckedOutByName</strong>. You are viewing in read-only mode.</text>

@@ -682,9 +682,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
         if (result is "checkout")
         {
-            var success = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
+            var updated = await CaseService.CheckOutCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
 
-            if (success)
+            if (updated is not null)
             {
                 Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=edit");

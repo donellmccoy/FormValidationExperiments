@@ -103,7 +103,12 @@ public interface ICaseService
     /// <see cref="Microsoft.OData.Client.DataServiceContext"/> client (instead of <see cref="HttpClient"/>).
     /// Functionally equivalent to <see cref="CheckOutCaseAsync"/>.
     /// </summary>
-    Task<bool> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
+    /// <returns>
+    /// The updated <see cref="LineOfDutyCase"/> with a fresh <c>RowVersion</c> and populated
+    /// checkout fields on success; <c>null</c> if the server rejected the request.
+    /// Note: navigation properties are not populated by the server response.
+    /// </returns>
+    Task<LineOfDutyCase?> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Checks in a LOD case by invoking the bound OData action via the typed
