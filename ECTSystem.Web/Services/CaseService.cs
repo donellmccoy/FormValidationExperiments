@@ -297,7 +297,8 @@ public class CaseService(
     /// <summary>
     /// Checks out a case by invoking the bound OData action via <see cref="DataServiceContext"/>
     /// instead of <see cref="HttpClient"/>. The action is registered in the EDM as
-    /// <c>Cases({key})/Checkout</c> with an optional <c>RowVersion</c> body parameter.
+    /// <c>Cases({key})/Checkout</c>; the <see cref="LineOfDutyCase.RowVersion"/> is supplied
+    /// via the <c>If-Match</c> request header (required by the server).
     /// </summary>
     public async Task<LineOfDutyCase?> CheckOutCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
     {
@@ -337,13 +338,16 @@ public class CaseService(
     private async Task<(LineOfDutyCase? Case, int? StatusCode)> TryCheckoutAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken)
     {
         var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkout");
-        var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
+
+        EventHandler<BuildingRequestEventArgs> handler = (_, e) =>
+            e.Headers["If-Match"] = $"\"{Convert.ToBase64String(rowVersion)}\"";
+        Context.BuildingRequest += handler;
 
         try
         {
             // Checkout returns Ok(existing) on the server, so request the entity back.
             var response = await Context.ExecuteAsync<LineOfDutyCase>(
-                actionUri, "POST", singleResult: true, parameters)
+                actionUri, "POST", singleResult: true)
                 .WaitAsync(cancellationToken);
 
             return (response.SingleOrDefault(), null);
@@ -362,6 +366,10 @@ public class CaseService(
         {
             Logger.LogWarning(ex, "Checkout (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
             return (null, ex.Response?.StatusCode);
+        }
+        finally
+        {
+            Context.BuildingRequest -= handler;
         }
     }
 
@@ -394,8 +402,9 @@ public class CaseService(
     /// <summary>
     /// Checks in a case by invoking the bound OData action via <see cref="DataServiceContext"/>
     /// instead of <see cref="HttpClient"/>. The action is registered in the EDM as
-    /// <c>Cases({key})/Checkin</c> with an optional <c>RowVersion</c> body parameter and
-    /// returns the updated <see cref="LineOfDutyCase"/>.
+    /// <c>Cases({key})/Checkin</c>; the <see cref="LineOfDutyCase.RowVersion"/> is supplied
+    /// via the <c>If-Match</c> request header (required by the server) and the action returns
+    /// the updated <see cref="LineOfDutyCase"/>.
     /// </summary>
     public async Task<LineOfDutyCase?> CheckInCaseViaODataAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken = default)
     {
@@ -435,11 +444,14 @@ public class CaseService(
     private async Task<(LineOfDutyCase? Case, int? StatusCode)> TryCheckinAsync(int caseId, byte[] rowVersion, CancellationToken cancellationToken)
     {
         var actionUri = new Uri(Context.BaseUri, $"Cases({caseId})/Checkin");
-        var parameters = new[] { new BodyOperationParameter("RowVersion", rowVersion) };
+
+        EventHandler<BuildingRequestEventArgs> handler = (_, e) =>
+            e.Headers["If-Match"] = $"\"{Convert.ToBase64String(rowVersion)}\"";
+        Context.BuildingRequest += handler;
 
         try
         {
-            var response = await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", singleResult: true, parameters)
+            var response = await Context.ExecuteAsync<LineOfDutyCase>(actionUri, "POST", singleResult: true)
                 .WaitAsync(cancellationToken);
 
             return (response.SingleOrDefault(), null);
@@ -458,6 +470,10 @@ public class CaseService(
         {
             Logger.LogWarning(ex, "Checkin (OData client) query failed for case {CaseId}: status={Status}", caseId, ex.Response?.StatusCode);
             return (null, ex.Response?.StatusCode);
+        }
+        finally
+        {
+            Context.BuildingRequest -= handler;
         }
     }
 }

@@ -686,6 +686,13 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             if (updated is not null)
             {
+                // Merge fresh concurrency token + checkout state onto the grid row so a
+                // subsequent action against this row uses the up-to-date RowVersion.
+                lodCase.RowVersion = updated.RowVersion;
+                lodCase.IsCheckedOut = updated.IsCheckedOut;
+                lodCase.CheckedOutBy = updated.CheckedOutBy ?? string.Empty;
+                lodCase.CheckedOutByName = updated.CheckedOutByName ?? string.Empty;
+
                 Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=bookmarks&mode=edit");
             }
@@ -803,6 +810,13 @@ public partial class MyBookmarks : ComponentBase, IDisposable
                         var checkedIn = await CaseService.CheckInCaseViaODataAsync(lodCase.Id, lodCase.RowVersion);
                         if (checkedIn is not null)
                         {
+                            // Merge fresh concurrency token + checkout state onto the grid row
+                            // so any further action on this reference uses the up-to-date RowVersion.
+                            lodCase.RowVersion = checkedIn.RowVersion;
+                            lodCase.IsCheckedOut = checkedIn.IsCheckedOut;
+                            lodCase.CheckedOutBy = checkedIn.CheckedOutBy ?? string.Empty;
+                            lodCase.CheckedOutByName = checkedIn.CheckedOutByName ?? string.Empty;
+
                             Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
                             NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
                             if (_lastArgs is not null)

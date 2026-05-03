@@ -265,10 +265,9 @@ public static class ServiceCollectionExtensions
             .ReturnsFromEntitySet<CaseDialogueComment>("CaseDialogueComments");
 
         // Bound actions: POST /odata/Cases({key})/Checkout, /Checkin
-        var checkoutAction = casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
-        checkoutAction.Parameter<byte[]>("RowVersion").Optional();
-        var checkinAction = casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
-        checkinAction.Parameter<byte[]>("RowVersion").Optional();
+        // RowVersion is supplied via the If-Match request header (required); not as a body parameter.
+        casesEntitySet.EntityType.Action("Checkout").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
+        casesEntitySet.EntityType.Action("Checkin").ReturnsFromEntitySet<LineOfDutyCase>("Cases");
 
         // Bound collection action: POST /odata/Cases/ByCurrentState
         var byCurrentState = casesEntitySet.EntityType.Collection.Action("ByCurrentState")

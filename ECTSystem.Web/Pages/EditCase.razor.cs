@@ -787,6 +787,14 @@ public partial class EditCase : ComponentBase, IDisposable
 
             if (updated is not null)
             {
+                // Merge fresh concurrency token + checkout state onto the grid row so a
+                // subsequent action against this row uses the up-to-date RowVersion.
+                lodCase.RowVersion = updated.RowVersion;
+                lodCase.IsCheckedOut = updated.IsCheckedOut;
+                lodCase.CheckedOutBy = updated.CheckedOutBy ?? string.Empty;
+                lodCase.CheckedOutByName = updated.CheckedOutByName ?? string.Empty;
+                lodCase.CheckedOutDate = updated.CheckedOutDate;
+
                 Logger.LogInformation("Checked out case {CaseId} for editing", lodCase.CaseId);
                 Navigation.NavigateTo($"/case/{lodCase.CaseId}?from=case&mode=edit");
             }
@@ -868,6 +876,14 @@ public partial class EditCase : ComponentBase, IDisposable
 
                         if (checkedIn is not null)
                         {
+                            // Merge fresh concurrency token + checkout state onto the grid row
+                            // so any further action on this reference uses the up-to-date RowVersion.
+                            lodCase.RowVersion = checkedIn.RowVersion;
+                            lodCase.IsCheckedOut = checkedIn.IsCheckedOut;
+                            lodCase.CheckedOutBy = checkedIn.CheckedOutBy ?? string.Empty;
+                            lodCase.CheckedOutByName = checkedIn.CheckedOutByName ?? string.Empty;
+                            lodCase.CheckedOutDate = checkedIn.CheckedOutDate;
+
                             Logger.LogInformation("Checked in case {CaseId}", lodCase.CaseId);
                             NotificationService.Notify(NotificationSeverity.Success, "Checked In", $"Case {lodCase.CaseId} has been checked in.", closeOnClick: true);
                             await _previousCasesGrid.Reload();
@@ -1608,6 +1624,15 @@ public partial class EditCase : ComponentBase, IDisposable
 
                 if (updated is not null)
                 {
+                    // Merge fresh concurrency token + checkout state onto bound model so any
+                    // subsequent operation on this page (or revisit before navigation completes)
+                    // sends the up-to-date RowVersion instead of triggering a 409.
+                    _lineOfDutyCase.RowVersion = updated.RowVersion;
+                    _lineOfDutyCase.IsCheckedOut = updated.IsCheckedOut;
+                    _lineOfDutyCase.CheckedOutBy = updated.CheckedOutBy ?? string.Empty;
+                    _lineOfDutyCase.CheckedOutByName = updated.CheckedOutByName ?? string.Empty;
+                    _lineOfDutyCase.CheckedOutDate = updated.CheckedOutDate;
+
                     NotificationService.Notify(NotificationSeverity.Success, "Checked Out", $"Case {_lineOfDutyCase.CaseId} has been checked out for editing.", closeOnClick: true);
                     Navigation.NavigateTo($"/case/{CaseId}?from={FromPage}&mode=edit");
                 }

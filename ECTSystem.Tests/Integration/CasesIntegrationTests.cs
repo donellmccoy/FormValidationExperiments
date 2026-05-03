@@ -136,12 +136,25 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         var (caseDbId, _) = await SeedCaseAsync();
 
+        // Read the current RowVersion so we can supply the required If-Match header.
+        var getResponse = await Client.GetAsync($"/odata/Cases({caseDbId})?$select=RowVersion", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var caseJson = await getResponse.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        var rowVersion = caseJson.GetProperty("RowVersion").GetBytesFromBase64();
+        var ifMatch = new System.Net.Http.Headers.EntityTagHeaderValue($"\"{Convert.ToBase64String(rowVersion)}\"");
+
         // First checkout should succeed
-        var firstResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null, TestContext.Current.CancellationToken);
+        var firstRequest = new HttpRequestMessage(HttpMethod.Post, $"/odata/Cases({caseDbId})/Checkout");
+        firstRequest.Headers.IfMatch.Add(ifMatch);
+        var firstResponse = await Client.SendAsync(firstRequest, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
-        // Second checkout should be rejected
-        var secondResponse = await Client.PostAsync($"/odata/Cases({caseDbId})/Checkout", null, TestContext.Current.CancellationToken);
+        // Second checkout should be rejected. The server validates "already checked out"
+        // before the concurrency check, so the same If-Match token still satisfies the
+        // precondition and the failure is the 409 we want to assert on.
+        var secondRequest = new HttpRequestMessage(HttpMethod.Post, $"/odata/Cases({caseDbId})/Checkout");
+        secondRequest.Headers.IfMatch.Add(ifMatch);
+        var secondResponse = await Client.SendAsync(secondRequest, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
     }
 

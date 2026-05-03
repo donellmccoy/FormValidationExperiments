@@ -1,4 +1,7 @@
+#nullable enable annotations
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using ECTSystem.Api.Extensions;
@@ -43,5 +46,49 @@ public abstract class ODataControllerBase : ODataController
         HttpContext.Response.RegisterForDispose(context);
 
         return context;
+    }
+
+    /// <summary>
+    /// Parses the <c>If-Match</c> request header into a <c>byte[]</c> RowVersion suitable for
+    /// optimistic concurrency checks. Returns <c>true</c> when a valid ETag was supplied;
+    /// otherwise returns <c>false</c> and assigns <paramref name="error"/> to a 428 (missing)
+    /// or 400 (malformed) ProblemDetails result that the caller should return.
+    /// </summary>
+    protected bool TryGetIfMatchRowVersion(out byte[] rowVersion, out IActionResult? error)
+    {
+        rowVersion = [];
+        error = null;
+
+        var ifMatch = Request.Headers.IfMatch.ToString();
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            error = Problem(
+                title: "Precondition required",
+                detail: "An If-Match header with the current ETag is required.",
+                statusCode: StatusCodes.Status428PreconditionRequired);
+            return false;
+        }
+
+        try
+        {
+            // Strip optional weak-validator prefix and surrounding quotes: W/"base64..." -> base64...
+            var raw = ifMatch.Trim();
+            if (raw.StartsWith("W/", StringComparison.Ordinal))
+            {
+                raw = raw[2..];
+            }
+            raw = raw.Trim('"');
+
+            rowVersion = Convert.FromBase64String(raw);
+            return true;
+        }
+        catch (FormatException)
+        {
+            error = Problem(
+                title: "Bad request",
+                detail: "The If-Match header contains an invalid ETag value.",
+                statusCode: StatusCodes.Status400BadRequest);
+            return false;
+        }
     }
 }

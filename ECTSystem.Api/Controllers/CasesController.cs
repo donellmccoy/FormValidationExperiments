@@ -221,23 +221,9 @@ public class CasesController : ODataControllerBase
             return ValidationProblem(ModelState);
         }
 
-        // Extract RowVersion from If-Match header for optimistic concurrency
-        var ifMatch = Request.Headers.IfMatch.ToString();
-        if (string.IsNullOrWhiteSpace(ifMatch))
+        if (!TryGetIfMatchRowVersion(out var clientRowVersion, out var ifMatchError))
         {
-            return Problem(title: "Precondition required", detail: "An If-Match header with the current ETag is required for updates.", statusCode: StatusCodes.Status428PreconditionRequired);
-        }
-
-        byte[] clientRowVersion;
-        try
-        {
-            // Strip surrounding quotes: "base64..." → base64...
-            var raw = ifMatch.Trim('"');
-            clientRowVersion = Convert.FromBase64String(raw);
-        }
-        catch (FormatException)
-        {
-            return Problem(title: "Bad request", detail: "The If-Match header contains an invalid ETag value.", statusCode: StatusCodes.Status400BadRequest);
+            return ifMatchError!;
         }
 
         LoggingService.PatchingCase(key);
@@ -282,8 +268,13 @@ public class CasesController : ODataControllerBase
     /// OData route: POST /odata/Cases({key})/Checkout
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Checkout([FromODataUri] int key, ODataActionParameters parameters, CancellationToken ct = default)
+    public async Task<IActionResult> Checkout([FromODataUri] int key, CancellationToken ct = default)
     {
+        if (!TryGetIfMatchRowVersion(out var clientRowVersion, out var ifMatchError))
+        {
+            return ifMatchError!;
+        }
+
         LoggingService.CheckingOutCase(key);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -314,9 +305,8 @@ public class CasesController : ODataControllerBase
         existing.CheckedOutByName = userName;
         existing.CheckedOutDate = TimeProvider.GetUtcNow().UtcDateTime;
 
-        // Optimistic concurrency — use client-supplied RowVersion if available, otherwise fall back to DB-loaded value
-        var clientRowVersion = parameters?.TryGetValue("RowVersion", out var rv) == true ? rv as byte[] : null;
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion ?? existing.RowVersion;
+        // Optimistic concurrency — use the client-supplied RowVersion from the If-Match header.
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion;
 
         try
         {
@@ -329,6 +319,7 @@ public class CasesController : ODataControllerBase
 
         LoggingService.CaseCheckedOut(key, userName);
 
+        Response.Headers.ETag = $"\"{Convert.ToBase64String(existing.RowVersion)}\"";
         return Ok(existing);
     }
 
@@ -337,8 +328,13 @@ public class CasesController : ODataControllerBase
     /// OData route: POST /odata/Cases({key})/Checkin
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Checkin([FromODataUri] int key, ODataActionParameters parameters, CancellationToken ct = default)
+    public async Task<IActionResult> Checkin([FromODataUri] int key, CancellationToken ct = default)
     {
+        if (!TryGetIfMatchRowVersion(out var clientRowVersion, out var ifMatchError))
+        {
+            return ifMatchError!;
+        }
+
         LoggingService.CheckingInCase(key);
 
         await using var context = await ContextFactory.CreateDbContextAsync(ct);
@@ -367,9 +363,8 @@ public class CasesController : ODataControllerBase
         existing.CheckedOutByName = string.Empty;
         existing.CheckedOutDate = null;
 
-        // Optimistic concurrency — use client-supplied RowVersion if available, otherwise fall back to DB-loaded value
-        var clientRowVersion = parameters?.TryGetValue("RowVersion", out var rv) == true ? rv as byte[] : null;
-        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion ?? existing.RowVersion;
+        // Optimistic concurrency — use the client-supplied RowVersion from the If-Match header.
+        context.Entry(existing).Property(e => e.RowVersion).OriginalValue = clientRowVersion;
 
         try
         {
@@ -385,6 +380,7 @@ public class CasesController : ODataControllerBase
         // Return the refreshed entity so the client can update its in-memory copy with the
         // new RowVersion and cleared checkout fields. Mirrors the Checkout action and
         // prevents stale-token 409s on subsequent operations from the same client.
+        Response.Headers.ETag = $"\"{Convert.ToBase64String(existing.RowVersion)}\"";
         return Ok(existing);
     }
 
@@ -396,22 +392,9 @@ public class CasesController : ODataControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromODataUri] int key, CancellationToken ct = default)
     {
-        // Extract RowVersion from If-Match header for optimistic concurrency
-        var ifMatch = Request.Headers.IfMatch.ToString();
-        if (string.IsNullOrWhiteSpace(ifMatch))
+        if (!TryGetIfMatchRowVersion(out var clientRowVersion, out var ifMatchError))
         {
-            return Problem(title: "Precondition required", detail: "An If-Match header with the current ETag is required for deletes.", statusCode: StatusCodes.Status428PreconditionRequired);
-        }
-
-        byte[] clientRowVersion;
-        try
-        {
-            var raw = ifMatch.Trim('"');
-            clientRowVersion = Convert.FromBase64String(raw);
-        }
-        catch (FormatException)
-        {
-            return Problem(title: "Bad request", detail: "The If-Match header contains an invalid ETag value.", statusCode: StatusCodes.Status400BadRequest);
+            return ifMatchError!;
         }
 
         LoggingService.DeletingCase(key);
