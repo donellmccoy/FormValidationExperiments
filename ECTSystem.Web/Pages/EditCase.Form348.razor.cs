@@ -21,6 +21,14 @@ public partial class EditCase
 
     private bool form348Loaded;
 
+    // Track which outer tabs have been activated at least once. Outer RadzenTabs uses
+    // the default TabRenderMode.Server, so a tab's content (including any RadzenDataGrid)
+    // is rendered on first activation and the grid auto-fires its initial LoadData then.
+    // On subsequent activations the grid is already rendered and will NOT auto-reload —
+    // so we explicitly call Reload() to refresh.
+    private bool _documentsTabActivated;
+    private bool _previousCasesTabActivated;
+
     private void OnTabIndexChanged(int index)
     {
         _selectedTabIndex = index;
@@ -38,7 +46,14 @@ public partial class EditCase
         if (index == OuterDocumentsTabIndex)
         {
             await RefreshUploadAuthTokenAsync();
-            _documentsGrid?.Reload();
+            if (_documentsTabActivated)
+            {
+                _documentsGrid?.Reload();
+            }
+            else
+            {
+                _documentsTabActivated = true;
+            }
             await TryFocusAsync(_documentsSearchBox);
         }
         else if (index == OuterCaseDialogueTabIndex)
@@ -51,11 +66,22 @@ public partial class EditCase
         }
         else if (index == OuterCaseHistoryTabIndex)
         {
-            _previousCasesGrid?.Reload();
+            if (_previousCasesTabActivated)
+            {
+                _previousCasesGrid?.Reload();
+            }
+            else
+            {
+                _previousCasesTabActivated = true;
+            }
             await TryFocusAsync(_previousCasesSearchBox);
         }
         else if (index == OuterTrackingTabIndex)
         {
+            // Always refresh the tracking grid on tab activation. On the very first
+            // activation _trackingGrid is still null (the tab content hasn't rendered yet),
+            // so RefreshTrackingGrid is a no-op and the grid's auto LoadData runs once.
+            // On subsequent activations the grid exists and FirstPage(true) refreshes it.
             await RefreshTrackingGrid();
             await TryFocusAsync(_trackingSearchBox);
         }
