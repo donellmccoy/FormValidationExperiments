@@ -174,6 +174,20 @@ public class EctSystemWebApplicationFactory : WebApplicationFactory<ECTSystem.Ap
                 {
                     await userManager.AddToRoleAsync(testUser, "Admin");
                 }
+
+                // Seed a second non-Admin user for tests that exercise role-restricted behavior
+                // (e.g. checkout-by-another-user guard which Admin would otherwise bypass).
+                var memberUser = await userManager.FindByEmailAsync("member@ect.mil");
+                if (memberUser is null)
+                {
+                    memberUser = new ApplicationUser
+                    {
+                        UserName = "member@ect.mil",
+                        Email = "member@ect.mil",
+                        EmailConfirmed = true
+                    };
+                    await userManager.CreateAsync(memberUser, "Pass123!Strong#");
+                }
             }).GetAwaiter().GetResult();
         });
     }

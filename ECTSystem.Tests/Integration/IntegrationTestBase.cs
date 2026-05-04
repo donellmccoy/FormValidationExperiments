@@ -31,7 +31,21 @@ public abstract class IntegrationTestBase : IClassFixture<EctSystemWebApplicatio
     /// </summary>
     protected async Task AuthenticateAsync()
     {
-        var loginPayload = new { email = "test@ect.mil", password = "Pass123!Strong#" };
+        await AuthenticateAsAsync("test@ect.mil", "Pass123!Strong#");
+    }
+
+    /// <summary>
+    /// Authenticates as a non-Admin seeded user. Use for tests that must exercise
+    /// role-restricted code paths the Admin user would otherwise bypass.
+    /// </summary>
+    protected async Task AuthenticateAsMemberAsync()
+    {
+        await AuthenticateAsAsync("member@ect.mil", "Pass123!Strong#");
+    }
+
+    private async Task AuthenticateAsAsync(string email, string password)
+    {
+        var loginPayload = new { email, password };
         var response = await Client.PostAsJsonAsync("/login", loginPayload);
         response.EnsureSuccessStatusCode();
 

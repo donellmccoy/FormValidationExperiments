@@ -68,9 +68,9 @@ public class CasesIntegrationTests : IntegrationTestBase
     {
         await AuthenticateAsync();
 
-        var (caseDbId, rowVersion) = await SeedCaseAsync();
+        var (caseDbId, rowVersion, memberId) = await SeedCaseAsync();
 
-        var patchPayload = new { IncidentDescription = "Updated: slip and fall during field exercise" };
+        var patchPayload = BuildUpdateCaseDtoPayload("Updated: slip and fall during field exercise", memberId);
 
         var request = new HttpRequestMessage(HttpMethod.Patch, $"/odata/Cases({caseDbId})")
         {
@@ -80,14 +80,13 @@ public class CasesIntegrationTests : IntegrationTestBase
                 "application/json")
         };
         request.Headers.Add("Prefer", "return=representation");
-        if (rowVersion is not null)
-        {
-            request.Headers.TryAddWithoutValidation("If-Match", $"\"{Convert.ToBase64String(rowVersion)}\"");
-        }
+        request.Headers.TryAddWithoutValidation("If-Match", $"\"{Convert.ToBase64String(rowVersion)}\"");
 
         var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.True(response.StatusCode == HttpStatusCode.OK,
+            $"Expected OK but got {response.StatusCode}: {responseBody}");
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         var updatedDescription = body.GetProperty("IncidentDescription").GetString();
@@ -100,7 +99,7 @@ public class CasesIntegrationTests : IntegrationTestBase
     {
         await AuthenticateAsync();
 
-        var (caseDbId, _) = await SeedCaseAsync();
+        var (caseDbId, _, _) = await SeedCaseAsync();
 
         // Upload a .txt file (no magic-byte validation for .txt)
         var fileContent = "This is test document content for LOD case."u8.ToArray();
@@ -130,11 +129,84 @@ public class CasesIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Patch_WhenCheckedOutByAnotherUser_Returns403()
+    {
+        // Use a non-Admin user — Admin would bypass the checkout guard.
+        await AuthenticateAsMemberAsync();
+
+        var (caseDbId, rowVersion, memberId) = await SeedCaseAsync(checkedOutBy: "00000000-0000-0000-0000-0000000000ff", checkedOutByName: "Other User");
+
+        var patchPayload = BuildUpdateCaseDtoPayload("Should not be applied", memberId);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/odata/Cases({caseDbId})")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(patchPayload),
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.TryAddWithoutValidation("If-Match", $"\"{Convert.ToBase64String(rowVersion)}\"");
+
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        var responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.True(response.StatusCode == HttpStatusCode.Forbidden,
+            $"Expected Forbidden but got {response.StatusCode}: {responseBody}");
+    }
+
+    [Fact]
+    public async Task Get_WithIfNoneMatchWildcard_Returns304()
+    {
+        await AuthenticateAsync();
+
+        var (caseDbId, _, _) = await SeedCaseAsync();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/odata/Cases({caseDbId})");
+        request.Headers.TryAddWithoutValidation("If-None-Match", "*");
+
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotModified, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_WithMatchingIfNoneMatchInList_Returns304()
+    {
+        await AuthenticateAsync();
+
+        var (caseDbId, rowVersion, _) = await SeedCaseAsync();
+        var etag = $"\"{Convert.ToBase64String(rowVersion)}\"";
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/odata/Cases({caseDbId})");
+        // Comma-separated list with a non-matching tag and the matching tag — RFC 7232 form
+        request.Headers.TryAddWithoutValidation("If-None-Match", $"\"deadbeef\", {etag}");
+
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotModified, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_WithNonMatchingIfNoneMatch_ReturnsBody()
+    {
+        await AuthenticateAsync();
+
+        var (caseDbId, _, _) = await SeedCaseAsync();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/odata/Cases({caseDbId})");
+        request.Headers.TryAddWithoutValidation("If-None-Match", "\"not-the-current-etag\"");
+
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Checkout_SecondCheckout_ReturnsConflict()
     {
         await AuthenticateAsync();
 
-        var (caseDbId, _) = await SeedCaseAsync();
+        var (caseDbId, _, _) = await SeedCaseAsync();
 
         // Read the current RowVersion so we can supply the required If-Match header.
         var getResponse = await Client.GetAsync($"/odata/Cases({caseDbId})?$select=RowVersion", TestContext.Current.CancellationToken);
@@ -213,9 +285,27 @@ public class CasesIntegrationTests : IntegrationTestBase
     }
 
     /// <summary>
+    /// Builds an <see cref="UpdateCaseDto"/>-shaped payload satisfying all <c>[Required]</c>
+    /// fields, with the supplied <paramref name="incidentDescription"/>.
+    /// </summary>
+    private static object BuildUpdateCaseDtoPayload(string incidentDescription, int memberId) => new
+    {
+        ProcessType = nameof(ProcessType.Informal),
+        Component = nameof(ServiceComponent.AirNationalGuard),
+        MemberName = "Smith, Jane B",
+        MemberRank = "SSgt",
+        ServiceNumber = "9876543210",
+        IncidentType = nameof(IncidentType.Injury),
+        IncidentDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-10), DateTimeKind.Utc),
+        IncidentDescription = incidentDescription,
+        IncidentDutyStatus = nameof(DutyStatus.Title10ActiveDuty),
+        MemberId = memberId
+    };
+
+    /// <summary>
     /// Seeds a <see cref="LineOfDutyCase"/> with required related entities and returns its database Id and RowVersion.
     /// </summary>
-    private async Task<(int Id, byte[] RowVersion)> SeedCaseAsync()
+    private async Task<(int Id, byte[] RowVersion, int MemberId)> SeedCaseAsync(string? checkedOutBy = null, string? checkedOutByName = null)
     {
         using var scope = Factory.Services.CreateScope();
         var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<EctDbContext>>();
@@ -235,9 +325,14 @@ public class CasesIntegrationTests : IntegrationTestBase
 
         var suffix = Interlocked.Increment(ref _seedCounter);
 
+        // Append a short random hex segment to guarantee uniqueness across parallel
+        // test classes that may share this static counter or insert into the same
+        // SQLite shared in-memory database.
+        var unique = Guid.NewGuid().ToString("N")[..6];
+
         var lodCase = new LineOfDutyCase
         {
-            CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{900 + suffix}",
+            CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{900 + suffix}-{unique}",
             MemberName = "Smith, Jane B",
             MemberRank = "SSgt",
             MemberId = member.Id,
@@ -247,12 +342,27 @@ public class CasesIntegrationTests : IntegrationTestBase
             IncidentDate = DateTime.UtcNow.AddDays(-10),
             IncidentDescription = "Initial description",
             MEDCON = new MEDCONDetail(),
-            INCAP = new INCAPDetails()
+            INCAP = new INCAPDetails(),
+            IsCheckedOut = checkedOutBy is not null,
+            CheckedOutBy = checkedOutBy ?? string.Empty,
+            CheckedOutByName = checkedOutByName ?? string.Empty,
+            CheckedOutDate = checkedOutBy is not null ? DateTime.UtcNow : null
         };
 
         context.Cases.Add(lodCase);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        return (lodCase.Id, lodCase.RowVersion);
+        // SQLite does not auto-populate the SQL Server `rowversion` column. EF maps
+        // RowVersion as ValueGeneratedOnAddOrUpdate, so client-set values on the
+        // entity are silently ignored. Patch RowVersion via raw SQL so the
+        // controller's RowVersion-based existence (Get) and concurrency (Patch/Checkout)
+        // checks behave correctly in tests.
+        var rowVersionBytes = Guid.NewGuid().ToByteArray();
+        await context.Database.ExecuteSqlRawAsync(
+            "UPDATE Cases SET RowVersion = {0} WHERE Id = {1}",
+            [rowVersionBytes, lodCase.Id],
+            TestContext.Current.CancellationToken);
+
+        return (lodCase.Id, rowVersionBytes, member.Id);
     }
 }

@@ -78,7 +78,7 @@ public class CasesController : ODataControllerBase
 
         var etag = $"\"{Convert.ToBase64String(rowVersion)}\"";
 
-        if (Request.Headers.IfNoneMatch.ToString() == etag)
+        if (MatchesIfNoneMatch(etag))
         {
             return StatusCode(StatusCodes.Status304NotModified);
         }
@@ -125,8 +125,10 @@ public class CasesController : ODataControllerBase
 
         // Retry loop: CaseId suffix is generated from MAX() and concurrent inserts
         // can race to the same value, violating the unique index on CaseId.
+        // After exhausting all attempts we surface a 409 rather than letting the
+        // raw SqlException bubble up as an opaque 500.
         const int maxRetries = 3;
-        for (var attempt = 1; ; attempt++)
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
             {
@@ -150,8 +152,16 @@ public class CasesController : ODataControllerBase
 
                 break;
             }
-            catch (DbUpdateException ex) when (attempt < maxRetries && ex.InnerException is SqlException { Number: 2601 or 2627 })
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
             {
+                if (attempt == maxRetries)
+                {
+                    return Problem(
+                        title: "Conflict",
+                        detail: "Could not generate a unique case ID after multiple attempts. Please retry.",
+                        statusCode: StatusCodes.Status409Conflict);
+                }
+
                 // Detach the failed entity so EF doesn't try to re-insert it
                 context.Entry(lodCase).State = EntityState.Detached;
 
@@ -237,6 +247,19 @@ public class CasesController : ODataControllerBase
             LoggingService.CaseNotFound(key);
 
             return Problem(title: "Not found", detail: $"No case exists with ID {key}.", statusCode: StatusCodes.Status404NotFound);
+        }
+
+        // Checkout-ownership guard: a checked-out case may only be modified by the user who
+        // checked it out (or an Admin). Mirrors the policy enforced in Checkin.
+        var userId = GetAuthenticatedUserId();
+        if (existing.IsCheckedOut && existing.CheckedOutBy != userId && !User.IsInRole("Admin"))
+        {
+            LoggingService.CaseCheckedOutByAnother(key, existing.CheckedOutByName);
+
+            return Problem(
+                title: "Locked",
+                detail: $"Case {key} is checked out by {existing.CheckedOutByName} and cannot be modified.",
+                statusCode: StatusCodes.Status403Forbidden);
         }
 
         // Use client-provided RowVersion for optimistic concurrency check

@@ -128,7 +128,7 @@ public class WorkflowStateHistoryPatchIntegrationTests : IntegrationTestBase
 
         var lodCase = new LineOfDutyCase
         {
-            CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(900, 999)}",
+            CaseId = $"{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(900, 999)}-{Guid.NewGuid().ToString("N")[..6]}",
             MemberName = "Repro, Patch",
             MemberRank = "SrA",
             MemberId = member.Id,

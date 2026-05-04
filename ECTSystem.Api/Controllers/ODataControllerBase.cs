@@ -91,4 +91,38 @@ public abstract class ODataControllerBase : ODataController
             return false;
         }
     }
+
+    /// <summary>
+    /// Returns <c>true</c> when the request's <c>If-None-Match</c> header matches the supplied
+    /// current ETag — supports the <c>*</c> wildcard, weak validators (<c>W/"..."</c>), and
+    /// comma-separated lists per RFC 7232. Used by GET endpoints to short-circuit with 304.
+    /// </summary>
+    protected bool MatchesIfNoneMatch(string currentEtag)
+    {
+        var values = Request.Headers.IfNoneMatch;
+        if (values.Count == 0)
+        {
+            return false;
+        }
+
+        if (!Microsoft.Net.Http.Headers.EntityTagHeaderValue.TryParseList(values, out var parsed))
+        {
+            return false;
+        }
+
+        foreach (var tag in parsed)
+        {
+            if (tag.Tag.Equals("*", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (string.Equals(tag.Tag.Value, currentEtag, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
