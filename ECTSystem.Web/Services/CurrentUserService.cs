@@ -1,18 +1,20 @@
 using System.Net.Http.Json;
+using ECTSystem.Shared.ViewModels;
 using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
 
 /// <summary>
-/// Caches the authenticated user's server-assigned identity (user ID) so that
-/// client-side code can compare it with <c>CheckedOutBy</c> on LOD cases.
+/// Caches the authenticated user's server-assigned identity (user ID, full name, role)
+/// so that client-side code can compare it with <c>CheckedOutBy</c> on LOD cases and
+/// surface the user's display name + role in the page header.
 /// Required because ASP.NET Core Identity Data Protection bearer tokens are opaque —
 /// the Blazor WASM client cannot parse claims from them.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Concurrency is handled with a double-checked <see cref="SemaphoreSlim"/> so that two
-/// components racing to call <see cref="GetUserIdAsync"/> on first use share a single
+/// components racing to call <see cref="GetUserInfoAsync"/> on first use share a single
 /// <c>api/user/me</c> request rather than issuing duplicates. The double-check is required:
 /// the cheap unsynchronized read short-circuits the steady-state path, and the second
 /// read inside the lock prevents a second waiter from re-fetching after the first writer
@@ -20,8 +22,8 @@ namespace ECTSystem.Web.Services;
 /// </para>
 /// <para>
 /// <see cref="Clear"/> is called from <c>AuthService.LogoutAsync</c> to discard the cached
-/// ID at logout; without this, a subsequent login on the same circuit would surface the
-/// previous user's ID until a hard reload.
+/// data at logout; without this, a subsequent login on the same circuit would surface the
+/// previous user's identity until a hard reload.
 /// </para>
 /// </remarks>
 public class CurrentUserService
@@ -29,7 +31,7 @@ public class CurrentUserService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CurrentUserService> _logger;
     private readonly SemaphoreSlim _initLock = new(1, 1);
-    private string _userId;
+    private CurrentUserDto _userInfo;
 
     public CurrentUserService(IHttpClientFactory httpClientFactory, ILogger<CurrentUserService> logger)
     {
@@ -43,39 +45,49 @@ public class CurrentUserService
     /// </summary>
     public async Task<string> GetUserIdAsync()
     {
-        if (_userId is not null)
+        var info = await GetUserInfoAsync().ConfigureAwait(false);
+        return info?.UserId;
+    }
+
+    /// <summary>
+    /// Gets the current user's identity info (user ID, display name, full name, role),
+    /// fetching it from the API if not yet cached. Returns <c>null</c> if the API call
+    /// fails (e.g., not authenticated).
+    /// </summary>
+    public async Task<CurrentUserDto> GetUserInfoAsync()
+    {
+        if (_userInfo is not null)
         {
-            return _userId;
+            return _userInfo;
         }
 
         await _initLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (_userId is not null)
+            if (_userInfo is not null)
             {
-                return _userId;
+                return _userInfo;
             }
 
             try
             {
                 var client = _httpClientFactory.CreateClient("Api");
-                var response = await client.GetFromJsonAsync<UserInfo>("api/user/me");
-                _userId = response?.UserId;
+                _userInfo = await client.GetFromJsonAsync<CurrentUserDto>("api/user/me");
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning(ex, "HTTP failure fetching current user id from /api/user/me; treating as unauthenticated.");
+                _logger.LogWarning(ex, "HTTP failure fetching current user info from /api/user/me; treating as unauthenticated.");
             }
             catch (TaskCanceledException ex)
             {
-                _logger.LogWarning(ex, "Timeout fetching current user id from /api/user/me; treating as unauthenticated.");
+                _logger.LogWarning(ex, "Timeout fetching current user info from /api/user/me; treating as unauthenticated.");
             }
             catch (System.Text.Json.JsonException ex)
             {
                 _logger.LogWarning(ex, "Malformed response from /api/user/me; treating as unauthenticated.");
             }
 
-            return _userId;
+            return _userInfo;
         }
         finally
         {
@@ -84,13 +96,7 @@ public class CurrentUserService
     }
 
     /// <summary>
-    /// Clears the cached user ID (e.g., on logout).
+    /// Clears the cached user info (e.g., on logout).
     /// </summary>
-    public void Clear() => _userId = null;
-
-    private class UserInfo
-    {
-        public string UserId { get; set; }
-        public string Name { get; set; }
-    }
+    public void Clear() => _userInfo = null;
 }

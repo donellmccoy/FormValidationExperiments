@@ -10,10 +10,34 @@
     font-size: 1.25rem;
 }
 
-.user-email {
-    color: #b0bec5;
-    font-size: 0.85rem;
-    max-width: 200px;
+.user-info {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.4rem;
+    line-height: 1.15;
+    max-width: 360px;
+    overflow: hidden;
+}
+
+.user-name {
+    color: var(--rz-text-color);
+    font-size: 0.9rem;
+    font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-role-separator {
+    color: var(--rz-text-secondary-color);
+    font-size: 0.8rem;
+}
+
+.user-role {
+    color: var(--rz-text-secondary-color);
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

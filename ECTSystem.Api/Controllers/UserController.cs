@@ -35,7 +35,20 @@ public class UserController(UserManager<ApplicationUser> userManager) : Controll
                 ?? User.FindFirstValue(ClaimTypes.Email)
                 ?? userId;
 
-        return Ok(new CurrentUserDto { UserId = userId, Name = name });
+        string role = null;
+        if (user is not null)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+            role = roles.FirstOrDefault();
+        }
+
+        return Ok(new CurrentUserDto
+        {
+            UserId = userId,
+            Name = name,
+            FullName = fullName,
+            Role = role
+        });
     }
 
     [HttpGet("lookup")]

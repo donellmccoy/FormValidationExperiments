@@ -1,11 +1,19 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
+@inject CurrentUserService CurrentUser
 
 <AuthorizeView>
     <Authorized>
         <div class="login-display">
             <RadzenIcon Icon="account_circle" class="user-icon" />
-            <span class="user-email">@context.User.Identity?.Name</span>
+            <div class="user-info">
+                <span class="user-name">@(_fullName ?? context.User.Identity?.Name)</span>
+                @if (!string.IsNullOrWhiteSpace(_role))
+                {
+                    <span class="user-role-separator">·</span>
+                    <span class="user-role">@_role</span>
+                }
+            </div>
             <RadzenButton Text="Logout"
                           Icon="logout"
                           ButtonStyle="ButtonStyle.Light"
@@ -27,6 +35,19 @@
 </AuthorizeView>
 
 @code {
+    private string _fullName;
+    private string _role;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var info = await CurrentUser.GetUserInfoAsync();
+        if (info is not null)
+        {
+            _fullName = string.IsNullOrWhiteSpace(info.FullName) ? info.Name : info.FullName;
+            _role = info.Role;
+        }
+    }
+
     private async Task OnLogout()
     {
         // AuthService.LogoutAsync centrally clears tokens and redirects to /login with a full reload.
