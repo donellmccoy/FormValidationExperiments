@@ -29,7 +29,7 @@
 @code {
     private async Task OnLogout()
     {
+        // AuthService.LogoutAsync centrally clears tokens and redirects to /login with a full reload.
         await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

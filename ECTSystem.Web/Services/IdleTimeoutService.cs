@@ -19,7 +19,6 @@ public sealed class IdleTimeoutService : IAsyncDisposable
 {
     private readonly IJSRuntime _js;
     private readonly IAuthService _authService;
-    private readonly NavigationManager _navigation;
     private readonly DialogService _dialog;
     private readonly ILocalStorageService _localStorage;
     private readonly IdleTimeoutOptions _options;
@@ -36,14 +35,12 @@ public sealed class IdleTimeoutService : IAsyncDisposable
     public IdleTimeoutService(
         IJSRuntime js,
         IAuthService authService,
-        NavigationManager navigation,
         DialogService dialog,
         ILocalStorageService localStorage,
         IOptions<IdleTimeoutOptions> options)
     {
         _js = js;
         _authService = authService;
-        _navigation = navigation;
         _dialog = dialog;
         _localStorage = localStorage;
         _options = options.Value;
@@ -198,8 +195,7 @@ public sealed class IdleTimeoutService : IAsyncDisposable
             }
 
             await StopAsync();
-            await _authService.LogoutAsync();
-            _navigation.NavigateTo("/login?reason=timeout", forceLoad: false);
+            await _authService.LogoutAsync("timeout");
         }
         catch
         {

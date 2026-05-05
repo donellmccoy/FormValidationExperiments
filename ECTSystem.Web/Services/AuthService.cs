@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using Blazored.LocalStorage;
 using ECTSystem.Web.Models;
 using ECTSystem.Web.Providers;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
@@ -31,10 +32,12 @@ public interface IAuthService
     Task<AuthResult> RegisterAsync(string email, string password);
 
     /// <summary>
-    /// Logs out the current user by removing JWT tokens from local storage and
-    /// notifying the authentication state provider to revert to an unauthenticated state.
+    /// Logs out the current user by removing JWT tokens from local storage,
+    /// notifying the authentication state provider to revert to an unauthenticated state,
+    /// and navigating to the login page with a full page reload to fully clear in-memory state.
     /// </summary>
-    Task LogoutAsync();
+    /// <param name="reason">Optional reason appended to the login URL as <c>?reason={reason}</c> (e.g. <c>"timeout"</c>).</param>
+    Task LogoutAsync(string reason = null);
 }
 
 /// <summary>
@@ -105,6 +108,11 @@ public class AuthService : IAuthService
     private readonly ILogger<AuthService> _logger;
 
     /// <summary>
+    /// The navigation manager used to redirect to the login page after logout.
+    /// </summary>
+    private readonly NavigationManager _navigation;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
     /// </summary>
     /// <param name="httpClient">The HTTP client configured with the API base address.</param>
@@ -112,13 +120,15 @@ public class AuthService : IAuthService
     /// <param name="authStateProvider">The JWT authentication state provider for notifying auth state changes.</param>
     /// <param name="currentUserService">The service that caches the current user's identity.</param>
     /// <param name="logger">The logger for diagnostic events.</param>
-    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider, CurrentUserService currentUserService, ILogger<AuthService> logger)
+    /// <param name="navigation">The navigation manager used to redirect to the login page on logout.</param>
+    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, JwtAuthStateProvider authStateProvider, CurrentUserService currentUserService, ILogger<AuthService> logger, NavigationManager navigation)
     {
         _httpClient = httpClient;
         _localStorage = localStorage;
         _authStateProvider = authStateProvider;
         _currentUserService = currentUserService;
         _logger = logger;
+        _navigation = navigation;
     }
 
     /// <inheritdoc />
@@ -182,13 +192,22 @@ public class AuthService : IAuthService
     /// <inheritdoc />
     /// <remarks>
     /// Removes both <c>"accessToken"</c> and <c>"refreshToken"</c> from local storage,
-    /// then notifies the authentication state provider to revert to an anonymous/unauthenticated state.
+    /// notifies the authentication state provider to revert to an anonymous/unauthenticated state,
+    /// and soft-navigates to <c>/login</c>. A soft navigation is used so the Blazor WebAssembly
+    /// runtime is not re-bootstrapped (which would briefly show the boot loading indicator);
+    /// the in-memory auth state is already invalidated via <see cref="JwtAuthStateProvider.NotifyAuthenticationStateChanged"/>
+    /// and <see cref="CurrentUserService.Clear"/>.
+    /// Centralising the redirect here ensures every logout entry point lands on the login page
+    /// regardless of which route was active when logout was triggered.
     /// </remarks>
-    public async Task LogoutAsync()
+    public async Task LogoutAsync(string reason = null)
     {
         await _localStorage.RemoveItemAsync("accessToken");
         await _localStorage.RemoveItemAsync("refreshToken");
         _currentUserService.Clear();
         _authStateProvider.NotifyAuthenticationStateChanged();
+
+        var url = string.IsNullOrWhiteSpace(reason) ? "/login" : $"/login?reason={Uri.EscapeDataString(reason)}";
+        _navigation.NavigateTo(url, forceLoad: false);
     }
 }
