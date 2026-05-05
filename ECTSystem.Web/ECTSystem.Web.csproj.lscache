@@ -101,6 +101,8 @@ Services/
  DocumentService.cs
  EctApiException.cs
  EctODataContext.cs
+ IdleTimeoutOptions.cs
+ IdleTimeoutService.cs
  Interfaces/
   IAuthorityService.cs
   IBookmarkService.cs
@@ -405,6 +407,7 @@ Pages/
 Shared/
  BookmarkBadge.razor
  CheckOutCaseDialog.razor
+ IdleWarningDialog.razor
  LoginDisplay.razor
  RedirectToLogin.razor
  WorkflowSidebar.razor
@@ -427,6 +430,7 @@ Pages/
 Shared/
  BookmarkBadge.razor
  CheckOutCaseDialog.razor
+ IdleWarningDialog.razor
  LoginDisplay.razor
  RedirectToLogin.razor
  WorkflowSidebar.razor
