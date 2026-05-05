@@ -400,7 +400,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
 
             Logger.LogDebug("Loading cases — Top: {Top}, Skip: {Skip}, OrderBy: {OrderBy}, Filter: {Filter}", args.Top, args.Skip, args.OrderBy, filter);
 
-            var result = await CaseService.GetCasesAsync(
+            // Use the bookmark-scoped function endpoint so the server applies its default ordering
+            // (most recent bookmark first) when args.OrderBy is empty.
+            var result = await BookmarkService.GetBookmarkedCasesAsync(
                 filter: filter,
                 top: args.Top,
                 skip: args.Skip,
@@ -562,10 +564,9 @@ public partial class MyBookmarks : ComponentBase, IDisposable
     /// <returns>A combined OData filter expression scoped to the current user's bookmarks.</returns>
     private string BuildFilter(string argsFilter)
     {
-        var filters = new List<string>
-        {
-            $"Bookmarks/any(b: b/UserId eq '{_currentUserId}')"
-        };
+        // The bookmark-owner constraint is applied server-side by the Cases/Default.Bookmarked
+        // function, so it is not duplicated here.
+        var filters = new List<string>();
 
         if (!string.IsNullOrEmpty(argsFilter))
         {

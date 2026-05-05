@@ -469,16 +469,30 @@ public class CasesController : ODataControllerBase
     /// OData route: GET /odata/Cases/Default.Bookmarked()
     /// </summary>
     [HttpGet]
-    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500, EnsureStableOrdering = false)]
     public async Task<IActionResult> Bookmarked(CancellationToken ct = default)
     {
         LoggingService.QueryingCases();
 
         var context = await CreateContextAsync(ct);
+        var userId = GetAuthenticatedUserId();
 
-        var query = context.Cases
-            .AsNoTracking()
-            .Where(c => context.Bookmarks.Any(b => b.UserId == GetAuthenticatedUserId() && b.LineOfDutyCaseId == c.Id));
+        // Default ordering: most recently bookmarked case first. The (UserId, LineOfDutyCaseId)
+        // unique index guarantees at most one Bookmark row per (case, user), so a JOIN-based shape
+        // produces a single, deterministic Bookmark.Id per case. Bookmark.Id is an auto-increment
+        // identity column — strictly monotonic — making it a more reliable "most recent" signal
+        // than CreatedDate (which can tie at sub-second granularity) and producing simpler SQL than
+        // a correlated MAX() subquery.
+        //
+        // The client's $orderby (when supplied by a column-header click in the grid) overrides
+        // this via [EnableQuery]. EnsureStableOrdering = false prevents the OData middleware from
+        // prepending an OrderBy(Id-on-Cases) for paging stability, which would defeat our default.
+        var query = from c in context.Cases.AsNoTracking()
+                    join b in context.Bookmarks.AsNoTracking()
+                        on c.Id equals b.LineOfDutyCaseId
+                    where b.UserId == userId
+                    orderby b.Id descending
+                    select c;
 
         return Ok(query);
     }

@@ -483,6 +483,7 @@ ViewModels/
   Microsoft.Diagnostics.FastSerialization.dll
   Microsoft.Diagnostics.Tracing.TraceEvent.dll
   TraceReloggerLib.dll
+ microsoft.dotnet.hotreload.webassembly.browser/10.0.203/lib/net10.0/Microsoft.DotNet.HotReload.WebAssembly.Browser.dll
  microsoft.dotnet.platformabstractions/3.1.6/lib/netstandard2.0/Microsoft.DotNet.PlatformAbstractions.dll
  microsoft.entityframeworkcore.abstractions/10.0.7/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
  microsoft.entityframeworkcore.inmemory/10.0.7/lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll
