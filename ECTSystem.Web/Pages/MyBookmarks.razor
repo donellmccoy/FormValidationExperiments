@@ -109,7 +109,7 @@
                 </div>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="ServiceNumber" Title="SSN" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="CaseListItemViewModel" Property="ServiceNumber" Title="SSN" TextAlign="TextAlign.Center" Width="90px">
             <Template Context="lodCase">
                 @if (!string.IsNullOrEmpty(lodCase.ServiceNumber) && lodCase.ServiceNumber.Length >= 4)
                 {

@@ -39,14 +39,19 @@ public class CasesController : ODataControllerBase
     /// $top, $skip, and $count automatically against the IQueryable.
     /// </summary>
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500)]
+    [EnableQuery(MaxTop = 100, PageSize = 50, MaxExpansionDepth = 3, MaxNodeCount = 500, EnsureStableOrdering = false)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
         LoggingService.QueryingCases();
 
         var context = await CreateContextAsync(ct);
 
-        return Ok(context.Cases.AsNoTracking());
+        // Default ordering: most recently created case first. The client's $orderby
+        // (when supplied by a column-header click in the grid) overrides this via
+        // [EnableQuery]. EnsureStableOrdering = false prevents the OData middleware
+        // from prepending an OrderBy(Id) for paging stability, which would defeat
+        // our default.
+        return Ok(context.Cases.AsNoTracking().OrderByDescending(c => c.CreatedDate));
     }
 
     /// <summary>
