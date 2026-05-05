@@ -18,7 +18,7 @@
                         <RadzenIcon Icon="person_outline" />
                     </Start>
                     <ChildContent>
-                        <RadzenTextBox Name="Username" @bind-Value="formModel.Username" />
+                        <RadzenTextBox Name="Username" Value="@formModel.Username" Change="@(v => formModel.Username = v)" />
                     </ChildContent>
                     <Helper>
                         <RadzenRequiredValidator Component="Username" Text="Username is required" />
@@ -30,7 +30,7 @@
                         <RadzenIcon Icon="lock_outline" />
                     </Start>
                     <ChildContent>
-                        <RadzenPassword Name="Password" @bind-Value="formModel.Password" />
+                        <RadzenPassword Name="Password" Value="@formModel.Password" Change="@(v => formModel.Password = v)" />
                     </ChildContent>
                     <Helper>
                         <RadzenRequiredValidator Component="Password" Text="Password is required" />
