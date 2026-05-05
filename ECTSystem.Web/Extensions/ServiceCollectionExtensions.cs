@@ -30,6 +30,9 @@ public static class ServiceCollectionExtensions
                 .AddODataContext(odataBaseAddress)
                 .AddDomainServices();
 
+        services.Configure<IdleTimeoutOptions>(configuration.GetSection(IdleTimeoutOptions.SectionName));
+        services.AddScoped<IdleTimeoutService>();
+
         return services;
     }
 

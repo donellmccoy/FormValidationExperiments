@@ -1,0 +1,50 @@
+@using Microsoft.AspNetCore.Components
+@inject Radzen.DialogService DialogService
+@implements IDisposable
+
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.Body1">
+        You will be signed out due to inactivity in
+        <strong>@_secondsRemaining</strong> second@(_secondsRemaining == 1 ? "" : "s").
+    </RadzenText>
+    <RadzenProgressBar Value="@_progress" Max="100" ShowValue="false" />
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Sign Out Now" ButtonStyle="ButtonStyle.Light"
+                      Click="@(() => DialogService.Close(false))" />
+        <RadzenButton Text="Stay Signed In" ButtonStyle="ButtonStyle.Primary" Icon="check"
+                      Click="@(() => DialogService.Close(true))" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+#nullable enable
+    [Parameter] public int WarningSeconds { get; set; } = 60;
+
+    private int _secondsRemaining;
+    private double _progress;
+    private System.Threading.Timer? _tick;
+    private DateTime _expiresAtUtc;
+
+    protected override void OnInitialized()
+    {
+        _secondsRemaining = WarningSeconds;
+        _expiresAtUtc = DateTime.UtcNow.AddSeconds(WarningSeconds);
+        _tick = new System.Threading.Timer(_ => InvokeAsync(Tick),
+            null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void Tick()
+    {
+        var remaining = (int)Math.Max(0, Math.Ceiling((_expiresAtUtc - DateTime.UtcNow).TotalSeconds));
+        _secondsRemaining = remaining;
+        _progress = WarningSeconds == 0 ? 0 : 100.0 * remaining / WarningSeconds;
+        StateHasChanged();
+        if (remaining <= 0)
+        {
+            _tick?.Dispose();
+            DialogService.Close(false);
+        }
+    }
+
+    public void Dispose() => _tick?.Dispose();
+}
