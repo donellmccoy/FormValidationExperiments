@@ -1,6 +1,8 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject CurrentUserService CurrentUser
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
 
 <AuthorizeView>
     <Authorized>
@@ -40,6 +42,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        await LoadUserInfoIfAuthenticatedAsync();
+    }
+
+    private async Task LoadUserInfoIfAuthenticatedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User?.Identity?.IsAuthenticated != true)
+        {
+            _fullName = null;
+            _role = null;
+            return;
+        }
+
         var info = await CurrentUser.GetUserInfoAsync();
         if (info is not null)
         {
@@ -48,9 +64,23 @@
         }
     }
 
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadUserInfoIfAuthenticatedAsync();
+            StateHasChanged();
+        });
+    }
+
     private async Task OnLogout()
     {
         // AuthService.LogoutAsync centrally clears tokens and redirects to /login with a full reload.
         await AuthService.LogoutAsync();
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 }

@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using ECTSystem.Shared.ViewModels;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 
 namespace ECTSystem.Web.Services;
@@ -29,13 +30,18 @@ namespace ECTSystem.Web.Services;
 public class CurrentUserService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly AuthenticationStateProvider _authStateProvider;
     private readonly ILogger<CurrentUserService> _logger;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private CurrentUserDto _userInfo;
 
-    public CurrentUserService(IHttpClientFactory httpClientFactory, ILogger<CurrentUserService> logger)
+    public CurrentUserService(
+        IHttpClientFactory httpClientFactory,
+        AuthenticationStateProvider authStateProvider,
+        ILogger<CurrentUserService> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _authStateProvider = authStateProvider;
         _logger = logger;
     }
 
@@ -59,6 +65,15 @@ public class CurrentUserService
         if (_userInfo is not null)
         {
             return _userInfo;
+        }
+
+        // Short-circuit when the user isn't authenticated yet — avoids a guaranteed 401
+        // (and the resulting Polly retry trace + warn log) during WASM startup before
+        // the JWT auth state provider has rehydrated the token from local storage.
+        var state = await _authStateProvider.GetAuthenticationStateAsync().ConfigureAwait(false);
+        if (state.User?.Identity?.IsAuthenticated != true)
+        {
+            return null;
         }
 
         await _initLock.WaitAsync().ConfigureAwait(false);

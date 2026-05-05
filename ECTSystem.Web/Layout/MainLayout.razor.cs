@@ -21,11 +21,11 @@ public partial class MainLayout : LayoutComponentBase, IDisposable
     {
         BookmarkCountService.OnCountChanged += OnBookmarkCountChanged;
         AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
-        await BookmarkCountService.RefreshAsync();
 
         var initialState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (initialState.User.Identity?.IsAuthenticated == true)
         {
+            await BookmarkCountService.RefreshAsync();
             await IdleTimeout.StartAsync();
         }
     }
